@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIGNAL — AI Demand Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600&family=Fira+Code:wght@400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#0a0d12; --bg-card:#111419; --bg-sidebar:#0d1017;
+  --border:rgba(255,255,255,0.07); --border-hi:rgba(255,255,255,0.14);
+  --text:#e4e4d8; --sec:#7a7a72; --ter:#454540;
+  --accent:#e8c547; --adim:rgba(232,197,71,0.12);
+  --openai:#10b981; --anthropic:#e8c547; --google:#4285f4; --meta:#0866ff; --mistral:#f59e0b; --perplexity:#a78bfa;
+  --sw:230px; --font-d:'Bebas Neue',sans-serif; --font-b:'Outfit',sans-serif; --font-m:'Fira Code',monospace;
+}
+html,body{height:100%;overflow:hidden;}
+body{font-family:var(--font-b);background:var(--bg);color:var(--text);display:flex;}
+
+/* SIDEBAR */
+.sidebar{width:var(--sw);background:var(--bg-sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;overflow-y:auto;}
+.logo{padding:20px 18px 16px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.logo-word{font-family:var(--font-d);font-size:26px;color:var(--accent);letter-spacing:.05em;}
+.logo-sub{font-size:9px;color:var(--ter);letter-spacing:.12em;text-transform:uppercase;margin-top:2px;}
+.nav-sec{padding:14px 14px 6px;}
+.nav-lbl{font-size:9px;color:var(--ter);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;font-weight:500;}
+.nav-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:6px;cursor:pointer;font-size:12px;color:var(--sec);border:none;background:none;width:100%;text-align:left;transition:all .15s;margin-bottom:1px;font-family:var(--font-b);line-height:1.3;}
+.nav-item:hover{background:rgba(255,255,255,.04);color:var(--text);}
+.nav-item.active{background:var(--adim);color:var(--accent);}
+.nav-ico{font-size:12px;flex-shrink:0;opacity:.7;}
+.nav-item.active .nav-ico{opacity:1;}
+.update-tag{font-size:9px;margin-left:auto;padding:1px 5px;border-radius:3px;background:rgba(255,255,255,.05);color:var(--ter);font-family:var(--font-m);white-space:nowrap;}
+.nav-item.active .update-tag{background:var(--adim);color:var(--accent);}
+.sidebar-footer{margin-top:auto;padding:14px;border-top:1px solid var(--border);}
+.last-update{font-size:10px;color:var(--ter);margin-bottom:8px;}
+.last-update b{color:var(--sec);}
+.legend-block{display:flex;flex-direction:column;gap:6px;}
+.leg{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--sec);}
+.leg-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+
+/* MAIN */
+.main{margin-left:var(--sw);flex:1;display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+.topbar{padding:0 26px;height:54px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:rgba(10,13,18,.96);backdrop-filter:blur(10px);flex-shrink:0;}
+.topbar h1{font-family:var(--font-d);font-size:18px;letter-spacing:.05em;color:var(--text);font-weight:400;}
+.topbar-right{display:flex;gap:8px;align-items:center;}
+.range-btn{font-size:11px;padding:3px 10px;border-radius:4px;border:1px solid var(--border);background:none;color:var(--sec);cursor:pointer;font-family:var(--font-b);transition:all .15s;}
+.range-btn:hover{border-color:var(--border-hi);color:var(--text);}
+.range-btn.active{border-color:var(--accent);background:var(--adim);color:var(--accent);}
+.live-badge{font-size:10px;padding:3px 9px;border-radius:20px;background:rgba(63,185,80,.12);color:#3fb950;border:1px solid rgba(63,185,80,.2);font-family:var(--font-m);}
+
+/* CONTENT */
+.content{flex:1;overflow-y:auto;padding:22px 26px;}
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:3px;}
+
+/* METRICS STRIP */
+.kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px;}
+.kpi{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;position:relative;overflow:hidden;}
+.kpi::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;}
+.kpi-val{font-family:var(--font-d);font-size:28px;line-height:1;margin-bottom:2px;}
+.kpi-lbl{font-size:10px;color:var(--ter);text-transform:uppercase;letter-spacing:.06em;}
+.kpi-delta{font-size:10px;margin-top:4px;font-family:var(--font-m);}
+.up{color:#3fb950;} .dn{color:#f87171;} .nt{color:var(--sec);}
+
+/* CHART GRID */
+.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+.span2{grid-column:1/-1;}
+.chart-box{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:18px;}
+.chart-box.active-source{border-color:rgba(232,197,71,.35);box-shadow:0 0 0 1px rgba(232,197,71,.1);}
+.ch-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;}
+.ch-title{font-size:12px;font-weight:500;color:var(--text);}
+.ch-src{font-size:10px;color:var(--ter);font-family:var(--font-m);}
+.ch-sub{font-size:11px;color:var(--sec);margin-bottom:12px;line-height:1.4;}
+.chart-wrap{position:relative;width:100%;}
+
+/* INLINE LEGEND */
+.inline-leg{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:10px;}
+.il{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--sec);}
+.il-dot{width:8px;height:8px;border-radius:50%;}
+
+/* INSIGHT CALLOUT */
+.insight{background:rgba(232,197,71,.06);border:1px solid rgba(232,197,71,.18);border-radius:8px;padding:10px 14px;font-size:11px;color:var(--sec);line-height:1.5;margin-top:10px;}
+.insight b{color:var(--accent);}
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-word">SIGNAL</div>
+    <div class="logo-sub">AI Demand Intelligence · 2026</div>
+  </div>
+
+  <div class="nav-sec">
+    <div class="nav-lbl">Data sources</div>
+    <button class="nav-item active" onclick="showView('overview',this)"><span class="nav-ico">◈</span>Overview<span class="update-tag">live</span></button>
+    <button class="nav-item" onclick="showView('pypi',this)"><span class="nav-ico">↓</span>PyPI / npm downloads<span class="update-tag">weekly</span></button>
+    <button class="nav-item" onclick="showView('stackoverflow',this)"><span class="nav-ico">?</span>Stack Overflow volume<span class="update-tag">weekly</span></button>
+    <button class="nav-item" onclick="showView('github',this)"><span class="nav-ico">⎇</span>GitHub dependents<span class="update-tag">weekly</span></button>
+    <button class="nav-item" onclick="showView('trends',this)"><span class="nav-ico">↗</span>Google Trends<span class="update-tag">daily</span></button>
+    <button class="nav-item" onclick="showView('jobs',this)"><span class="nav-ico">⚑</span>Job keyword mentions<span class="update-tag">weekly</span></button>
+    <button class="nav-item" onclick="showView('appstore',this)"><span class="nav-ico">★</span>App store rankings<span class="update-tag">daily</span></button>
+    <button class="nav-item" onclick="showView('web',this)"><span class="nav-ico">⊙</span>Web traffic & stickiness<span class="update-tag">monthly</span></button>
+    <button class="nav-item" onclick="showView('gpu',this)"><span class="nav-ico">◻</span>GPU spot pricing<span class="update-tag">hourly</span></button>
+    <button class="nav-item" onclick="showView('reddit',this)"><span class="nav-ico">↑</span>Reddit / social volume<span class="update-tag">daily</span></button>
+    <button class="nav-item" onclick="showView('hf',this)"><span class="nav-ico">⬡</span>HuggingFace downloads<span class="update-tag">daily</span></button>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="last-update">Last refreshed: <b>Apr 9, 2026 · 09:14 ET</b></div>
+    <div class="legend-block">
+      <div class="leg"><div class="leg-dot" style="background:var(--openai)"></div>OpenAI / ChatGPT</div>
+      <div class="leg"><div class="leg-dot" style="background:var(--anthropic)"></div>Anthropic / Claude</div>
+      <div class="leg"><div class="leg-dot" style="background:var(--google)"></div>Google / Gemini</div>
+      <div class="leg"><div class="leg-dot" style="background:var(--mistral)"></div>Mistral</div>
+      <div class="leg"><div class="leg-dot" style="background:var(--perplexity)"></div>Perplexity</div>
+    </div>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <h1 id="page-title">OVERVIEW DASHBOARD</h1>
+    <div class="topbar-right">
+      <button class="range-btn active" onclick="setRange(12,this)">12 wk</button>
+      <button class="range-btn" onclick="setRange(24,this)">24 wk</button>
+      <button class="range-btn" onclick="setRange(52,this)">1 yr</button>
+      <span class="live-badge">● simulated</span>
+    </div>
+  </div>
+
+  <div class="content" id="content"></div>
+</main>
+
+<script>
+/* ─── PALETTE ─── */
+const C = {
+  openai:     '#10b981',
+  anthropic:  '#e8c547',
+  google:     '#4285f4',
+  mistral:    '#f59e0b',
+  meta:       '#0866ff',
+  perplexity: '#a78bfa',
+};
+const fa = (hex,a) => { const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16); return `rgba(${r},${g},${b},${a})`; };
+
+/* ─── TIME AXIS ─── */
+let WEEKS = 12;
+function makeWeeks(n) {
+  const labels=[], base=new Date('2026-04-07');
+  for(let i=n-1;i>=0;i--){
+    const d=new Date(base); d.setDate(d.getDate()-i*7);
+    labels.push(d.toLocaleDateString('en-US',{month:'short',day:'numeric'}));
+  }
+  return labels;
+}
+function makeDays(n) {
+  const labels=[], base=new Date('2026-04-07');
+  for(let i=n-1;i>=0;i--){
+    const d=new Date(base); d.setDate(d.getDate()-i);
+    labels.push(d.toLocaleDateString('en-US',{month:'short',day:'numeric'}));
+  }
+  return labels;
+}
+
+/* ─── DATA GENERATORS ─── */
+function trend(start, end, n, noise=0.06) {
+  const out=[];
+  for(let i=0;i<n;i++){
+    const t=i/(n-1);
+    const base=start+(end-start)*t;
+    out.push(Math.round(base*(1+(Math.random()-.5)*noise)));
+  }
+  return out;
+}
+function series(base, volatility=0.04, n=12) {
+  const out=[base];
+  for(let i=1;i<n;i++) out.push(Math.round(out[i-1]*(1+(Math.random()-.5)*volatility*2)));
+  return out;
+}
+
+/* ─── DATASET GENERATOR ─── */
+function mkDs(label,color,data,fill=false){
+  return {
+    label, data,
+    borderColor: color,
+    backgroundColor: fill ? fa(color,.12) : fa(color,.0),
+    pointBackgroundColor: color,
+    pointRadius: 3, pointHoverRadius: 5,
+    borderWidth: 2,
+    tension: 0.4,
+    fill,
+  };
+}
+
+/* ─── CHART DEFAULTS ─── */
+const GRID = { color:'rgba(255,255,255,.04)' };
+const TICK = { color:'#454540', font:{ size:10, family:"'Outfit',sans-serif" } };
+const BORDER = { color:'rgba(255,255,255,.06)' };
+const baseOpts = (yFmt) => ({
+  responsive:true, maintainAspectRatio:false, animation:{ duration:300 },
+  interaction:{ mode:'index', intersect:false },
+  plugins:{
+    legend:{ display:false },
+    tooltip:{
+      backgroundColor:'#1a1f2a', borderColor:'rgba(255,255,255,.12)', borderWidth:1,
+      titleFont:{ family:"'Outfit',sans-serif", size:11 },
+      bodyFont:{ family:"'Outfit',sans-serif", size:11 },
+      padding:10,
+      callbacks:{ label: c => ` ${c.dataset.label}: ${yFmt(c.parsed.y)}` },
+    },
+  },
+  scales:{
+    x:{ grid:GRID, ticks:{...TICK, maxTicksLimit:8, autoSkip:true}, border:BORDER },
+    y:{ grid:GRID, ticks:{...TICK, callback: v=>yFmt(v)}, border:BORDER, beginAtZero:false },
+  },
+});
+
+const fmtM = v => v>=1e6?`${(v/1e6).toFixed(1)}M`:v>=1e3?`${(v/1e3).toFixed(0)}k`:v;
+const fmtK = v => v>=1e3?`${(v/1e3).toFixed(1)}k`:v;
+const fmtN = v => v.toLocaleString();
+const fmtD = v => `$${v.toFixed(2)}`;
+const fmtP = v => `${v.toFixed(1)}`;
+
+let charts = {};
+function destroyAll(){ Object.values(charts).forEach(c=>{try{c.destroy()}catch(e){}}); charts={}; }
+
+function makeChart(id, type, labels, datasets, opts, height=200){
+  const wrap = document.getElementById(id);
+  if(!wrap) return;
+  wrap.style.height = height+'px';
+  const canvas = document.createElement('canvas');
+  wrap.appendChild(canvas);
+  charts[id] = new Chart(canvas, { type, data:{ labels, datasets }, options:opts });
+}
+
+function inlineLeg(items){
+  return `<div class="inline-leg">${items.map(([lbl,clr])=>`<div class="il"><div class="il-dot" style="background:${clr}"></div>${lbl}</div>`).join('')}</div>`;
+}
+
+/* ═══════════════════════════════════════
+   VIEWS
+═══════════════════════════════════════ */
+
+function renderOverview(){
+  const W=WEEKS, wk=makeWeeks(W);
+
+  /* KPI snapshot */
+  const kpis = [
+    { val:'16.2M', lbl:'PyPI anthropic downloads / wk', delta:'+18% MoM', cls:'up', color:'var(--anthropic)' },
+    { val:'412',   lbl:'SO questions (anthropic-claude) / wk', delta:'+24% MoM', cls:'up', color:'var(--anthropic)' },
+    { val:'18.4k', lbl:'GitHub repos depend on anthropic SDK', delta:'+31% MoM', cls:'up', color:'var(--anthropic)' },
+    { val:'#4',    lbl:'Claude iOS Productivity rank (US)', delta:'▲2 positions', cls:'up', color:'var(--anthropic)' },
+    { val:'874',   lbl:'"Claude API" job mentions / wk', delta:'+44% QoQ', cls:'up', color:'var(--anthropic)' },
+  ];
+  const kpiHtml = kpis.map(k=>`
+    <div class="kpi" style="--kc:${k.color}">
+      <style>.kpi::after{background:var(--kc,var(--accent))!important}</style>
+      <div class="kpi-val" style="color:${k.color}">${k.val}</div>
+      <div class="kpi-lbl">${k.lbl}</div>
+      <div class="kpi-delta ${k.cls}">${k.delta}</div>
+    </div>`).join('');
+
+  /* Overview charts */
+  document.getElementById('content').innerHTML = `
+    <div class="kpi-row">${kpiHtml}</div>
+
+    <div class="chart-grid">
+      <div class="chart-box span2">
+        <div class="ch-head"><div class="ch-title">Package downloads — PyPI weekly installs</div><div class="ch-src">source: pypistats.org</div></div>
+        <div class="ch-sub">Weekly Python package downloads. Most direct developer-adoption signal available at zero cost.</div>
+        ${inlineLeg([['openai',C.openai],['anthropic',C.anthropic],['google-generativeai',C.google],['mistralai',C.mistral]])}
+        <div class="chart-wrap" id="ov-pypi"></div>
+      </div>
+
+      <div class="chart-box">
+        <div class="ch-head"><div class="ch-title">Stack Overflow — new questions / week</div><div class="ch-src">source: stackexchange API</div></div>
+        <div class="ch-sub">Developer mindshare and adoption friction proxy.</div>
+        ${inlineLeg([['openai-api',C.openai],['anthropic-claude',C.anthropic],['google-gemini-api',C.google]])}
+        <div class="chart-wrap" id="ov-so"></div>
+      </div>
+
+      <div class="chart-box">
+        <div class="ch-head"><div class="ch-title">Job postings — AI model API keywords / week</div><div class="ch-src">source: theirstack API</div></div>
+        <div class="ch-sub">F500 job descriptions mentioning each model API. Market-pull signal.</div>
+        ${inlineLeg([['OpenAI / GPT',C.openai],['Claude / Anthropic',C.anthropic],['Gemini',C.google]])}
+        <div class="chart-wrap" id="ov-jobs"></div>
+      </div>
+    </div>`;
+
+  makeChart('ov-pypi','line',wk,[
+    mkDs('openai',        C.openai,     trend(38e6,42e6,W,.05)),
+    mkDs('anthropic',     C.anthropic,  trend(9e6,16.2e6,W,.06)),
+    mkDs('google-gen-ai', C.google,     trend(14e6,18e6,W,.05)),
+    mkDs('mistralai',     C.mistral,    trend(3.2e6,5.1e6,W,.07)),
+  ], baseOpts(fmtM), 230);
+
+  makeChart('ov-so','bar',wk,[
+    { label:'openai-api',        data:trend(1100,980,W,.08), backgroundColor:fa(C.openai,.7), borderRadius:3 },
+    { label:'anthropic-claude',  data:trend(180,412,W,.1),  backgroundColor:fa(C.anthropic,.7), borderRadius:3 },
+    { label:'google-gemini-api', data:trend(210,340,W,.09), backgroundColor:fa(C.google,.7), borderRadius:3 },
+  ], {...baseOpts(fmtN), plugins:{...baseOpts(fmtN).plugins}, scales:{...baseOpts(fmtN).scales, x:{...baseOpts(fmtN).scales.x, stacked:false}}}, 200);
+
+  makeChart('ov-jobs','line',wk,[
+    mkDs('OpenAI/GPT',   C.openai,    trend(2800,2650,W,.06)),
+    mkDs('Claude/Anthropic', C.anthropic, trend(420,874,W,.07)),
+    mkDs('Gemini',       C.google,    trend(380,610,W,.07)),
+  ], baseOpts(fmtN), 200);
+}
+
+/* ─── PyPI / npm ─── */
+function renderPypi(){
+  const W=WEEKS, wk=makeWeeks(W);
+  document.getElementById('content').innerHTML = `
+    <div class="chart-grid">
+      <div class="chart-box span2">
+        <div class="ch-head"><div class="ch-title">PyPI weekly downloads — Python SDK installs</div><div class="ch-src">source: pypistats.org (free, no auth)</div></div>
+        <div class="ch-sub">Weekly download counts for each AI provider's Python package. The cleanest, most automatable developer-adoption signal. Zero cost.</div>
+        ${inlineLeg([['openai',C.openai],['anthropic',C.anthropic],['google-generativeai',C.google],['mistralai',C.mistral]])}
+        <div class="chart-wrap" id="pypi-main"></div>
+        <div class="insight">Anthropic's <b>anthropic</b> package has grown <b>+80% in 12 weeks</b>, the fastest of any major provider SDK. OpenAI still leads in absolute volume but its growth rate has flattened to ~+5% QoQ.</div>
+      </div>
+
+      <div class="chart-box">
+        <div class="ch-head"><div class="ch-title">Anthropic vs OpenAI — share of combined installs</div><div class="ch-src">pypistats.org</div></div>
+        <div class="ch-sub">Anthropic's share of the OpenAI + Anthropic combined install base has nearly doubled in 6 months.</div>
+        ${inlineLeg([['Anthropic %',C.anthropic],['OpenAI %',C.openai]])}
+        <div class="chart-wrap" id="pypi-share"></div>
+      </div>
+
+      <div class="chart-box">
+        <div class="ch-head"><div class="ch-title">npm weekly downloads — JS/TS SDKs</div><div class="ch-src">source: npmjs.com registry API</div></div>
+        <div class="ch-sub">Frontend and Node.js ecosystem. OpenAI's npm package still leads but Anthropic's is closing.</div>
+        ${inlineLeg([['openai (npm)',C.openai],['@anthropic-ai/sdk',C.anthropic],['@google/generative-ai',C.google]])}
+        <div class="chart-wrap" id="pypi-npm"></div>
+      </div>
+    </div>`;
+
+  const oa = trend(38e6,42e6,W,.05);
+  const an = trend(9e6,16.2e6,W,.06);
+  makeChart('pypi-main','line',wk,[
+    mkDs('openai',C.openai,oa,false),
+    mkDs('anthropic',C.anthropic,an,true),
+    mkDs('google-generativeai',C.google,trend(14e6,18e6,W,.05),false),
+    mkDs('mistralai',C.mistral,trend(3.2e6,5.1e6,W,.07),false),
+  ], baseOpts(fmtM), 250);
+
+  const shareAn = an.map((a,i)=>parseFloat((a/(a+oa[i])*100).toFixed(1)));
+  const shareOa = shareAn.map(s=>parseFloat((100-s).toFixed(1)));
+  makeChart('pypi-share','line',wk,[
+    mkDs('Anthropic %',C.anthropic, shareAn, true),
+    mkDs('OpenAI %',   C.openai,    shareOa, false),
+  ], baseOpts(v=>`${v.toFixed(1)}%`), 200);
+
+  makeChart('pypi-npm','line',wk,[
+    mkDs('openai (npm)', C.openai,   trend(9.2e6,9.8e6,W,.05)),
+    mkDs('@anthropic-ai/sdk', C.anthropic, trend(1.8e6,3.4e6,W,.07)),
+    mkDs('@google/generative-ai', C.google, trend(3.1e6,4.2e6,W,.06)),
+  ], baseOpts(fmtM), 200);
+}
+
+/* ─── Stack Overflow ─── */
+function renderSO(){
+  const W=WEEKS, wk=makeWeeks(W);
+  document.getElementById('content').innerHTML = `
+    <div class="chart-grid">
+      <div class="chart-box span2">
+        <div class="ch-head"><div class="ch-title">Stack Overflow — new questions per week by tag</div><div class="ch-src">source: stackexchange API (free, no auth, 10k req/day)</div></div>
+        <div class="ch-sub">New question volume per tagged framework. Higher volume = more developer friction AND more developer adoption. Anthropic is accelerating.</div>
+        ${inlineLeg([['[openai-api]',C.openai],['[anthropic-claude]',C.anthropic],['[google-gemini-api]',C.google],['[langchain]','#f87171']])}
+        <div class="chart-wrap" id="so-main"></div>
+        <div class="insight"><b>[anthropic-claude]</b> questions grew from <b>~180/wk to 412/wk</b> over 12 weeks — a +129% surge that mirrors the PyPI download curve. Friction is rising fast because adoption is rising fast.</div>
+      </div>
+
+      <div class="chart-box">
+        <div class="ch-head"><div class="ch-title">Total cumulative questions (all time)</div><div class="ch-src">stackexchange API</div></div>
+        <div class="ch-sub">Stack Overflow question depth shows maturity and ecosystem size.</div>
+        <div class="chart-wrap" id="so-total"></div>
+      </div>
+
+      <div class="chart-box">
+        <div class="ch-head"><div class="ch-title">Answer rate — % of questions with accepted answer</div><div class="ch-src">stackexchange API</div></div>
+        <div class="ch-sub">Higher answer rate = healthier, more mature developer community around each tool.</div>
+        ${inlineLeg([['openai-api',C.openai],['anthropic-claude',C.anthropic],['gemini',C.google]])}
+        <div class="chart-wrap" id="so-ans"></div>
+      </div>
+    </div>`;
+
+  makeChart('so-main','line',wk,[
+    mkDs('[openai-api]', C.openai, trend(1100,980,W,.08)),
+    mkDs('[anthropic-claude]', C.anthropic, trend(180,412,W,.1)),
+    mkDs('[google-gemini-api]', C.google, trend(210,340,W,.09)),
+    mkDs('[langchain]', '#f87171', trend(680,520,W,.07)),
+  ], baseOpts(fmtN), 250);
+
+  const totals = [
+    ['openai-api', 89400, C.openai],
+    ['anthropic-claude', 14200, C.anthropic],
+    ['google-gemini-api', 21800, C.google],
+    ['langchain', 43100, '#f87171'],
+    ['mistral-ai', 6200, C.mistral],
+  ];
+  makeChart('so-total','bar',totals.map(t=>t[0]),[{
+    data: totals.map(t=>t[1]),
+    backgroundColor: totals.map(t=>fa(t[2],.7)),
+    borderColor: totals.map(t=>t[2]),
+    borderWidth:1, borderRadius:4,
+  }],{...baseOpts(fmtK), indexAxis:'y'}, 200);
+
+  makeChart('so-ans','line',wk,[
+    mkDs('openai-api', C.openai, trend(68,71,W,.03)),
+    mkDs('anthropic-claude', C.anthropic, trend(52,62,W,.04)),
+    mkDs('gemini', C.google, trend(48,55,W,.04)),
+  ], baseOpts(v=>`${v.toFixed(0)}%`), 200);
+}
+
+/* ─── GitHub ─── */
+function renderGitHub(){
+  const W=WEEKS, wk=makeWeeks(W);
+  document.getElementById('content').innerHTML = `
+    <div class="chart-grid">
+      <div class="chart-box span2">
+        <div class="ch-head"><div class="ch-title">GitHub "Used By" — repositories depending on each SDK</div><div class="ch-src">source: github.com/network/dependents (weekly scrape)</div></div>
+        <div class="ch-sub">How many public repos have each SDK as a dependency. This is the strongest production adoption signal — it separates code that ships from code that demos.</div>
+        ${inlineLeg([['openai-python',C.openai],['anthropic-sdk-python',C.anthropic],['google-generativeai',C.google],['mistralai',C.mistral]])}
+        <div class="chart-wrap" id="gh-main"></div>
+        <div class="insight">The <b>anthropic-sdk-python</b> dependent count has grown from ~11k to <b>18.4k repos</b> in 12 weeks (+67%). OpenAI's openai-python still leads at 54k but growth has plateaued at ~+3% QoQ.</div>
+      </div>
+
+      <div class="chart-box">
+        <div class="ch-head"><div class="ch-title">Week-over-week new dependents added</div><div class="ch-src">github dependents delta</div></div>
+        <div class="ch-sub">New repos adopting each SDK each week. Rate-of-change is more predictive than absolute count.</div>
+        ${inlineLeg([['openai-python',C.openai],['anthropic-sdk-python',C.anthropic]])}
+        <div class="chart-wrap" id="gh-delta"></div>
+      </div>
+
+      <div class="chart-box">
+        <div class="ch-head"><div class="ch-title">GitHub code search — prompt_caching mentions</div><div class="ch-src">github search API</div></div>
+        <div class="ch-sub">Files using Anthropic's prompt caching API. A pure production-volume signal — devs only add this when token costs are hurting.</div>
+        <div class="chart-wrap" id="gh-cache"></div>
+      </div>
+    </div>`;
+
+  makeChart('gh-main','line',wk,[
+    mkDs('openai-python', C.openai, trend(50e3,54e3,W,.02)),
+    mkDs('anthropic-sdk-python', C.anthropic, trend(11e3,18.4e3,W,.04)),
+    mkDs('google-generativeai', C.google, trend(16e3,20.5e3,W,.03)),
+    mkDs('mistralai', C.mistral, trend(2.8e3,4.9e3,W,.05)),
+  ], baseOpts(fmtK), 250);
+
+  makeChart('gh-delta','bar',wk,[
+    { label:'openai-python', data:trend(180,90,W,.15), backgroundColor:fa(C.openai,.6), borderRadius:3 },
+    { label:'anthropic-sdk-python', data:trend(400,640,W,.12), backgroundColor:fa(C.anthropic,.7), borderRadius:3 },
+  ], baseOpts(fmtN), 200);
+
+  makeChart('gh-cache','line',wk,[
+    mkDs('prompt_caching files', C.anthropic, trend(1200,4800,W,.08), true),
+  ], baseOpts(fmtK), 200);
+}
+
+/* ─── Google Trends ─── */
+function renderTrends(){
+  const D=Math.min(WEEKS*7,84), days=makeDays(D);
+  document.getElementById('content').innerHTML = `
+    <div class="chart-grid">
+      <div class="chart-box span2">
+        <div class="ch-head"><div class="ch-title">Google Trends — relative search interest (0–100)</div><div class="ch-src">source: pytrends / Google Trends (free, no auth)</div></div>
+        <div class="ch-sub">Relative daily search volume for each AI API keyword in the US. Index 100 = peak popularity of the top term in the period.</div>
+        ${inlineLeg([['Claude API',C.anthropic],['ChatGPT API',C.openai],['Gemini API',C.google],['Mistral API',C.mistral]])}
+        <div class="chart-wrap" id="tr-main"></div>
+        <div class="insight">"<b>Claude API</b>" search interest has surpassed "<b>Gemini API</b>" and is now 68% of "ChatGPT API" volume — up from 34% six months ago. Weekly spikes correlate with model releases.</div>
+      </div>
+
+      <div class="chart-box">
+        <div class="ch-head"><div class="ch-title">Search interest by region — "Claude API" (US states)</div><div class="ch-src">pytrends geo breakdown</div></div>
+        <div class="ch-sub">Top US metro areas by relative interest in Claude API searches.</div>
+        <div class="chart-wrap" id="tr-geo"></div>
+      </div>
+
+      <div class="chart-box">
+        <div class="ch-head"><div class="ch-title">"Claude" vs "ChatGPT" — consumer brand search</div><div class="ch-src">google trends</div></div>
+        <div class="ch-sub">Consumer brand awareness proxy. ChatGPT remains dominant but Claude is closing at an accelerating rate.</div>
+        ${inlineLeg([['Claude',C.anthropic],['ChatGPT',C.openai]])}
+        <div class="chart-wrap" id="tr-brand"></div>
+      </div>
+    </div>`;
+
+  makeChart('tr-main','line',days,[
+    mkDs('Claude API',   C.anthropic, trend(32,68,D,.12)),
+    mkDs('ChatGPT API',  C.openai,    trend(88,100,D,.06)),
+    mkDs('Gemini API',   C.google,    trend(42,55,D,.1)),
+    mkDs('Mistral API',  C.mistral,   trend(8,18,D,.15)),
+  ], baseOpts(fmtP), 250);
+
+  const geoLabels=['San Francisco','New York','Seattle','Boston','Austin','Chicago','Los Angeles','Atlanta'];
+  const geoData=[100,82,78,74,68,61,58,52];
+  makeChart('tr-geo','bar',geoLabels,[{
+    data:geoData, backgroundColor:geoData.map(v=>fa(C.anthropic, 0.3+v/200)),
+    borderColor: C.anthropic, borderWidth:1, borderRadius:4,
+  }],{...baseOpts(fmtP), indexAxis:'y'}, 200);
+
+  makeChart('tr-brand','line',days,[
+    mkDs('Claude',   C.anthropic, trend(18,42,D,.1)),
+    mkDs('ChatGPT',  C.openai,    trend(95,100,D,.05)),
+  ], baseOpts(fmtP), 200);
+}
+
+/* ─── Jobs ─── */
+function renderJobs(){
+  const W=WEEKS, wk=makeWeeks(W);
+  document.getElementById('content').innerHTML = `
+    <div class="chart-grid">
+      <div class="chart-box span2">
+        <div class="ch-head"><div class="ch-title">Job postings — AI model API keywords in F500 descriptions / week</div><div class="ch-src">source: theirstack API · linkedin · greenhouse</div></div>
+        <div class="ch-sub">New job postings at Fortune 500 companies that explicitly mention each model API in the description. The most direct "enterprise buying intent" signal available.</div>
+        ${inlineLeg([['OpenAI / GPT-4o',C.openai],['Claude / Anthropic',C.anthropic],['Gemini / Vertex AI',C.google]])}
+        <div class="chart-wrap" id="job-main"></div>
+        <div class="insight">"<b>Claude API</b>" job mentions hit <b>874/wk</b> this week, a <b>+108% increase QoQ</b>. OpenAI mentions are flat at ~2.6k/wk. Enterprise is diversifying toward Anthropic faster than any other period.</div>
+      </div>
+
+      <div class="chart-box">
+        <div class="ch-head"><div class="ch-title">Role type ratio — Research vs Sales/GTM hiring</div><div class="ch-src">greenhouse public API + linkedin</div></div>
+        <div class="ch-sub">High research:sales ratio = early expansion. Ratio compressing = entering harvest/revenue phase.</div>
+        ${inlineLeg([['OpenAI R:S ratio',C.openai],['Anthropic R:S ratio',C.anthropic]])}
+        <div class="chart-wrap" id="job-ratio"></div>
+      </div>
+
+      <div class="chart-box">
+        <div class="ch-head"><div class="ch-title">Open roles by company — live count</div><div class="ch-src">greenhouse + lever APIs</div></div>
+        <div class="ch-sub">Total live engineering + research openings. Rapid growth = high-velocity hiring phase.</div>
+        <div class="chart-wrap" id="job-open"></div>
+      </div>
+    </div>`;
+
+  makeChart('job-main','line',wk,[
+    mkDs('OpenAI/GPT-4o', C.openai,    trend(2800,2620,W,.06)),
+    mkDs('Claude/Anthropic', C.anthropic, trend(420,874,W,.08)),
+    mkDs('Gemini/Vertex', C.google,    trend(380,620,W,.07)),
+  ], baseOpts(fmtN), 250);
+
+  makeChart('job-ratio','line',wk,[
+    mkDs('OpenAI R:S', C.openai,    trend(1.4,0.9,W,.07)),
+    mkDs('Anthropic R:S', C.anthropic, trend(2.8,2.1,W,.08)),
+  ], baseOpts(v=>v.toFixed(2)), 200);
+
+  const companies=['Anthropic','OpenAI','Google DeepMind','Mistral','Cohere','Perplexity'];
+  const opens=[312,486,891,124,78,95];
+  makeChart('job-open','bar',companies,[{
+    data:opens,
+    backgroundColor:[C.anthropic,C.openai,C.google,C.mistral,'#39d0b4',C.perplexity].map(c=>fa(c,.7)),
+    borderColor:[C.anthropic,C.openai,C.google,C.mistral,'#39d0b4',C.perplexity],
+    borderWidth:1, borderRadius:4,
+  }], baseOpts(fmtN), 200);
+}
+
+/* ─── App Store ─── */
+function renderAppStore(){
+  const D=Math.min(WEEKS*7,84), days=makeDays(D);
+  document.getElementById('content').innerHTML = `
+    <div class="chart-grid">
+      <div class="chart-box span2">
+        <div class="ch-head"><div class="ch-title">iOS App Store rank — Productivity category (US)</div><div class="ch-src">source: appfollow API · sensor tower</div></div>
+        <div class="ch-sub">Daily rank in the US App Store Productivity category. Lower = better. Rank spikes often correlate with new model releases or viral moments.</div>
+        ${inlineLeg([['ChatGPT',C.openai],['Claude',C.anthropic],['Perplexity',C.perplexity],['Gemini',C.google]])}
+        <div class="chart-wrap" id="app-rank"></div>
+        <div class="insight">Claude hit a <b>#2 rank</b> peak during the Claude 3.7 launch week. It currently sits at <b>#4</b>, its best sustained rank ever. ChatGPT holds #1 with high consistency.</div>
+      </div>
+
+      <div class="chart-box">
+        <div class="ch-head"><div class="ch-title">Estimated daily active users — indexed (100 = ChatGPT peak)</div><div class="ch-src">sensor tower estimates</div></div>
+        <div class="ch-sub">Relative DAU proxy from download velocity and engagement signals.</div>
+        ${inlineLeg([['ChatGPT',C.openai],['Claude',C.anthropic],['Perplexity',C.perplexity]])}
+        <div class="chart-wrap" id="app-dau"></div>
+      </div>
+
+      <div class="chart-box">
+        <div class="ch-head"><div class="ch-title">App store rating — current score &amp; review velocity</div><div class="ch-src">appfollow</div></div>
+        <div class="ch-sub">Average rating and new reviews per week. Product satisfaction signal.</div>
+        <div class="chart-wrap" id="app-rating"></div>
+      </div>
+    </div>`;
+
+  /* Rank chart — inverted Y so low rank = top of chart */
+  const rankOpts = {
+    ...baseOpts(v=>`#${Math.round(v)}`),
+    scales:{
+      ...baseOpts(v=>`#${Math.round(v)}`).scales,
+      y:{ ...baseOpts(v=>`#${Math.round(v)}`).scales.y, reverse:true, min:1, max:20, ticks:{...TICK, callback:v=>`#${v}`}, grid:GRID, border:BORDER },
+    },
+  };
+  makeChart('app-rank','line',days,[
+    mkDs('ChatGPT',  C.openai,    trend(1,1,D,.3).map(v=>Math.max(1,Math.round(v)))),
+    mkDs('Claude',   C.anthropic, trend(9,4,D,.25).map(v=>Math.max(1,Math.round(v)))),
+    mkDs('Perplexity',C.perplexity,trend(7,6,D,.3).map(v=>Math.max(1,Math.round(v)))),
+    mkDs('Gemini',   C.google,    trend(5,7,D,.25).map(v=>Math.max(1,Math.round(v)))),
+  ], rankOpts, 250);
+
+  makeChart('app-dau','line',days,[
+    mkDs('ChatGPT',  C.openai,    trend(95,100,D,.04)),
+    mkDs('Claude',   C.anthropic, trend(18,38,D,.08)),
+    mkDs('Perplexity',C.perplexity,trend(22,32,D,.07)),
+  ], baseOpts(fmtP), 200);
+
+  const appNames=['ChatGPT','Claude','Perplexity','Gemini','Copilot'];
+  const ratings=[4.8,4.7,4.6,4.4,4.2];
+  const reviews=[18200,9400,5800,4200,2900];
+  makeChart('app-rating','bar',appNames,[{
+    label:'Rating',
+    data:ratings,
+    backgroundColor:[C.openai,C.anthropic,C.perplexity,C.google,'#94a3b8'].map(c=>fa(c,.7)),
+    borderColor:[C.openai,C.anthropic,C.perplexity,C.google,'#94a3b8'],
+    borderWidth:1, borderRadius:4,
+    yAxisID:'y',
+  }],{
+    ...baseOpts(v=>v.toFixed(1)),
+    scales:{
+      x:{ grid:GRID, ticks:{...TICK}, border:BORDER },
+      y:{ min:3.5,max:5, grid:GRID, ticks:{...TICK, callback:v=>v.toFixed(1)}, border:BORDER },
+    },
+  }, 200);
+}
+
+/* ─── Web Traffic ─── */
+function renderWeb(){
+  const W=WEEKS, wk=makeWeeks(W);
+  document.getElementById('content').innerHTML = `
+    <div class="chart-grid">
+      <div class="chart-box span2">
+        <div class="ch-head"><div class="ch-title">Monthly web visits — chatgpt.com vs claude.ai vs others</div><div class="ch-src">source: similarweb API</div></div>
+        <div class="ch-sub">Total monthly unique visits. ChatGPT's consumer lead is large but Claude's growth rate is steeper in absolute terms.</div>
+        ${inlineLeg([['chatgpt.com',C.openai],['claude.ai',C.anthropic],['gemini.google.com',C.google],['perplexity.ai',C.perplexity]])}
+        <div class="chart-wrap" id="web-visits"></div>
+      </div>
+
+      <div class="chart-box">
+        <div class="ch-head"><div class="ch-title">Average session duration (minutes)</div><div class="ch-src">similarweb engagement metrics</div></div>
+        <div class="ch-sub">Longer sessions = deeper use cases (coding, research, writing). Claude leads on session depth.</div>
+        ${inlineLeg([['chatgpt.com',C.openai],['claude.ai',C.anthropic],['perplexity.ai',C.perplexity]])}
+        <div class="chart-wrap" id="web-duration"></div>
+        <div class="insight">Claude's average session is <b>9.4 min</b> vs ChatGPT's <b>6.8 min</b> — <b>38% longer</b>. This reflects Claude's enterprise/coding user base who engage in extended multi-turn sessions.</div>
+      </div>
+
+      <div class="chart-box">
+        <div class="ch-head"><div class="ch-title">Bounce rate (%)</div><div class="ch-src">similarweb</div></div>
+        <div class="ch-sub">Lower bounce = users finding value and staying. Claude and Perplexity have the stickiest engagement.</div>
+        ${inlineLeg([['chatgpt.com',C.openai],['claude.ai',C.anthropic],['perplexity.ai',C.perplexity]])}
+        <div class="chart-wrap" id="web-bounce"></div>
+      </div>
+    </div>`;
+
+  makeChart('web-visits','line',wk,[
+    mkDs('chatgpt.com', C.openai, trend(1.82e9,1.95e9,W,.04)),
+    mkDs('claude.ai', C.anthropic, trend(380e6,610e6,W,.07)),
+    mkDs('gemini.google.com', C.google, trend(520e6,640e6,W,.05)),
+    mkDs('perplexity.ai', C.perplexity, trend(240e6,390e6,W,.08)),
+  ], baseOpts(v=>v>=1e9?`${(v/1e9).toFixed(2)}B`:`${(v/1e6).toFixed(0)}M`), 250);
+
+  makeChart('web-duration','line',wk,[
+    mkDs('chatgpt.com', C.openai, trend(6.2,6.8,W,.04)),
+    mkDs('claude.ai', C.anthropic, trend(8.1,9.4,W,.04)),
+    mkDs('perplexity.ai', C.perplexity, trend(5.8,6.2,W,.05)),
+  ], baseOpts(v=>`${v.toFixed(1)}m`), 200);
+
+  makeChart('web-bounce','line',wk,[
+    mkDs('chatgpt.com', C.openai, trend(38,35,W,.04)),
+    mkDs('claude.ai', C.anthropic, trend(29,26,W,.04)),
+    mkDs('perplexity.ai', C.perplexity, trend(32,28,W,.05)),
+  ], baseOpts(v=>`${v.toFixed(1)}%`), 200);
+}
+
+/* ─── GPU Pricing ─── */
+function renderGPU(){
+  const H=Math.min(WEEKS*7*3,168), hrs=[];
+  const base=new Date('2026-04-07T09:00:00');
+  for(let i=H-1;i>=0;i--){
+    const d=new Date(base); d.setHours(d.getHours()-i*2);
+    hrs.push(d.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' '+d.getHours()+':00');
+  }
+  const hrsShort = hrs.map((h,i)=>i%12===0?h:'');
+  document.getElementById('content').innerHTML = `
+    <div class="chart-grid">
+      <div class="chart-box span2">
+        <div class="ch-head"><div class="ch-title">GPU spot price — Lambda Labs / RunPod ($/hr)</div><div class="ch-src">source: lambda labs API · runpod API · vast.ai</div></div>
+        <div class="ch-sub">Real-time spot pricing for B200 and H200 GPUs. Price spikes indicate labs hoarding compute ahead of training runs — a leading indicator of capability releases.</div>
+        ${inlineLeg([['H100 SXM5 (80GB)',C.openai],['H200 SXM5 (141GB)',C.anthropic],['B200 SXM (192GB)',C.google]])}
+        <div class="chart-wrap" id="gpu-main"></div>
+        <div class="insight">B200 spot pricing spiked <b>+340%</b> in late March 2026, correlating with reports of large-scale model pre-training. Price has since normalized but remains <b>2.1x its Jan 2026 baseline</b>, suggesting sustained high-demand deployment.</div>
+      </div>
+
+      <div class="chart-box">
+        <div class="ch-head"><div class="ch-title">GPU availability — regions with capacity</div><div class="ch-src">lambda labs instance types API</div></div>
+        <div class="ch-sub">Number of regions with available GPU capacity. Zero = fully sold out. Tracks supply constraints.</div>
+        <div class="chart-wrap" id="gpu-avail"></div>
+      </div>
+
+      <div class="chart-box">
+        <div class="ch-head"><div class="ch-title">H100 vs H200 price spread over time</div><div class="ch-src">runpod + lambda spot prices</div></div>
+        <div class="ch-sub">The H100→H200 premium. Widening spread = demand shifting to next-gen memory bandwidth.</div>
+        <div class="chart-wrap" id="gpu-spread"></div>
+      </div>
+    </div>`;
+
+  const W=WEEKS, wk=makeWeeks(W);
+  const h100=trend(2.49,2.18,W,.06);
+  const h200=trend(3.80,4.62,W,.08);
+  const b200=series(6.20,.15,W).map((v,i)=>i===Math.floor(W*.55)?v*3.4:v);
+  makeChart('gpu-main','line',wk,[
+    mkDs('H100 SXM5', C.openai, h100),
+    mkDs('H200 SXM5', C.anthropic, h200),
+    mkDs('B200 SXM', C.google, b200),
+  ], baseOpts(v=>`$${v.toFixed(2)}`), 250);
+
+  makeChart('gpu-avail','line',wk,[
+    mkDs('H100 regions', C.openai, trend(8,5,W,.2).map(v=>Math.max(0,Math.round(v)))),
+    mkDs('H200 regions', C.anthropic, trend(3,2,W,.3).map(v=>Math.max(0,Math.round(v)))),
+    mkDs('B200 regions', C.google, trend(1,0,W,.5).map(v=>Math.max(0,Math.round(v)))),
+  ], baseOpts(v=>Math.round(v)), 200);
+
+  const spread = h200.map((v,i)=>parseFloat((v-h100[i]).toFixed(2)));
+  makeChart('gpu-spread','line',wk,[
+    mkDs('H200 - H100 premium', C.anthropic, spread, true),
+  ], baseOpts(v=>`$${v.toFixed(2)}`), 200);
+}
+
+/* ─── Reddit ─── */
+function renderReddit(){
+  const D=Math.min(WEEKS*7,84), days=makeDays(D);
+  document.getElementById('content').innerHTML = `
+    <div class="chart-grid">
+      <div class="chart-box span2">
+        <div class="ch-head"><div class="ch-title">Reddit daily post + comment mentions</div><div class="ch-src">source: reddit API (free OAuth)</div></div>
+        <div class="ch-sub">Daily posts and comments on r/MachineLearning, r/ChatGPT, r/singularity, r/LocalLLaMA mentioning each platform. Community sentiment leading indicator.</div>
+        ${inlineLeg([['OpenAI / ChatGPT',C.openai],['Anthropic / Claude',C.anthropic],['Google / Gemini',C.google],['Mistral',C.mistral]])}
+        <div class="chart-wrap" id="rd-main"></div>
+        <div class="insight">"<b>Claude</b>" mentions on Reddit surged to <b>4,200/day</b> following the Claude 3.7 Sonnet release — briefly exceeding ChatGPT. Daily volume has settled at <b>~2,800/day</b>, up from ~900/day a year ago.</div>
+      </div>
+
+      <div class="chart-box">
+        <div class="ch-head"><div class="ch-title">Sentiment score (positive mentions / total mentions)</div><div class="ch-src">reddit API + basic keyword classifier</div></div>
+        <div class="ch-sub">Ratio of positive-leaning to neutral+negative posts. Claude consistently has highest positive sentiment.</div>
+        ${inlineLeg([['ChatGPT',C.openai],['Claude',C.anthropic],['Gemini',C.google]])}
+        <div class="chart-wrap" id="rd-sentiment"></div>
+      </div>
+
+      <div class="chart-box">
+        <div class="ch-head"><div class="ch-title">X (Twitter) daily mention count</div><div class="ch-src">X API v2 tweet counts endpoint</div></div>
+        <div class="ch-sub">Daily tweet volume for each platform. High noise but useful for spike detection around product launches.</div>
+        ${inlineLeg([['ChatGPT',C.openai],['Claude',C.anthropic],['Gemini',C.google]])}
+        <div class="chart-wrap" id="rd-x"></div>
+      </div>
+    </div>`;
+
+  makeChart('rd-main','line',days,[
+    mkDs('ChatGPT', C.openai, trend(8200,7900,D,.09)),
+    mkDs('Claude', C.anthropic, trend(900,2800,D,.12)),
+    mkDs('Gemini', C.google, trend(2100,2600,D,.1)),
+    mkDs('Mistral', C.mistral, trend(380,620,D,.15)),
+  ], baseOpts(fmtN), 250);
+
+  makeChart('rd-sentiment','line',days,[
+    mkDs('ChatGPT', C.openai, trend(58,54,D,.05)),
+    mkDs('Claude', C.anthropic, trend(68,72,D,.04)),
+    mkDs('Gemini', C.google, trend(52,55,D,.05)),
+  ], baseOpts(v=>`${v.toFixed(0)}%`), 200);
+
+  makeChart('rd-x','line',days,[
+    mkDs('ChatGPT', C.openai, trend(42e3,38e3,D,.1)),
+    mkDs('Claude', C.anthropic, trend(8e3,22e3,D,.12)),
+    mkDs('Gemini', C.google, trend(14e3,18e3,D,.1)),
+  ], baseOpts(fmtK), 200);
+}
+
+/* ─── HuggingFace ─── */
+function renderHF(){
+  const W=WEEKS, wk=makeWeeks(W);
+  document.getElementById('content').innerHTML = `
+    <div class="chart-grid">
+      <div class="chart-box span2">
+        <div class="ch-head"><div class="ch-title">HuggingFace — weekly model download velocity (top models)</div><div class="ch-src">source: huggingface.co/api (no auth required)</div></div>
+        <div class="ch-sub">Weekly downloads for the top open-weight models. Tracks which open-source "anchors" are being adopted most rapidly. High download velocity = high production integration likelihood.</div>
+        ${inlineLeg([['Llama 3.1 (Meta)',C.meta],['Qwen-2.5-72B',C.openai],['Mistral-7B',C.mistral],['DeepSeek-V3',C.anthropic],['Gemma-3 (Google)',C.google]])}
+        <div class="chart-wrap" id="hf-main"></div>
+        <div class="insight"><b>DeepSeek-V3</b> and <b>Qwen-2.5</b> are the fastest-growing open-weight downloads in 2026 Q1. Llama 3.1 remains the anchor with <b>~24M downloads/week</b>. Open-source is consolidating around a smaller set of highly-downloaded flagship models.</div>
+      </div>
+
+      <div class="chart-box">
+        <div class="ch-head"><div class="ch-title">Model category breakdown — top 50 models by type</div><div class="ch-src">huggingface API</div></div>
+        <div class="ch-sub">What types of models dominate the top 50 by download count.</div>
+        <div class="chart-wrap" id="hf-cat"></div>
+      </div>
+
+      <div class="chart-box">
+        <div class="ch-head"><div class="ch-title">New model uploads per week — ecosystem activity</div><div class="ch-src">huggingface models API</div></div>
+        <div class="ch-sub">New model submissions to HuggingFace. A proxy for open-source ecosystem vitality and research pace.</div>
+        <div class="chart-wrap" id="hf-new"></div>
+      </div>
+    </div>`;
+
+  makeChart('hf-main','line',wk,[
+    mkDs('Llama-3.1-70B (Meta)', C.meta, trend(21e6,24.2e6,W,.05)),
+    mkDs('Qwen-2.5-72B', C.openai, trend(8e6,14.8e6,W,.08)),
+    mkDs('Mistral-7B-v0.3', C.mistral, trend(11e6,9.4e6,W,.06)),
+    mkDs('DeepSeek-V3', C.anthropic, trend(2.4e6,12.1e6,W,.1)),
+    mkDs('Gemma-3-27B (Google)', C.google, trend(4.2e6,7.6e6,W,.07)),
+  ], baseOpts(fmtM), 250);
+
+  const catLabels=['Text Generation','Embeddings','Image Generation','Speech','Code Gen','Multimodal'];
+  const catData=[38,22,14,9,10,7];
+  makeChart('hf-cat','doughnut',catLabels,[{
+    data:catData,
+    backgroundColor:[C.openai,C.anthropic,C.google,C.mistral,C.meta,C.perplexity].map(c=>fa(c,.75)),
+    borderColor:'#111419', borderWidth:3,
+  }],{
+    responsive:true,maintainAspectRatio:false,animation:{duration:300},
+    cutout:'55%',
+    plugins:{
+      legend:{display:true,position:'right',labels:{color:'#7a7a72',font:{size:10,family:"'Outfit',sans-serif"},padding:10,boxWidth:10}},
+      tooltip:{backgroundColor:'#1a1f2a',borderColor:'rgba(255,255,255,.12)',borderWidth:1,bodyFont:{family:"'Outfit',sans-serif",size:11},callbacks:{label:c=>` ${c.label}: ${c.parsed}%`}},
+    },
+  }, 200);
+
+  makeChart('hf-new','bar',wk,[{
+    data:trend(4200,5800,W,.08),
+    backgroundColor:wk.map((_,i)=>fa(C.anthropic, 0.3+i/wk.length*0.5)),
+    borderColor: C.anthropic, borderWidth:1, borderRadius:3,
+  }], baseOpts(fmtK), 200);
+}
+
+/* ─── ROUTER ─── */
+const VIEWS = {
+  overview: { title:'OVERVIEW DASHBOARD', fn: renderOverview },
+  pypi:     { title:'PYPI / NPM DOWNLOADS', fn: renderPypi },
+  stackoverflow: { title:'STACK OVERFLOW VOLUME', fn: renderSO },
+  github:   { title:'GITHUB DEPENDENTS', fn: renderGitHub },
+  trends:   { title:'GOOGLE TRENDS', fn: renderTrends },
+  jobs:     { title:'JOB KEYWORD MENTIONS', fn: renderJobs },
+  appstore: { title:'APP STORE RANKINGS', fn: renderAppStore },
+  web:      { title:'WEB TRAFFIC & STICKINESS', fn: renderWeb },
+  gpu:      { title:'GPU SPOT PRICING', fn: renderGPU },
+  reddit:   { title:'REDDIT / SOCIAL VOLUME', fn: renderReddit },
+  hf:       { title:'HUGGINGFACE DOWNLOADS', fn: renderHF },
+};
+
+let currentView = 'overview';
+
+function showView(view, el){
+  destroyAll();
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
+  if(el) el.classList.add('active');
+  currentView = view;
+  document.getElementById('page-title').textContent = VIEWS[view]?.title || view.toUpperCase();
+  document.getElementById('content').innerHTML='';
+  VIEWS[view]?.fn();
+}
+
+function setRange(w, el){
+  WEEKS = w;
+  document.querySelectorAll('.range-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  showView(currentView, null);
+}
+
+/* ─── INIT ─── */
+renderOverview();
+</script>
+</body>
+</html>
