@@ -4,15 +4,26 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently -k -n vite,server -c cyan,yellow \"vite\" \"node server/server.js\"",
+    "dev:frontend": "vite",
+    "dev:server": "node server/server.js",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "node server/server.js"
   },
   "dependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
+    "app-store-scraper": "^0.18.0",
+    "axios": "^1.17.0",
     "chart.js": "^4.4.1",
-    "react-chartjs-2": "^5.2.0"
+    "cheerio": "^1.2.0",
+    "concurrently": "^10.0.3",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "google-trends-api": "^4.9.2",
+    "node-cron": "^4.2.1",
+    "react": "^18.3.1",
+    "react-chartjs-2": "^5.2.0",
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.2.1",

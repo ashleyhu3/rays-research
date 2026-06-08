@@ -13,12 +13,6 @@ const LEGEND_ITEMS = [
 export default function Sidebar({ currentView, onNavigate }) {
   return (
     <aside className="sidebar">
-      {/* Logo */}
-      <div className="logo">
-        <div className="logo-word">SIGNAL</div>
-        <div className="logo-sub">AI Demand Intelligence · 2026</div>
-      </div>
-
       {/* Navigation sections */}
       {NAV_SECTIONS.map((section) => (
         <div key={section.label} className="nav-sec">
@@ -31,10 +25,7 @@ export default function Sidebar({ currentView, onNavigate }) {
             >
               <span className="nav-ico">{item.icon}</span>
               {item.label}
-              {item.isNew
-                ? <span className="nav-new">new</span>
-                : item.tag && <span className="utag">{item.tag}</span>
-              }
+              {item.tag && <span className="utag">{item.tag}</span>}
             </button>
           ))}
         </div>

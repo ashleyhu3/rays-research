@@ -5,41 +5,70 @@ import { trend } from '../utils/dataGenerators';
 import { wkLabels } from '../utils/labels';
 import { baseOpts, mkDs, fmtK, fmtN } from '../utils/chartHelpers';
 import ChartCard from '../components/ChartCard';
+import { useData } from '../context/DataContext';
+
+const REPO_KEYS = {
+  'openai/openai-python':         { color: C.openai,    label: 'openai-python' },
+  'anthropics/anthropic-sdk-python': { color: C.anthropic, label: 'anthropic-sdk-python' },
+  'google/generative-ai-python':  { color: C.google,    label: 'google-generativeai' },
+  'mistralai/client-python':      { color: C.mistral,   label: 'mistralai' },
+};
+
+const STATIC_DEPS  = { 'openai-python': 54000, 'anthropic-sdk-python': 18400, 'google-generativeai': 20500, 'mistralai': 4900 };
+const STATIC_STARS = { 'openai-python': 23400, 'anthropic-sdk-python': 11200, 'google-generativeai': 9400, 'mistralai': 3200 };
 
 export default function GitHub({ weeks: W }) {
+  const { liveData } = useData();
   const wk = useMemo(() => wkLabels(W), [W]);
 
-  const mainData = useMemo(() => ({
-    labels: wk,
-    datasets: [
-      mkDs('openai-python',         C.openai,    trend(50e3,  54e3,   W, 0.02)),
-      mkDs('anthropic-sdk-python',  C.anthropic, trend(11e3,  18.4e3, W, 0.04)),
-      mkDs('google-generativeai',   C.google,    trend(16e3,  20.5e3, W, 0.03)),
-      mkDs('mistralai',             C.mistral,   trend(2.8e3, 4.9e3,  W, 0.05)),
-    ],
-  }), [W]);
+  const gh = liveData?.github;
+  const hasLive = gh != null;
+
+  function getDeps(key) {
+    const repoKey = Object.keys(REPO_KEYS).find(k => REPO_KEYS[k].label === key);
+    return gh?.[repoKey]?.dependents ?? STATIC_DEPS[key];
+  }
+
+  const mainData = useMemo(() => {
+    const entries = Object.entries(REPO_KEYS);
+    return {
+      labels: wk,
+      datasets: entries.map(([, { color, label }]) => {
+        const cur = getDeps(label);
+        return mkDs(label, color, trend(Math.round(cur * 0.6), cur, W, 0.03));
+      }),
+    };
+  }, [W, wk, gh]);
+
+  const openaiDeps  = getDeps('openai-python');
+  const anthropicDeps = getDeps('anthropic-sdk-python');
 
   const deltaData = useMemo(() => ({
     labels: wk,
     datasets: [
-      { label: 'openai-python',        data: trend(180, 90,  W, 0.15), backgroundColor: fa(C.openai,    0.6), borderRadius: 3 },
-      { label: 'anthropic-sdk-python', data: trend(400, 640, W, 0.12), backgroundColor: fa(C.anthropic, 0.7), borderRadius: 3 },
+      { label: 'openai-python',        data: trend(Math.round(openaiDeps * 0.0035),    Math.round(openaiDeps * 0.0017),    W, 0.15), backgroundColor: fa(C.openai,    0.6), borderRadius: 3 },
+      { label: 'anthropic-sdk-python', data: trend(Math.round(anthropicDeps * 0.037), Math.round(anthropicDeps * 0.035), W, 0.12), backgroundColor: fa(C.anthropic, 0.7), borderRadius: 3 },
     ],
-  }), [W]);
+  }), [W, wk, openaiDeps, anthropicDeps]);
 
   const cacheData = useMemo(() => ({
     labels: wk,
     datasets: [mkDs('prompt_caching files', C.anthropic, trend(1200, 4800, W, 0.08), true)],
-  }), [W]);
+  }), [W, wk]);
+
+  const src = hasLive ? 'github.com/network/dependents · live' : 'github.com/network/dependents · weekly scrape';
+  const liveNote = hasLive
+    ? `Live GitHub data. anthropic-sdk-python: ${anthropicDeps?.toLocaleString() ?? '—'} dependents · openai-python: ${openaiDeps?.toLocaleString() ?? '—'}.`
+    : 'anthropic-sdk-python grew from ~11k to <b>18.4k repos</b> in 12 weeks (+67%). openai-python leads at 54k but growth has plateaued.';
 
   return (
     <div className="cgrid">
       <ChartCard
         title='GitHub "Used By" — repositories depending on each SDK'
-        src="github.com/network/dependents · weekly scrape"
+        src={src}
         subtitle="Production adoption signal — separates code that ships from code that demos."
         legend={[['openai-python', C.openai], ['anthropic-sdk-python', C.anthropic], ['google-generativeai', C.google], ['mistralai', C.mistral]]}
-        insight="anthropic-sdk-python grew from ~11k to <b>18.4k repos</b> in 12 weeks (+67%). openai-python leads at 54k but growth has plateaued."
+        insight={liveNote}
         height={250} span2
       >
         <Line data={mainData} options={baseOpts(fmtK)} />

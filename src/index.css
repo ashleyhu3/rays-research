@@ -19,7 +19,41 @@
 
 html, body { height: 100%; overflow: hidden; }
 body { font-family: var(--font-b); background: var(--bg); color: var(--text); }
-#root { display: flex; height: 100vh; width: 100%; overflow: hidden; }
+#root { display: flex; flex-direction: column; height: 100vh; width: 100%; overflow: hidden; }
+
+/* ── Top Navbar ────────────────────────────────────────────────────── */
+.navbar {
+  height: 48px; flex-shrink: 0;
+  background: var(--bg-sidebar);
+  border-bottom: 1px solid var(--border-hi);
+  display: flex; align-items: center; gap: 28px;
+  padding: 0 22px;
+  z-index: 10;
+}
+.navbar-brand { font-family: var(--font-d); font-size: 22px; color: var(--accent); letter-spacing: .06em; }
+.navbar-links  { display: flex; gap: 2px; }
+.nlink {
+  font-size: 12px; padding: 5px 14px; border-radius: 6px;
+  border: none; background: none; color: var(--sec);
+  cursor: pointer; font-family: var(--font-b); transition: all .15s;
+}
+.nlink:hover  { background: rgba(255,255,255,.05); color: var(--text); }
+.nlink.active { background: var(--adim); color: var(--accent); }
+
+.navbar-r { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+.fetch-status { font-size: 10px; color: var(--sec); font-family: var(--font-m); }
+.fetch-status.error { color: #f87171; }
+.fetch-btn {
+  font-size: 11px; padding: 4px 13px; border-radius: 5px;
+  border: 1px solid var(--border-hi); background: none; color: var(--text);
+  cursor: pointer; font-family: var(--font-b); transition: all .15s;
+}
+.fetch-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.fetch-btn:disabled { opacity: .5; cursor: not-allowed; }
+.fetch-btn.loading { color: var(--sec); }
+
+/* ── App body row (below navbar) ───────────────────────────────────── */
+.app-body { display: flex; flex: 1; overflow: hidden; }
 
 /* ── Scrollbar ─────────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 5px; }
@@ -41,12 +75,12 @@ body { font-family: var(--font-b); background: var(--bg); color: var(--text); }
 .logo-sub  { font-size: 9px; color: var(--ter); letter-spacing: .12em; text-transform: uppercase; margin-top: 2px; }
 
 .nav-sec { padding: 12px 14px 4px; }
-.nav-lbl { font-size: 9px; color: var(--ter); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 7px; font-weight: 500; }
+.nav-lbl { font-size: 9px; color: #fff; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 7px; font-weight: 500; }
 
 .nav-item {
   display: flex; align-items: center; gap: 8px;
   padding: 7px 10px; border-radius: 6px; cursor: pointer;
-  font-size: 12px; color: var(--sec);
+  font-size: 12px; color: #b0b0a8;
   border: none; background: none; width: 100%; text-align: left;
   transition: all .15s; margin-bottom: 1px;
   font-family: var(--font-b); line-height: 1.3;
@@ -81,7 +115,7 @@ body { font-family: var(--font-b); background: var(--bg); color: var(--text); }
 .main {
   flex: 1;
   display: flex; flex-direction: column;
-  height: 100vh; overflow: hidden;
+  overflow: hidden;
   min-width: 0;
 }
 .topbar {
@@ -107,6 +141,8 @@ body { font-family: var(--font-b); background: var(--bg); color: var(--text); }
   background: rgba(63,185,80,.12); color: #3fb950;
   border: 1px solid rgba(63,185,80,.2); font-family: var(--font-m);
 }
+.live-badge.sim-badge { background: rgba(100,100,100,.1); color: var(--sec); border-color: rgba(100,100,100,.2); }
+.live-badge.loading-badge { background: var(--adim); color: var(--accent); border-color: rgba(232,197,71,.2); }
 .new-badge {
   font-size: 10px; padding: 3px 9px; border-radius: 20px;
   background: var(--adim); color: var(--accent);

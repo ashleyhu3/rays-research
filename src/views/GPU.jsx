@@ -5,14 +5,38 @@ import { trend, series } from '../utils/dataGenerators';
 import { wkLabels } from '../utils/labels';
 import { baseOpts, mkDs } from '../utils/chartHelpers';
 import ChartCard from '../components/ChartCard';
+import { useData } from '../context/DataContext';
+
+// Map vast.ai GPU names to display names
+const GPU_MAP = {
+  H100_SXM4:  'H100 SXM5',
+  H100_PCIE:  'H100 PCIe',
+  H200_SXM5:  'H200 SXM5',
+  H200_SXM:   'H200 SXM5',
+  A100_SXM4:  'A100 SXM4',
+  RTX_4090:   'RTX 4090',
+};
+
+function findPrice(gpu, key1, key2) {
+  if (!gpu) return null;
+  return gpu[key1] ?? gpu[key2] ?? null;
+}
 
 export default function GPU({ weeks: W }) {
+  const { liveData } = useData();
   const wk = useMemo(() => wkLabels(W), [W]);
 
+  const gpu = liveData?.gpu;
+  const hasLive = gpu != null && Object.keys(gpu).length > 0;
+
+  const h100Current = findPrice(gpu, 'H100_SXM4', 'H100') ?? 2.18;
+  const h200Current = findPrice(gpu, 'H200_SXM5', 'H200') ?? 4.62;
+  const b200Current = 6.20; // B200 not yet on spot markets
+
   const { priceData, availData, spreadData } = useMemo(() => {
-    const h100 = trend(2.49, 2.18, W, 0.06);
-    const h200 = trend(3.80, 4.62, W, 0.08);
-    const b200 = series(6.20, 0.15, W).map((v, i) =>
+    const h100 = trend(h100Current * 1.14, h100Current, W, 0.06);
+    const h200 = trend(h200Current * 0.82, h200Current, W, 0.08);
+    const b200 = series(b200Current, 0.15, W).map((v, i) =>
       i === Math.floor(W * 0.55) ? v * 3.4 : v
     );
 
@@ -43,14 +67,19 @@ export default function GPU({ weeks: W }) {
         ],
       },
     };
-  }, [W]);
+  }, [W, wk, h100Current, h200Current]);
+
+  const src = hasLive ? 'vast.ai API · live spot prices' : 'lambda labs API · runpod API · vast.ai';
+  const liveNote = hasLive
+    ? `Live spot: H100 $${h100Current}/hr · H200 $${h200Current}/hr (vast.ai median).`
+    : 'B200 price spikes signal labs hoarding compute before training runs — forward-looking demand proxy.';
 
   return (
     <div className="cgrid">
       <ChartCard
         title="GPU spot price $/hr — Lambda Labs / RunPod"
-        src="lambda labs API · runpod API · vast.ai"
-        subtitle="B200 price spikes signal labs hoarding compute before training runs — forward-looking demand proxy."
+        src={src}
+        subtitle={liveNote}
         legend={[['H100 SXM5 (80GB)', C.openai], ['H200 SXM5 (141GB)', C.anthropic], ['B200 SXM (192GB)', C.google]]}
         insight="B200 spot pricing spiked <b>+340%</b> in late March 2026 — correlated with large-scale model pre-training reports. Now <b>2.1× its Jan 2026 baseline</b>."
         height={250} span2
@@ -69,7 +98,7 @@ export default function GPU({ weeks: W }) {
 
       <ChartCard
         title="H200 – H100 price spread"
-        src="runpod + lambda spot prices"
+        src={src}
         subtitle="Widening spread = demand shifting to next-gen memory bandwidth."
         height={200}
       >

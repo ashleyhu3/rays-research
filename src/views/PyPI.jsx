@@ -5,13 +5,36 @@ import { trend } from '../utils/dataGenerators';
 import { wkLabels } from '../utils/labels';
 import { baseOpts, mkDs, fmtM } from '../utils/chartHelpers';
 import ChartCard from '../components/ChartCard';
+import { useData } from '../context/DataContext';
+
+function pypiSlice(liveData, pkg, W, fallbackStart, fallbackEnd, ns = 0.05) {
+  // Prefer full 52-wk history from backend
+  const hist = liveData?.pypiHistory?.[pkg];
+  if (hist?.length >= W) return hist.slice(-W);
+  // Fall back to anchoring trend to single-week snapshot
+  const snap = liveData?.pypi?.[pkg];
+  if (snap) return trend(Math.round(snap * 0.65), snap, W, ns);
+  return trend(fallbackStart, fallbackEnd, W, ns);
+}
+
+function npmSlice(liveData, pkg, W, fallbackStart, fallbackEnd, ns = 0.05) {
+  const arr = liveData?.npm?.[pkg];
+  if (arr && arr.length >= W) return arr.slice(-W);
+  return trend(fallbackStart, fallbackEnd, W, ns);
+}
 
 export default function PyPI({ weeks: W }) {
+  const { liveData } = useData();
   const wk = useMemo(() => wkLabels(W), [W]);
 
   const { pypiData, shareData, npmData } = useMemo(() => {
-    const oa = trend(38e6,  42e6,   W, 0.05);
-    const an = trend(9e6,   16.2e6, W, 0.06);
+    const pypi = liveData?.pypi ?? {};
+
+    const oa = pypiSlice(liveData, 'openai',              W, 38e6,  42e6,   0.05);
+    const an = pypiSlice(liveData, 'anthropic',           W, 9e6,   16.2e6, 0.06);
+    const gg = pypiSlice(liveData, 'google-generativeai', W, 14e6,  18e6,   0.05);
+    const mi = pypiSlice(liveData, 'mistralai',           W, 3.2e6, 5.1e6,  0.07);
+
     const sAn = an.map((a, i) => parseFloat((a / (a + oa[i]) * 100).toFixed(1)));
 
     return {
@@ -20,8 +43,8 @@ export default function PyPI({ weeks: W }) {
         datasets: [
           mkDs('openai',              C.openai,    oa),
           mkDs('anthropic',           C.anthropic, an, true),
-          mkDs('google-generativeai', C.google,    trend(14e6,   18e6,   W, 0.05)),
-          mkDs('mistralai',           C.mistral,   trend(3.2e6,  5.1e6,  W, 0.07)),
+          mkDs('google-generativeai', C.google,    gg),
+          mkDs('mistralai',           C.mistral,   mi),
         ],
       },
       shareData: {
@@ -34,19 +57,23 @@ export default function PyPI({ weeks: W }) {
       npmData: {
         labels: wk,
         datasets: [
-          mkDs('openai',             C.openai,    trend(9.2e6, 9.8e6, W, 0.05)),
-          mkDs('@anthropic-ai/sdk',  C.anthropic, trend(1.8e6, 3.4e6, W, 0.07)),
-          mkDs('@google/gen-ai',     C.google,    trend(3.1e6, 4.2e6, W, 0.06)),
+          mkDs('openai',            C.openai,    npmSlice(liveData, 'openai',              W, 9.2e6, 9.8e6)),
+          mkDs('@anthropic-ai/sdk', C.anthropic, npmSlice(liveData, '@anthropic-ai/sdk',   W, 1.8e6, 3.4e6, 0.07)),
+          mkDs('@google/gen-ai',    C.google,    npmSlice(liveData, '@google/generative-ai',W, 3.1e6, 4.2e6, 0.06)),
         ],
       },
     };
-  }, [W]);
+  }, [W, liveData]);
+
+  const hasLiveNpm      = (liveData?.npm?.['openai']?.length ?? 0) > 0;
+  const hasLivePypiHist = (liveData?.pypiHistory?.['anthropic']?.length ?? 0) > 0;
+  const hasLivePypi     = hasLivePypiHist || liveData?.pypi?.['anthropic'] != null;
 
   return (
     <div className="cgrid">
       <ChartCard
         title="PyPI weekly downloads — Python SDK installs"
-        src="pypistats.org · free · no auth"
+        src={hasLivePypiHist ? 'pypistats.org · full history · live' : hasLivePypi ? 'pypistats.org · live' : 'pypistats.org · free · no auth'}
         subtitle="Weekly downloads for each AI provider's Python SDK. Zero cost, fully automatable."
         legend={[['openai', C.openai], ['anthropic', C.anthropic], ['google-generativeai', C.google], ['mistralai', C.mistral]]}
         insight="The <b>anthropic</b> package grew <b>+80% in 12 weeks</b>, the fastest of any major provider SDK. OpenAI leads in volume but growth is flat at ~+5% QoQ."
@@ -67,7 +94,7 @@ export default function PyPI({ weeks: W }) {
 
       <ChartCard
         title="npm weekly downloads — JS/TS SDKs"
-        src="npmjs.com registry API"
+        src={hasLiveNpm ? 'api.npmjs.org · live' : 'npmjs.com registry API'}
         subtitle="Node.js ecosystem. OpenAI's npm package still leads but Anthropic is closing."
         legend={[['openai (npm)', C.openai], ['@anthropic-ai/sdk', C.anthropic], ['@google/generative-ai', C.google]]}
         height={200}

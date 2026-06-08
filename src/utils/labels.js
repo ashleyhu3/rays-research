@@ -1,9 +1,6 @@
-const BASE_DATE = '2026-05-05';
-
-/** Generate n weekly labels ending at BASE_DATE */
 export function wkLabels(n) {
   const labels = [];
-  const end = new Date(BASE_DATE);
+  const end = new Date();
   for (let i = n - 1; i >= 0; i--) {
     const d = new Date(end);
     d.setDate(d.getDate() - i * 7);
@@ -12,10 +9,9 @@ export function wkLabels(n) {
   return labels;
 }
 
-/** Generate n daily labels ending at BASE_DATE */
 export function dayLabels(n) {
   const labels = [];
-  const end = new Date(BASE_DATE);
+  const end = new Date();
   for (let i = n - 1; i >= 0; i--) {
     const d = new Date(end);
     d.setDate(d.getDate() - i);

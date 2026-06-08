@@ -20,7 +20,7 @@ export default function ChartCard({
   title, src, subtitle, legend, insight, srcNote,
   isNew, span2, height = 200, children,
 }) {
-  const cls = ['cbox', isNew && 'new', span2 && 'span2'].filter(Boolean).join(' ');
+  const cls = ['cbox', span2 && 'span2'].filter(Boolean).join(' ');
   return (
     <div className={cls}>
       <div className="ch-head">
