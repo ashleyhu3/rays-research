@@ -100,7 +100,7 @@ async function fetchJsonSafe(url, ms = 30000) {
 }
 
 async function fetchBackendAll() {
-  const keys = ['pypi', 'trends', 'reddit', 'appstore', 'jobs', 'gpu', 'github', 'openrouter'];
+  const keys = ['pypi', 'trends', 'reddit', 'appstore', 'jobs', 'gpu', 'github', 'openrouter', 'eia', 'mops'];
   const results = await Promise.allSettled(keys.map(k => fetchJsonSafe(`/api/${k}`)));
   return Object.fromEntries(keys.map((k, i) => [
     k, results[i].status === 'fulfilled' ? results[i].value : null,
@@ -137,5 +137,7 @@ export async function fetchAll() {
     gpu:         be.gpu        ?? null,
     github:      be.github     ?? null,
     openrouter:  be.openrouter ?? null,
+    eia:         be.eia        ?? null,
+    mops:        be.mops       ?? null,
   };
 }

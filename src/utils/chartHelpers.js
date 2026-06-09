@@ -2,7 +2,7 @@ import { fa } from '../config/colors';
 
 /* ─── Shared axis / grid tokens ─────────────────────────────────────── */
 export const GRID = { color: 'rgba(255,255,255,.04)' };
-export const TICK = { color: '#454540', font: { size: 10, family: "'Outfit',sans-serif" } };
+export const TICK = { color: '#b0b0a8', font: { size: 11, family: "'Inter',sans-serif" } };
 export const BORD = { color: 'rgba(255,255,255,.06)' };
 
 /* ─── Value formatters ──────────────────────────────────────────────── */
@@ -29,8 +29,8 @@ export const baseOpts = (yFmt) => ({
       backgroundColor: '#1a1f2a',
       borderColor: 'rgba(255,255,255,.12)',
       borderWidth: 1,
-      titleFont: { family: "'Outfit',sans-serif", size: 11 },
-      bodyFont:  { family: "'Outfit',sans-serif", size: 11 },
+      titleFont: { family: "'Inter',sans-serif", size: 11 },
+      bodyFont:  { family: "'Inter',sans-serif", size: 11 },
       padding: 10,
       callbacks: {
         label: c => ` ${c.dataset.label}: ${yFmt(c.parsed.y)}`,
@@ -44,9 +44,13 @@ export const baseOpts = (yFmt) => ({
 });
 
 /* ─── Horizontal bar overrides ──────────────────────────────────────── */
-export const hBarOpts = (yFmt) => ({
-  ...baseOpts(yFmt),
+export const hBarOpts = (xFmt) => ({
+  ...baseOpts(xFmt),
   indexAxis: 'y',
+  scales: {
+    x: { grid: GRID, ticks: { ...TICK, callback: v => xFmt(v) }, border: BORD, beginAtZero: true },
+    y: { grid: GRID, ticks: { ...TICK }, border: BORD },
+  },
 });
 
 /* ─── Doughnut chart options ────────────────────────────────────────── */
@@ -60,8 +64,8 @@ export const doughnutOpts = (cutout = '55%') => ({
       display: true,
       position: 'right',
       labels: {
-        color: '#7a7a72',
-        font: { size: 10, family: "'Outfit',sans-serif" },
+        color: '#c8c8c0',
+        font: { size: 10, family: "'Inter',sans-serif" },
         padding: 10,
         boxWidth: 10,
       },
@@ -70,7 +74,7 @@ export const doughnutOpts = (cutout = '55%') => ({
       backgroundColor: '#1a1f2a',
       borderColor: 'rgba(255,255,255,.12)',
       borderWidth: 1,
-      bodyFont: { family: "'Outfit',sans-serif", size: 11 },
+      bodyFont: { family: "'Inter',sans-serif", size: 11 },
       callbacks: { label: c => ` ${c.label}: ${c.parsed}%` },
     },
   },

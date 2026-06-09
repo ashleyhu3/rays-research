@@ -36,6 +36,32 @@ export function DataProvider({ children }) {
     }
   }, []);
 
+  // Force-refreshes both layers: tells server to bypass its TTL cache and
+  // re-scrape all sources, then re-fetches the fresh results.
+  const forceRefresh = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{}',
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? `Server error ${res.status}`);
+      }
+      const data = await fetchAll();
+      setCached(KEY, data);
+      setLiveData(data);
+      setLastUpdated(new Date());
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     load(false);
     timer.current = setInterval(() => load(true), 24 * 60 * 60 * 1000);
@@ -43,7 +69,7 @@ export function DataProvider({ children }) {
   }, [load]);
 
   return (
-    <DataContext.Provider value={{ liveData, loading, lastUpdated, error, refresh: () => load(true) }}>
+    <DataContext.Provider value={{ liveData, loading, lastUpdated, error, refresh: () => load(true), forceRefresh }}>
       {children}
     </DataContext.Provider>
   );

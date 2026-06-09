@@ -91,8 +91,11 @@ export default function Datacenter({ weeks: W }) {
   return (
     <div className="cgrid">
       <ChartCard
+        chartId="dc-capex"
         title="Hyperscaler capex committed to datacenter build ($B)"
-        src="SEC filings · earnings calls · IEA 2026 report"
+        src="iea.org/reports"
+        srcUrl="https://www.iea.org/reports/key-questions-on-energy-and-ai"
+        freq="static"
         subtitle="Annual capital expenditure dedicated to AI datacenter construction. The top 5 tech companies alone exceeded $400B in 2025 — more than global oil & gas investment. IEA projects a further 75% increase in 2026."
         legend={[['Microsoft', C.openai], ['Google', C.google], ['Amazon AWS', C.anthropic], ['Meta', C.meta], ['Oracle + others', C.slate]]}
         insight="Combined hyperscaler datacenter capex is projected to reach <b>$700B+ in 2026</b> — exceeding global investment in oil & gas for the second consecutive year. However, actual construction completion lags by 20–54 months."
@@ -102,8 +105,11 @@ export default function Datacenter({ weeks: W }) {
       </ChartCard>
 
       <ChartCard
+        chartId="dc-capacity"
         title="US datacenter capacity under construction (GW)"
-        src="satellite tracking (IEA) · CBRE · JLL"
+        src="iea.org · cbre.com"
+        srcUrl="https://www.iea.org/reports/key-questions-on-energy-and-ai"
+        freq="static"
         subtitle='AI "factory" datacenter capacity actually breaking ground, per IEA satellite-based tracking. "AI factories" tripled in capacity in the past 18 months. Of 240 GW announced, roughly one-third are under active construction.'
         srcNote="Sources: IEA Key Questions on Energy and AI (Apr 2026) · CBRE H1 2026 datacenter market report · Hiatt & Ryu, USC Energy Brief (Sep 2025)"
         height={200} isNew
@@ -112,8 +118,11 @@ export default function Datacenter({ weeks: W }) {
       </ChartCard>
 
       <ChartCard
+        chartId="dc-state"
         title="Permitted capacity by US state (GW, top 8)"
-        src="state PUC filings · EPRI · Hiatt & Ryu USC 2025"
+        src="ferc.gov · epri.org"
+        srcUrl="https://www.ferc.gov/industries-data/electric/industry-activities/interconnection-queues"
+        freq="static"
         subtitle="States with the largest pipeline of permitted (not yet built) datacenter load. Virginia hosts 26% of current US datacenter electricity consumption. Texas and Oregon are the fastest-growing."
         height={200} isNew
       >
@@ -121,8 +130,11 @@ export default function Datacenter({ weeks: W }) {
       </ChartCard>
 
       <ChartCard
+        chartId="dc-grid"
         title="Grid interconnection queue — large loads (GW, PJM + MISO)"
-        src="FERC · PJM · MISO interconnection queues"
+        src="ferc.gov · pjm.com"
+        srcUrl="https://www.ferc.gov/industries-data/electric/industry-activities/interconnection-queues"
+        freq="static"
         subtitle="New datacenter load applications waiting for grid connection. PJM queue wait is now 8+ years for projects approved in 2025. A rising queue = rising demand but also rising supply constraint."
         legend={[['PJM queue (GW)', C.red], ['MISO queue (GW)', C.orange]]}
         insight="The PJM interconnection queue for large loads has grown <b>4× in 24 months</b>. Average wait time for approved 2025 projects is <b>8 years</b> — the single biggest bottleneck to datacenter power delivery."
@@ -132,8 +144,11 @@ export default function Datacenter({ weeks: W }) {
       </ChartCard>
 
       <ChartCard
+        chartId="dc-btm"
         title="Behind-the-meter generation deployments (MW)"
-        src="EIA form 860 · S&P Global · Wood Mackenzie"
+        src="eia.gov/860"
+        srcUrl="https://www.eia.gov/electricity/data/eia860/"
+        freq="static"
         subtitle='On-site natural gas, solar, and nuclear power deployed directly at datacenter sites ("bring your own power"). Hyperscalers are bypassing the grid to avoid interconnection delays.'
         legend={[['Natural gas', C.orange], ['Solar + storage', C.zhipu], ['Nuclear SMR', C.teal]]}
         height={200} isNew
@@ -142,8 +157,11 @@ export default function Datacenter({ weeks: W }) {
       </ChartCard>
 
       <ChartCard
+        chartId="dc-deals"
         title="New datacenter deals signed per quarter"
-        src="CBRE · JLL · Cushman & Wakefield leasing data"
+        src="cbre.com/datacenters"
+        srcUrl="https://www.cbre.com/insights/reports/north-america-data-center-trends"
+        freq="static"
         subtitle="Leasing activity is a leading indicator — signed deals become construction starts 6–18 months later. New deals fell 40%+ in Q4 2025 amid capital crunch concerns."
         insight="After a record Q3 2025, new datacenter deals dropped <b>40%+ in Q4 2025</b> (ITIF). The Stargate project stalled amid partner disputes. 2026 Q1 shows partial recovery but capex risk remains elevated."
         height={200} isNew

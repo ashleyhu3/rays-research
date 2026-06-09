@@ -1,11 +1,26 @@
 import { useMemo } from 'react';
-import { Line } from 'react-chartjs-2';
-import { C } from '../config/colors';
+import { Line, Bar } from 'react-chartjs-2';
+import { C, fa } from '../config/colors';
 import { trend } from '../utils/dataGenerators';
 import { wkLabels } from '../utils/labels';
-import { baseOpts, mkDs, fmtM } from '../utils/chartHelpers';
+import { baseOpts, hBarOpts, mkDs, fmtM, fmtK } from '../utils/chartHelpers';
 import ChartCard from '../components/ChartCard';
 import { useData } from '../context/DataContext';
+
+const SO_STATIC = {
+  'openai-api':        89400,
+  'anthropic-claude':  14200,
+  'google-gemini-api': 21800,
+  'langchain':         43100,
+  'mistral-ai':         6200,
+};
+const SO_TAGS = [
+  { tag: 'openai-api',        color: C.openai    },
+  { tag: 'anthropic-claude',  color: C.anthropic },
+  { tag: 'google-gemini-api', color: C.google    },
+  { tag: 'langchain',         color: C.red       },
+  { tag: 'mistral-ai',        color: C.mistral   },
+];
 
 function pypiSlice(liveData, pkg, W, fallbackStart, fallbackEnd, ns = 0.05) {
   // Prefer full 52-wk history from backend
@@ -65,15 +80,36 @@ export default function PyPI({ weeks: W }) {
     };
   }, [W, liveData]);
 
+  const soTotals = useMemo(() => {
+    const real = liveData?.soTotals ?? {};
+    return SO_TAGS.map(({ tag, color }) => ({
+      tag, color, count: real[tag] ?? SO_STATIC[tag],
+    }));
+  }, [liveData]);
+
+  const soData = useMemo(() => ({
+    labels: soTotals.map(t => t.tag),
+    datasets: [{
+      data:            soTotals.map(t => t.count),
+      backgroundColor: soTotals.map(t => fa(t.color, 0.7)),
+      borderColor:     soTotals.map(t => t.color),
+      borderWidth: 1, borderRadius: 4,
+    }],
+  }), [soTotals]);
+
   const hasLiveNpm      = (liveData?.npm?.['openai']?.length ?? 0) > 0;
   const hasLivePypiHist = (liveData?.pypiHistory?.['anthropic']?.length ?? 0) > 0;
   const hasLivePypi     = hasLivePypiHist || liveData?.pypi?.['anthropic'] != null;
+  const hasLiveSO       = Object.keys(liveData?.soTotals ?? {}).length > 0;
 
   return (
     <div className="cgrid">
       <ChartCard
+        chartId="pypi-installs"
         title="PyPI weekly downloads — Python SDK installs"
-        src={hasLivePypiHist ? 'pypistats.org · full history · live' : hasLivePypi ? 'pypistats.org · live' : 'pypistats.org · free · no auth'}
+        src="pypistats.org"
+        srcUrl="https://pypistats.org/packages/anthropic"
+        freq="weekly"
         subtitle="Weekly downloads for each AI provider's Python SDK. Zero cost, fully automatable."
         legend={[['openai', C.openai], ['anthropic', C.anthropic], ['google-generativeai', C.google], ['mistralai', C.mistral]]}
         insight="The <b>anthropic</b> package grew <b>+80% in 12 weeks</b>, the fastest of any major provider SDK. OpenAI leads in volume but growth is flat at ~+5% QoQ."
@@ -83,8 +119,11 @@ export default function PyPI({ weeks: W }) {
       </ChartCard>
 
       <ChartCard
+        chartId="pypi-share"
         title="Anthropic vs OpenAI — share of combined installs"
         src="pypistats.org"
+        srcUrl="https://pypistats.org/packages/anthropic"
+        freq="weekly"
         subtitle="Anthropic's share of the combined install base has nearly doubled in 6 months."
         legend={[['Anthropic %', C.anthropic], ['OpenAI %', C.openai]]}
         height={200}
@@ -93,13 +132,28 @@ export default function PyPI({ weeks: W }) {
       </ChartCard>
 
       <ChartCard
+        chartId="pypi-npm"
         title="npm weekly downloads — JS/TS SDKs"
-        src={hasLiveNpm ? 'api.npmjs.org · live' : 'npmjs.com registry API'}
+        src="npmjs.com"
+        srcUrl="https://www.npmjs.com/package/openai"
+        freq="weekly"
         subtitle="Node.js ecosystem. OpenAI's npm package still leads but Anthropic is closing."
         legend={[['openai (npm)', C.openai], ['@anthropic-ai/sdk', C.anthropic], ['@google/generative-ai', C.google]]}
         height={200}
       >
         <Line data={npmData} options={baseOpts(fmtM)} />
+      </ChartCard>
+
+      <ChartCard
+        chartId="pypi-so"
+        title="Stack Overflow questions (all time) by tag"
+        src="stackexchange API"
+        srcUrl="https://api.stackexchange.com/2.3/questions?tagged=anthropic-claude&site=stackoverflow"
+        freq="weekly"
+        subtitle="Cumulative question count per tag — measures ecosystem depth and developer mindshare."
+        height={220} span2
+      >
+        <Bar data={soData} options={hBarOpts(fmtK)} />
       </ChartCard>
     </div>
   );

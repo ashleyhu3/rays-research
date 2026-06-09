@@ -1,42 +1,102 @@
+import { useUI } from '../context/UIContext';
 import { useData } from '../context/DataContext';
 
-const NAV_ITEMS = [
-  { id: 'ai-demand', label: 'AI Demand' },
-];
+function RefreshIcon({ spin }) {
+  return (
+    <svg
+      width="12" height="12" viewBox="0 0 24 24"
+      fill="none" stroke="currentColor" strokeWidth="2.2"
+      strokeLinecap="round" strokeLinejoin="round"
+      style={spin ? { animation: 'spin .85s linear infinite' } : {}}
+      aria-hidden="true"
+    >
+      <polyline points="23 4 23 10 17 10" />
+      <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+    </svg>
+  );
+}
 
-export default function Navbar({ currentSection, onSectionChange }) {
-  const { loading, lastUpdated, error, refresh } = useData();
+function BarChartIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true">
+      <rect x="0" y="4" width="3" height="8" rx="0.5" />
+      <rect x="4.5" y="2" width="3" height="10" rx="0.5" />
+      <rect x="9" y="0" width="3" height="12" rx="0.5" />
+    </svg>
+  );
+}
 
-  const timeStr = lastUpdated
-    ? lastUpdated.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
-    : null;
+function TableIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+      <rect x="0.75" y="0.75" width="10.5" height="10.5" rx="1" />
+      <line x1="0.75" y1="4.5" x2="11.25" y2="4.5" />
+      <line x1="0.75" y1="8" x2="11.25" y2="8" />
+      <line x1="4.5" y1="0.75" x2="4.5" y2="11.25" />
+    </svg>
+  );
+}
+
+export default function Navbar({ onNavigate, currentView }) {
+  const { tableMode, setTableMode } = useUI();
+  const { loading, lastUpdated, error, forceRefresh } = useData();
+
+  const title = loading
+    ? 'Updating live data…'
+    : error
+    ? `Error: ${error}`
+    : lastUpdated
+    ? `Live data · updated ${lastUpdated.toLocaleTimeString()}`
+    : 'No data loaded';
 
   return (
     <nav className="navbar">
       <div className="navbar-brand">SIGNAL</div>
-
       <div className="navbar-links">
-        {NAV_ITEMS.map(({ id, label }) => (
-          <button
-            key={id}
-            className={`nlink${currentSection === id ? ' active' : ''}`}
-            onClick={() => onSectionChange(id)}
-          >
-            {label}
-          </button>
-        ))}
+        <button
+          className={`nlink${currentView !== 'ai-supply' ? ' active' : ''}`}
+          onClick={() => onNavigate('overview')}
+        >
+          AI Demand
+        </button>
+        <button
+          className={`nlink${currentView === 'ai-supply' ? ' active' : ''}`}
+          onClick={() => onNavigate('ai-supply')}
+        >
+          AI Supply
+        </button>
       </div>
-
       <div className="navbar-r">
-        {error   && <span className="fetch-status error">⚠ {error}</span>}
-        {timeStr && !error && <span className="fetch-status">Updated {timeStr}</span>}
+        <span className={`fetch-status${error ? ' error' : ''}`} title={title}>
+          {loading ? 'Updating…' : lastUpdated ? lastUpdated.toLocaleTimeString() : '—'}
+        </span>
         <button
           className={`fetch-btn${loading ? ' loading' : ''}`}
-          onClick={refresh}
+          onClick={forceRefresh}
           disabled={loading}
+          title="Re-scrape all live sources and refresh charts"
         >
-          {loading ? '↻ Fetching…' : '↻ Refresh'}
+          <RefreshIcon spin={loading} />
+          {loading ? 'Updating…' : 'Refresh Data'}
         </button>
+        <div className="view-toggle">
+          <button
+            className={`vt-btn${!tableMode ? ' active' : ''}`}
+            onClick={() => setTableMode(false)}
+            title="Chart view"
+          >
+            <BarChartIcon />
+            Chart
+          </button>
+          <button
+            className={`vt-btn${tableMode ? ' active' : ''}`}
+            onClick={() => setTableMode(true)}
+            title="Table view"
+          >
+            <TableIcon />
+            Table
+          </button>
+        </div>
       </div>
     </nav>
   );

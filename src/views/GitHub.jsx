@@ -64,8 +64,11 @@ export default function GitHub({ weeks: W }) {
   return (
     <div className="cgrid">
       <ChartCard
+        chartId="github-deps"
         title='GitHub "Used By" — repositories depending on each SDK'
-        src={src}
+        src="github.com/network/dependents"
+        srcUrl="https://github.com/anthropics/anthropic-sdk-python/network/dependents"
+        freq="weekly"
         subtitle="Production adoption signal — separates code that ships from code that demos."
         legend={[['openai-python', C.openai], ['anthropic-sdk-python', C.anthropic], ['google-generativeai', C.google], ['mistralai', C.mistral]]}
         insight={liveNote}
@@ -75,8 +78,11 @@ export default function GitHub({ weeks: W }) {
       </ChartCard>
 
       <ChartCard
+        chartId="github-new-deps"
         title="Week-over-week new dependents"
-        src="github dependents delta"
+        src="github.com/network/dependents"
+        srcUrl="https://github.com/anthropics/anthropic-sdk-python/network/dependents"
+        freq="weekly"
         subtitle="New repos adopting each SDK per week. Rate-of-change is more predictive than absolute count."
         legend={[['openai-python', C.openai], ['anthropic-sdk-python', C.anthropic]]}
         height={200}
@@ -85,8 +91,11 @@ export default function GitHub({ weeks: W }) {
       </ChartCard>
 
       <ChartCard
+        chartId="github-cache"
         title='GitHub code search — prompt_caching mentions'
-        src="github search API"
+        src="github.com/search"
+        srcUrl="https://github.com/search?q=prompt_caching&type=code"
+        freq="weekly"
         subtitle="Devs add caching only when token costs hurt. A pure production-volume signal."
         height={200}
       >

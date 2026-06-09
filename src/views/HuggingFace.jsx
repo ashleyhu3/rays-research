@@ -88,8 +88,11 @@ export default function HuggingFace({ weeks: W }) {
   return (
     <div className="cgrid">
       <ChartCard
+        chartId="hf-downloads"
         title="HuggingFace — weekly model download velocity"
-        src={hasLive ? 'huggingface.co/api · live' : 'huggingface.co/api · no auth'}
+        src="huggingface.co/models"
+        srcUrl="https://huggingface.co/models?sort=downloads"
+        freq="weekly"
         subtitle={subtitle}
         legend={hasLive
           ? top5.map(m => [shortName(m.id), modelColor(m.id)])
@@ -105,8 +108,11 @@ export default function HuggingFace({ weeks: W }) {
       </ChartCard>
 
       <ChartCard
+        chartId="hf-categories"
         title="Top 50 model category breakdown"
-        src="huggingface API"
+        src="huggingface.co/models"
+        srcUrl="https://huggingface.co/models?sort=downloads"
+        freq="static"
         subtitle="What types of models dominate downloads."
         height={200}
       >
@@ -114,8 +120,11 @@ export default function HuggingFace({ weeks: W }) {
       </ChartCard>
 
       <ChartCard
+        chartId="hf-uploads"
         title="New model uploads per week"
-        src="huggingface models API"
+        src="huggingface.co/models"
+        srcUrl="https://huggingface.co/models?sort=created"
+        freq="weekly"
         subtitle="Ecosystem vitality proxy."
         height={200}
       >

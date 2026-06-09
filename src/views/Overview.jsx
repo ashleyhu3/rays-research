@@ -30,11 +30,14 @@ export default function Overview({ weeks: W }) {
   const pypi = liveData?.pypi ?? {};
   const soW  = liveData?.soWeekly ?? null;
 
+  // Use direct fetch value first; fall back to last entry from backend history
+  const anthropicLatest = pypi['anthropic'] ?? liveData?.pypiHistory?.['anthropic']?.at(-1) ?? null;
+
   const kpiItems = [
     {
-      val:   fmtCount(pypi['anthropic']) ?? '—',
+      val:   fmtCount(anthropicLatest) ?? '—',
       label: 'PyPI anthropic downloads / wk',
-      delta: pypi['anthropic'] ? 'live · pypistats.org' : 'loading…',
+      delta: anthropicLatest ? 'live · pypistats.org' : 'loading…',
       cls: 'up', color: C.anthropic,
     },
     {
@@ -68,7 +71,9 @@ export default function Overview({ weeks: W }) {
       <div className="cgrid">
         <ChartCard
           title="PyPI weekly downloads — Python SDK installs"
-          src={hasPypiHist ? 'pypistats.org · full history · live' : pypi['anthropic'] ? 'pypistats.org · live' : 'pypistats.org'}
+          src={hasPypiHist ? 'pypistats.org · full history' : 'pypistats.org'}
+          srcUrl="https://pypistats.org/packages/anthropic"
+          freq="weekly"
           subtitle="Weekly installs for each AI provider Python SDK. The most direct, automatable developer-adoption signal at zero cost."
           legend={[['openai', C.openai], ['anthropic', C.anthropic], ['google-generativeai', C.google], ['mistralai', C.mistral]]}
           height={300} span2

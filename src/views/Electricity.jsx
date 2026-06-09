@@ -3,6 +3,7 @@ import { Line, Bar } from 'react-chartjs-2';
 import { C, fa } from '../config/colors';
 import { baseOpts, stackedOpts, hBarOpts, mkDs, GRID, TICK, BORD } from '../utils/chartHelpers';
 import ChartCard from '../components/ChartCard';
+import { useData } from '../context/DataContext';
 
 const EL_YEARS  = ['2020','2021','2022','2023','2024','2025e','2026e','2027e','2028e'];
 const TOT_TWH   = [120, 132, 148, 162, 183, 220, 268, 295, 340];
@@ -10,6 +11,11 @@ const AI_TWH    = [22,  32,  48,  68,  95,  138, 192, 228, 278];
 const NON_AI    = TOT_TWH.map((t, i) => t - AI_TWH[i]);
 
 const RATE_YEARS = ['2021','2022','2023','2024','2025','2026e'];
+const STATIC_RATE = {
+  VA: [10.2, 11.8, 12.4, 13.1, 14.6, 16.2],
+  US: [11.0, 12.4, 13.0, 13.5, 14.0, 14.5],
+  TX: [ 9.8, 11.2, 12.0, 12.6, 13.0, 13.4],
+};
 
 const STATE_LABELS = ['Virginia','Texas','Oregon','Arizona','Georgia','N. Dakota','Nebraska','Iowa'];
 const STATE_VALS   = [26, 14, 11, 8, 6, 15, 12, 11];
@@ -25,6 +31,7 @@ const stateData = {
 };
 
 export default function Electricity({ weeks: W }) {
+  const { liveData } = useData();
   const n  = Math.min(W, 9);
   const r  = Math.min(W, 6);
 
@@ -44,14 +51,26 @@ export default function Electricity({ weeks: W }) {
     ],
   }), [W]);
 
-  const rateData = useMemo(() => ({
-    labels: RATE_YEARS.slice(0, r),
-    datasets: [
-      mkDs('Virginia', C.red,   [10.2,11.8,12.4,13.1,14.6,16.2].slice(0,r)),
-      mkDs('US avg',   C.slate, [11.0,12.4,13.0,13.5,14.0,14.5].slice(0,r)),
-      mkDs('Texas',    C.orange,[9.8,11.2,12.0,12.6,13.0,13.4].slice(0,r)),
-    ],
-  }), [W]);
+  const eiaRates = liveData?.eia?.rates;
+  const hasLiveRates = eiaRates != null;
+
+  const rateData = useMemo(() => {
+    const years = RATE_YEARS.slice(0, r);
+    // For projected years (ending in 'e') always use static. Otherwise prefer EIA.
+    const pick = (state, i) => {
+      const yr = RATE_YEARS[i];
+      if (!hasLiveRates || yr.endsWith('e')) return STATIC_RATE[state][i] ?? null;
+      return eiaRates[state]?.[yr] ?? STATIC_RATE[state][i] ?? null;
+    };
+    return {
+      labels: years,
+      datasets: [
+        mkDs('Virginia', C.red,   years.map((_, i) => pick('VA', i))),
+        mkDs('US avg',   C.slate, years.map((_, i) => pick('US', i))),
+        mkDs('Texas',    C.orange,years.map((_, i) => pick('TX', i))),
+      ],
+    };
+  }, [r, hasLiveRates, eiaRates]);
 
   const mixData = useMemo(() => ({
     labels: EL_YEARS.slice(0, n),
@@ -90,8 +109,11 @@ export default function Electricity({ weeks: W }) {
   return (
     <div className="cgrid">
       <ChartCard
+        chartId="elec-consumption"
         title="US datacenter electricity consumption (TWh / year)"
-        src="IEA · EIA · Lawrence Berkeley National Lab · Pew Research"
+        src="iea.org · eia.gov"
+        srcUrl="https://www.iea.org/reports/key-questions-on-energy-and-ai"
+        freq="static"
         subtitle="Annual US datacenter electricity demand. At 183 TWh in 2024, datacenters consumed ~4.4% of total US electricity — equivalent to Pakistan's entire national demand. IEA projects 325–580 TWh by 2028, driven almost entirely by AI workloads."
         legend={[['Total datacenter (TWh)', C.teal], ['AI-specific estimate (TWh)', C.anthropic], ['Non-AI compute (TWh)', C.slate]]}
         insight="US datacenters now account for <b>50% of all new US electricity demand growth</b> — far outpacing residential, industrial, and transport sectors combined (IEA, April 2026)."
@@ -101,8 +123,11 @@ export default function Electricity({ weeks: W }) {
       </ChartCard>
 
       <ChartCard
+        chartId="elec-state"
         title="State share of national datacenter electricity (%)"
-        src="EPRI · EIA state-level estimates"
+        src="eia.gov/electricity/state"
+        srcUrl="https://www.eia.gov/electricity/state/"
+        freq="static"
         subtitle="Virginia alone consumes 26% of US datacenter electricity — a single-state concentration risk. Northern Virginia is the world's largest datacenter cluster."
         height={200} isNew
       >
@@ -110,8 +135,11 @@ export default function Electricity({ weeks: W }) {
       </ChartCard>
 
       <ChartCard
+        chartId="elec-ai-share"
         title="AI electricity as % of US total consumption"
-        src="IEA 2026 · EIA annual energy outlook"
+        src="iea.org · eia.gov"
+        srcUrl="https://www.iea.org/reports/key-questions-on-energy-and-ai"
+        freq="static"
         subtitle="AI compute's growing share of the US grid. Was under 1% in 2020; on track for 8–12% by 2028 in the high-growth scenario."
         legend={[['Base case (%)', C.teal], ['High scenario (%)', C.red]]}
         height={200} isNew
@@ -120,8 +148,11 @@ export default function Electricity({ weeks: W }) {
       </ChartCard>
 
       <ChartCard
+        chartId="elec-rates"
         title="Average household electricity rate impact (¢/kWh)"
-        src="EIA · state PUC rate filings · Dominion Energy"
+        src={hasLiveRates ? 'eia.gov API · live' : 'eia.gov/electricity/monthly'}
+        srcUrl="https://www.eia.gov/electricity/monthly/"
+        freq={hasLiveRates ? 'annual' : 'static'}
         subtitle="Grid infrastructure upgrades for datacenters are being passed to ratepayers. Virginia's Dominion Energy proposed its first base-rate increase since 1992 in Feb 2025, partly attributable to datacenter load growth."
         legend={[['Virginia avg rate', C.red], ['US national avg', C.slate], ['Texas avg', C.orange]]}
         insight="Virginia ratepayers face a <b>+$8.51/month</b> increase in 2026 — the state's first base-rate rise since 1992 — tied directly to datacenter grid infrastructure investment (Dominion Energy, Feb 2025)."
@@ -131,8 +162,11 @@ export default function Electricity({ weeks: W }) {
       </ChartCard>
 
       <ChartCard
+        chartId="elec-mix"
         title="Renewable vs fossil share of datacenter power"
-        src="IEA · S&P Global · Wood Mackenzie"
+        src="iea.org · woodmac.com"
+        srcUrl="https://www.iea.org/reports/key-questions-on-energy-and-ai"
+        freq="static"
         subtitle="Renewables currently supply ~27% of datacenter electricity globally. Hyperscalers are signing PPAs faster than the grid can deliver, forcing gas turbine bridging."
         legend={[['Renewables + nuclear', C.zhipu], ['Natural gas', C.orange], ['Grid mix / coal', C.slate]]}
         height={200} isNew
@@ -141,8 +175,11 @@ export default function Electricity({ weeks: W }) {
       </ChartCard>
 
       <ChartCard
+        chartId="elec-pue"
         title="Power Usage Effectiveness (PUE) — industry trend"
-        src="Uptime Institute · Google · Microsoft sustainability reports"
+        src="uptimeinstitute.com"
+        srcUrl="https://uptimeinstitute.com/resources/research-and-reports"
+        freq="static"
         subtitle="PUE = total facility power ÷ IT equipment power. Lower is better (1.0 = perfect). AI GPU clusters run hotter than traditional compute — driving PUE higher at cutting-edge facilities."
         legend={[['Hyperscaler avg PUE', C.openai], ['Industry avg PUE', C.slate], ['AI-dense facility PUE', C.red]]}
         height={200} isNew

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Line } from 'react-chartjs-2';
+import { Line, Bar } from 'react-chartjs-2';
 import { C } from '../config/colors';
 import { trend, series } from '../utils/dataGenerators';
 import { wkLabels } from '../utils/labels';
@@ -77,8 +77,11 @@ export default function GPU({ weeks: W }) {
   return (
     <div className="cgrid">
       <ChartCard
+        chartId="gpu-prices"
         title="GPU spot price $/hr — Lambda Labs / RunPod"
-        src={src}
+        src="lambdalabs.com"
+        srcUrl="https://lambdalabs.com/service/gpu-cloud"
+        freq="weekly"
         subtitle={liveNote}
         legend={[['H100 SXM5 (80GB)', C.openai], ['H200 SXM5 (141GB)', C.anthropic], ['B200 SXM (192GB)', C.google]]}
         insight="B200 spot pricing spiked <b>+340%</b> in late March 2026 — correlated with large-scale model pre-training reports. Now <b>2.1× its Jan 2026 baseline</b>."
@@ -88,17 +91,23 @@ export default function GPU({ weeks: W }) {
       </ChartCard>
 
       <ChartCard
+        chartId="gpu-avail"
         title="GPU availability — regions with capacity"
-        src="lambda labs instance types API"
+        src="lambdalabs.com"
+        srcUrl="https://lambdalabs.com/service/gpu-cloud"
+        freq="weekly"
         subtitle="Zero = fully sold out. Tracks supply constraints."
         height={200}
       >
-        <Line data={availData} options={baseOpts(v => Math.round(v))} />
+        <Bar data={availData} options={baseOpts(v => Math.round(v))} />
       </ChartCard>
 
       <ChartCard
+        chartId="gpu-spread"
         title="H200 – H100 price spread"
-        src={src}
+        src="runpod.io/pricing"
+        srcUrl="https://www.runpod.io/gpu-instance/pricing"
+        freq="weekly"
         subtitle="Widening spread = demand shifting to next-gen memory bandwidth."
         height={200}
       >

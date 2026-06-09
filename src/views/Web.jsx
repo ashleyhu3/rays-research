@@ -42,8 +42,11 @@ export default function Web({ weeks: W }) {
   return (
     <div className="cgrid">
       <ChartCard
+        chartId="web-visits"
         title="Monthly web visits"
-        src="similarweb API"
+        src="similarweb.com"
+        srcUrl="https://www.similarweb.com/website/claude.ai/"
+        freq="monthly"
         subtitle="Total monthly unique visits. ChatGPT's consumer lead is large but Claude's growth rate is steeper."
         legend={[['chatgpt.com', C.openai], ['claude.ai', C.anthropic], ['gemini.google.com', C.google], ['perplexity.ai', C.perplexity]]}
         height={250} span2
@@ -52,8 +55,11 @@ export default function Web({ weeks: W }) {
       </ChartCard>
 
       <ChartCard
+        chartId="web-session"
         title="Average session duration (minutes)"
-        src="similarweb engagement"
+        src="similarweb.com"
+        srcUrl="https://www.similarweb.com/website/claude.ai/"
+        freq="monthly"
         subtitle="Longer = deeper use cases. Claude leads on session depth."
         legend={[['chatgpt.com', C.openai], ['claude.ai', C.anthropic], ['perplexity.ai', C.perplexity]]}
         insight="Claude averages <b>9.4 min</b> vs ChatGPT's <b>6.8 min</b> — <b>38% longer</b>. Reflects enterprise/coding users in extended sessions."
@@ -63,8 +69,11 @@ export default function Web({ weeks: W }) {
       </ChartCard>
 
       <ChartCard
+        chartId="web-bounce"
         title="Bounce rate (%)"
-        src="similarweb"
+        src="similarweb.com"
+        srcUrl="https://www.similarweb.com/website/claude.ai/"
+        freq="monthly"
         subtitle="Lower bounce = stickier. Claude and Perplexity lead."
         legend={[['chatgpt.com', C.openai], ['claude.ai', C.anthropic], ['perplexity.ai', C.perplexity]]}
         height={200}
