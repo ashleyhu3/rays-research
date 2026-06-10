@@ -5,6 +5,7 @@ import { trend, series } from '../utils/dataGenerators';
 import { wkLabels } from '../utils/labels';
 import { baseOpts, mkDs } from '../utils/chartHelpers';
 import ChartCard from '../components/ChartCard';
+import EditableGrid from '../components/EditableGrid';
 import { useData } from '../context/DataContext';
 
 // Map vast.ai GPU names to display names
@@ -75,7 +76,7 @@ export default function GPU({ weeks: W }) {
     : 'B200 price spikes signal labs hoarding compute before training runs — forward-looking demand proxy.';
 
   return (
-    <div className="cgrid">
+    <EditableGrid viewId="gpu">
       <ChartCard
         chartId="gpu-prices"
         title="GPU spot price $/hr — Lambda Labs / RunPod"
@@ -113,6 +114,6 @@ export default function GPU({ weeks: W }) {
       >
         <Line data={spreadData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
       </ChartCard>
-    </div>
+    </EditableGrid>
   );
 }

@@ -5,6 +5,7 @@ import { trend } from '../utils/dataGenerators';
 import { dayLabels } from '../utils/labels';
 import { baseOpts, mkDs, fmtN, fmtK, GRID, TICK, BORD } from '../utils/chartHelpers';
 import ChartCard from '../components/ChartCard';
+import EditableGrid from '../components/EditableGrid';
 import { useData } from '../context/DataContext';
 
 const AS_APPS   = ['ChatGPT', 'Claude', 'Perplexity', 'Gemini', 'Copilot'];
@@ -84,7 +85,7 @@ export default function Reddit({ weeks: W }) {
   const src = hasLive ? 'reddit.com search API · live · no auth' : 'reddit API · free OAuth';
 
   return (
-    <div className="cgrid">
+    <EditableGrid viewId="reddit">
       <ChartCard
         chartId="reddit-appstore"
         title="iOS App Store star rating — AI assistant apps (US)"
@@ -137,6 +138,6 @@ export default function Reddit({ weeks: W }) {
       >
         <Line data={twitterData} options={baseOpts(fmtK)} />
       </ChartCard>
-    </div>
+    </EditableGrid>
   );
 }

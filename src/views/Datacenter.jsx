@@ -4,6 +4,7 @@ import { C, fa } from '../config/colors';
 import { trend } from '../utils/dataGenerators';
 import { baseOpts, stackedOpts, hBarOpts, mkDs, GRID, TICK, BORD } from '../utils/chartHelpers';
 import ChartCard from '../components/ChartCard';
+import EditableGrid from '../components/EditableGrid';
 
 /* ── Static / short-series data defined outside component ─────────── */
 const CAPEX_YEARS  = ['2022','2023','2024','2025','2026e'];
@@ -89,7 +90,7 @@ export default function Datacenter({ weeks: W }) {
   };
 
   return (
-    <div className="cgrid">
+    <EditableGrid viewId="datacenter">
       <ChartCard
         chartId="dc-capex"
         title="Hyperscaler capex committed to datacenter build ($B)"
@@ -168,6 +169,6 @@ export default function Datacenter({ weeks: W }) {
       >
         <Bar data={dealsData} options={baseOpts(v => `${v} deals`)} />
       </ChartCard>
-    </div>
+    </EditableGrid>
   );
 }

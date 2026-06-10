@@ -5,6 +5,7 @@ import { trend } from '../utils/dataGenerators';
 import { wkLabels } from '../utils/labels';
 import { baseOpts, doughnutOpts, hBarOpts, stackedOpts, mkDs, fmtM, GRID, TICK, BORD } from '../utils/chartHelpers';
 import ChartCard from '../components/ChartCard';
+import EditableGrid from '../components/EditableGrid';
 import { useData } from '../context/DataContext';
 
 /* ── Static data ───────────────────────────────────────────────────── */
@@ -125,7 +126,7 @@ export default function Chinese({ weeks: W }) {
   };
 
   return (
-    <div className="cgrid">
+    <EditableGrid viewId="chinese">
       <ChartCard chartId="cn-tokens"
         title="Chinese LLM weekly token consumption on OpenRouter (billion tokens)"
         src="openrouter.ai/rankings"
@@ -198,6 +199,6 @@ export default function Chinese({ weeks: W }) {
       >
         <Bar data={benchData} options={benchOpts} />
       </ChartCard>
-    </div>
+    </EditableGrid>
   );
 }

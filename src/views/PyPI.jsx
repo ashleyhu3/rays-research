@@ -5,6 +5,7 @@ import { trend } from '../utils/dataGenerators';
 import { wkLabels } from '../utils/labels';
 import { baseOpts, hBarOpts, mkDs, fmtM, fmtK } from '../utils/chartHelpers';
 import ChartCard from '../components/ChartCard';
+import EditableGrid from '../components/EditableGrid';
 import { useData } from '../context/DataContext';
 
 const SO_STATIC = {
@@ -103,7 +104,7 @@ export default function PyPI({ weeks: W }) {
   const hasLiveSO       = Object.keys(liveData?.soTotals ?? {}).length > 0;
 
   return (
-    <div className="cgrid">
+    <EditableGrid viewId="pypi">
       <ChartCard
         chartId="pypi-installs"
         title="PyPI weekly downloads — Python SDK installs"
@@ -155,6 +156,6 @@ export default function PyPI({ weeks: W }) {
       >
         <Bar data={soData} options={hBarOpts(fmtK)} />
       </ChartCard>
-    </div>
+    </EditableGrid>
   );
 }

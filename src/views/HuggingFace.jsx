@@ -5,6 +5,7 @@ import { trend } from '../utils/dataGenerators';
 import { wkLabels } from '../utils/labels';
 import { baseOpts, doughnutOpts, mkDs, fmtM, fmtK } from '../utils/chartHelpers';
 import ChartCard from '../components/ChartCard';
+import EditableGrid from '../components/EditableGrid';
 import { useData } from '../context/DataContext';
 
 const CAT_LABELS = ['Text Gen','Embeddings','Image Gen','Speech','Code Gen','Multimodal'];
@@ -86,7 +87,7 @@ export default function HuggingFace({ weeks: W }) {
     : 'Top open-weight model downloads. High velocity = high production integration likelihood.';
 
   return (
-    <div className="cgrid">
+    <EditableGrid viewId="hf">
       <ChartCard
         chartId="hf-downloads"
         title="HuggingFace — weekly model download velocity"
@@ -130,6 +131,6 @@ export default function HuggingFace({ weeks: W }) {
       >
         <Bar data={newModelsData} options={baseOpts(fmtK)} />
       </ChartCard>
-    </div>
+    </EditableGrid>
   );
 }

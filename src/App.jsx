@@ -12,6 +12,7 @@ import Topbar from './components/Topbar';
 import Navbar from './components/Navbar';
 import { UIProvider } from './context/UIContext';
 import { DashboardProvider } from './context/DashboardContext';
+import { LayoutProvider } from './context/LayoutContext';
 
 // ── View components (static imports for reliability) ─────────────────
 import PyPI          from './views/PyPI';
@@ -26,6 +27,11 @@ import Electricity   from './views/Electricity';
 import Chinese       from './views/Chinese';
 import SectorOverview from './views/SectorOverview';
 import AISupply, { AISupplyOptics, AISupplyPCB } from './views/AISupply';
+
+/** Views that use EditableGrid and support layout customisation */
+const LAYOUT_EDITABLE = new Set([
+  'pypi','github','trends','web','reddit','hf','gpu','datacenter','electricity','chinese',
+]);
 
 /** Map view id → React component */
 const VIEW_COMPONENTS = {
@@ -59,6 +65,7 @@ export default function App() {
   return (
     <DashboardProvider>
       <UIProvider>
+        <LayoutProvider>
         <Navbar onNavigate={setCurrentView} currentView={currentView} />
         <div className="app-body">
           <Sidebar currentView={currentView} onNavigate={setCurrentView} mode={mode} />
@@ -71,6 +78,8 @@ export default function App() {
               months={mode === 'supply' ? months : undefined}
               onMonthsChange={mode === 'supply' ? setMonths : undefined}
               sectorId={sectorId}
+              viewId={currentView}
+              layoutEditable={LAYOUT_EDITABLE.has(currentView)}
             />
             <div className="content">
               {sectorId
@@ -80,6 +89,7 @@ export default function App() {
             </div>
           </main>
         </div>
+        </LayoutProvider>
       </UIProvider>
     </DashboardProvider>
   );

@@ -5,6 +5,7 @@ import { trend } from '../utils/dataGenerators';
 import { wkLabels } from '../utils/labels';
 import { baseOpts, mkDs } from '../utils/chartHelpers';
 import ChartCard from '../components/ChartCard';
+import EditableGrid from '../components/EditableGrid';
 
 export default function Web({ weeks: W }) {
   const wk = useMemo(() => wkLabels(W), [W]);
@@ -40,7 +41,7 @@ export default function Web({ weeks: W }) {
   const visitsFmt = v => v >= 1e9 ? `${(v / 1e9).toFixed(2)}B` : `${(v / 1e6).toFixed(0)}M`;
 
   return (
-    <div className="cgrid">
+    <EditableGrid viewId="web">
       <ChartCard
         chartId="web-visits"
         title="Monthly web visits"
@@ -80,6 +81,6 @@ export default function Web({ weeks: W }) {
       >
         <Line data={bounceData} options={baseOpts(v => `${v.toFixed(1)}%`)} />
       </ChartCard>
-    </div>
+    </EditableGrid>
   );
 }

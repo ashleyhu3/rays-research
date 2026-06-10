@@ -3,6 +3,7 @@ import { Line, Bar } from 'react-chartjs-2';
 import { C, fa } from '../config/colors';
 import { baseOpts, stackedOpts, hBarOpts, mkDs, GRID, TICK, BORD } from '../utils/chartHelpers';
 import ChartCard from '../components/ChartCard';
+import EditableGrid from '../components/EditableGrid';
 import { useData } from '../context/DataContext';
 
 const EL_YEARS  = ['2020','2021','2022','2023','2024','2025e','2026e','2027e','2028e'];
@@ -107,7 +108,7 @@ export default function Electricity({ weeks: W }) {
   };
 
   return (
-    <div className="cgrid">
+    <EditableGrid viewId="electricity">
       <ChartCard
         chartId="elec-consumption"
         title="US datacenter electricity consumption (TWh / year)"
@@ -186,6 +187,6 @@ export default function Electricity({ weeks: W }) {
       >
         <Line data={pueData} options={baseOpts(v => v.toFixed(2))} />
       </ChartCard>
-    </div>
+    </EditableGrid>
   );
 }

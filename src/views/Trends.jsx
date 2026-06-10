@@ -5,6 +5,7 @@ import { trend } from '../utils/dataGenerators';
 import { dayLabels } from '../utils/labels';
 import { baseOpts, hBarOpts, mkDs, fmtP, fmtN } from '../utils/chartHelpers';
 import ChartCard from '../components/ChartCard';
+import EditableGrid from '../components/EditableGrid';
 import { useData } from '../context/DataContext';
 
 const STATIC_GEO_LABELS = ['San Francisco','New York','Seattle','Boston','Austin','Chicago','Los Angeles','Atlanta'];
@@ -96,7 +97,7 @@ export default function Trends({ weeks: W }) {
   const src = hasLive ? 'google-trends-api · live' : 'pytrends · free · no auth';
 
   return (
-    <div className="cgrid">
+    <EditableGrid viewId="trends">
       <ChartCard
         chartId="trends-api"
         title="Google Trends — relative search interest (0–100)"
@@ -151,6 +152,6 @@ export default function Trends({ weeks: W }) {
       >
         <Bar data={jobsData} options={baseOpts(fmtN)} />
       </ChartCard>
-    </div>
+    </EditableGrid>
   );
 }

@@ -312,3 +312,40 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
   width: 13px; height: 13px; flex-shrink: 0;
   accent-color: var(--accent); cursor: pointer;
 }
+
+/* ── Editable grid layout ───────────────────────────────────────────── */
+.egrid-item { min-width: 0; }
+
+/* Control bar sits above each card, hidden until edit mode is active */
+.lctrl { display: none; }
+
+.cgrid--editing .lctrl {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-bottom: 5px;
+  padding: 3px 4px;
+  background: rgba(17,20,25,.9);
+  border: 1px solid var(--border-hi);
+  border-radius: 7px;
+  width: fit-content;
+}
+
+.cgrid--editing .egrid-item--on > .cbox {
+  border-color: rgba(232,197,71,.18);
+  transition: border-color .15s;
+}
+
+.lctrl-group { display: flex; gap: 1px; }
+.lctrl-sep   { width: 1px; background: var(--border-hi); margin: 0 3px; align-self: stretch; }
+
+.lc-btn {
+  display: flex; align-items: center; justify-content: center;
+  padding: 3px 5px; border: none; background: none;
+  color: var(--sec); cursor: pointer; border-radius: 4px;
+  transition: background .12s, color .12s; line-height: 1;
+}
+.lc-btn:hover:not(:disabled) { background: rgba(255,255,255,.07); color: var(--text); }
+.lc-btn:disabled              { opacity: .28; cursor: not-allowed; }
+.lc-btn.lc-text               { font-size: 11px; font-family: var(--font-b); padding: 3px 8px; }
+.lc-btn.lc-active             { color: var(--accent); background: var(--adim); }

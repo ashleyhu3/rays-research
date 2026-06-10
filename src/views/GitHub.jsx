@@ -5,6 +5,7 @@ import { trend } from '../utils/dataGenerators';
 import { wkLabels } from '../utils/labels';
 import { baseOpts, mkDs, fmtK, fmtN } from '../utils/chartHelpers';
 import ChartCard from '../components/ChartCard';
+import EditableGrid from '../components/EditableGrid';
 import { useData } from '../context/DataContext';
 
 const REPO_KEYS = {
@@ -62,7 +63,7 @@ export default function GitHub({ weeks: W }) {
     : 'anthropic-sdk-python grew from ~11k to <b>18.4k repos</b> in 12 weeks (+67%). openai-python leads at 54k but growth has plateaued.';
 
   return (
-    <div className="cgrid">
+    <EditableGrid viewId="github">
       <ChartCard
         chartId="github-deps"
         title='GitHub "Used By" — repositories depending on each SDK'
@@ -101,6 +102,6 @@ export default function GitHub({ weeks: W }) {
       >
         <Line data={cacheData} options={baseOpts(fmtK)} />
       </ChartCard>
-    </div>
+    </EditableGrid>
   );
 }

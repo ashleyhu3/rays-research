@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useDashboard } from '../context/DashboardContext';
+import { useLayout } from '../context/LayoutContext';
+import { useUI } from '../context/UIContext';
 import { chartsForSector } from '../config/charts';
 
 const MONTH_OPTIONS = [
@@ -72,7 +74,10 @@ function CustomizeDropdown({ sectorId }) {
   );
 }
 
-export default function Topbar({ title, isNew, months, onMonthsChange, sectorId }) {
+export default function Topbar({ title, isNew, months, onMonthsChange, sectorId, viewId, layoutEditable }) {
+  const { editMode, setEditMode } = useUI();
+  const { resetLayout } = useLayout();
+
   return (
     <div className="topbar">
       <h1>{title}{isNew && <span className="new-badge" style={{ marginLeft: 10, verticalAlign: 'middle' }}>NEW</span>}</h1>
@@ -87,6 +92,24 @@ export default function Topbar({ title, isNew, months, onMonthsChange, sectorId 
           </button>
         ))}
         {sectorId && <CustomizeDropdown sectorId={sectorId} />}
+        {layoutEditable && editMode && (
+          <button
+            className="rbtn"
+            title="Reset this page's layout to default"
+            onClick={() => resetLayout(viewId)}
+          >
+            Reset Layout
+          </button>
+        )}
+        {layoutEditable && (
+          <button
+            className={`rbtn${editMode ? ' active' : ''}`}
+            title={editMode ? 'Exit layout editing' : 'Rearrange charts on this page'}
+            onClick={() => setEditMode(v => !v)}
+          >
+            {editMode ? 'Done' : 'Edit Layout'}
+          </button>
+        )}
       </div>
     </div>
   );
