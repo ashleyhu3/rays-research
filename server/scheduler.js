@@ -31,7 +31,7 @@ const TTL = {
   reddit:         6 * 3600000,  // 6-hourly — social mention counts fluctuate throughout the day
   appstore:       6 * 3600000,  // 6-hourly — App Store rankings update multiple times per day
   jobs:           6 * 3600000,  // 6-hourly — job listings open and close continuously
-  gpu:            1 * 3600000,  // hourly  — spot prices change minute-to-minute on vast.ai/Lambda
+  gpu:           24 * 3600000,  // daily   — persisted as one median snapshot per UTC day
   github:        24 * 3600000,  // daily   — dependent repo counts grow slowly
   openrouter:     1 * 3600000,  // hourly  — new models and price changes published frequently
   eia:           24 * 3600000,  // daily   — EIA publishes monthly/annual revisions; daily poll is sufficient
@@ -68,14 +68,14 @@ async function refreshAll(keys = Object.keys(scrapers)) {
 }
 
 function setup() {
-  // Hourly: market prices and model listings change continuously
-  cron.schedule('0 * * * *', () => refreshAll(['gpu', 'openrouter', 'hn']));
+  // Hourly: model listings and discussion flow change continuously
+  cron.schedule('0 * * * *', () => refreshAll(['openrouter', 'hn']));
 
   // Every 6 hours: social signals and business data updated throughout the day
   cron.schedule('0 */6 * * *', () => refreshAll(['reddit', 'appstore', 'jobs', 'docker', 'openrouterRanks', 'dram']));
 
   // Daily at 03:00 UTC: aggregate stats whose sources only publish once per day
-  cron.schedule('0 3 * * *', () => refreshAll(['pypi', 'trends', 'github', 'eia', 'mops', 'githubCommits', 'arxiv', 'wikipedia']));
+  cron.schedule('0 3 * * *', () => refreshAll(['gpu', 'pypi', 'trends', 'github', 'eia', 'mops', 'githubCommits', 'arxiv', 'wikipedia']));
 }
 
 module.exports = { setup, refreshAll, scrapers, TTL };

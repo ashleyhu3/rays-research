@@ -10,36 +10,36 @@ function getModeForView(viewId) {
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
 import Navbar from './components/Navbar';
-import Chat from './views/Chat';
+import Chat from './views/AIDemand/Chat';
 import { UIProvider } from './context/UIContext';
 import { DashboardProvider } from './context/DashboardContext';
 import { LayoutProvider } from './context/LayoutContext';
 
 // ── View components (static imports for reliability) ─────────────────
-import PyPI          from './views/PyPI';
-import GitHub        from './views/GitHub';
-import Trends        from './views/Trends';
-import Web           from './views/Web';
-import Reddit        from './views/Reddit';
-import HuggingFace   from './views/HuggingFace';
-import Pricing       from './views/Pricing';
-import Datacenter    from './views/Datacenter';
-import Electricity   from './views/Electricity';
-import Chinese       from './views/Chinese';
-import SectorOverview from './views/SectorOverview';
-import AISupply, { AISupplyOptics, AISupplyPCB } from './views/AISupply';
-import ArXiv          from './views/ArXiv';
-import GitHubActivity from './views/GitHubActivity';
-import Docker         from './views/Docker';
-import Community      from './views/Community';
-import Options        from './views/Options';
-import DemandOpenAI   from './views/DemandOpenAI';
-import DemandAnthropic from './views/DemandAnthropic';
-import DemandGoogle   from './views/DemandGoogle';
-import DemandZhipu    from './views/DemandZhipu';
-import DemandMiniMax  from './views/DemandMiniMax';
-import DemandGeneral      from './views/DemandGeneral';
-import DemandOpenRouter   from './views/DemandOpenRouter';
+import PyPI          from './views/AIDemand/PyPI';
+import GitHub        from './views/AIDemand/GitHub';
+import Trends        from './views/AIDemand/Trends';
+import Web           from './views/AIDemand/Web';
+import Reddit        from './views/AIDemand/Reddit';
+import HuggingFace   from './views/AIDemand/HuggingFace';
+import Pricing       from './views/Pricing/Pricing';
+import Datacenter    from './views/AIDemand/Datacenter';
+import Electricity   from './views/AIDemand/Electricity';
+import Chinese       from './views/AIDemand/Chinese';
+import SectorOverview from './views/AIDemand/SectorOverview';
+import AISupply, { AISupplyOptics, AISupplyPCB } from './views/AISupply/AISupply';
+import ArXiv          from './views/AIDemand/ArXiv';
+import GitHubActivity from './views/AIDemand/GitHubActivity';
+import Docker         from './views/AIDemand/Docker';
+import Community      from './views/AIDemand/Community';
+import Options        from './views/AIDemand/Options';
+import DemandOpenAI   from './views/AIDemand/DemandOpenAI';
+import DemandAnthropic from './views/AIDemand/DemandAnthropic';
+import DemandGoogle   from './views/AIDemand/DemandGoogle';
+import DemandZhipu    from './views/AIDemand/DemandZhipu';
+import DemandMiniMax  from './views/AIDemand/DemandMiniMax';
+import DemandGeneral      from './views/AIDemand/DemandGeneral';
+import DemandOpenRouter   from './views/AIDemand/DemandOpenRouter';
 
 /** Views that use EditableGrid and support layout customisation */
 const LAYOUT_EDITABLE = new Set([

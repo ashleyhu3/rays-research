@@ -1,5 +1,5 @@
 /**
- * One-time backfill of GPU spot price history from Wayback Machine snapshots
+ * One-time backfill of GPU rental price history from Wayback Machine snapshots
  * of Lambda Labs' retired pricing page (lambdalabs.com/service/gpu-cloud).
  *
  * Archived pages list on-demand per-GPU pricing as table rows like
@@ -8,8 +8,8 @@
  * the snapshot date. Existing dates (live vast.ai scrapes) are never touched.
  *
  * Note the source difference: backfilled points are Lambda on-demand prices;
- * points from 2026-06-11 onward are vast.ai spot medians. The chart subtitle
- * discloses this.
+ * current daily points are vast.ai market medians. The chart subtitle discloses
+ * this because no public three-year GPU spot archive exists.
  *
  * Usage: node server/scripts/backfillGpu.js
  */
@@ -21,6 +21,7 @@ const path = require('path');
 const PAGE = 'https://lambdalabs.com/service/gpu-cloud';
 const UA   = 'signal-dashboard-backfill/1.0 (one-time historical backfill)';
 const HISTORY_FILE = path.join(__dirname, '..', 'data', 'gpuHistory.json');
+const LOOKBACK_DAYS = 365 * 3;
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
@@ -45,9 +46,13 @@ async function getWithRetry(url, tries = 4) {
 }
 
 async function listSnapshots() {
+  const from = new Date(Date.now() - LOOKBACK_DAYS * 86400000)
+    .toISOString()
+    .slice(0, 10)
+    .replace(/-/g, '');
   const url = 'https://web.archive.org/cdx/search/cdx'
     + `?url=${encodeURIComponent('lambdalabs.com/service/gpu-cloud')}`
-    + '&output=json&filter=statuscode:200&collapse=timestamp:8&from=20240101';
+    + `&output=json&filter=statuscode:200&collapse=timestamp:8&from=${from}`;
   const html = await getWithRetry(url);
   const rows = JSON.parse(html);
   return rows.slice(1).map(r => r[1]);
