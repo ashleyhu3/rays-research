@@ -6,8 +6,20 @@ const path = require('path');
 // history of the scraped medians: { 'YYYY-MM-DD': { gpuName: $/hr } }
 const HISTORY_FILE = path.join(__dirname, '..', 'data', 'gpuHistory.json');
 
+// Marketplace/spot-tier anchors read from published trackers (Silicon Data
+// H100 series, AIMultiple GPU index, vast.ai medians) — see _sources inside.
+// Scraped same-day snapshots take precedence over backfill anchors.
+const BACKFILL_FILE = path.join(__dirname, '..', 'data', 'gpuBackfill.json');
+
+function loadDateMap(file) {
+  try {
+    const raw = JSON.parse(fs.readFileSync(file, 'utf8'));
+    return Object.fromEntries(Object.entries(raw).filter(([k]) => /^\d{4}-\d{2}-\d{2}$/.test(k)));
+  } catch { return {}; }
+}
+
 function loadHistory() {
-  try { return JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf8')); } catch { return {}; }
+  return loadDateMap(HISTORY_FILE);
 }
 
 function saveHistory(history) {
@@ -114,30 +126,65 @@ function buildHistoryPayload(history) {
   const dates = dailyDates(snapshotDates[0], isoDay(Date.now()));
   const gpus = [...new Set(snapshotDates.flatMap(d => Object.keys(normalizedHistory[d])))];
 
-  const filledHistory = {};
-  const lastSeen = {};
-  for (const d of dates) {
-    if (normalizedHistory[d]) {
-      for (const [gpu, price] of Object.entries(normalizedHistory[d])) {
-        lastSeen[gpu] = price;
-      }
-    }
-    filledHistory[d] = { ...lastSeen };
-  }
-
+  // Linear interpolation between snapshot anchors (null before a GPU's first
+  // snapshot, forward-filled after its last) — sparse anchors would otherwise
+  // render as long flat steps that misread as "no price movement".
+  const dateIdx = Object.fromEntries(dates.map((d, i) => [d, i]));
   const series = {};
   for (const g of gpus) {
-    series[g] = dates.map(d => filledHistory[d]?.[g] ?? null);
+    const anchors = snapshotDates
+      .filter(d => Number.isFinite(normalizedHistory[d][g]) && dateIdx[d] != null)
+      .map(d => ({ i: dateIdx[d], v: normalizedHistory[d][g] }));
+    const vals = new Array(dates.length).fill(null);
+    for (let a = 0; a < anchors.length; a++) {
+      const cur = anchors[a], next = anchors[a + 1];
+      vals[cur.i] = cur.v;
+      if (next) {
+        const span = next.i - cur.i;
+        for (let i = cur.i + 1; i < next.i; i++) {
+          vals[i] = +(cur.v + (next.v - cur.v) * ((i - cur.i) / span)).toFixed(3);
+        }
+      } else {
+        for (let i = cur.i + 1; i < dates.length; i++) vals[i] = cur.v;
+      }
+    }
+    series[g] = vals;
   }
 
-  // Mainstream index: average $/hr across comparable tracked datacenter GPUs
-  // listed on each date. This avoids older workstation-only snapshot rows from
-  // pulling the index away from AI accelerator pricing.
-  const index = dates.map(d => {
-    const vals = INDEX_GPUS
-      .map(g => filledHistory[d]?.[g])
-      .filter(v => Number.isFinite(v));
-    return vals.length ? +(vals.reduce((s, v) => s + v, 0) / vals.length).toFixed(3) : null;
+  const filledHistory = {};
+  dates.forEach((d, i) => {
+    filledHistory[d] = Object.fromEntries(gpus.map(g => [g, series[g][i]]).filter(([, v]) => v != null));
+  });
+
+  // Mainstream index across comparable tracked datacenter GPUs, chain-linked:
+  // each day's level moves by the price ratio of the GPUs present on both
+  // days, so a newly shipped GPU (H200, B200) joining the basket shifts the
+  // composition without jumping the level. A 31-day centered moving average
+  // then smooths the remaining anchor-date kinks into a continuous curve.
+  const rawIndex = [];
+  let level = null, prevSet = [];
+  const avgOf = (set, d) => set.reduce((s, g) => s + filledHistory[d][g], 0) / set.length;
+  for (let i = 0; i < dates.length; i++) {
+    const d = dates[i];
+    const present = INDEX_GPUS.filter(g => Number.isFinite(filledHistory[d]?.[g]));
+    if (present.length === 0) { rawIndex.push(null); continue; }
+    if (level == null) {
+      level = avgOf(present, d);
+    } else {
+      const common = present.filter(g => prevSet.includes(g));
+      // No overlap with yesterday's basket → no comparable ratio; carry the level.
+      if (common.length) level *= avgOf(common, d) / avgOf(common, dates[i - 1]);
+    }
+    prevSet = present;
+    rawIndex.push(level);
+  }
+  const index = rawIndex.map((v, i) => {
+    if (v == null) return null;
+    let sum = 0, n = 0;
+    for (let j = Math.max(0, i - 15); j <= Math.min(rawIndex.length - 1, i + 15); j++) {
+      if (rawIndex[j] != null) { sum += rawIndex[j]; n++; }
+    }
+    return +(sum / n).toFixed(3);
   });
 
   return { dates, snapshotDates, series, index };
@@ -158,14 +205,17 @@ async function getGpuPrices() {
     history[today] = prices;
     saveHistory(history);
   }
-  const historyPayload = buildHistoryPayload(history);
+  // Published-tracker anchors fill the years before this dashboard started
+  // scraping; live snapshots win whenever the dates collide.
+  const merged = { ...loadDateMap(BACKFILL_FILE), ...history };
+  const historyPayload = buildHistoryPayload(merged);
   if (Object.keys(prices).length === 0 && historyPayload.dates.length === 0) return null;
 
   return {
     prices,
     availability: market.availability,
     history: historyPayload,
-    methodology: 'Historical snapshots are normalized by GPU model, then forward-filled to daily observations until the next scrape. Recent points are vast.ai median interruptible/market rates; older backfill points come from archived Lambda Labs per-GPU rental prices where no public spot archive is available.',
+    methodology: 'Recent points are vast.ai median market rates scraped daily. Pre-scrape history uses marketplace-tier anchors read from published trackers (Silicon Data H100 rental series, AIMultiple GPU index, vendor price pages), linearly interpolated between anchor dates — approximate market levels, not exact archival spot quotes. AWS official spot history only covers the last 90 days, so no public archive exists.',
   };
 }
 

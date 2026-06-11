@@ -80,6 +80,39 @@ export const doughnutOpts = (cutout = '55%') => ({
   },
 });
 
+/* ─── Dual-axis options (volume on left, secondary series on right) ──
+   Datasets with yAxisID 'y1' are formatted with y1Fmt in the tooltip. */
+export const dualAxisOpts = (yFmt, y1Fmt) => {
+  const base = baseOpts(yFmt);
+  return {
+    ...base,
+    plugins: {
+      ...base.plugins,
+      legend: {
+        display: true,
+        position: 'bottom',
+        labels: {
+          color: '#c8c8c0',
+          font: { size: 10, family: "'Inter',sans-serif" },
+          padding: 10,
+          boxWidth: 10,
+        },
+      },
+      tooltip: {
+        ...base.plugins.tooltip,
+        callbacks: {
+          label: c => ` ${c.dataset.label}: ${(c.dataset.yAxisID === 'y1' ? y1Fmt : yFmt)(c.parsed.y)}`,
+        },
+      },
+    },
+    scales: {
+      x: base.scales.x,
+      y:  { position: 'left',  grid: GRID, ticks: { ...TICK, callback: v => yFmt(v) }, border: BORD, beginAtZero: true },
+      y1: { position: 'right', grid: { drawOnChartArea: false }, ticks: { ...TICK, callback: v => y1Fmt(v) }, border: BORD },
+    },
+  };
+};
+
 /* ─── Stacked bar options ───────────────────────────────────────────── */
 export const stackedOpts = (yFmt) => ({
   ...baseOpts(yFmt),

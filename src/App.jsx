@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { VIEW_META, SECTOR_OVERVIEW_IDS, NAV_SECTIONS } from './config/navigation';
 
 function getModeForView(viewId) {
@@ -28,7 +28,6 @@ import Electricity   from './views/AIDemand/Electricity';
 import Chinese       from './views/AIDemand/Chinese';
 import SectorOverview from './views/AIDemand/SectorOverview';
 import AISupply, { AISupplyOptics, AISupplyPCB } from './views/AISupply/AISupply';
-import ArXiv          from './views/AIDemand/ArXiv';
 import GitHubActivity from './views/AIDemand/GitHubActivity';
 import Docker         from './views/AIDemand/Docker';
 import Community      from './views/AIDemand/Community';
@@ -62,7 +61,6 @@ const VIEW_COMPONENTS = {
   'ai-supply':        AISupply,
   'ai-supply-optics': AISupplyOptics,
   'ai-supply-pcb':    AISupplyPCB,
-  'arxiv':            ArXiv,
   'github-commits':   GitHubActivity,
   'docker':           Docker,
   'community':        Community,
@@ -84,10 +82,22 @@ export default function App() {
 
   const meta = VIEW_META[currentView] ?? { title: currentView.toUpperCase(), isNew: false };
   const mode = getModeForView(currentView);
+  const prevView = useRef(null);
+
+  // When the user enters the OpenRouter rankings page, default the global
+  // weeks selection to the available multi-year window so YoY growth can
+  // stretch across the full dataset.
+  useEffect(() => {
+    if (currentView === 'openrouter-rankings' && prevView.current !== 'openrouter-rankings' && weeks < 104) {
+      setWeeks(104);
+    }
+    prevView.current = currentView;
+  }, [currentView, weeks]);
 
   // Check if this is a sector overview page
   const sectorId = SECTOR_OVERVIEW_IDS[currentView] ?? null;
   const ViewComponent = sectorId ? null : VIEW_COMPONENTS[currentView];
+  const showSidebar = currentView !== 'pricing' && currentView !== 'options';
 
   return (
     <DashboardProvider>
@@ -95,7 +105,7 @@ export default function App() {
         <LayoutProvider>
         <Navbar onNavigate={setCurrentView} currentView={currentView} />
         <div className="app-body">
-          <Sidebar currentView={currentView} onNavigate={setCurrentView} mode={mode} />
+          {showSidebar && <Sidebar currentView={currentView} onNavigate={setCurrentView} mode={mode} />}
           <main className="main">
             {currentView !== 'chat' && (
               <Topbar

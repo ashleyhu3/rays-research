@@ -64,7 +64,13 @@ const GPU_LABELS = {
   RTX_4090: 'RTX 4090',
 };
 
-const GPU_HISTORY_KEYS = ['H100_SXM', 'H200', 'B200', 'A100_SXM', 'A100_PCIe', 'RTX_4090'];
+// One rental-price chart per NVIDIA GPU family
+const GPU_GROUPS = [
+  { chartId: 'gpu-prices-hopper',    title: 'GPU rental price $/hr — Hopper (H100 / H200)', keys: ['H100_SXM', 'H100_PCIe', 'H200'] },
+  { chartId: 'gpu-prices-blackwell', title: 'GPU rental price $/hr — Blackwell (B200)',     keys: ['B200'] },
+  { chartId: 'gpu-prices-ampere',    title: 'GPU rental price $/hr — Ampere (A100)',        keys: ['A100_SXM', 'A100_PCIe'] },
+  { chartId: 'gpu-prices-consumer',  title: 'GPU rental price $/hr — consumer (RTX 4090)',  keys: ['RTX_4090'] },
+];
 
 const countPoints = values => values.filter(v => v != null && Number.isFinite(v)).length;
 
@@ -87,33 +93,55 @@ export default function Pricing({ weeks: W = 52 }) {
   const h100Current = findPrice(gpuPrices, 'H100_SXM', 'H100_SXM4', 'H100_SXM_New') ?? 2.53;
   const h200Current = findPrice(gpuPrices, 'H200', 'H200_SXM5') ?? 3.69;
   const b200Current = findPrice(gpuPrices, 'B200') ?? 4.38;
+  const a100Current = findPrice(gpuPrices, 'A100_SXM', 'A100_SXM4') ?? 1.29;
+  const rtxCurrent = findPrice(gpuPrices, 'RTX_4090', 'RTX 4090') ?? 0.47;
 
   const gpuHist = gpu?.history;
   const gpuWindow = useMemo(() => windowHistory(gpuHist, W), [gpuHist, W]);
 
-  const priceData = useMemo(() => {
-    if (!gpuHist?.dates?.length || !gpuWindow) {
-      return {
-        labels: ['Current'],
-        datasets: [
-          mkDs('H100 SXM', C.openai, [h100Current]),
-          mkDs('H200', C.anthropic, [h200Current]),
-          mkDs('B200', C.google, [b200Current]),
-        ],
-      };
-    }
-    const labels = gpuWindow.dates.map(d => historyLabel(d, W));
-    return {
-      labels,
-      datasets: GPU_HISTORY_KEYS
-        .filter(key => countPoints(gpuHist.series?.[key]?.slice(gpuWindow.start) ?? []) >= 2)
-        .map(key => ({
-          ...mkDs(GPU_LABELS[key] ?? key.replace(/_/g, ' '), GPU_PALETTE[key] ?? C.openai, gpuHist.series[key].slice(gpuWindow.start)),
-          spanGaps: true,
-          pointRadius: 2,
-        })),
+  const priceCharts = useMemo(() => {
+    const keys = ['H100_SXM', 'H100_PCIe', 'H200', 'B200', 'A100_SXM', 'A100_PCIe', 'RTX_4090'];
+    const current = {
+      H100_SXM: h100Current,
+      H100_PCIe: null,
+      H200: h200Current,
+      B200: b200Current,
+      A100_SXM: a100Current,
+      A100_PCIe: null,
+      RTX_4090: rtxCurrent,
     };
-  }, [gpuHist, gpuWindow, W, h100Current, h200Current, b200Current]);
+
+    const labels = gpuWindow?.dates?.map(d => historyLabel(d, W));
+    return GPU_GROUPS.map(group => {
+      const activeKeys = group.keys.filter(key => {
+        if (!gpuHist?.dates?.length || !gpuWindow) {
+          return Number.isFinite(current[key]);
+        }
+        return countPoints(gpuHist.series?.[key]?.slice(gpuWindow.start) ?? []) >= 2;
+      });
+      if (activeKeys.length === 0) return null;
+
+      const data = {
+        labels: gpuHist?.dates?.length && gpuWindow ? labels : ['Current'],
+        datasets: activeKeys.map(key => {
+          const values = gpuHist?.dates?.length && gpuWindow
+            ? gpuHist.series[key].slice(gpuWindow.start)
+            : [current[key]];
+          return {
+            ...mkDs(GPU_LABELS[key] ?? key.replace(/_/g, ' '), GPU_PALETTE[key] ?? C.openai, values),
+            spanGaps: true,
+            pointRadius: gpuHist?.dates?.length && gpuWindow ? 0 : 4,
+          };
+        }),
+      };
+
+      return {
+        group,
+        legend: activeKeys.map(key => [GPU_LABELS[key] ?? key.replace(/_/g, ' '), GPU_PALETTE[key] ?? C.openai]),
+        data,
+      };
+    }).filter(Boolean);
+  }, [gpuHist, gpuWindow, W, h100Current, h200Current, b200Current, a100Current, rtxCurrent]);
 
   const availData = useMemo(() => {
     const availability = gpu?.availability;
@@ -196,7 +224,7 @@ export default function Pricing({ weeks: W = 52 }) {
     if (!gpuHist?.dates?.length || !gpuWindow) return null;
     return {
       labels: gpuWindow.dates.map(d => historyLabel(d, W)),
-      datasets: [mkDs('Mainstream GPU rental benchmark', C.openai, gpuHist.index.slice(gpuWindow.start), true)],
+      datasets: [{ ...mkDs('Mainstream GPU rental benchmark', C.openai, gpuHist.index.slice(gpuWindow.start), true), pointRadius: 0 }],
     };
   }, [gpuHist, gpuWindow, W]);
 
@@ -218,19 +246,23 @@ export default function Pricing({ weeks: W = 52 }) {
 
   return (
     <EditableGrid viewId="pricing">
-      <ChartCard
-        chartId="gpu-prices"
-        title="GPU rental price $/hr — mainstream accelerators"
-        src="vast.ai API · Lambda Labs archive"
-        srcUrl="https://vast.ai/pricing"
-        freq="snapshot"
-        subtitle={liveNote}
-        legend={[['H100 SXM', C.openai], ['H200', C.anthropic], ['B200', C.google], ['A100 SXM', C.teal], ['RTX 4090', C.minimax]]}
-        insight="Recent vast.ai market medians sit well below hyperscaler H100 rates, while B200 still carries a clear premium over H100/H200 capacity."
-        height={250} span2
-      >
-        <Line data={priceData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
-      </ChartCard>
+      {priceCharts.map(({ group, legend, data }) => (
+        <ChartCard
+          key={group.chartId}
+          chartId={group.chartId}
+          title={group.title}
+          src="vast.ai API · Silicon Data · AIMultiple"
+          srcUrl="https://vast.ai/pricing"
+          freq="snapshot"
+          subtitle={liveNote}
+          legend={legend}
+          insight={`GPU rental rates for ${group.title.toLowerCase()}.`}
+          height={230}
+          span2
+        >
+          <Line data={data} options={baseOpts(v => `$${v.toFixed(2)}`)} />
+        </ChartCard>
+      ))}
 
       {availData && (
         <ChartCard
@@ -250,7 +282,7 @@ export default function Pricing({ weeks: W = 52 }) {
         <ChartCard
           chartId="gpu-spread"
           title="H200 – H100 price spread"
-          src="vast.ai API · Lambda Labs archive"
+          src="vast.ai API · Silicon Data · AIMultiple"
           srcUrl="https://vast.ai/pricing"
           freq="snapshot"
           subtitle="Positive values mean H200 priced above H100 in the same source snapshot."
@@ -264,10 +296,10 @@ export default function Pricing({ weeks: W = 52 }) {
         <ChartCard
           chartId="gpu-index"
           title="Mainstream GPU rental benchmark — three-year view ($/hr)"
-          src="vast.ai API · Lambda Labs archive · AWS CLI reference"
+          src="vast.ai API · Silicon Data · AIMultiple"
           srcUrl="https://vast.ai/pricing"
           freq="snapshot"
-          subtitle="Average $/hr across comparable mainstream AI GPUs in stored snapshots. Recent points are vast.ai market medians; older backfill uses archived Lambda Labs per-GPU rental prices because AWS official spot history is limited to the past 90 days."
+          subtitle="Chain-linked $/hr index across mainstream AI GPUs (new GPUs joining the basket don't jump the level), smoothed with a 31-day centered moving average. Recent points are daily vast.ai market medians; pre-2026 history interpolates marketplace-tier anchors from Silicon Data's H100 rental series and the AIMultiple GPU index."
           height={240} span2
         >
           <Line data={gpuIndexData} options={baseOpts(v => `$${v.toFixed(2)}`)} />

@@ -1,10 +1,9 @@
 import { useMemo } from 'react';
 import { Line, Bar } from 'react-chartjs-2';
 import { C, fa } from '../../config/colors';
-import { trend } from '../../utils/dataGenerators';
-import { wkLabels } from '../../utils/labels';
 import { baseOpts, hBarOpts, mkDs, fmtM, GRID, TICK, BORD } from '../../utils/chartHelpers';
-import { orProviderSeries, orTokenSubtitle, fmtTok } from '../../utils/openrouterProvider';
+import { orProviderSeries } from '../../utils/openrouterProvider';
+import { orComboCard } from '../../components/OrGrowthCards';
 import ChartCard from '../../components/ChartCard';
 import EditableGrid from '../../components/EditableGrid';
 import { useData } from '../../context/DataContext';
@@ -47,20 +46,10 @@ const STATIC_PRICE = [
 
 export default function DemandMiniMax({ weeks: W }) {
   const { liveData: ld } = useData();
-  const wk = useMemo(() => wkLabels(W), [W]);
   const qN = Math.min(W, 5);
 
-  // MiniMax token consumption on OpenRouter (live rankings, synthetic fallback)
+  // MiniMax token share on OpenRouter (live rankings)
   const orp = useMemo(() => orProviderSeries(ld?.openrouterRanks, 'MiniMax', W), [ld, W]);
-  const tokenData = useMemo(() => orp ? {
-    labels: orp.labels,
-    datasets: [mkDs('MiniMax M2.5/M2.7', C.minimax, orp.tokens)],
-  } : {
-    labels: wk,
-    datasets: [
-      mkDs('MiniMax M2.5/M2.7', C.minimax, trend(200e9, 2450e9, W, 0.12)),
-    ],
-  }, [orp, wk, W]);
   const orShareData = useMemo(() => orp && ({
     labels: orp.labels,
     datasets: [mkDs('Share of platform tokens', C.minimax, orp.share)],
@@ -107,18 +96,7 @@ export default function DemandMiniMax({ weeks: W }) {
 
   return (
     <EditableGrid viewId="demand-minimax">
-      <ChartCard
-        chartId="mm-tokens"
-        title="MiniMax M2.5/M2.7 — weekly token consumption on OpenRouter (billion tokens)"
-        src={orp ? 'openrouter.ai/rankings · live' : 'openrouter.ai/rankings'}
-        srcUrl="https://openrouter.ai/rankings"
-        freq={orp ? 'daily' : 'weekly'}
-        subtitle={orp ? orTokenSubtitle(orp) : 'MiniMax led all models on OpenRouter in Feb 2026 with 2.45T tokens in a single week — a 197% week-over-week surge.'}
-        insight="In Feb 2026, MiniMax M2.5 captured the top position on OpenRouter — the first time a Chinese-origin model exceeded all US incumbents in weekly developer token volume."
-        height={240} span2
-      >
-        <Line data={tokenData} options={baseOpts(fmtTok)} />
-      </ChartCard>
+      {orComboCard(ld?.openrouterRanks, 'MiniMax', W, C.minimax, 'mm')}
 
       {orShareData && (
         <ChartCard
@@ -128,7 +106,7 @@ export default function DemandMiniMax({ weeks: W }) {
           srcUrl="https://openrouter.ai/rankings"
           freq="daily"
           subtitle="Percentage of total weekly OpenRouter token throughput served by MiniMax models."
-          height={220}
+          height={260}
         >
           <Line data={orShareData} options={baseOpts(v => `${v.toFixed(1)}%`)} />
         </ChartCard>
@@ -143,7 +121,7 @@ export default function DemandMiniMax({ weeks: W }) {
         subtitle="Talkie/Xingye (AI companion) and Hailuo AI (video generation) are MiniMax's consumer anchors."
         legend={[['Talkie / Xingye (AI companion)', C.minimax], ['Hailuo AI (video gen)', C.kimi]]}
         insight="Talkie reached <b>20M MAU</b> in the first 9 months of 2025 — among the fastest-growing AI apps globally. Average user age under 30."
-        height={240}
+        height={260}
       >
         <Bar data={mauData} options={baseOpts(v => `${v}M`)} />
       </ChartCard>
@@ -155,7 +133,7 @@ export default function DemandMiniMax({ weeks: W }) {
         srcUrl="https://openrouter.ai/models"
         freq="live"
         subtitle="MiniMax M2.5 at $0.30/M input tokens vs $2.50–15.00/M for comparable US models."
-        height={240}
+        height={260}
       >
         <Bar data={priceData} options={hBarOpts(v => `$${v.toFixed(2)}`)} />
       </ChartCard>
@@ -168,7 +146,7 @@ export default function DemandMiniMax({ weeks: W }) {
         freq="static"
         subtitle="MiniMax M2.5 scores 80.2% on SWE-bench Verified — essentially tied with Claude Opus 4.6 at 80.9%."
         insight="MiniMax M2.5 is the only Chinese model to reach near-parity with the current US frontier on software engineering. At $0.30/M tokens vs $15/M for Claude Opus, the cost-quality ratio is exceptional."
-        height={240} span2
+        height={260} span2
       >
         <Bar data={benchData} options={benchOpts} />
       </ChartCard>

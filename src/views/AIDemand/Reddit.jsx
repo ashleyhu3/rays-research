@@ -1,46 +1,17 @@
 import { useMemo } from 'react';
-import { Line, Bar } from 'react-chartjs-2';
-import { C, fa } from '../../config/colors';
+import { Line } from 'react-chartjs-2';
+import { C } from '../../config/colors';
 import { trend } from '../../utils/dataGenerators';
 import { dayLabels } from '../../utils/labels';
-import { baseOpts, mkDs, fmtN, fmtK, GRID, TICK, BORD } from '../../utils/chartHelpers';
+import { baseOpts, mkDs, fmtN, fmtK } from '../../utils/chartHelpers';
 import ChartCard from '../../components/ChartCard';
 import EditableGrid from '../../components/EditableGrid';
 import { useData } from '../../context/DataContext';
-
-const AS_APPS   = ['ChatGPT', 'Claude', 'Perplexity', 'Gemini', 'Copilot'];
-const AS_COLORS = [C.openai, C.anthropic, C.perplexity, C.google, C.slate];
-const AS_STATIC_SCORES = { ChatGPT: 4.8, Claude: 4.7, Perplexity: 4.6, Gemini: 4.4, Copilot: 4.2 };
-const AS_STATIC_REVS   = { ChatGPT: '2.1M', Claude: '340k', Perplexity: '280k', Gemini: '520k', Copilot: '180k' };
-const ratingOpts = {
-  responsive: true, maintainAspectRatio: false, animation: { duration: 300 },
-  interaction: { mode: 'index', intersect: false },
-  plugins: { legend: { display: false }, tooltip: { backgroundColor: '#1a1f2a', borderColor: 'rgba(255,255,255,.12)', borderWidth: 1, bodyFont: { family: "'Inter',sans-serif", size: 11 } } },
-  scales: {
-    x: { grid: GRID, ticks: TICK, border: BORD },
-    y: { min: 3.5, max: 5, grid: GRID, ticks: { ...TICK, callback: v => v.toFixed(1) }, border: BORD },
-  },
-};
 
 export default function Reddit({ weeks: W }) {
   const { liveData } = useData();
   const D    = Math.min(W * 7, 84);
   const days = useMemo(() => dayLabels(D), [D]);
-
-  // App Store data
-  const as = liveData?.appstore;
-  const hasLiveAS = as?.ratings != null;
-  const asScores = useMemo(() =>
-    AS_APPS.map(n => as?.ratings?.[n]?.score ?? AS_STATIC_SCORES[n]),
-    [as]
-  );
-  const asSubtitle = hasLiveAS
-    ? AS_APPS.map(n => `${n}: ${as.ratings[n]?.score?.toFixed(1) ?? '—'} (${as.ratings[n]?.reviews?.toLocaleString() ?? '—'} reviews)`).join(' · ')
-    : AS_APPS.map(n => `${n}: ${AS_STATIC_SCORES[n]} (${AS_STATIC_REVS[n]} reviews)`).join(' · ');
-  const ratingData = useMemo(() => ({
-    labels: AS_APPS,
-    datasets: [{ data: asScores, backgroundColor: AS_COLORS.map(c => fa(c, 0.7)), borderColor: AS_COLORS, borderWidth: 1, borderRadius: 4 }],
-  }), [asScores]);
 
   const rd = liveData?.reddit; // { ChatGPT: n, Claude: n, Gemini: n, Mistral: n }
   const hasLive = rd != null;
@@ -86,17 +57,6 @@ export default function Reddit({ weeks: W }) {
 
   return (
     <EditableGrid viewId="reddit">
-      <ChartCard
-        chartId="reddit-appstore"
-        title="iOS App Store star rating — AI assistant apps (US)"
-        src="apps.apple.com"
-        srcUrl="https://apps.apple.com/us/app/claude-ai/id6473753684"
-        freq="live"
-        subtitle={asSubtitle}
-        height={220} span2
-      >
-        <Bar data={ratingData} options={ratingOpts} />
-      </ChartCard>
       <ChartCard
         chartId="reddit-mentions"
         title="Reddit weekly mentions — r/MachineLearning · r/ChatGPT · r/LocalLLaMA"

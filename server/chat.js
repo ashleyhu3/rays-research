@@ -65,18 +65,6 @@ function buildContext() {
     sections.push(`### Reddit Weekly Mentions\n${lines.join('\n')}`);
   }
 
-  // 5. App Store rankings & ratings
-  const appstore = cache.get('appstore');
-  if (appstore) {
-    const lines = Object.entries(appstore.rankings ?? {})
-      .sort(([, a], [, b]) => a - b)
-      .map(([app, rank]) => {
-        const r = appstore.ratings?.[app];
-        return `  ${app}: rank #${rank}${r ? ` | ${r.score}/5 stars | ${fmt(r.reviews)} reviews` : ''}`;
-      });
-    sections.push(`### iOS App Store Rankings & Ratings (Top Free Productivity, US)\n${lines.join('\n')}`);
-  }
-
   // 6. Google Trends
   const trends = cache.get('trends');
   if (trends) {
@@ -165,29 +153,6 @@ function buildContext() {
     sections.push(`### Taiwan AI Supply Chain Revenue (NT$M/month, MOPS)\n${lines.join('\n')}`);
   }
 
-  // 11. arXiv AI paper submissions
-  const arxiv = cache.get('arxiv');
-  if (arxiv) {
-    const lines = [];
-    if (arxiv.monthly?.length) {
-      const last  = arxiv.monthly.at(-1);
-      const prev  = arxiv.monthly.at(-2);
-      const trend = prev?.count > 0
-        ? ` | trend: ${((last.count - prev.count) / prev.count * 100).toFixed(1)}% vs prior month`
-        : '';
-      lines.push(`  Latest month (${last.period}): ${fmt(last.count)} AI papers${trend}`);
-      const total12 = arxiv.monthly.reduce((s, m) => s + m.count, 0);
-      lines.push(`  12-month total: ${fmt(total12)} papers (cs.AI + cs.LG + cs.CL + cs.CV)`);
-      arxiv.monthly.slice(-6).forEach(m => lines.push(`    ${m.period}: ${fmt(m.count)}`));
-    }
-    if (arxiv.currentMonth) {
-      const cats = Object.entries(arxiv.currentMonth)
-        .map(([cat, n]) => `${cat}: ${fmt(n)}`).join(' | ');
-      lines.push(`  Current month by category: ${cats}`);
-    }
-    if (lines.length) sections.push(`### arXiv AI Paper Submissions (monthly)\n${lines.join('\n')}`);
-  }
-
   // 12. GitHub AI repo commit velocity
   const githubCommits = cache.get('githubCommits');
   if (githubCommits) {
@@ -266,22 +231,20 @@ function buildContext() {
 // ── System prompt ──────────────────────────────────────────────────────────
 
 const SYSTEM_PROMPT = `You are a research assistant for an AI industry signals dashboard.
-You receive a DATA CONTEXT with live data from 15 sources:
+You receive a DATA CONTEXT with live data from 13 sources:
 1.  PyPI Downloads — weekly history for openai, anthropic, google-generativeai, mistralai packages
 2.  GitHub SDK Stats — stars and dependent-repo counts for major AI SDKs
 3.  Job Postings — open roles at AI companies (Anthropic, OpenAI, Google DeepMind, Mistral, Cohere, Perplexity)
 4.  Reddit Mentions — weekly post counts (ChatGPT, Claude, Gemini, Mistral)
-5.  App Store — iOS Top Free Productivity rankings and ratings
-6.  Google Trends — relative search interest for brand and API keywords (0–100 scale)
-7.  GPU Prices — spot prices on vast.ai (H100, H200, A100, RTX 4090)
-8.  OpenRouter — all available AI models with pricing and context windows
-9.  Electricity Rates — US state residential rates from EIA
-10. Taiwan Supply Chain — monthly revenue for optics and PCB AI supply chain companies (MOPS)
-11. arXiv Paper Submissions — monthly AI paper counts by category (cs.AI, cs.LG, cs.CL, cs.CV)
-12. GitHub Commit Velocity — weekly commit history for 8 major open-source AI repos + new LLM repo growth
-13. Docker Hub Pulls — cumulative pull counts for PyTorch, NVIDIA CUDA, Ollama, vLLM, HF TGI images
-14. Hacker News Mentions — weekly AI story volume + per-term breakdown (ChatGPT, Claude, Gemini, LLM, AI agents)
-15. Wikipedia Pageviews — weekly pageviews for ChatGPT, Artificial intelligence, LLM, Claude, Gemini articles
+5.  Google Trends — relative search interest for brand and API keywords (0–100 scale)
+6.  GPU Prices — spot prices on vast.ai (H100, H200, A100, RTX 4090)
+7.  OpenRouter — all available AI models with pricing and context windows
+8.  Electricity Rates — US state residential rates from EIA
+9.  Taiwan Supply Chain — monthly revenue for optics and PCB AI supply chain companies (MOPS)
+10. GitHub Commit Velocity — weekly commit history for 8 major open-source AI repos + new LLM repo growth
+11. Docker Hub Pulls — cumulative pull counts for PyTorch, NVIDIA CUDA, Ollama, vLLM, HF TGI images
+12. Hacker News Mentions — weekly AI story volume + per-term breakdown (ChatGPT, Claude, Gemini, LLM, AI agents)
+13. Wikipedia Pageviews — weekly pageviews for ChatGPT, Artificial intelligence, LLM, Claude, Gemini articles
 
 ## Output format
 
@@ -320,11 +283,10 @@ Chart ID → signal name mapping (ONLY include IDs whose section appears in your
   "pypi"             → PyPI Downloads
   "github"           → GitHub SDK Stats
   "trends"           → Google Trends + Job Postings
-  "reddit"           → Reddit Mentions + App Store
+  "reddit"           → Reddit Mentions
   "gpu"              → GPU Prices + OpenRouter
   "electricity"      → Electricity Rates
   "ai-supply"        → Taiwan Supply Chain
-  "arxiv"            → arXiv Paper Submissions
   "github-commits"   → GitHub Commit Velocity
   "docker"           → Docker Hub Pulls
   "community"        → Hacker News + Wikipedia`;

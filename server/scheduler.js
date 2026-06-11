@@ -5,7 +5,6 @@ const scrapers = {
   pypi:          () => require('./scrapers/pypi').getPypiHistory(),
   trends:        () => require('./scrapers/trends').getTrendsData(),
   reddit:        () => require('./scrapers/reddit').getRedditData(),
-  appstore:      () => require('./scrapers/appstore').getAppRankings(),
   jobs:          () => require('./scrapers/jobs').getJobsData(),
   gpu:           () => require('./scrapers/gpu').getGpuPrices(),
   github:        () => require('./scrapers/github').getGitHubData(),
@@ -13,7 +12,6 @@ const scrapers = {
   eia:           () => require('./scrapers/eia').getEiaRates(),
   mops:          () => require('./scrapers/mops').getMopsRevenue(),
   githubCommits: () => require('./scrapers/githubActivity').getGitHubActivity(),
-  arxiv:         () => require('./scrapers/arxiv').getArxivData(),
   docker:        () => require('./scrapers/docker').getDockerData(),
   hn:            () => require('./scrapers/hn').getHNData(),
   wikipedia:        () => require('./scrapers/wikipedia').getWikipediaData(),
@@ -29,7 +27,6 @@ const TTL = {
   pypi:          24 * 3600000,  // daily   — pypistats.org aggregates weekly; intraday changes irrelevant
   trends:        24 * 3600000,  // daily   — Google Trends resolution is one data point per day
   reddit:         6 * 3600000,  // 6-hourly — social mention counts fluctuate throughout the day
-  appstore:       6 * 3600000,  // 6-hourly — App Store rankings update multiple times per day
   jobs:           6 * 3600000,  // 6-hourly — job listings open and close continuously
   gpu:           24 * 3600000,  // daily   — persisted as one median snapshot per UTC day
   github:        24 * 3600000,  // daily   — dependent repo counts grow slowly
@@ -37,7 +34,6 @@ const TTL = {
   eia:           24 * 3600000,  // daily   — EIA publishes monthly/annual revisions; daily poll is sufficient
   mops:          24 * 3600000,  // daily   — MOPS monthly revenue filings update once per month; daily poll is sufficient
   githubCommits: 24 * 3600000,  // daily
-  arxiv:         24 * 3600000,  // daily (slow scraper, ok since 24h cache)
   docker:         6 * 3600000,  // 6-hourly
   hn:             1 * 3600000,  // hourly
   wikipedia:        24 * 3600000,  // daily
@@ -72,10 +68,10 @@ function setup() {
   cron.schedule('0 * * * *', () => refreshAll(['openrouter', 'hn']));
 
   // Every 6 hours: social signals and business data updated throughout the day
-  cron.schedule('0 */6 * * *', () => refreshAll(['reddit', 'appstore', 'jobs', 'docker', 'openrouterRanks', 'dram']));
+  cron.schedule('0 */6 * * *', () => refreshAll(['reddit', 'jobs', 'docker', 'openrouterRanks', 'dram']));
 
   // Daily at 03:00 UTC: aggregate stats whose sources only publish once per day
-  cron.schedule('0 3 * * *', () => refreshAll(['gpu', 'pypi', 'trends', 'github', 'eia', 'mops', 'githubCommits', 'arxiv', 'wikipedia']));
+  cron.schedule('0 3 * * *', () => refreshAll(['gpu', 'pypi', 'trends', 'github', 'eia', 'mops', 'githubCommits', 'wikipedia']));
 }
 
 module.exports = { setup, refreshAll, scrapers, TTL };

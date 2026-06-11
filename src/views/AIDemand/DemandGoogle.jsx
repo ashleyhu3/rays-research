@@ -3,8 +3,9 @@ import { Line, Bar } from 'react-chartjs-2';
 import { C, fa } from '../../config/colors';
 import { trend } from '../../utils/dataGenerators';
 import { wkLabels, dayLabels } from '../../utils/labels';
-import { baseOpts, hBarOpts, mkDs, fmtM, fmtK, fmtP } from '../../utils/chartHelpers';
-import { orProviderSeries, orTokenSubtitle, fmtTok } from '../../utils/openrouterProvider';
+import { baseOpts, hBarOpts, stackedOpts, mkDs, mkBar, fmtM, fmtK, fmtP } from '../../utils/chartHelpers';
+import { orProviderSeries, fmtTok } from '../../utils/openrouterProvider';
+import { orComboCard } from '../../components/OrGrowthCards';
 import ChartCard from '../../components/ChartCard';
 import EditableGrid from '../../components/EditableGrid';
 import { useData } from '../../context/DataContext';
@@ -32,8 +33,8 @@ export default function DemandGoogle({ weeks: W }) {
   const sdkData = useMemo(() => ({
     labels: wk,
     datasets: [
-      mkDs('google-generativeai (PyPI)', C.google, pyVals),
-      mkDs('@google/generative-ai (npm)', C.teal,  npVals),
+      mkBar('google-generativeai (PyPI)', C.google, pyVals),
+      mkBar('@google/generative-ai (npm)', C.teal,  npVals),
     ],
   }), [wk, pyVals, npVals]);
 
@@ -49,14 +50,14 @@ export default function DemandGoogle({ weeks: W }) {
     if (td?.api?.gemini?.length > 0) {
       return {
         labels: days,
-        datasets: [mkDs('Gemini API', C.google, td.api.gemini.slice(-D))],
+        datasets: [mkBar('Gemini API', C.google, td.api.gemini.slice(-D))],
       };
     }
     return {
       labels: days,
       datasets: [
-        mkDs('Gemini API',   C.google, trend(42, 55, D, 0.10)),
-        mkDs('Gemini brand', C.teal,   trend(38, 50, D, 0.10)),
+        mkBar('Gemini API',   C.google, trend(42, 55, D, 0.10)),
+        mkBar('Gemini brand', C.teal,   trend(38, 50, D, 0.10)),
       ],
     };
   }, [days, D, td]);
@@ -68,12 +69,6 @@ export default function DemandGoogle({ weeks: W }) {
     labels: days,
     datasets: [mkDs('Gemini', C.google, trend(gmVal * 0.7, gmVal, D, 0.10), true)],
   }), [days, D, gmVal]);
-
-  // App Store
-  const as      = ld?.appstore;
-  const gmScore = as?.ratings?.Gemini?.score   ?? 4.4;
-  const gmRevs  = as?.ratings?.Gemini?.reviews ?? 520000;
-  const gmRank  = as?.rankings?.Gemini         ?? 4;
 
   // Jobs
   const jd      = ld?.jobs;
@@ -95,10 +90,6 @@ export default function DemandGoogle({ weeks: W }) {
 
   // OpenRouter rankings — Google token volume, share, top models
   const orp = useMemo(() => orProviderSeries(ld?.openrouterRanks, 'Google', W), [ld, W]);
-  const orTokenData = useMemo(() => orp && ({
-    labels: orp.labels,
-    datasets: [mkDs('Google weekly tokens', C.google, orp.tokens, true)],
-  }), [orp]);
   const orShareData = useMemo(() => orp && ({
     labels: orp.labels,
     datasets: [mkDs('Share of platform tokens', C.google, orp.share)],
@@ -118,24 +109,12 @@ export default function DemandGoogle({ weeks: W }) {
         freq="weekly"
         subtitle="google-generativeai Python SDK (PyPI) and @google/generative-ai JS/TS SDK (npm) weekly installs."
         legend={[['google-generativeai (PyPI)', C.google], ['@google/generative-ai (npm)', C.teal]]}
-        height={240} span2
+        height={260} span2
       >
-        <Line data={sdkData} options={baseOpts(fmtM)} />
+        <Bar data={sdkData} options={stackedOpts(fmtM)} />
       </ChartCard>
 
-      {orTokenData && (
-        <ChartCard
-          chartId="goo-or-tokens"
-          title="Google — weekly token volume on OpenRouter"
-          src="openrouter.ai/rankings"
-          srcUrl="https://openrouter.ai/rankings"
-          freq="daily"
-          subtitle={orTokenSubtitle(orp)}
-          height={240} span2
-        >
-          <Line data={orTokenData} options={baseOpts(fmtTok)} />
-        </ChartCard>
-      )}
+      {orComboCard(ld?.openrouterRanks, 'Google', W, C.google, 'goo')}
 
       {orShareData && (
         <ChartCard
@@ -178,24 +157,6 @@ export default function DemandGoogle({ weeks: W }) {
       </ChartCard>
 
       <ChartCard
-        chartId="goo-appstore"
-        title="Gemini — iOS App Store"
-        src="apps.apple.com"
-        srcUrl="https://apps.apple.com/us/app/google-gemini/id6477532521"
-        freq="live"
-        subtitle={`Rating: ${gmScore.toFixed(1)} / 5  ·  ${(gmRevs / 1e3).toFixed(0)}K reviews  ·  Rank #${gmRank} Top Free Productivity (US)`}
-        height={220}
-      >
-        <Bar
-          data={{
-            labels: ['Rating (out of 5)', 'Rank score (10 = #1)'],
-            datasets: [{ data: [gmScore, 10 - gmRank + 1], backgroundColor: [fa(C.google, 0.7), fa(C.teal, 0.6)], borderColor: [C.google, C.teal], borderWidth: 1, borderRadius: 4 }],
-          }}
-          options={hBarOpts(v => v.toFixed(1))}
-        />
-      </ChartCard>
-
-      <ChartCard
         chartId="goo-trends"
         title="Google Trends — Gemini API & brand search interest"
         src="trends.google.com"
@@ -205,7 +166,7 @@ export default function DemandGoogle({ weeks: W }) {
         legend={[['Gemini API', C.google], ['Gemini brand', C.teal]]}
         height={220} span2
       >
-        <Line data={trendsData} options={baseOpts(fmtP)} />
+        <Bar data={trendsData} options={stackedOpts(fmtP)} />
       </ChartCard>
 
       <ChartCard

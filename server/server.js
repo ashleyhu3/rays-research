@@ -17,7 +17,7 @@ app.use(express.json());
 /* ── Helper: lazy-cached route ─────────────────────────────────────── */
 // Coalesce concurrent cache misses into one scrape — without this, several
 // browser requests (or a request racing the startup warmup) each fire their
-// own scrape, which slow rate-limited sources like arxiv punish badly.
+// own scrape, which slow rate-limited sources punish badly.
 const inflight = new Map();
 
 function cachedRoute(key, scraper) {
@@ -47,7 +47,6 @@ const s = scheduler.scrapers;
 app.get('/api/pypi',       cachedRoute('pypi',       s.pypi));
 app.get('/api/trends',     cachedRoute('trends',     s.trends));
 app.get('/api/reddit',     cachedRoute('reddit',     s.reddit));
-app.get('/api/appstore',   cachedRoute('appstore',   s.appstore));
 app.get('/api/jobs',       cachedRoute('jobs',       s.jobs));
 app.get('/api/gpu',        cachedRoute('gpu',        s.gpu));
 app.get('/api/github',     cachedRoute('github',     s.github));
@@ -55,30 +54,18 @@ app.get('/api/openrouter', cachedRoute('openrouter', s.openrouter));
 app.get('/api/eia',            cachedRoute('eia',           s.eia));
 app.get('/api/mops',           cachedRoute('mops',          s.mops));
 app.get('/api/github-commits', cachedRoute('githubCommits', s.githubCommits));
-app.get('/api/arxiv',          cachedRoute('arxiv',         s.arxiv));
 app.get('/api/docker',         cachedRoute('docker',        s.docker));
 app.get('/api/hn',             cachedRoute('hn',            s.hn));
 app.get('/api/wikipedia',         cachedRoute('wikipedia',        s.wikipedia));
 app.get('/api/openrouter-ranks',  cachedRoute('openrouterRanks',  s.openrouterRanks));
 app.get('/api/dram',              cachedRoute('dram',             s.dram));
 
-// arxiv crawls 16 rate-limited requests (~60s) — refresh it in the background
-// so the endpoint (and the UI's Refresh button) isn't blocked on it.
-const SLOW_REFRESH_KEYS = new Set(['arxiv']);
-
 app.post('/api/refresh', async (req, res) => {
   const keys = req.body?.keys ?? Object.keys(scheduler.scrapers);
-  const fast = keys.filter(k => !SLOW_REFRESH_KEYS.has(k));
-  const slow = keys.filter(k => SLOW_REFRESH_KEYS.has(k));
   try {
-    await scheduler.refreshAll(fast);
+    await scheduler.refreshAll(keys);
     invalidateEmbeddings();
-    if (slow.length > 0) {
-      scheduler.refreshAll(slow)
-        .then(() => invalidateEmbeddings())
-        .catch(e => console.error('[refresh/slow]', e.message));
-    }
-    res.json({ ok: true, refreshed: fast, background: slow, ts: new Date().toISOString() });
+    res.json({ ok: true, refreshed: keys, ts: new Date().toISOString() });
   } catch (e) {
     console.error('[refresh]', e.message);
     res.status(500).json({ ok: false, error: e.message });
@@ -167,16 +154,11 @@ async function start() {
     scheduler.setup();
     // Seed all scrapers on startup so the Ask tab has full data immediately.
     // Everything runs in background (fire-and-forget) so startup isn't delayed.
-    // arxiv is separated because it takes ~60s; all others finish in a few seconds.
     setImmediate(() => {
-      const allKeys = Object.keys(scheduler.scrapers).filter(k => k !== 'arxiv' && cache.get(k) === null);
+      const allKeys = Object.keys(scheduler.scrapers).filter(k => cache.get(k) === null);
       if (allKeys.length > 0) {
         console.log('[warmup] seeding in background:', allKeys.join(', '));
         scheduler.refreshAll(allKeys).catch(e => console.error('[warmup]', e.message));
-      }
-      if (cache.get('arxiv') === null) {
-        console.log('[warmup] seeding arxiv in background (~60s due to rate limits)');
-        scheduler.refreshAll(['arxiv']).catch(e => console.error('[warmup/arxiv]', e.message));
       }
     });
   });

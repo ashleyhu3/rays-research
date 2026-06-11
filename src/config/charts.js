@@ -20,7 +20,6 @@ export const CHART_REGISTRY = [
   { id: 'trends-jobs',     sectorId: 'dev', subView: 'trends', title: 'Open roles by AI lab',                defaultPinned: false },
 
   // ── Consumer signals ───────────────────────────────────────────────
-  { id: 'reddit-appstore',  sectorId: 'consumer', subView: 'reddit', title: 'App Store star ratings',          defaultPinned: true  },
   { id: 'reddit-mentions',  sectorId: 'consumer', subView: 'reddit', title: 'Reddit weekly mentions',           defaultPinned: true  },
   { id: 'reddit-sentiment', sectorId: 'consumer', subView: 'reddit', title: 'Reddit sentiment score',           defaultPinned: false },
   { id: 'reddit-twitter',   sectorId: 'consumer', subView: 'reddit', title: 'X/Twitter daily mention count',    defaultPinned: false },

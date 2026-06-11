@@ -3,8 +3,9 @@ import { Line, Bar } from 'react-chartjs-2';
 import { C, fa } from '../../config/colors';
 import { trend } from '../../utils/dataGenerators';
 import { wkLabels, dayLabels } from '../../utils/labels';
-import { baseOpts, hBarOpts, mkDs, fmtM, fmtK, fmtP } from '../../utils/chartHelpers';
-import { orProviderSeries, orTokenSubtitle, fmtTok } from '../../utils/openrouterProvider';
+import { baseOpts, hBarOpts, stackedOpts, mkDs, mkBar, fmtM, fmtK, fmtP } from '../../utils/chartHelpers';
+import { orProviderSeries, fmtTok } from '../../utils/openrouterProvider';
+import { orComboCard } from '../../components/OrGrowthCards';
 import ChartCard from '../../components/ChartCard';
 import EditableGrid from '../../components/EditableGrid';
 import { useData } from '../../context/DataContext';
@@ -32,8 +33,8 @@ export default function DemandAnthropic({ weeks: W }) {
   const sdkData = useMemo(() => ({
     labels: wk,
     datasets: [
-      mkDs('anthropic (PyPI)',     C.anthropic, pyVals),
-      mkDs('@anthropic-ai/sdk (npm)', C.teal,   npVals),
+      mkBar('anthropic (PyPI)',     C.anthropic, pyVals),
+      mkBar('@anthropic-ai/sdk (npm)', C.teal,   npVals),
     ],
   }), [wk, pyVals, npVals]);
 
@@ -47,8 +48,8 @@ export default function DemandAnthropic({ weeks: W }) {
   const sessionData = useMemo(() => ({
     labels: wk,
     datasets: [
-      mkDs('claude.ai',    C.anthropic, trend(8.1, 9.4, W, 0.04)),
-      mkDs('chatgpt.com',  C.slate,     trend(6.2, 6.8, W, 0.04)),
+      mkBar('claude.ai',    C.anthropic, trend(8.1, 9.4, W, 0.04)),
+      mkBar('chatgpt.com',  C.slate,     trend(6.2, 6.8, W, 0.04)),
     ],
   }), [wk, W]);
 
@@ -68,16 +69,16 @@ export default function DemandAnthropic({ weeks: W }) {
       return {
         labels: days,
         datasets: [
-          mkDs('Claude API',   C.anthropic, td.api.claude.slice(-D)),
-          ...(td.brand?.claude?.length > 0 ? [mkDs('Claude brand', C.teal, td.brand.claude.slice(-D))] : []),
+          mkBar('Claude API',   C.anthropic, td.api.claude.slice(-D)),
+          ...(td.brand?.claude?.length > 0 ? [mkBar('Claude brand', C.teal, td.brand.claude.slice(-D))] : []),
         ],
       };
     }
     return {
       labels: days,
       datasets: [
-        mkDs('Claude API',   C.anthropic, trend(32, 68, D, 0.12)),
-        mkDs('Claude brand', C.teal,      trend(18, 42, D, 0.10)),
+        mkBar('Claude API',   C.anthropic, trend(32, 68, D, 0.12)),
+        mkBar('Claude brand', C.teal,      trend(18, 42, D, 0.10)),
       ],
     };
   }, [days, D, td]);
@@ -89,12 +90,6 @@ export default function DemandAnthropic({ weeks: W }) {
     labels: days,
     datasets: [mkDs('Claude', C.anthropic, trend(clVal * 0.4, clVal, D, 0.12), true)],
   }), [days, D, clVal]);
-
-  // App Store
-  const as      = ld?.appstore;
-  const clScore = as?.ratings?.Claude?.score   ?? 4.7;
-  const clRevs  = as?.ratings?.Claude?.reviews ?? 340000;
-  const clRank  = as?.rankings?.Claude         ?? 2;
 
   // Jobs
   const jd      = ld?.jobs;
@@ -116,10 +111,6 @@ export default function DemandAnthropic({ weeks: W }) {
 
   // OpenRouter rankings — Anthropic token volume, share, top models
   const orp = useMemo(() => orProviderSeries(ld?.openrouterRanks, 'Anthropic', W), [ld, W]);
-  const orTokenData = useMemo(() => orp && ({
-    labels: orp.labels,
-    datasets: [mkDs('Anthropic weekly tokens', C.anthropic, orp.tokens, true)],
-  }), [orp]);
   const orShareData = useMemo(() => orp && ({
     labels: orp.labels,
     datasets: [mkDs('Share of platform tokens', C.anthropic, orp.share)],
@@ -142,22 +133,10 @@ export default function DemandAnthropic({ weeks: W }) {
         insight="The anthropic SDK grew +80% in 12 weeks — the fastest of any major AI provider SDK. npm installs tracking Python closely, indicating full-stack production adoption."
         height={240} span2
       >
-        <Line data={sdkData} options={baseOpts(fmtM)} />
+        <Bar data={sdkData} options={stackedOpts(fmtM)} />
       </ChartCard>
 
-      {orTokenData && (
-        <ChartCard
-          chartId="an-or-tokens"
-          title="Anthropic — weekly token volume on OpenRouter"
-          src="openrouter.ai/rankings"
-          srcUrl="https://openrouter.ai/rankings"
-          freq="daily"
-          subtitle={orTokenSubtitle(orp)}
-          height={240} span2
-        >
-          <Line data={orTokenData} options={baseOpts(fmtTok)} />
-        </ChartCard>
-      )}
+      {orComboCard(ld?.openrouterRanks, 'Anthropic', W, C.anthropic, 'an')}
 
       {orShareData && (
         <ChartCard
@@ -200,24 +179,6 @@ export default function DemandAnthropic({ weeks: W }) {
       </ChartCard>
 
       <ChartCard
-        chartId="an-appstore"
-        title="Claude — iOS App Store"
-        src="apps.apple.com"
-        srcUrl="https://apps.apple.com/us/app/claude-ai/id6473753684"
-        freq="live"
-        subtitle={`Rating: ${clScore.toFixed(1)} / 5  ·  ${(clRevs / 1e3).toFixed(0)}K reviews  ·  Rank #${clRank} Top Free Productivity (US)`}
-        height={220}
-      >
-        <Bar
-          data={{
-            labels: ['Rating (out of 5)', 'Rank score (10 = #1)'],
-            datasets: [{ data: [clScore, 10 - clRank + 1], backgroundColor: [fa(C.anthropic, 0.7), fa(C.teal, 0.6)], borderColor: [C.anthropic, C.teal], borderWidth: 1, borderRadius: 4 }],
-          }}
-          options={hBarOpts(v => v.toFixed(1))}
-        />
-      </ChartCard>
-
-      <ChartCard
         chartId="an-trends"
         title="Google Trends — Claude API & brand search interest"
         src="trends.google.com"
@@ -228,7 +189,7 @@ export default function DemandAnthropic({ weeks: W }) {
         insight='"Claude API" now at ~68% of "ChatGPT API" search volume — up from 34% six months ago. Spikes correlate directly with model releases.'
         height={220} span2
       >
-        <Line data={trendsData} options={baseOpts(fmtP)} />
+        <Bar data={trendsData} options={stackedOpts(fmtP)} />
       </ChartCard>
 
       <ChartCard
@@ -242,7 +203,7 @@ export default function DemandAnthropic({ weeks: W }) {
         insight="Claude averages <b>9.4 min</b> vs ChatGPT's <b>6.8 min</b> — reflecting enterprise and coding workloads that require extended context."
         height={220}
       >
-        <Line data={sessionData} options={baseOpts(v => `${v.toFixed(1)}m`)} />
+        <Bar data={sessionData} options={stackedOpts(v => `${v.toFixed(1)}m`)} />
       </ChartCard>
 
       <ChartCard

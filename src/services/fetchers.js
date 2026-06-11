@@ -104,11 +104,11 @@ async function fetchJsonSafe(url, ms = 30000) {
   }
 }
 
-// ArXiv scraper fetches 12 months × 3.5 s apart = ~60 s cold start
-const SLOW_KEYS = new Set(['arxiv', 'github-commits']);
+// github-commits crawls many repos and can be slow on a cold start
+const SLOW_KEYS = new Set(['github-commits']);
 
 async function fetchBackendAll() {
-  const keys = ['pypi', 'trends', 'reddit', 'appstore', 'jobs', 'gpu', 'github', 'openrouter', 'eia', 'mops', 'github-commits', 'arxiv', 'docker', 'hn', 'wikipedia', 'openrouter-ranks', 'dram'];
+  const keys = ['pypi', 'trends', 'reddit', 'jobs', 'gpu', 'github', 'openrouter', 'eia', 'mops', 'github-commits', 'docker', 'hn', 'wikipedia', 'openrouter-ranks', 'dram'];
   const results = await Promise.allSettled(keys.map(k => fetchJsonSafe(`/api/${k}`, SLOW_KEYS.has(k) ? 90000 : 30000)));
   return Object.fromEntries(keys.map((k, i) => [
     k, results[i].status === 'fulfilled' ? results[i].value : null,
@@ -140,7 +140,6 @@ export async function fetchAll() {
     pypiHistory: be.pypi       ?? null,
     trends:      be.trends     ?? null,
     reddit:      be.reddit     ?? null,
-    appstore:    be.appstore   ?? null,
     jobs:        be.jobs       ?? null,
     gpu:         be.gpu        ?? null,
     github:      be.github     ?? null,
@@ -148,7 +147,6 @@ export async function fetchAll() {
     eia:          be.eia              ?? null,
     mops:         be.mops             ?? null,
     githubCommits: be['github-commits'] ?? null,
-    arxiv:         be.arxiv            ?? null,
     docker:        be.docker           ?? null,
     hn:            be.hn               ?? null,
     wikipedia:        be.wikipedia               ?? null,

@@ -296,29 +296,6 @@ export function MopsMini() {
   );
 }
 
-// ── arXiv Paper Submissions ────────────────────────────────────────────────
-export function ArXivMini() {
-  const { liveData } = useData();
-
-  const data = useMemo(() => {
-    const monthly = liveData?.arxiv?.monthly ?? [];
-    const last6   = monthly.length >= 6 ? monthly.slice(-6) : monthly;
-    if (last6.length === 0) {
-      return { labels: ['Jan','Feb','Mar','Apr','May','Jun'], datasets: [{ label: 'AI Papers', data: [12800,13200,13900,14100,14400,14800], backgroundColor: C.teal+'bf', borderColor: C.teal, borderWidth:1, borderRadius:4 }] };
-    }
-    return {
-      labels:   last6.map(m => m.period),
-      datasets: [{ label: 'AI Papers', data: last6.map(m => m.count), backgroundColor: C.teal+'bf', borderColor: C.teal, borderWidth:1, borderRadius:4 }],
-    };
-  }, [liveData]);
-
-  return (
-    <MiniCard title="arXiv AI Paper Submissions (monthly)">
-      <Bar data={data} options={baseOpts(fmtK)} />
-    </MiniCard>
-  );
-}
-
 // ── GitHub Commit Velocity ─────────────────────────────────────────────────
 const COMMIT_COLORS = [C.openai, C.anthropic, C.google, C.mistral, C.teal, C.perplexity, '#f59e0b', '#8b5cf6'];
 
@@ -412,7 +389,6 @@ export const CHART_REGISTRY = {
   gpu:              [GPUMini],
   electricity:      [ElectricityMini],
   'ai-supply':      [MopsMini],
-  arxiv:            [ArXivMini],
   'github-commits': [GitHubCommitsMini],
   docker:           [DockerMini],
   community:        [CommunityMini],

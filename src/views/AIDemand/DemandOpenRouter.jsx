@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 import { Line, Bar } from 'react-chartjs-2';
 import { C, fa } from '../../config/colors';
-import { baseOpts, hBarOpts, stackedOpts, mkDs, GRID, TICK, BORD } from '../../utils/chartHelpers';
+import { baseOpts, hBarOpts, stackedOpts, dualAxisOpts, mkDs, mkBar, GRID, TICK, BORD } from '../../utils/chartHelpers';
+import { orTokensWithGrowth, fmtGrowthPct } from '../../utils/openrouterProvider';
 import ChartCard from '../../components/ChartCard';
 import EditableGrid from '../../components/EditableGrid';
 import { useData } from '../../context/DataContext';
@@ -166,55 +167,19 @@ export default function DemandOpenRouter({ weeks: W = 52 }) {
     };
   }, [ranks, wkLabels, W]);
 
-  // ── 4. Platform total weekly tokens (bar + trend line overlay) ────
-  const platformData = useMemo(() => {
-    if (!ranks?.weeklyTotals?.length || !wkLabels.length) return null;
+  // ── 4. Combined: total weekly tokens (bars) + YoY growth (line) ───
+  const comboData = useMemo(() => {
+    const s = orTokensWithGrowth(ranks, null, W, 52);
+    if (!s) return null;
     return {
-      labels: wkLabels,
-      datasets: [mkDs('Total tokens', C.teal, ranks.weeklyTotals.slice(-W), true)],
+      labels: s.labels,
+      datasets: [
+        // Lowest order draws last → line renders on top of the bars
+        { ...mkDs('YoY growth (%)', C.orange, s.growth), type: 'line', yAxisID: 'y1', order: 0 },
+        { ...mkBar('Total tokens', C.teal, s.tokens), yAxisID: 'y', order: 1 },
+      ],
     };
-  }, [ranks, wkLabels, W]);
-
-  // ── 4b. Platform MoM / YoY growth of weekly token volume ──────────
-  // The current ISO week is still accumulating, so growth on its partial
-  // total would read as a fake drop — exclude it unless the week is complete.
-  const completeWeeks = useMemo(() => {
-    const totals = ranks?.weeklyTotals ?? [];
-    if (totals.length === 0) return null;
-    const lastMonday = ranks.weekLabels?.[ranks.weekLabels.length - 1];
-    const weekEnd = lastMonday ? new Date(new Date(lastMonday + 'T00:00:00Z').getTime() + 6 * 86400000) : null;
-    const partial = weekEnd && ranks.asOf ? new Date(ranks.asOf + 'T00:00:00Z') < weekEnd : false;
-    return {
-      totals: partial ? totals.slice(0, -1) : totals,
-      labels: (ranks.weekLabels ?? []).slice(0, partial ? -1 : undefined).map(weekLabel),
-    };
-  }, [ranks]);
-
-  const growthSeries = (lag) => {
-    if (!completeWeeks) return null;
-    const { totals, labels } = completeWeeks;
-    const vals = totals.map((v, i) =>
-      i >= lag && totals[i - lag] > 0 ? +((v / totals[i - lag] - 1) * 100).toFixed(1) : null
-    );
-    const w = Math.min(W, vals.length);
-    const sliced = vals.slice(-w), labs = labels.slice(-w);
-    if (!sliced.some(v => v != null)) return null;
-    return {
-      labels: labs,
-      datasets: [{
-        label: 'Growth (%)',
-        data: sliced,
-        backgroundColor: sliced.map(v => fa(v != null && v >= 0 ? C.teal : C.red, 0.70)),
-        borderColor:     sliced.map(v => (v != null && v >= 0 ? C.teal : C.red)),
-        borderWidth: 1, borderRadius: 2,
-      }],
-    };
-  };
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const momData = useMemo(() => growthSeries(4),  [completeWeeks, W]);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const yoyData = useMemo(() => growthSeries(52), [completeWeeks, W]);
+  }, [ranks, W]);
 
   // ── 5. WoW growth horizontal bar ──────────────────────────────────
   const growthData = useMemo(() => {
@@ -274,7 +239,7 @@ export default function DemandOpenRouter({ weeks: W = 52 }) {
         srcUrl="https://openrouter.ai/rankings"
         freq="daily"
         subtitle={`Week of ${latestWeek ?? '—'}${asOf ? ` · as of ${asOf}` : ''}. Prompt + completion tokens combined.`}
-        height={300} span2
+        height={260} span2
       >
         {topBarData ? <Bar data={topBarData} options={hBarOpts(fmtB)} /> : <NoKey />}
       </ChartCard>
@@ -298,7 +263,7 @@ export default function DemandOpenRouter({ weeks: W = 52 }) {
         srcUrl="https://openrouter.ai/rankings"
         freq="daily"
         subtitle="Weekly token volume stacked by model provider. Shows which companies are gaining or losing share over time."
-        height={280} span2
+        height={260} span2
       >
         {provStackData ? <Bar data={provStackData} options={stackedLegendOpts(fmtB)} /> : <NoKey />}
       </ChartCard>
@@ -317,43 +282,17 @@ export default function DemandOpenRouter({ weeks: W = 52 }) {
           : <NoKey />}
       </ChartCard>
 
-      <ChartCard
-        chartId="or-platform"
-        title="OpenRouter — total platform token volume per week"
-        src="openrouter.ai/rankings"
-        srcUrl="https://openrouter.ai/rankings"
-        freq="daily"
-        subtitle="All models combined. Tracks overall platform growth week over week."
-        height={220}
-      >
-        {platformData ? <Line data={platformData} options={baseOpts(fmtB)} /> : <NoKey />}
-      </ChartCard>
-
-      {momData && (
+      {comboData && (
         <ChartCard
-          chartId="or-mom"
-          title="Weekly token volume — month-over-month growth (%)"
+          chartId="or-combo"
+          title="OpenRouter — total weekly tokens (bars) vs YoY growth (line)"
           src="openrouter.ai/rankings"
           srcUrl="https://openrouter.ai/rankings"
           freq="daily"
-          subtitle="Each bar compares a week's total platform tokens to the week 4 weeks earlier. The in-progress week is excluded."
-          height={240} span2
+          subtitle="Bars show total platform token volume (left axis); the line shows year-over-year growth in % (right axis). OpenRouter's dataset starts Jan 2025, so the line begins Jan 2026. The in-progress week is excluded."
+          height={260} span2
         >
-          <Bar data={momData} options={baseOpts(v => `${v > 0 ? '+' : ''}${v.toFixed(0)}%`)} />
-        </ChartCard>
-      )}
-
-      {yoyData && (
-        <ChartCard
-          chartId="or-yoy"
-          title="Weekly token volume — year-over-year growth (%)"
-          src="openrouter.ai/rankings"
-          srcUrl="https://openrouter.ai/rankings"
-          freq="daily"
-          subtitle="Each bar compares a week's total platform tokens to the same week 52 weeks earlier. OpenRouter's dataset starts Jan 2025, so YoY begins Jan 2026."
-          height={240} span2
-        >
-          <Bar data={yoyData} options={baseOpts(v => `${v > 0 ? '+' : ''}${v.toFixed(0)}%`)} />
+          <Bar data={comboData} options={dualAxisOpts(fmtB, fmtGrowthPct)} />
         </ChartCard>
       )}
 

@@ -1,10 +1,9 @@
 import { useMemo } from 'react';
 import { Line, Bar, Doughnut } from 'react-chartjs-2';
 import { C, fa } from '../../config/colors';
-import { trend } from '../../utils/dataGenerators';
-import { wkLabels } from '../../utils/labels';
 import { baseOpts, hBarOpts, doughnutOpts, stackedOpts, mkDs, fmtM, GRID, TICK, BORD } from '../../utils/chartHelpers';
-import { orProviderSeries, orTokenSubtitle, fmtTok } from '../../utils/openrouterProvider';
+import { orProviderSeries } from '../../utils/openrouterProvider';
+import { orComboCard } from '../../components/OrGrowthCards';
 import ChartCard from '../../components/ChartCard';
 import EditableGrid from '../../components/EditableGrid';
 import { useData } from '../../context/DataContext';
@@ -72,18 +71,10 @@ const STATIC_PRICE = [
 
 export default function DemandZhipu({ weeks: W }) {
   const { liveData: ld } = useData();
-  const wk  = useMemo(() => wkLabels(W), [W]);
   const qN  = Math.min(W, 4);
 
-  // GLM-5 token consumption on OpenRouter (live rankings, synthetic fallback)
+  // Zhipu token share on OpenRouter (live rankings)
   const orp = useMemo(() => orProviderSeries(ld?.openrouterRanks, 'Zhipu AI', W), [ld, W]);
-  const tokenData = useMemo(() => orp ? {
-    labels: orp.labels,
-    datasets: [mkDs('GLM (Zhipu)', C.zhipu, orp.tokens)],
-  } : {
-    labels: wk,
-    datasets: [mkDs('GLM-5 (Zhipu)', C.zhipu, trend(80e9, 780e9, W, 0.10))],
-  }, [orp, wk, W]);
   const orShareData = useMemo(() => orp && ({
     labels: orp.labels,
     datasets: [mkDs('Share of platform tokens', C.zhipu, orp.share)],
@@ -130,18 +121,7 @@ export default function DemandZhipu({ weeks: W }) {
 
   return (
     <EditableGrid viewId="demand-zhipu">
-      <ChartCard
-        chartId="zh-tokens"
-        title="GLM (Zhipu) — weekly token consumption on OpenRouter (billion tokens)"
-        src={orp ? 'openrouter.ai/rankings · live' : 'openrouter.ai/rankings'}
-        srcUrl="https://openrouter.ai/rankings"
-        freq={orp ? 'daily' : 'weekly'}
-        subtitle={orp ? orTokenSubtitle(orp) : 'Real weekly developer token throughput for GLM-5 on OpenRouter. Production API traffic, not benchmark results.'}
-        insight="GLM-5 grew from 80B to 780B tokens/week in under a year, driven by enterprise deployments in Chinese finance and manufacturing verticals."
-        height={240} span2
-      >
-        <Line data={tokenData} options={baseOpts(fmtTok)} />
-      </ChartCard>
+      {orComboCard(ld?.openrouterRanks, 'Zhipu AI', W, C.zhipu, 'zh')}
 
       {orShareData && (
         <ChartCard
@@ -151,7 +131,7 @@ export default function DemandZhipu({ weeks: W }) {
           srcUrl="https://openrouter.ai/rankings"
           freq="daily"
           subtitle="Percentage of total weekly OpenRouter token throughput served by Zhipu GLM models."
-          height={220}
+          height={260}
         >
           <Line data={orShareData} options={baseOpts(v => `${v.toFixed(1)}%`)} />
         </ChartCard>
@@ -166,7 +146,7 @@ export default function DemandZhipu({ weeks: W }) {
         subtitle="Zhipu AI's annual revenue grew 132% YoY to ¥724M (~$99M USD) in 2025. Enterprise AI agent deployments +249% YoY."
         legend={[['Enterprise agents', C.teal], ['Other revenue', C.zhipu]]}
         srcNote="Source: Zhipu AI HK IPO prospectus (Jan 2026) · IDC China AI Platform Tracker 2024"
-        height={240}
+        height={260}
       >
         <Bar data={revData} options={stackedRevOpts} />
       </ChartCard>
@@ -179,7 +159,7 @@ export default function DemandZhipu({ weeks: W }) {
         freq="static"
         subtitle="Zhipu AI holds 6.6% of China's enterprise LLM market — second only to iFlytek. Market remains highly fragmented."
         srcNote="Source: Zhipu AI HK IPO prospectus · IDC China AI Platform Tracker 2024"
-        height={240}
+        height={260}
       >
         <Doughnut data={mktData} options={doughnutOpts('50%')} />
       </ChartCard>
@@ -191,7 +171,7 @@ export default function DemandZhipu({ weeks: W }) {
         srcUrl="https://openrouter.ai/models"
         freq="live"
         subtitle="GLM-5 at $0.30/M input tokens vs $2.50–15.00/M for comparable US models. Near-parity quality at 8–50× lower cost."
-        height={240}
+        height={260}
       >
         <Bar data={priceData} options={hBarOpts(v => `$${v.toFixed(2)}`)} />
       </ChartCard>
@@ -204,7 +184,7 @@ export default function DemandZhipu({ weeks: W }) {
         freq="static"
         subtitle="GLM-5 scores 77.8% on SWE-bench Verified — within 3 points of Claude Opus. The capability gap has effectively closed."
         insight="In Jan 2025, the best Chinese model scored ~45% on SWE-bench vs Claude's 70%+. By mid-2026, GLM-5 at <b>77.8%</b> vs Claude Opus at <b>80.9%</b> — a gap of just 3.1 points."
-        height={240} span2
+        height={260} span2
       >
         <Bar data={benchData} options={benchOpts} />
       </ChartCard>

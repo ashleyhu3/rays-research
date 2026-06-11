@@ -4,7 +4,6 @@ const SOURCE_LABELS = {
   pypi:       'PyPI',
   trends:     'Trends',
   reddit:     'Reddit',
-  appstore:   'App Store',
   jobs:       'Jobs',
   github:     'GitHub',
   gpu:        'GPU',

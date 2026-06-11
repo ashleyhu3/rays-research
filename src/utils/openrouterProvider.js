@@ -42,8 +42,42 @@ export function orProviderSeries(ranks, provider, W) {
   };
 }
 
-/** Subtitle line for the weekly-tokens card */
-export function orTokenSubtitle(orp) {
-  const wow = orp.wow != null ? ` · ${orp.wow >= 0 ? '+' : ''}${(orp.wow * 100).toFixed(0)}% WoW` : '';
-  return `Week of ${orp.latestWeek}: ${fmtTok(orp.latest)} tokens${wow} · ${orp.latestShare.toFixed(1)}% of platform traffic.`;
+/**
+ * Weekly token series for a provider (or platform totals when provider is
+ * null) with the in-progress ISO week dropped — its partial total would
+ * read as a fake drop in any week-to-week comparison.
+ */
+function completeWeeks(ranks, provider) {
+  const weekly = provider ? ranks?.providerWeekly?.[provider] : ranks?.weeklyTotals;
+  if (!weekly?.length) return null;
+
+  const allLabels  = ranks.weekLabels ?? [];
+  const lastMonday = allLabels[allLabels.length - 1];
+  const weekEnd    = lastMonday ? new Date(new Date(lastMonday + 'T00:00:00Z').getTime() + 6 * 86400000) : null;
+  const partial    = weekEnd && ranks.asOf ? new Date(ranks.asOf + 'T00:00:00Z') < weekEnd : false;
+
+  return {
+    totals: partial ? weekly.slice(0, -1) : weekly,
+    labels: allLabels.slice(0, partial ? -1 : undefined).map(orWeekLabel),
+  };
 }
+
+/**
+ * Aligned weekly tokens + % growth vs `lag` weeks earlier (1 = WoW,
+ * 52 = YoY) over the last W complete weeks, for combined volume-bar /
+ * growth-line charts. Growth is null where there is no week far enough
+ * back to compare against. Returns null without data.
+ */
+export function orTokensWithGrowth(ranks, provider, W, lag = 1) {
+  const cw = completeWeeks(ranks, provider);
+  if (!cw) return null;
+  const { totals, labels } = cw;
+  const growth = totals.map((v, i) =>
+    i >= lag && totals[i - lag] > 0 ? +((v / totals[i - lag] - 1) * 100).toFixed(1) : null
+  );
+  const w = Math.min(W, totals.length);
+  return { labels: labels.slice(-w), tokens: totals.slice(-w), growth: growth.slice(-w) };
+}
+
+/** y-axis / tooltip formatter for growth percentages */
+export const fmtGrowthPct = v => `${v > 0 ? '+' : ''}${v.toFixed(0)}%`;

@@ -3,8 +3,9 @@ import { Line, Bar } from 'react-chartjs-2';
 import { C, fa } from '../../config/colors';
 import { trend } from '../../utils/dataGenerators';
 import { wkLabels, dayLabels } from '../../utils/labels';
-import { baseOpts, hBarOpts, mkDs, fmtM, fmtK, fmtP } from '../../utils/chartHelpers';
-import { orProviderSeries, orTokenSubtitle, fmtTok } from '../../utils/openrouterProvider';
+import { baseOpts, hBarOpts, stackedOpts, mkDs, mkBar, fmtM, fmtK, fmtP } from '../../utils/chartHelpers';
+import { orProviderSeries, fmtTok } from '../../utils/openrouterProvider';
+import { orComboCard } from '../../components/OrGrowthCards';
 import ChartCard from '../../components/ChartCard';
 import EditableGrid from '../../components/EditableGrid';
 import { useData } from '../../context/DataContext';
@@ -32,8 +33,8 @@ export default function DemandOpenAI({ weeks: W }) {
   const sdkData = useMemo(() => ({
     labels: wk,
     datasets: [
-      mkDs('openai (PyPI)', C.openai, pyVals),
-      mkDs('openai (npm)',  C.teal,   npVals),
+      mkBar('openai (PyPI)', C.openai, pyVals),
+      mkBar('openai (npm)',  C.teal,   npVals),
     ],
   }), [wk, pyVals, npVals]);
 
@@ -50,16 +51,16 @@ export default function DemandOpenAI({ weeks: W }) {
       return {
         labels: days,
         datasets: [
-          mkDs('ChatGPT API',   C.openai, td.api.chatgpt.slice(-D)),
-          ...(td.brand?.chatgpt?.length > 0 ? [mkDs('ChatGPT brand', C.teal, td.brand.chatgpt.slice(-D))] : []),
+          mkBar('ChatGPT API',   C.openai, td.api.chatgpt.slice(-D)),
+          ...(td.brand?.chatgpt?.length > 0 ? [mkBar('ChatGPT brand', C.teal, td.brand.chatgpt.slice(-D))] : []),
         ],
       };
     }
     return {
       labels: days,
       datasets: [
-        mkDs('ChatGPT API',   C.openai, trend(88, 100, D, 0.06)),
-        mkDs('ChatGPT brand', C.teal,   trend(95, 100, D, 0.05)),
+        mkBar('ChatGPT API',   C.openai, trend(88, 100, D, 0.06)),
+        mkBar('ChatGPT brand', C.teal,   trend(95, 100, D, 0.05)),
       ],
     };
   }, [days, D, td]);
@@ -71,12 +72,6 @@ export default function DemandOpenAI({ weeks: W }) {
     labels: days,
     datasets: [mkDs('ChatGPT', C.openai, trend(cgVal * 0.9, cgVal, D, 0.09), true)],
   }), [days, D, cgVal]);
-
-  // App Store
-  const as      = ld?.appstore;
-  const cgScore = as?.ratings?.ChatGPT?.score   ?? 4.8;
-  const cgRevs  = as?.ratings?.ChatGPT?.reviews ?? 2100000;
-  const cgRank  = as?.rankings?.ChatGPT         ?? 1;
 
   // Jobs
   const jd      = ld?.jobs;
@@ -99,10 +94,6 @@ export default function DemandOpenAI({ weeks: W }) {
 
   // OpenRouter rankings — OpenAI token volume, share, top models
   const orp = useMemo(() => orProviderSeries(ld?.openrouterRanks, 'OpenAI', W), [ld, W]);
-  const orTokenData = useMemo(() => orp && ({
-    labels: orp.labels,
-    datasets: [mkDs('OpenAI weekly tokens', C.openai, orp.tokens, true)],
-  }), [orp]);
   const orShareData = useMemo(() => orp && ({
     labels: orp.labels,
     datasets: [mkDs('Share of platform tokens', C.openai, orp.share)],
@@ -123,24 +114,12 @@ export default function DemandOpenAI({ weeks: W }) {
         subtitle="openai Python SDK (PyPI) and openai JS/TS SDK (npm) weekly installs."
         legend={[['openai (PyPI)', C.openai], ['openai (npm)', C.teal]]}
         insight="The openai Python SDK is the most-downloaded AI SDK globally. npm installs track closely with Python, reflecting full-stack and serverless adoption."
-        height={240} span2
+        height={260} span2
       >
-        <Line data={sdkData} options={baseOpts(fmtM)} />
+        <Bar data={sdkData} options={stackedOpts(fmtM)} />
       </ChartCard>
 
-      {orTokenData && (
-        <ChartCard
-          chartId="oa-or-tokens"
-          title="OpenAI — weekly token volume on OpenRouter"
-          src="openrouter.ai/rankings"
-          srcUrl="https://openrouter.ai/rankings"
-          freq="daily"
-          subtitle={orTokenSubtitle(orp)}
-          height={240} span2
-        >
-          <Line data={orTokenData} options={baseOpts(fmtTok)} />
-        </ChartCard>
-      )}
+      {orComboCard(ld?.openrouterRanks, 'OpenAI', W, C.openai, 'oa')}
 
       {orShareData && (
         <ChartCard
@@ -183,24 +162,6 @@ export default function DemandOpenAI({ weeks: W }) {
       </ChartCard>
 
       <ChartCard
-        chartId="oa-appstore"
-        title="ChatGPT — iOS App Store"
-        src="apps.apple.com"
-        srcUrl="https://apps.apple.com/us/app/chatgpt/id6448311069"
-        freq="live"
-        subtitle={`Rating: ${cgScore.toFixed(1)} / 5  ·  ${(cgRevs / 1e6).toFixed(1)}M reviews  ·  Rank #${cgRank} Top Free Productivity (US)`}
-        height={220}
-      >
-        <Bar
-          data={{
-            labels: ['Rating (out of 5)', 'Rank score (10 = #1)'],
-            datasets: [{ data: [cgScore, 10 - cgRank + 1], backgroundColor: [fa(C.openai, 0.7), fa(C.teal, 0.6)], borderColor: [C.openai, C.teal], borderWidth: 1, borderRadius: 4 }],
-          }}
-          options={hBarOpts(v => v.toFixed(1))}
-        />
-      </ChartCard>
-
-      <ChartCard
         chartId="oa-trends"
         title="Google Trends — ChatGPT API & brand search interest"
         src="trends.google.com"
@@ -210,7 +171,7 @@ export default function DemandOpenAI({ weeks: W }) {
         legend={[['ChatGPT API', C.openai], ['ChatGPT brand', C.teal]]}
         height={220} span2
       >
-        <Line data={trendsData} options={baseOpts(fmtP)} />
+        <Bar data={trendsData} options={stackedOpts(fmtP)} />
       </ChartCard>
 
       <ChartCard

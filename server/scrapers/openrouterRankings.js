@@ -57,7 +57,9 @@ async function getOpenRouterRankings() {
   const fmt = d => d.toISOString().slice(0, 10);
   const yesterday = new Date(); yesterday.setUTCDate(yesterday.getUTCDate() - 1);
   const yr1ago    = new Date(yesterday); yr1ago.setUTCFullYear(yr1ago.getUTCFullYear() - 1);
-  const yr2ago    = new Date(yr1ago);    yr2ago.setUTCDate(yr2ago.getUTCDate() - 1);
+  const yr2ago    = new Date(yr1ago);    yr2ago.setUTCFullYear(yr2ago.getUTCFullYear() - 1);
+  // chunk1 must end the day before chunk2 starts or that date is double-counted
+  const chunk1End = new Date(yr1ago); chunk1End.setUTCDate(chunk1End.getUTCDate() - 1);
   const datasetStart = new Date('2025-01-01');
 
   async function fetchChunk(startDate, endDate) {
@@ -72,7 +74,7 @@ async function getOpenRouterRankings() {
   }
 
   const [chunk1, chunk2] = await Promise.all([
-    fetchChunk(yr2ago, yr1ago).catch(() => []),
+    fetchChunk(yr2ago, chunk1End).catch(() => []),
     fetchChunk(yr1ago, yesterday),
   ]);
 

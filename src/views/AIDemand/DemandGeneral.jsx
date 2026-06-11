@@ -57,20 +57,6 @@ export default function DemandGeneral({ weeks: W }) {
     };
   }, [ld]);
 
-  // arXiv monthly paper counts
-  const arxivData = useMemo(() => {
-    const monthly = ld?.arxiv?.monthly ?? [];
-    const last8   = monthly.length >= 8 ? monthly.slice(-8) : monthly;
-    if (last8.length === 0) {
-      const labels = wkLabels(8).map((_, i) => `M-${7 - i}`);
-      return { labels, datasets: [{ label: 'AI Papers', data: trend(12800, 14800, 8, 0.05), backgroundColor: C.teal + 'bf', borderColor: C.teal, borderWidth: 1, borderRadius: 4 }] };
-    }
-    return {
-      labels: last8.map(m => m.period),
-      datasets: [{ label: 'AI Papers', data: last8.map(m => m.count), backgroundColor: C.teal + 'bf', borderColor: C.teal, borderWidth: 1, borderRadius: 4 }],
-    };
-  }, [ld]);
-
   // HuggingFace top 5 models
   const top5   = useMemo(() => (ld?.hf ?? []).slice(0, 5), [ld]);
   const hfData = useMemo(() => {
@@ -176,18 +162,6 @@ export default function DemandGeneral({ weeks: W }) {
         height={220}
       >
         <Bar data={commitsData} options={hBarOpts(v => String(v))} />
-      </ChartCard>
-
-      <ChartCard
-        chartId="gen-arxiv"
-        title="arXiv AI paper submissions — monthly count"
-        src="arxiv.org"
-        srcUrl="https://arxiv.org/search/?searchtype=all&query=artificial+intelligence"
-        freq="monthly"
-        subtitle="Papers submitted across cs.AI + cs.LG + cs.CL + cs.CV. Measures research output velocity."
-        height={220}
-      >
-        <Bar data={arxivData} options={baseOpts(fmtK)} />
       </ChartCard>
 
       <ChartCard
