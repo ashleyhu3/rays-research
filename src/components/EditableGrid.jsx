@@ -24,7 +24,7 @@ export default function EditableGrid({ viewId, children }) {
 
   useEffect(() => {
     if (defaults.length > 0) initLayout(viewId, defaults);
-  }, [viewId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [viewId, defaults]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const stored = getLayout(viewId);
   const layout = stored ?? defaults;

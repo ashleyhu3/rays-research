@@ -31,8 +31,17 @@ export function LayoutProvider({ children }) {
 
   const initLayout = useCallback((viewId, defaults) => {
     setLayouts(prev => {
-      if (prev[viewId]) return prev;
-      const next = { ...prev, [viewId]: defaults };
+      const cur = prev[viewId];
+      if (!cur) {
+        const next = { ...prev, [viewId]: defaults };
+        persist(next);
+        return next;
+      }
+      // Append charts added after the layout was first stored
+      const known   = new Set(cur.map(item => item.chartId));
+      const missing = defaults.filter(d => !known.has(d.chartId));
+      if (missing.length === 0) return prev;
+      const next = { ...prev, [viewId]: [...cur, ...missing] };
       persist(next);
       return next;
     });

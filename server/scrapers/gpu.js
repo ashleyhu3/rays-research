@@ -1,7 +1,29 @@
 const axios = require('axios');
-const cheerio = require('cheerio');
+const fs = require('fs');
+const path = require('path');
 
-// vast.ai public bundle API (no auth required for read-only spot prices)
+// No public archive of GPU spot prices exists, so accumulate our own daily
+// history of the scraped medians: { 'YYYY-MM-DD': { gpuName: $/hr } }
+const HISTORY_FILE = path.join(__dirname, '..', 'data', 'gpuHistory.json');
+
+function loadHistory() {
+  try { return JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf8')); } catch { return {}; }
+}
+
+function saveHistory(history) {
+  try {
+    fs.mkdirSync(path.dirname(HISTORY_FILE), { recursive: true });
+    fs.writeFileSync(HISTORY_FILE, JSON.stringify(history));
+  } catch (e) {
+    console.warn('[gpu] could not persist history:', e.message);
+  }
+}
+
+// vast.ai public bundle API (no auth required for read-only spot prices).
+// gpu_name values use spaces on vast.ai (e.g. "H100 SXM"); we normalize keys
+// to underscores for stable use as object keys downstream.
+const VAST_GPUS = ['H100 SXM', 'H100 PCIE', 'H200', 'B200', 'A100 SXM4', 'RTX 4090'];
+
 async function getVastPrices() {
   const q = JSON.stringify({
     verified:  { eq: true },
@@ -9,7 +31,7 @@ async function getVastPrices() {
     rentable:  { eq: true },
     rented:    { eq: false },
     num_gpus:  { eq: 1 },
-    gpu_name:  { in: ['H100_SXM4', 'H100_PCIE', 'H200_SXM5', 'A100_SXM4', 'RTX_4090'] },
+    gpu_name:  { in: VAST_GPUS },
   });
   const { data } = await axios.get(
     `https://console.vast.ai/api/v0/bundles/?q=${encodeURIComponent(q)}`,
@@ -18,7 +40,7 @@ async function getVastPrices() {
 
   const byGpu = {};
   (data.offers || []).forEach(o => {
-    const g = o.gpu_name;
+    const g = o.gpu_name.replace(/ /g, '_');
     if (!byGpu[g]) byGpu[g] = [];
     byGpu[g].push(o.dph_total);
   });
@@ -31,40 +53,34 @@ async function getVastPrices() {
   return out;
 }
 
-// Lambda Labs public pricing page scrape (fallback / additional data)
-async function getLambdaPrices() {
-  const { data } = await axios.get('https://lambdalabs.com/service/gpu-cloud', {
-    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; signal-dashboard/1.0)' },
-    timeout: 15000,
-  });
-  const $ = cheerio.load(data);
-  const prices = {};
-
-  $('table tr, [data-gpu], .gpu-card').each((_, el) => {
-    const text = $(el).text();
-    const gpuMatch = text.match(/H100|H200|A100|B200|A10/i);
-    const priceMatch = text.match(/\$\s*([\d.]+)\s*\/\s*hr/i);
-    if (gpuMatch && priceMatch) {
-      const gpu = gpuMatch[0].toUpperCase();
-      prices[gpu] = parseFloat(priceMatch[1]);
-    }
-  });
-  return prices;
-}
-
 async function getGpuPrices() {
-  const [vast, lambda] = await Promise.allSettled([getVastPrices(), getLambdaPrices()]);
-  const result = {};
+  // Lambda Labs' pricing page was retired (404s) — vast.ai is the sole source now
+  const prices = await getVastPrices().catch(e => {
+    console.warn('[gpu] vast.ai fetch failed:', e.message);
+    return {};
+  });
 
-  // Merge: Lambda prices take precedence for named H100/H200; vast.ai fills the rest
-  if (vast.status === 'fulfilled') Object.assign(result, vast.value);
-  if (lambda.status === 'fulfilled') {
-    Object.entries(lambda.value).forEach(([k, v]) => {
-      if (!result[k]) result[k] = v;
-    });
+  if (Object.keys(prices).length === 0) return null;
+
+  // Append today's snapshot (same-day re-scrapes overwrite with the latest medians)
+  const today = new Date().toISOString().slice(0, 10);
+  const history = loadHistory();
+  history[today] = prices;
+  saveHistory(history);
+
+  const dates  = Object.keys(history).sort();
+  const gpus   = [...new Set(dates.flatMap(d => Object.keys(history[d])))];
+  const series = {};
+  for (const g of gpus) {
+    series[g] = dates.map(d => history[d]?.[g] ?? null);
   }
+  // Mainstream index: average $/hr across all GPUs listed on each date
+  const index = dates.map(d => {
+    const vals = Object.values(history[d]);
+    return +(vals.reduce((s, v) => s + v, 0) / vals.length).toFixed(3);
+  });
 
-  return Object.keys(result).length > 0 ? result : null;
+  return { prices, history: { dates, series, index } };
 }
 
 module.exports = { getGpuPrices };

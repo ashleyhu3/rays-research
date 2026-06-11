@@ -12,6 +12,11 @@ const NPM_PKGS = [
   'mistralai',
   '@anthropic-ai/sdk',
   '@google/generative-ai',
+  'langchain',
+  '@langchain/core',
+  'llamaindex',
+  'ai',
+  '@huggingface/inference',
 ];
 
 async function fetchNpmPkg(pkg) {
@@ -37,7 +42,7 @@ async function fetchNpm() {
 }
 
 /* ── PyPI last-week snapshot ──────────────────────────────────────── */
-const PYPI_PKGS = ['openai', 'anthropic', 'google-generativeai', 'mistralai'];
+const PYPI_PKGS = ['openai', 'anthropic', 'google-generativeai', 'mistralai', 'langchain', 'langchain-community', 'llama-index-core', 'vllm'];
 
 async function fetchPypiPkg(pkg) {
   const url = `https://pypistats.org/api/packages/${pkg}/recent?period=week`;
@@ -99,9 +104,12 @@ async function fetchJsonSafe(url, ms = 30000) {
   }
 }
 
+// ArXiv scraper fetches 12 months × 3.5 s apart = ~60 s cold start
+const SLOW_KEYS = new Set(['arxiv', 'github-commits']);
+
 async function fetchBackendAll() {
-  const keys = ['pypi', 'trends', 'reddit', 'appstore', 'jobs', 'gpu', 'github', 'openrouter', 'eia', 'mops'];
-  const results = await Promise.allSettled(keys.map(k => fetchJsonSafe(`/api/${k}`)));
+  const keys = ['pypi', 'trends', 'reddit', 'appstore', 'jobs', 'gpu', 'github', 'openrouter', 'eia', 'mops', 'github-commits', 'arxiv', 'docker', 'hn', 'wikipedia', 'openrouter-ranks', 'dram'];
+  const results = await Promise.allSettled(keys.map(k => fetchJsonSafe(`/api/${k}`, SLOW_KEYS.has(k) ? 90000 : 30000)));
   return Object.fromEntries(keys.map((k, i) => [
     k, results[i].status === 'fulfilled' ? results[i].value : null,
   ]));
@@ -137,7 +145,14 @@ export async function fetchAll() {
     gpu:         be.gpu        ?? null,
     github:      be.github     ?? null,
     openrouter:  be.openrouter ?? null,
-    eia:         be.eia        ?? null,
-    mops:        be.mops       ?? null,
+    eia:          be.eia              ?? null,
+    mops:         be.mops             ?? null,
+    githubCommits: be['github-commits'] ?? null,
+    arxiv:         be.arxiv            ?? null,
+    docker:        be.docker           ?? null,
+    hn:            be.hn               ?? null,
+    wikipedia:        be.wikipedia               ?? null,
+    openrouterRanks:  be['openrouter-ranks']      ?? null,
+    dram:             be.dram                     ?? null,
   };
 }

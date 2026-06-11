@@ -8,7 +8,7 @@ import Trends      from './Trends';
 import Reddit      from './Reddit';
 import Web         from './Web';
 import HuggingFace from './HuggingFace';
-import GPU         from './GPU';
+import Pricing     from './Pricing';
 import Datacenter  from './Datacenter';
 import Electricity from './Electricity';
 import Chinese     from './Chinese';
@@ -20,7 +20,7 @@ const DEMAND_VIEWS = [
   { Component: Reddit      },
   { Component: Web         },
   { Component: HuggingFace },
-  { Component: GPU         },
+  { Component: Pricing     },
   { Component: Datacenter  },
   { Component: Electricity },
   { Component: Chinese     },
@@ -30,7 +30,7 @@ const SECTOR_VIEWS = {
   overview:  DEMAND_VIEWS,
   dev:      [{ Component: PyPI }, { Component: GitHub }, { Component: Trends }],
   consumer: [{ Component: Reddit }, { Component: Web }, { Component: HuggingFace }],
-  infra:    [{ Component: GPU }, { Component: Datacenter }, { Component: Electricity }],
+  infra:    [{ Component: Pricing }, { Component: Datacenter }, { Component: Electricity }],
   tokens:   [{ Component: Chinese }],
 };
 

@@ -32,9 +32,14 @@ export const CHART_REGISTRY = [
   { id: 'hf-uploads',       sectorId: 'consumer', subView: 'hf',     title: 'New model uploads per week',       defaultPinned: false },
 
   // ── Infrastructure ─────────────────────────────────────────────────
-  { id: 'gpu-prices',      sectorId: 'infra', subView: 'gpu',         title: 'GPU spot price $/hr',                   defaultPinned: true  },
-  { id: 'gpu-avail',       sectorId: 'infra', subView: 'gpu',         title: 'GPU availability by region',            defaultPinned: false },
-  { id: 'gpu-spread',      sectorId: 'infra', subView: 'gpu',         title: 'H200–H100 price spread',                defaultPinned: false },
+  { id: 'gpu-prices',      sectorId: 'infra', subView: 'pricing',     title: 'GPU spot price $/hr',                   defaultPinned: true  },
+  { id: 'gpu-avail',       sectorId: 'infra', subView: 'pricing',     title: 'GPU availability by region',            defaultPinned: false },
+  { id: 'gpu-spread',      sectorId: 'infra', subView: 'pricing',     title: 'H200–H100 price spread',                defaultPinned: false },
+  { id: 'gpu-index',       sectorId: 'infra', subView: 'pricing',     title: 'Mainstream GPU spot price index',       defaultPinned: false },
+  { id: 'dram-index',      sectorId: 'infra', subView: 'pricing',     title: 'Mainstream DRAM spot price index',      defaultPinned: false },
+  { id: 'dram-chips',      sectorId: 'infra', subView: 'pricing',     title: 'DRAM chip & GDDR spot price',           defaultPinned: false },
+  { id: 'dram-modules',    sectorId: 'infra', subView: 'pricing',     title: 'Memory module spot price',              defaultPinned: false },
+  { id: 'dram-change',     sectorId: 'infra', subView: 'pricing',     title: 'DRAM spot session change (%)',          defaultPinned: false },
   { id: 'dc-capex',        sectorId: 'infra', subView: 'datacenter',  title: 'Hyperscaler capex committed',           defaultPinned: true  },
   { id: 'dc-capacity',     sectorId: 'infra', subView: 'datacenter',  title: 'Capacity under construction (GW)',      defaultPinned: false },
   { id: 'dc-state',        sectorId: 'infra', subView: 'datacenter',  title: 'Permitted capacity by US state',        defaultPinned: false },

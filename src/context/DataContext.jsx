@@ -14,15 +14,16 @@ export function DataProvider({ children }) {
   const timer = useRef(null);
 
   const load = useCallback(async (force = false) => {
-    if (!force) {
-      const cached = getCached(KEY);
-      if (cached) {
-        setLiveData(cached.data);
-        setLastUpdated(new Date(cached.ts));
-        return;
-      }
+    // Stale-while-revalidate: paint instantly from the cached snapshot, but
+    // always refetch in the background so stale data shapes self-heal instead
+    // of hiding new charts until the cache TTL expires.
+    const cached = force ? null : getCached(KEY);
+    if (cached) {
+      setLiveData(cached.data);
+      setLastUpdated(new Date(cached.ts));
+    } else {
+      setLoading(true);
     }
-    setLoading(true);
     setError(null);
     try {
       const data = await fetchAll();
@@ -30,7 +31,7 @@ export function DataProvider({ children }) {
       setLiveData(data);
       setLastUpdated(new Date());
     } catch (e) {
-      setError(e.message);
+      if (!cached) setError(e.message);
     } finally {
       setLoading(false);
     }
@@ -42,11 +43,15 @@ export function DataProvider({ children }) {
     setLoading(true);
     setError(null);
     try {
+      // Cap the round-trip so a wedged scraper can't leave the button spinning forever
+      const ac = new AbortController();
+      const tid = setTimeout(() => ac.abort(new Error('refresh timed out after 90s')), 90000);
       const res = await fetch('/api/refresh', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: '{}',
-      });
+        signal: ac.signal,
+      }).finally(() => clearTimeout(tid));
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error ?? `Server error ${res.status}`);

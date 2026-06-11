@@ -6,9 +6,11 @@ export default function Sidebar({ currentView, onNavigate, mode = 'demand' }) {
   return (
     <aside className="sidebar">
       {sections.map((section) => {
-        const overviewId = section.sectorId ? `${section.sectorId}-overview` : null;
+        const hasOverview = section.items.some(item => item.isOverview);
+        const overviewId  = hasOverview && section.sectorId ? `${section.sectorId}-overview` : null;
         const headerActive = overviewId && currentView === overviewId;
         const visibleItems = section.items.filter(item => !item.isOverview);
+        const hasGroupLabel = section.sectorId != null;
 
         return (
           <div key={section.label} className="nav-sec">
@@ -19,11 +21,13 @@ export default function Sidebar({ currentView, onNavigate, mode = 'demand' }) {
               >
                 {section.label}
               </button>
+            ) : hasGroupLabel ? (
+              <span className="nav-lbl">{section.label}</span>
             ) : null}
             {visibleItems.map((item) => (
               <button
                 key={item.id}
-                className={overviewId ? `nav-item${currentView === item.id ? ' active' : ''}` : `nav-lbl-btn${currentView === item.id ? ' active' : ''}`}
+                className={hasGroupLabel ? `nav-item${currentView === item.id ? ' active' : ''}` : `nav-lbl-btn${currentView === item.id ? ' active' : ''}`}
                 onClick={() => onNavigate(item.id)}
               >
                 {item.label}

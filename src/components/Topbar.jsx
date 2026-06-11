@@ -4,6 +4,14 @@ import { useLayout } from '../context/LayoutContext';
 import { useUI } from '../context/UIContext';
 import { chartsForSector } from '../config/charts';
 
+const WEEK_OPTIONS = [
+  { value: 13,  label: '3M' },
+  { value: 26,  label: '6M' },
+  { value: 39,  label: '9M' },
+  { value: 52,  label: '1Y' },
+  { value: 104, label: '2Y' },
+];
+
 const MONTH_OPTIONS = [
   { value: 6,  label: '6M' },
   { value: 12, label: '1Y' },
@@ -74,7 +82,7 @@ function CustomizeDropdown({ sectorId }) {
   );
 }
 
-export default function Topbar({ title, isNew, months, onMonthsChange, sectorId, viewId, layoutEditable }) {
+export default function Topbar({ title, isNew, weeks, onWeeksChange, months, onMonthsChange, sectorId, viewId, layoutEditable }) {
   const { editMode, setEditMode } = useUI();
   const { resetLayout } = useLayout();
 
@@ -82,6 +90,15 @@ export default function Topbar({ title, isNew, months, onMonthsChange, sectorId,
     <div className="topbar">
       <h1>{title}{isNew && <span className="new-badge" style={{ marginLeft: 10, verticalAlign: 'middle' }}>NEW</span>}</h1>
       <div className="topbar-r">
+        {onWeeksChange && WEEK_OPTIONS.map(opt => (
+          <button
+            key={opt.value}
+            className={`rbtn${weeks === opt.value ? ' active' : ''}`}
+            onClick={() => onWeeksChange(opt.value)}
+          >
+            {opt.label}
+          </button>
+        ))}
         {onMonthsChange && MONTH_OPTIONS.map(opt => (
           <button
             key={opt.value}
