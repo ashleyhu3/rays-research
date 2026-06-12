@@ -6,6 +6,7 @@ import { wkLabels, dayLabels } from '../../utils/labels';
 import { baseOpts, hBarOpts, stackedOpts, mkDs, mkBar, fmtM, fmtK, fmtP } from '../../utils/chartHelpers';
 import { orProviderSeries, fmtTok } from '../../utils/openrouterProvider';
 import { orComboCard } from '../../components/OrGrowthCards';
+import { metricTrendCard } from '../../components/MetricTrendCard';
 import ChartCard from '../../components/ChartCard';
 import EditableGrid from '../../components/EditableGrid';
 import { useData } from '../../context/DataContext';
@@ -38,12 +39,6 @@ export default function DemandGoogle({ weeks: W }) {
     ],
   }), [wk, pyVals, npVals]);
 
-  // Web traffic — gemini.google.com
-  const webData = useMemo(() => ({
-    labels: wk,
-    datasets: [mkDs('gemini.google.com', C.google, trend(520e6, 640e6, W, 0.05), true)],
-  }), [wk, W]);
-
   // Google Trends
   const td = ld?.trends;
   const trendsData = useMemo(() => {
@@ -62,22 +57,8 @@ export default function DemandGoogle({ weeks: W }) {
     };
   }, [days, D, td]);
 
-  // Reddit
-  const rd    = ld?.reddit;
-  const gmVal = rd?.Gemini != null ? Math.round(rd.Gemini * 28) : 2600;
-  const redditData = useMemo(() => ({
-    labels: days,
-    datasets: [mkDs('Gemini', C.google, trend(gmVal * 0.7, gmVal, D, 0.10), true)],
-  }), [days, D, gmVal]);
-
-  // Jobs
-  const jd      = ld?.jobs;
-  const gdTotal = jd?.['Google DM']?.total       ?? 891;
-  const gdEng   = jd?.['Google DM']?.engineering ?? 420;
-  const jobsData = useMemo(() => ({
-    labels: ['Total roles', 'Engineering'],
-    datasets: [{ data: [gdTotal, gdEng], backgroundColor: [fa(C.google, 0.7), fa(C.teal, 0.7)], borderColor: [C.google, C.teal], borderWidth: 1, borderRadius: 4 }],
-  }), [gdTotal, gdEng]);
+  // Daily snapshot history (server-accumulated) for point-in-time metrics
+  const mh = ld?.metricsHistory;
 
   // Wikipedia pageviews
   const wikiArr  = ld?.wikipedia?.articles?.['Gemini (language model)'] ?? [];
@@ -145,18 +126,6 @@ export default function DemandGoogle({ weeks: W }) {
       )}
 
       <ChartCard
-        chartId="goo-web"
-        title="gemini.google.com — monthly web visits"
-        src="similarweb.com"
-        srcUrl="https://www.similarweb.com/website/gemini.google.com/"
-        freq="monthly"
-        subtitle="Monthly unique visits to gemini.google.com. Google's consumer AI surface."
-        height={220}
-      >
-        <Line data={webData} options={baseOpts(v => v >= 1e9 ? `${(v / 1e9).toFixed(2)}B` : `${(v / 1e6).toFixed(0)}M`)} />
-      </ChartCard>
-
-      <ChartCard
         chartId="goo-trends"
         title="Google Trends — Gemini API & brand search interest"
         src="trends.google.com"
@@ -169,29 +138,74 @@ export default function DemandGoogle({ weeks: W }) {
         <Bar data={trendsData} options={stackedOpts(fmtP)} />
       </ChartCard>
 
-      <ChartCard
-        chartId="goo-reddit"
-        title="Reddit daily mentions — Gemini"
-        src="reddit.com/search"
-        srcUrl="https://www.reddit.com/search/?q=Gemini+AI&sort=new"
-        freq="daily"
-        subtitle={`~${gmVal.toLocaleString()} estimated daily mentions across AI-related subreddits.`}
-        height={220}
-      >
-        <Line data={redditData} options={baseOpts(fmtK)} />
-      </ChartCard>
+      {metricTrendCard({
+        chartId: 'goo-reddit',
+        title: 'Reddit — weekly "Gemini" mentions',
+        src: 'reddit.com/search',
+        srcUrl: 'https://www.reddit.com/search/?q=Gemini+AI&sort=new',
+        freq: '6-hourly',
+        subtitle: 'Weekly search mentions of Gemini.',
+        hist: mh?.reddit,
+        series: [
+          { metric: 'Gemini.weeklyMentions', label: 'Weekly mentions', color: C.google },
+        ],
+        fmt: fmtK,
+      })}
 
-      <ChartCard
-        chartId="goo-jobs"
-        title="Google DeepMind — open roles (Greenhouse)"
-        src="boards.greenhouse.io"
-        srcUrl="https://boards.greenhouse.io/deepmind"
-        freq="live"
-        subtitle={`${gdTotal} total open roles · ${gdEng} engineering`}
-        height={220}
-      >
-        <Bar data={jobsData} options={hBarOpts(v => String(v))} />
-      </ChartCard>
+      {metricTrendCard({
+        chartId: 'goo-jobs',
+        title: 'Google DeepMind — open roles (Greenhouse)',
+        src: 'boards.greenhouse.io',
+        srcUrl: 'https://boards.greenhouse.io/deepmind',
+        subtitle: 'Hiring demand: total and engineering openings.',
+        hist: mh?.jobs,
+        series: [
+          { metric: 'Google DM.total',       label: 'Total roles', color: C.google },
+          { metric: 'Google DM.engineering', label: 'Engineering', color: C.teal },
+        ],
+        fmt: v => String(Math.round(v)),
+      })}
+
+      {metricTrendCard({
+        chartId: 'goo-github',
+        title: 'google-generativeai — GitHub stars & dependent repos',
+        src: 'github.com',
+        srcUrl: 'https://github.com/google/generative-ai-python',
+        subtitle: 'Production adoption: repos that depend on the SDK, plus stars.',
+        hist: mh?.github,
+        series: [
+          { metric: 'google/generative-ai-python.dependents', label: 'Dependent repos', color: C.google },
+          { metric: 'google/generative-ai-python.stars',      label: 'Stars',           color: C.teal },
+        ],
+        fmt: fmtK,
+      })}
+
+      {metricTrendCard({
+        chartId: 'goo-so',
+        title: 'Stack Overflow — [google-gemini-api] tag activity',
+        src: 'stackexchange.com',
+        srcUrl: 'https://stackoverflow.com/questions/tagged/google-gemini-api',
+        subtitle: 'Developer troubleshooting volume around the Gemini API.',
+        hist: mh?.stackoverflow,
+        series: [
+          { metric: 'google-gemini-api.questions',   label: 'Questions all-time', color: C.google },
+          { metric: 'google-gemini-api.newThisWeek', label: 'New this week',      color: C.teal },
+        ],
+        fmt: v => String(Math.round(v)),
+      })}
+
+      {metricTrendCard({
+        chartId: 'goo-hf',
+        title: 'Gemma — HuggingFace family downloads',
+        src: 'huggingface.co/api',
+        srcUrl: 'https://huggingface.co/google',
+        subtitle: 'Open-model demand: cumulative downloads of the Gemma family.',
+        hist: mh?.huggingface,
+        series: [
+          { metric: 'Gemma.downloads', label: 'Gemma downloads', color: C.google },
+        ],
+        fmt: fmtM,
+      })}
 
       <ChartCard
         chartId="goo-wiki"

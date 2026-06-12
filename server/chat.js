@@ -194,11 +194,18 @@ function buildSections() {
     if (gpu?.history?.index?.length) {
       lines.push(`  Mainstream GPU index (avg across tracked GPUs): $${gpu.history.index.at(-1)}/hr`);
     }
+    if (gpu?.availability && Object.keys(gpu.availability).length > 0) {
+      const avail = Object.entries(gpu.availability)
+        .sort(([, a], [, b]) => b - a)
+        .map(([k, v]) => `${k.replace(/_/g, ' ')}: ${v} offers`)
+        .join(' | ');
+      lines.push(`  Marketplace availability (scarcity signal — fewer offers = higher demand): ${avail}`);
+    }
     sections.push({
       id:    'gpu',
-      title: 'GPU Spot Prices',
-      about: 'Spot rental prices on vast.ai for H100, H200, A100, RTX 4090 ($/hr)',
-      text:  `### GPU Spot Prices (vast.ai, median $/hr)\n${lines.join('\n')}`,
+      title: 'GPU Spot Prices & Availability',
+      about: 'Spot rental prices and marketplace availability on vast.ai for H100, H200, B200, A100, RTX 4090 ($/hr, offer counts)',
+      text:  `### GPU Spot Prices & Availability (vast.ai)\n${lines.join('\n')}`,
     });
   }
 
@@ -410,18 +417,82 @@ function buildSections() {
     });
   }
 
-  // 16. HuggingFace top models by downloads
+  // 16. HuggingFace open-model demand
   const hf = cache.get('huggingface');
   if (hf?.models?.length) {
     const lines = hf.models.slice(0, 15).map((m, i) =>
-      `  #${i + 1} ${m.id} (${m.pipeline_tag}): ${fmt(m.downloads)} downloads`
+      `  #${i + 1} ${m.id} (${m.pipeline_tag}): ${fmt(m.downloads)} downloads | ${fmt(m.likes)} likes`
     );
+    if (hf.newModels?.perDay) {
+      lines.push(`  Model creation rate: ~${fmt(hf.newModels.perDay)} new models/day (~${fmt(hf.newModels.perWeekEst)}/week)`);
+    }
+    if (hf.families) {
+      const fams = Object.entries(hf.families)
+        .filter(([, v]) => v)
+        .sort(([, a], [, b]) => b.downloads - a.downloads)
+        .map(([name, v]) => `${name}: ${fmt(v.downloads)} downloads (top: ${v.top})`)
+        .join(' | ');
+      if (fams) lines.push(`  Downloads by model family (top 100 models each): ${fams}`);
+    }
     sections.push({
       id:    'huggingface',
-      title: 'HuggingFace Top Models',
-      about: 'Most-downloaded models on HuggingFace Hub (open-source model adoption)',
-      text:  `### HuggingFace Top Models (by all-time downloads)\n${lines.join('\n')}`,
+      title: 'HuggingFace Open-Model Demand',
+      about: 'Most-downloaded models, model creation rate, and downloads by family (Llama, Qwen, Gemma, DeepSeek, Mistral) on HuggingFace Hub',
+      text:  `### HuggingFace Open-Model Demand\n${lines.join('\n')}`,
     });
+  }
+
+  // 17. MCP ecosystem growth
+  const mcp = cache.get('mcp');
+  if (mcp?.queries) {
+    const lines = Object.entries(mcp.queries).map(([label, v]) =>
+      `  "${label}" repos on GitHub: ${fmt(v.total)} total | ${fmt(v.new7d)} created last 7d | ${fmt(v.new30d)} created last 30d`
+    );
+    if (mcp.serversRepo) {
+      lines.push(`  modelcontextprotocol/servers (official): ${fmt(mcp.serversRepo.stars)} stars | ${fmt(mcp.serversRepo.forks)} forks`);
+    }
+    sections.push({
+      id:    'mcp',
+      title: 'MCP Ecosystem Growth',
+      about: 'Model Context Protocol (MCP) ecosystem: GitHub repo counts and weekly/monthly creation rates — the agent-economy growth signal',
+      text:  `### MCP Ecosystem Growth (GitHub, as of ${mcp.asOf})\n${lines.join('\n')}`,
+    });
+  }
+
+  // 18. SEC filing AI mentions
+  const sec = cache.get('sec');
+  if (sec?.terms) {
+    const lines = Object.entries(sec.terms)
+      .filter(([, v]) => v)
+      .map(([term, v]) => {
+        const chg = v.prior90d > 0 ? ` | QoQ: ${((v.last90d - v.prior90d) / v.prior90d * 100).toFixed(1)}%` : '';
+        return `  "${term}": ${fmt(v.last90d)} filings (last 90d) vs ${fmt(v.prior90d)} (prior 90d)${chg}${v.capped ? ' (count capped at 10K)' : ''}`;
+      });
+    sections.push({
+      id:    'sec',
+      title: 'SEC Filing AI Mentions',
+      about: 'How many 10-K/10-Q filings mention AI terms (artificial intelligence, LLM, generative AI, AI agent) — enterprise adoption signal from SEC EDGAR',
+      text:  `### SEC Filing AI Mentions (10-K/10-Q, EDGAR full-text search)\n${lines.join('\n')}`,
+    });
+  }
+
+  // 19. Reddit community size
+  const redditComm = cache.get('redditCommunities');
+  if (redditComm?.subs) {
+    const lines = Object.entries(redditComm.subs)
+      .filter(([, v]) => v)
+      .sort(([, a], [, b]) => (b.subscribers ?? 0) - (a.subscribers ?? 0))
+      .map(([name, v]) =>
+        `  r/${name}: ${fmt(v.subscribers)} subscribers${v.activeUsers != null ? ` | ${fmt(v.activeUsers)} active now` : ''}`
+      );
+    if (lines.length) {
+      sections.push({
+        id:    'redditCommunities',
+        title: 'Reddit Community Size',
+        about: 'Subscriber counts and active users for AI subreddits (r/ChatGPT, r/ClaudeAI, r/LocalLLaMA, r/singularity, r/OpenAI)',
+        text:  `### Reddit Community Size (as of ${redditComm.asOf})\n${lines.join('\n')}`,
+      });
+    }
   }
 
   return sections;
@@ -557,6 +628,9 @@ const SECTION_TO_CHART = {
   docker:        'docker',
   hn:            'community',
   wikipedia:     'community',
+  mcp:               'mcp',
+  sec:               'sec',
+  redditCommunities: 'reddit',
 };
 
 async function chat(message) {

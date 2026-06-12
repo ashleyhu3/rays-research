@@ -108,7 +108,7 @@ async function fetchJsonSafe(url, ms = 30000) {
 const SLOW_KEYS = new Set(['github-commits']);
 
 async function fetchBackendAll() {
-  const keys = ['pypi', 'trends', 'reddit', 'jobs', 'gpu', 'github', 'openrouter', 'eia', 'mops', 'github-commits', 'docker', 'hn', 'wikipedia', 'openrouter-ranks', 'dram'];
+  const keys = ['pypi', 'trends', 'reddit', 'jobs', 'gpu', 'github', 'openrouter', 'eia', 'mops', 'github-commits', 'docker', 'hn', 'wikipedia', 'openrouter-ranks', 'dram', 'mcp', 'sec', 'reddit-communities', 'huggingface', 'metrics-history'];
   const results = await Promise.allSettled(keys.map(k => fetchJsonSafe(`/api/${k}`, SLOW_KEYS.has(k) ? 90000 : 30000)));
   return Object.fromEntries(keys.map((k, i) => [
     k, results[i].status === 'fulfilled' ? results[i].value : null,
@@ -152,5 +152,10 @@ export async function fetchAll() {
     wikipedia:        be.wikipedia               ?? null,
     openrouterRanks:  be['openrouter-ranks']      ?? null,
     dram:             be.dram                     ?? null,
+    mcp:              be.mcp                      ?? null,
+    sec:              be.sec                      ?? null,
+    redditCommunities: be['reddit-communities']   ?? null,
+    hfServer:         be.huggingface              ?? null,
+    metricsHistory:   be['metrics-history']       ?? null,
   };
 }

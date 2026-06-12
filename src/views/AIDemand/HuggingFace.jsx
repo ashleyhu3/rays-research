@@ -1,28 +1,12 @@
 import { useMemo } from 'react';
-import { Line, Bar, Doughnut } from 'react-chartjs-2';
+import { Bar } from 'react-chartjs-2';
 import { C, fa } from '../../config/colors';
-import { trend } from '../../utils/dataGenerators';
-import { wkLabels } from '../../utils/labels';
-import { baseOpts, doughnutOpts, mkDs, fmtM, fmtK } from '../../utils/chartHelpers';
+import { hBarOpts, fmtM, fmtN } from '../../utils/chartHelpers';
 import ChartCard from '../../components/ChartCard';
 import EditableGrid from '../../components/EditableGrid';
 import { useData } from '../../context/DataContext';
 
-const CAT_LABELS = ['Text Gen','Embeddings','Image Gen','Speech','Code Gen','Multimodal'];
-const CAT_DATA   = [38, 22, 14, 9, 10, 7];
-const CAT_COLORS = [C.openai, C.anthropic, C.google, C.mistral, C.meta, C.perplexity];
-
-const staticCatData = {
-  labels: CAT_LABELS,
-  datasets: [{
-    data:            CAT_DATA,
-    backgroundColor: CAT_COLORS.map(c => fa(c, 0.75)),
-    borderColor:     '#111419',
-    borderWidth:     3,
-  }],
-};
-
-const MODEL_PALETTE = [C.meta, C.openai, C.deepseek, C.mistral, C.google, C.teal, C.orange, C.perplexity];
+const FAMILY_COLORS = { Llama: C.meta, Qwen: C.deepseek, Gemma: C.google, DeepSeek: C.deepseek, Mistral: C.mistral };
 
 function modelColor(id) {
   const l = id.toLowerCase();
@@ -41,96 +25,132 @@ function shortName(id) {
   return parts[parts.length - 1];
 }
 
-export default function HuggingFace({ weeks: W }) {
+export default function HuggingFace() {
   const { liveData } = useData();
-  const wk = useMemo(() => wkLabels(W), [W]);
 
-  const top5 = useMemo(() => (liveData?.hf ?? []).slice(0, 5), [liveData]);
+  // Browser-direct top models (downloads) + server-side extras (likes, rate, families)
+  const hfList   = liveData?.hf ?? [];
+  const hfServer = liveData?.hfServer;
 
-  const mainData = useMemo(() => {
-    if (top5.length > 0) {
-      return {
-        labels: wk,
-        datasets: top5.map(m => {
-          const weeklyEst = Math.round(m.downloads / 4.3);
-          const startVal  = Math.round(weeklyEst * 0.5);
-          return mkDs(shortName(m.id), modelColor(m.id), trend(startVal, weeklyEst, W, 0.06));
-        }),
-      };
-    }
-    return {
-      labels: wk,
-      datasets: [
-        mkDs('Llama-3.1-70B',   C.meta,     trend(21e6,  24.2e6, W, 0.05)),
-        mkDs('Qwen-2.5-72B',    C.openai,   trend(8e6,   14.8e6, W, 0.08)),
-        mkDs('DeepSeek-V3',     C.deepseek, trend(2.4e6, 12.1e6, W, 0.10)),
-        mkDs('Mistral-7B-v0.3', C.mistral,  trend(11e6,  9.4e6,  W, 0.06)),
-        mkDs('Gemma-3-27B',     C.google,   trend(4.2e6, 7.6e6,  W, 0.07)),
-      ],
-    };
-  }, [W, top5]);
+  const top10 = useMemo(() => hfList.slice(0, 10), [hfList]);
 
-  const newModelsData = useMemo(() => ({
-    labels: wk,
+  const downloadsData = useMemo(() => top10.length === 0 ? null : {
+    labels: top10.map(m => shortName(m.id)),
     datasets: [{
-      label: 'New uploads',
-      data:            trend(4200, 5800, W, 0.08),
-      backgroundColor: wk.map((_, i) => fa(C.anthropic, 0.3 + (i / wk.length) * 0.5)),
-      borderColor:     C.anthropic,
-      borderWidth: 1, borderRadius: 3,
+      label: 'All-time downloads',
+      data: top10.map(m => m.downloads),
+      backgroundColor: top10.map(m => fa(modelColor(m.id), 0.75)),
+      borderColor: top10.map(m => modelColor(m.id)),
+      borderWidth: 1, borderRadius: 4,
     }],
-  }), [W]);
+  }, [top10]);
 
-  const hasLive = top5.length > 0;
-  const subtitle = hasLive
-    ? `Top open-weight models by estimated weekly downloads (live · huggingface.co/api).`
-    : 'Top open-weight model downloads. High velocity = high production integration likelihood.';
+  // Pipeline-tag breakdown computed from the real top-30 list
+  const catData = useMemo(() => {
+    if (hfList.length === 0) return null;
+    const byTag = {};
+    for (const m of hfList) byTag[m.pipeline_tag] = (byTag[m.pipeline_tag] ?? 0) + 1;
+    const entries = Object.entries(byTag).sort((a, b) => b[1] - a[1]).slice(0, 7);
+    const palette = [C.openai, C.anthropic, C.google, C.mistral, C.meta, C.perplexity, C.teal];
+    return {
+      labels: entries.map(([tag]) => tag),
+      datasets: [{
+        data:            entries.map(([, n]) => n),
+        backgroundColor: entries.map((_, i) => fa(palette[i % palette.length], 0.75)),
+        borderColor:     '#111419',
+        borderWidth:     3,
+      }],
+    };
+  }, [hfList]);
+
+  const familyEntries = useMemo(() =>
+    Object.entries(hfServer?.families ?? {})
+      .filter(([, v]) => v)
+      .sort((a, b) => b[1].downloads - a[1].downloads),
+  [hfServer]);
+
+  const familyData = useMemo(() => familyEntries.length === 0 ? null : {
+    labels: familyEntries.map(([k]) => k),
+    datasets: [{
+      label: 'Downloads (top 100 models per family)',
+      data: familyEntries.map(([, v]) => v.downloads),
+      backgroundColor: familyEntries.map(([k]) => fa(FAMILY_COLORS[k] ?? C.slate, 0.75)),
+      borderColor: familyEntries.map(([k]) => FAMILY_COLORS[k] ?? C.slate),
+      borderWidth: 1, borderRadius: 4,
+    }],
+  }, [familyEntries]);
+
+  const rate = hfServer?.newModels;
 
   return (
     <EditableGrid viewId="hf">
-      <ChartCard
-        chartId="hf-downloads"
-        title="HuggingFace — weekly model download velocity"
-        src="huggingface.co/models"
-        srcUrl="https://huggingface.co/models?sort=downloads"
-        freq="weekly"
-        subtitle={subtitle}
-        legend={hasLive
-          ? top5.map(m => [shortName(m.id), modelColor(m.id)])
-          : [['Llama-3.1 (Meta)', C.meta], ['Qwen-2.5-72B', C.openai], ['DeepSeek-V3', C.deepseek], ['Mistral-7B', C.mistral], ['Gemma-3 (Google)', C.google]]
-        }
-        insight={hasLive
-          ? `Live model rankings from HuggingFace API. Weekly download velocity estimated from monthly counts.`
-          : "DeepSeek-V3 and Qwen-2.5 are the fastest-growing in 2026 Q1. Llama 3.1 anchors at <b>~24M downloads/wk</b>."
-        }
-        height={250} span2
-      >
-        <Line data={mainData} options={baseOpts(fmtM)} />
-      </ChartCard>
+      {downloadsData && (
+        <ChartCard
+          chartId="hf-downloads"
+          title="HuggingFace — most-downloaded models (all-time)"
+          src="huggingface.co/api"
+          srcUrl="https://huggingface.co/models?sort=downloads"
+          freq="daily"
+          subtitle="Top 10 models on the Hub by cumulative downloads."
+          height={260} span2
+        >
+          <Bar data={downloadsData} options={hBarOpts(fmtM)} />
+        </ChartCard>
+      )}
 
-      <ChartCard
-        chartId="hf-categories"
-        title="Top 50 model category breakdown"
-        src="huggingface.co/models"
-        srcUrl="https://huggingface.co/models?sort=downloads"
-        freq="static"
-        subtitle="What types of models dominate downloads."
-        height={200}
-      >
-        <Doughnut data={staticCatData} options={doughnutOpts('55%')} />
-      </ChartCard>
+      {familyData && (
+        <ChartCard
+          chartId="hf-families"
+          title="Open-model demand by family"
+          src="huggingface.co/api"
+          srcUrl="https://huggingface.co/models"
+          subtitle={`Cumulative downloads of each family's top 100 models. Top model: ${familyEntries[0]?.[1]?.top ?? '—'}.`}
+          freq="daily"
+          height={240}
+        >
+          <Bar data={familyData} options={hBarOpts(fmtM)} />
+        </ChartCard>
+      )}
 
-      <ChartCard
-        chartId="hf-uploads"
-        title="New model uploads per week"
-        src="huggingface.co/models"
-        srcUrl="https://huggingface.co/models?sort=created"
-        freq="weekly"
-        subtitle="Ecosystem vitality proxy."
-        height={200}
-      >
-        <Bar data={newModelsData} options={baseOpts(fmtK)} />
-      </ChartCard>
+      {catData && (
+        <ChartCard
+          chartId="hf-categories"
+          title="Top-model category breakdown"
+          src="huggingface.co/api"
+          srcUrl="https://huggingface.co/models?sort=downloads"
+          freq="daily"
+          subtitle="Pipeline tags across the current top-30 most-downloaded models."
+          height={240}
+        >
+          <Bar data={catData} options={hBarOpts(fmtN)} />
+        </ChartCard>
+      )}
+
+      {rate?.perDay && (
+        <ChartCard
+          chartId="hf-uploads"
+          title="Model creation rate on the Hub"
+          src="huggingface.co/api"
+          srcUrl="https://huggingface.co/models?sort=created"
+          freq="daily"
+          subtitle={`Measured from the timestamps of the ${rate.sampled} newest models (${rate.spanHours}h span).`}
+          height={240}
+        >
+          <Bar
+            data={{
+              labels: ['New models / day', 'New models / week (est.)'],
+              datasets: [{
+                label: 'Models',
+                data: [rate.perDay, rate.perWeekEst],
+                backgroundColor: [fa(C.anthropic, 0.75), fa(C.teal, 0.75)],
+                borderColor: [C.anthropic, C.teal],
+                borderWidth: 1, borderRadius: 4,
+              }],
+            }}
+            options={hBarOpts(fmtN)}
+          />
+        </ChartCard>
+      )}
     </EditableGrid>
   );
 }

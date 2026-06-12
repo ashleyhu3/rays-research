@@ -4,6 +4,7 @@ import { C, fa } from '../../config/colors';
 import { baseOpts, hBarOpts, mkDs, fmtM, GRID, TICK, BORD } from '../../utils/chartHelpers';
 import { orProviderSeries } from '../../utils/openrouterProvider';
 import { orComboCard } from '../../components/OrGrowthCards';
+import { metricTrendCard } from '../../components/MetricTrendCard';
 import ChartCard from '../../components/ChartCard';
 import EditableGrid from '../../components/EditableGrid';
 import { useData } from '../../context/DataContext';
@@ -111,6 +112,20 @@ export default function DemandMiniMax({ weeks: W }) {
           <Line data={orShareData} options={baseOpts(v => `${v.toFixed(1)}%`)} />
         </ChartCard>
       )}
+
+      {metricTrendCard({
+        chartId: 'mm-hf',
+        title: 'MiniMax — HuggingFace family downloads',
+        src: 'huggingface.co/api',
+        srcUrl: 'https://huggingface.co/MiniMaxAI',
+        subtitle: 'Open-model demand: cumulative downloads of MiniMaxAI models.',
+        hist: ld?.metricsHistory?.huggingface,
+        series: [
+          { metric: 'MiniMax.downloads', label: 'MiniMax downloads', color: C.minimax },
+        ],
+        fmt: fmtM,
+        height: 260,
+      })}
 
       <ChartCard
         chartId="mm-mau"

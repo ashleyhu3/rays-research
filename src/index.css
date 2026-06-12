@@ -216,6 +216,34 @@ body { font-family: var(--font-b); background: var(--bg); color: var(--text); }
 .ch-head  { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; gap: 12px; }
 .ch-title { font-size: 13px; font-weight: 600; color: var(--text); }
 .ch-meta  { display: flex; align-items: center; gap: 7px; flex-shrink: 0; }
+
+/* Per-card series filter dropdown */
+.ch-filter { position: relative; flex-shrink: 0; }
+.ch-filter-btn {
+  font-size: 10px; padding: 2px 7px; border-radius: 3px;
+  font-family: var(--font-m); letter-spacing: .04em; white-space: nowrap;
+  background: rgba(255,255,255,.05); color: var(--ter);
+  border: 1px solid var(--border); cursor: pointer;
+  transition: border-color .15s, color .15s;
+}
+.ch-filter-btn:hover { border-color: rgba(232,197,71,.35); color: var(--sec); }
+.ch-filter-btn--active { color: var(--accent); border-color: rgba(232,197,71,.35); }
+.ch-filter-menu {
+  position: absolute; right: 0; top: calc(100% + 4px); z-index: 30;
+  min-width: 190px; max-height: 240px; overflow-y: auto;
+  background: #161a21; border: 1px solid var(--border); border-radius: 8px;
+  padding: 6px; box-shadow: 0 8px 24px rgba(0,0,0,.45);
+}
+.ch-filter-item {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 11px; color: var(--sec); font-family: var(--font-m);
+  padding: 5px 7px; border-radius: 5px; cursor: pointer; white-space: nowrap;
+}
+.ch-filter-item:hover { background: rgba(255,255,255,.05); color: var(--text); }
+.ch-filter-item input { accent-color: var(--accent); cursor: pointer; margin: 0; }
+.ch-filter-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
 .ch-src   { font-size: 11px; color: var(--ter); font-family: var(--font-m); text-decoration: none; transition: color .15s; }
 a.ch-src:hover { color: var(--sec); text-decoration: underline; }
 .ch-sub   { font-size: 12px; color: var(--sec); margin-bottom: 12px; line-height: 1.5; }

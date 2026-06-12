@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
-import { Line, Bar, Doughnut } from 'react-chartjs-2';
+import { Line, Bar } from 'react-chartjs-2';
 import { C, fa } from '../../config/colors';
 import { trend } from '../../utils/dataGenerators';
 import { wkLabels } from '../../utils/labels';
-import { baseOpts, doughnutOpts, hBarOpts, stackedOpts, mkDs, fmtM, GRID, TICK, BORD } from '../../utils/chartHelpers';
+import { baseOpts, hBarOpts, stackedOpts, mkDs, fmtM, GRID, TICK, BORD } from '../../utils/chartHelpers';
 import ChartCard from '../../components/ChartCard';
 import EditableGrid from '../../components/EditableGrid';
 import { useData } from '../../context/DataContext';
@@ -35,7 +35,7 @@ const PRICE_KEY_MODELS = [
 
 const mktData = {
   labels: MKT_LABELS,
-  datasets: [{ data: MKT_DATA, backgroundColor: MKT_COLORS.map(c => fa(c, 0.75)), borderColor: '#111419', borderWidth: 3 }],
+  datasets: [{ label: 'Market share (%)', data: MKT_DATA, backgroundColor: MKT_COLORS.map(c => fa(c, 0.75)), borderColor: MKT_COLORS, borderWidth: 1, borderRadius: 4 }],
 };
 const benchData = {
   labels: BENCH_MODELS,
@@ -86,16 +86,29 @@ export default function Chinese({ weeks: W }) {
     };
   }, [liveData]);
 
-  const tokenData = useMemo(() => ({
-    labels: wk,
-    datasets: [
-      mkDs('MiniMax M2.5/M2.7',    C.minimax,  trend(200e9,  2450e9, W, 0.12)),
-      mkDs('Kimi K2.5 (Moonshot)', C.kimi,     trend(400e9,  1210e9, W, 0.10).map((v,i) => i > Math.floor(W * 0.7) ? v * 0.8 : v)),
-      mkDs('GLM-5 (Zhipu)',        C.zhipu,    trend(80e9,   780e9,  W, 0.10)),
-      mkDs('DeepSeek V3.2',        C.deepseek, trend(600e9,  820e9,  W, 0.08)),
-      mkDs('MiMo-V2-Pro (Xiaomi)', C.xiaomi,   trend(0,      4650e9, W, 0.15).map((v,i) => i < Math.floor(W * 0.65) ? 0 : v)),
-    ],
-  }), [W]);
+  // Real weekly token series from OpenRouter rankings, filtered to Chinese models
+  const CN_PREFIXES = [
+    { match: 'minimax/',    color: C.minimax  },
+    { match: 'moonshotai/', color: C.kimi     },
+    { match: 'z-ai/',       color: C.zhipu    },
+    { match: 'thudm/',      color: C.zhipu    },
+    { match: 'deepseek/',   color: C.deepseek },
+    { match: 'qwen/',       color: C.deepseek },
+    { match: 'xiaomi/',     color: C.xiaomi   },
+  ];
+  const tokenData = useMemo(() => {
+    const ranks = liveData?.openrouterRanks;
+    if (!ranks?.trend) return null;
+    const weeks = (ranks.weekLabels ?? []).slice(-W);
+    const datasets = Object.entries(ranks.trend)
+      .map(([slug, series]) => {
+        const cn = CN_PREFIXES.find(p => slug.startsWith(p.match));
+        if (!cn) return null;
+        return mkDs(slug.split('/')[1] ?? slug, cn.color, series.slice(-W));
+      })
+      .filter(Boolean);
+    return datasets.length > 0 ? { labels: weeks, datasets } : null;
+  }, [liveData, W]);
 
   const mauData = useMemo(() => ({
     labels: QTR_LABELS.slice(0, qN),
@@ -127,18 +140,18 @@ export default function Chinese({ weeks: W }) {
 
   return (
     <EditableGrid viewId="chinese">
-      <ChartCard chartId="cn-tokens"
-        title="Chinese LLM weekly token consumption on OpenRouter (billion tokens)"
-        src="openrouter.ai/rankings"
-        srcUrl="https://openrouter.ai/rankings"
-        freq="weekly"
-        subtitle="Real weekly token throughput for key Chinese models on OpenRouter. MiniMax M2.5 led with 2.45T tokens in a single week in Feb 2026 — a 197% week-over-week surge. This is real developer production traffic, not benchmark scores."
-        legend={[['MiniMax M2.5/M2.7', C.minimax], ['Kimi K2.5 (Moonshot)', C.kimi], ['GLM-5 (Zhipu)', C.zhipu], ['DeepSeek V3.2', C.deepseek], ['MiMo-V2-Pro (Xiaomi)', C.xiaomi]]}
-        insight="In Feb 2026, Chinese models captured <b>85.7% of the top-5 token volume</b> on OpenRouter — the first sustained period where Chinese-origin models exceeded all US incumbents combined in production developer traffic."
-        height={260} span2 isNew
-      >
-        <Line data={tokenData} options={baseOpts(fmtM)} />
-      </ChartCard>
+      {tokenData && (
+        <ChartCard chartId="cn-tokens"
+          title="Chinese LLM weekly token consumption on OpenRouter"
+          src="openrouter.ai/rankings"
+          srcUrl="https://openrouter.ai/rankings"
+          freq="daily"
+          subtitle="Real weekly token throughput for Chinese models ranked in OpenRouter's top 10. Production developer traffic, not benchmark scores."
+          height={260} span2 isNew
+        >
+          <Line data={tokenData} options={baseOpts(fmtM)} />
+        </ChartCard>
+      )}
 
       <ChartCard chartId="cn-market"
         title="China domestic LLM market share (enterprise, %)"
@@ -149,7 +162,7 @@ export default function Chinese({ weeks: W }) {
         srcNote="Source: Zhipu AI HK IPO prospectus (Jan 2026) · IDC China AI Platform Tracker 2024"
         height={200} isNew
       >
-        <Doughnut data={mktData} options={doughnutOpts('50%')} />
+        <Bar data={mktData} options={hBarOpts(v => `${v.toFixed(1)}%`)} />
       </ChartCard>
 
       <ChartCard chartId="cn-pricing"

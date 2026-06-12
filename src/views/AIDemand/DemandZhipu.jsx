@@ -1,9 +1,10 @@
 import { useMemo } from 'react';
-import { Line, Bar, Doughnut } from 'react-chartjs-2';
+import { Line, Bar } from 'react-chartjs-2';
 import { C, fa } from '../../config/colors';
-import { baseOpts, hBarOpts, doughnutOpts, stackedOpts, mkDs, fmtM, GRID, TICK, BORD } from '../../utils/chartHelpers';
+import { baseOpts, hBarOpts, stackedOpts, mkDs, fmtM, GRID, TICK, BORD } from '../../utils/chartHelpers';
 import { orProviderSeries } from '../../utils/openrouterProvider';
 import { orComboCard } from '../../components/OrGrowthCards';
+import { metricTrendCard } from '../../components/MetricTrendCard';
 import ChartCard from '../../components/ChartCard';
 import EditableGrid from '../../components/EditableGrid';
 import { useData } from '../../context/DataContext';
@@ -16,10 +17,12 @@ const MKT_COLORS = [C.slate, C.zhipu, C.teal, C.slate, C.baidu, C.minimax, C.sla
 const mktData = {
   labels: MKT_LABELS,
   datasets: [{
+    label:           'Market share (%)',
     data:            MKT_DATA,
     backgroundColor: MKT_COLORS.map(c => fa(c, 0.80)),
-    borderColor:     '#111419',
-    borderWidth:     3,
+    borderColor:     MKT_COLORS,
+    borderWidth:     1,
+    borderRadius:    4,
   }],
 };
 
@@ -161,8 +164,22 @@ export default function DemandZhipu({ weeks: W }) {
         srcNote="Source: Zhipu AI HK IPO prospectus · IDC China AI Platform Tracker 2024"
         height={260}
       >
-        <Doughnut data={mktData} options={doughnutOpts('50%')} />
+        <Bar data={mktData} options={hBarOpts(v => `${v.toFixed(1)}%`)} />
       </ChartCard>
+
+      {metricTrendCard({
+        chartId: 'zh-hf',
+        title: 'GLM — HuggingFace family downloads',
+        src: 'huggingface.co/api',
+        srcUrl: 'https://huggingface.co/zai-org',
+        subtitle: 'Open-model demand: cumulative downloads of the GLM family (zai-org).',
+        hist: ld?.metricsHistory?.huggingface,
+        series: [
+          { metric: 'GLM.downloads', label: 'GLM downloads', color: C.zhipu },
+        ],
+        fmt: fmtM,
+        height: 260,
+      })}
 
       <ChartCard
         chartId="zh-pricing"

@@ -1,5 +1,6 @@
 const cron = require('node-cron');
 const cache = require('./cache');
+const history = require('./history');
 
 const scrapers = {
   pypi:          () => require('./scrapers/pypi').getPypiHistory(),
@@ -20,6 +21,9 @@ const scrapers = {
   npm:              () => require('./scrapers/npm').getNpmHistory(),
   stackoverflow:    () => require('./scrapers/stackoverflow').getStackOverflowData(),
   huggingface:      () => require('./scrapers/huggingface').getHuggingFaceData(),
+  mcp:              () => require('./scrapers/mcp').getMcpData(),
+  sec:              () => require('./scrapers/sec').getSecData(),
+  redditCommunities: () => require('./scrapers/redditCommunities').getRedditCommunities(),
 };
 
 // TTLs match each source's natural update frequency.
@@ -45,6 +49,9 @@ const TTL = {
   npm:           24 * 3600000,  // daily   — api.npmjs.org reports complete days only
   stackoverflow: 24 * 3600000,  // daily   — tag counts move slowly; respects SE API quota
   huggingface:   24 * 3600000,  // daily   — all-time download totals grow slowly
+  mcp:           24 * 3600000,  // daily   — repo-creation counts; respects GitHub search quota
+  sec:           24 * 3600000,  // daily   — EDGAR full-text index updates daily
+  redditCommunities: 6 * 3600000, // 6-hourly — subscriber counts move through the day
 };
 
 // Hard cap per scraper so one hung source can never wedge a refresh
@@ -62,6 +69,7 @@ async function refreshAll(keys = Object.keys(scrapers)) {
   keys.forEach((k, i) => {
     if (results[i].status === 'fulfilled' && results[i].value != null) {
       cache.set(k, results[i].value, TTL[k]);
+      history.snapshot(k, results[i].value);
       console.log(`[refresh] ✓ ${k}`);
     } else {
       console.warn(`[refresh] ✗ ${k}:`, results[i].reason?.message ?? 'null result');
@@ -74,10 +82,10 @@ function setup() {
   cron.schedule('0 * * * *', () => refreshAll(['openrouter', 'hn']));
 
   // Every 6 hours: social signals and business data updated throughout the day
-  cron.schedule('0 */6 * * *', () => refreshAll(['reddit', 'jobs', 'docker', 'openrouterRanks', 'dram']));
+  cron.schedule('0 */6 * * *', () => refreshAll(['reddit', 'jobs', 'docker', 'openrouterRanks', 'dram', 'redditCommunities']));
 
   // Daily at 03:00 UTC: aggregate stats whose sources only publish once per day
-  cron.schedule('0 3 * * *', () => refreshAll(['gpu', 'pypi', 'trends', 'github', 'eia', 'mops', 'githubCommits', 'wikipedia', 'npm', 'stackoverflow', 'huggingface']));
+  cron.schedule('0 3 * * *', () => refreshAll(['gpu', 'pypi', 'trends', 'github', 'eia', 'mops', 'githubCommits', 'wikipedia', 'npm', 'stackoverflow', 'huggingface', 'mcp', 'sec']));
 }
 
 module.exports = { setup, refreshAll, scrapers, TTL };

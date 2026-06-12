@@ -6,6 +6,7 @@ import { wkLabels, dayLabels } from '../../utils/labels';
 import { baseOpts, hBarOpts, stackedOpts, mkDs, mkBar, fmtM, fmtK, fmtP } from '../../utils/chartHelpers';
 import { orProviderSeries, fmtTok } from '../../utils/openrouterProvider';
 import { orComboCard } from '../../components/OrGrowthCards';
+import { metricTrendCard } from '../../components/MetricTrendCard';
 import ChartCard from '../../components/ChartCard';
 import EditableGrid from '../../components/EditableGrid';
 import { useData } from '../../context/DataContext';
@@ -38,30 +39,6 @@ export default function DemandAnthropic({ weeks: W }) {
     ],
   }), [wk, pyVals, npVals]);
 
-  // Web traffic — claude.ai
-  const webData = useMemo(() => ({
-    labels: wk,
-    datasets: [mkDs('claude.ai', C.anthropic, trend(380e6, 610e6, W, 0.07), true)],
-  }), [wk, W]);
-
-  // Web engagement — session duration
-  const sessionData = useMemo(() => ({
-    labels: wk,
-    datasets: [
-      mkBar('claude.ai',    C.anthropic, trend(8.1, 9.4, W, 0.04)),
-      mkBar('chatgpt.com',  C.slate,     trend(6.2, 6.8, W, 0.04)),
-    ],
-  }), [wk, W]);
-
-  // Bounce rate
-  const bounceData = useMemo(() => ({
-    labels: wk,
-    datasets: [
-      mkDs('claude.ai',    C.anthropic, trend(29, 26, W, 0.04)),
-      mkDs('chatgpt.com',  C.slate,     trend(38, 35, W, 0.04)),
-    ],
-  }), [wk, W]);
-
   // Google Trends
   const td = ld?.trends;
   const trendsData = useMemo(() => {
@@ -83,22 +60,8 @@ export default function DemandAnthropic({ weeks: W }) {
     };
   }, [days, D, td]);
 
-  // Reddit
-  const rd     = ld?.reddit;
-  const clVal  = rd?.Claude != null ? Math.round(rd.Claude * 28) : 2800;
-  const redditData = useMemo(() => ({
-    labels: days,
-    datasets: [mkDs('Claude', C.anthropic, trend(clVal * 0.4, clVal, D, 0.12), true)],
-  }), [days, D, clVal]);
-
-  // Jobs
-  const jd      = ld?.jobs;
-  const anTotal = jd?.Anthropic?.total       ?? 312;
-  const anEng   = jd?.Anthropic?.engineering ?? 140;
-  const jobsData = useMemo(() => ({
-    labels: ['Total roles', 'Engineering'],
-    datasets: [{ data: [anTotal, anEng], backgroundColor: [fa(C.anthropic, 0.7), fa(C.teal, 0.7)], borderColor: [C.anthropic, C.teal], borderWidth: 1, borderRadius: 4 }],
-  }), [anTotal, anEng]);
+  // Daily snapshot history (server-accumulated) for point-in-time metrics
+  const mh = ld?.metricsHistory;
 
   // Wikipedia pageviews
   const wikiArr  = ld?.wikipedia?.articles?.['Claude (language model)'] ?? [];
@@ -130,7 +93,6 @@ export default function DemandAnthropic({ weeks: W }) {
         freq="weekly"
         subtitle="anthropic Python SDK (PyPI) and @anthropic-ai/sdk JS/TS SDK (npm) weekly installs."
         legend={[['anthropic (PyPI)', C.anthropic], ['@anthropic-ai/sdk (npm)', C.teal]]}
-        insight="The anthropic SDK grew +80% in 12 weeks — the fastest of any major AI provider SDK. npm installs tracking Python closely, indicating full-stack production adoption."
         height={240} span2
       >
         <Bar data={sdkData} options={stackedOpts(fmtM)} />
@@ -167,18 +129,6 @@ export default function DemandAnthropic({ weeks: W }) {
       )}
 
       <ChartCard
-        chartId="an-web"
-        title="claude.ai — monthly web visits"
-        src="similarweb.com"
-        srcUrl="https://www.similarweb.com/website/claude.ai/"
-        freq="monthly"
-        subtitle="Total monthly unique visits to claude.ai."
-        height={220}
-      >
-        <Line data={webData} options={baseOpts(v => v >= 1e9 ? `${(v / 1e9).toFixed(2)}B` : `${(v / 1e6).toFixed(0)}M`)} />
-      </ChartCard>
-
-      <ChartCard
         chartId="an-trends"
         title="Google Trends — Claude API & brand search interest"
         src="trends.google.com"
@@ -186,49 +136,67 @@ export default function DemandAnthropic({ weeks: W }) {
         freq="daily"
         subtitle="Relative search volume 0–100. Claude API intent growing fastest of all providers."
         legend={[['Claude API', C.anthropic], ['Claude brand', C.teal]]}
-        insight='"Claude API" now at ~68% of "ChatGPT API" search volume — up from 34% six months ago. Spikes correlate directly with model releases.'
         height={220} span2
       >
         <Bar data={trendsData} options={stackedOpts(fmtP)} />
       </ChartCard>
 
-      <ChartCard
-        chartId="an-engagement"
-        title="Average session duration — claude.ai vs chatgpt.com (minutes)"
-        src="similarweb.com"
-        srcUrl="https://www.similarweb.com/website/claude.ai/"
-        freq="monthly"
-        subtitle="Longer sessions = deeper, more complex use cases. Claude leads by 38%."
-        legend={[['claude.ai', C.anthropic], ['chatgpt.com', C.slate]]}
-        insight="Claude averages <b>9.4 min</b> vs ChatGPT's <b>6.8 min</b> — reflecting enterprise and coding workloads that require extended context."
-        height={220}
-      >
-        <Bar data={sessionData} options={stackedOpts(v => `${v.toFixed(1)}m`)} />
-      </ChartCard>
+      {metricTrendCard({
+        chartId: 'an-reddit',
+        title: 'Reddit — weekly "Claude" mentions & r/ClaudeAI size',
+        src: 'reddit.com',
+        srcUrl: 'https://www.reddit.com/r/ClaudeAI/',
+        freq: '6-hourly',
+        subtitle: 'Weekly search mentions and subreddit subscribers.',
+        hist: { ...mh?.reddit, ...mh?.redditCommunities },
+        series: [
+          { metric: 'Claude.weeklyMentions',  label: 'Weekly mentions',        color: C.anthropic },
+          { metric: 'ClaudeAI.subscribers',   label: 'r/ClaudeAI subscribers', color: C.teal },
+        ],
+        fmt: fmtK,
+      })}
 
-      <ChartCard
-        chartId="an-reddit"
-        title="Reddit daily mentions — Claude"
-        src="reddit.com/search"
-        srcUrl="https://www.reddit.com/search/?q=Claude&sort=new"
-        freq="daily"
-        subtitle={`~${clVal.toLocaleString()} estimated daily mentions. Claude surged during 3.7 launch, sustained at ~2.8K/day.`}
-        height={220}
-      >
-        <Line data={redditData} options={baseOpts(fmtK)} />
-      </ChartCard>
+      {metricTrendCard({
+        chartId: 'an-jobs',
+        title: 'Anthropic — open roles (Greenhouse)',
+        src: 'boards.greenhouse.io',
+        srcUrl: 'https://boards.greenhouse.io/anthropic',
+        subtitle: 'Hiring demand: total and engineering openings.',
+        hist: mh?.jobs,
+        series: [
+          { metric: 'Anthropic.total',       label: 'Total roles', color: C.anthropic },
+          { metric: 'Anthropic.engineering', label: 'Engineering', color: C.teal },
+        ],
+        fmt: v => String(Math.round(v)),
+      })}
 
-      <ChartCard
-        chartId="an-jobs"
-        title="Anthropic — open roles (Greenhouse)"
-        src="boards.greenhouse.io"
-        srcUrl="https://boards.greenhouse.io/anthropic"
-        freq="live"
-        subtitle={`${anTotal} total open roles · ${anEng} engineering`}
-        height={220}
-      >
-        <Bar data={jobsData} options={hBarOpts(v => String(v))} />
-      </ChartCard>
+      {metricTrendCard({
+        chartId: 'an-github',
+        title: 'anthropic-sdk-python — GitHub stars & dependent repos',
+        src: 'github.com',
+        srcUrl: 'https://github.com/anthropics/anthropic-sdk-python',
+        subtitle: 'Production adoption: repos that depend on the SDK, plus stars.',
+        hist: mh?.github,
+        series: [
+          { metric: 'anthropics/anthropic-sdk-python.dependents', label: 'Dependent repos', color: C.anthropic },
+          { metric: 'anthropics/anthropic-sdk-python.stars',      label: 'Stars',           color: C.teal },
+        ],
+        fmt: fmtK,
+      })}
+
+      {metricTrendCard({
+        chartId: 'an-so',
+        title: 'Stack Overflow — [anthropic-claude] tag activity',
+        src: 'stackexchange.com',
+        srcUrl: 'https://stackoverflow.com/questions/tagged/anthropic-claude',
+        subtitle: 'Developer troubleshooting volume around the Claude API.',
+        hist: mh?.stackoverflow,
+        series: [
+          { metric: 'anthropic-claude.questions',   label: 'Questions all-time', color: C.anthropic },
+          { metric: 'anthropic-claude.newThisWeek', label: 'New this week',      color: C.teal },
+        ],
+        fmt: v => String(Math.round(v)),
+      })}
 
       <ChartCard
         chartId="an-wiki"

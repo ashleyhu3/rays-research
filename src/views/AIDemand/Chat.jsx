@@ -16,6 +16,8 @@ const SOURCE_META = {
   'openrouter-rankings': { label: 'OR Rankings',   view: 'openrouter-rankings' },
   dram:             { label: 'DRAM Spot',          view: 'pricing'        },
   openrouter:       { label: 'OpenRouter Pricing', view: 'pricing'        },
+  mcp:              { label: 'MCP Ecosystem',      view: 'demand-general' },
+  sec:              { label: 'SEC Filings',        view: 'demand-general' },
 };
 
 const SUGGESTIONS = [

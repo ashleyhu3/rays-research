@@ -36,6 +36,13 @@ const REPOS = [
   'ollama/ollama',
   'microsoft/DeepSpeed',
   'AUTOMATIC1111/stable-diffusion-webui',
+  // Agent/framework ecosystem
+  'langchain-ai/langgraph',
+  'crewAIInc/crewAI',
+  'microsoft/autogen',
+  'All-Hands-AI/OpenHands',
+  'pydantic/pydantic-ai',
+  'modelcontextprotocol/servers',
 ];
 
 async function fetchCommitActivity(repo, headers) {

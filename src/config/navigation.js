@@ -23,6 +23,9 @@ export const NAV_SECTIONS = [
     items: [
       { id: 'openrouter-rankings', label: 'OpenRouter rankings' },
       { id: 'demand-general',      label: 'Infrastructure & OSS' },
+      { id: 'hf',                  label: 'HuggingFace models'   },
+      { id: 'reddit',              label: 'Reddit communities'   },
+      { id: 'github',              label: 'GitHub SDK adoption'  },
     ],
   },
   {

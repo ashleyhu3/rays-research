@@ -2,6 +2,7 @@ const express      = require('express');
 const cors         = require('cors');
 const path         = require('path');
 const cache        = require('./cache');
+const history      = require('./history');
 const scheduler    = require('./scheduler');
 const htmlTemplate = require('./htmlTemplate');
 const { chat, invalidateEmbeddings } = require('./chat');
@@ -32,7 +33,10 @@ function cachedRoute(key, scraper) {
         pending.finally(() => inflight.delete(key)).catch(() => {});
       }
       data = await pending;
-      if (data != null) cache.set(key, data, scheduler.TTL[key] ?? 3600000);
+      if (data != null) {
+        cache.set(key, data, scheduler.TTL[key] ?? 3600000);
+        history.snapshot(key, data);
+      }
       res.json(data ?? {});
     } catch (e) {
       console.error(`[${key}]`, e.message);
@@ -62,6 +66,12 @@ app.get('/api/dram',              cachedRoute('dram',             s.dram));
 app.get('/api/npm',               cachedRoute('npm',              s.npm));
 app.get('/api/stackoverflow',     cachedRoute('stackoverflow',    s.stackoverflow));
 app.get('/api/huggingface',       cachedRoute('huggingface',      s.huggingface));
+app.get('/api/mcp',               cachedRoute('mcp',              s.mcp));
+app.get('/api/sec',               cachedRoute('sec',              s.sec));
+app.get('/api/reddit-communities', cachedRoute('redditCommunities', s.redditCommunities));
+
+// Accumulated daily snapshots of point-in-time metrics (for trend charts)
+app.get('/api/metrics-history', (_req, res) => res.json(history.all()));
 
 app.post('/api/refresh', async (req, res) => {
   const keys = req.body?.keys ?? Object.keys(scheduler.scrapers);

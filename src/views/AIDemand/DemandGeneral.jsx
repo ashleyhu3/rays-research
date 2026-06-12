@@ -1,24 +1,12 @@
 import { useMemo } from 'react';
-import { Line, Bar, Doughnut } from 'react-chartjs-2';
+import { Line, Bar } from 'react-chartjs-2';
 import { C, fa } from '../../config/colors';
 import { trend } from '../../utils/dataGenerators';
 import { wkLabels } from '../../utils/labels';
-import { baseOpts, hBarOpts, doughnutOpts, mkDs, fmtM, fmtK } from '../../utils/chartHelpers';
+import { baseOpts, hBarOpts, mkDs, fmtM, fmtK } from '../../utils/chartHelpers';
 import ChartCard from '../../components/ChartCard';
 import EditableGrid from '../../components/EditableGrid';
 import { useData } from '../../context/DataContext';
-
-// HuggingFace model color helper
-function modelColor(id) {
-  const l = id.toLowerCase();
-  if (l.includes('llama') || l.includes('meta')) return C.meta;
-  if (l.includes('qwen') || l.includes('deepseek')) return C.deepseek;
-  if (l.includes('mistral'))  return C.mistral;
-  if (l.includes('gemma') || l.includes('google')) return C.google;
-  if (l.includes('phi') || l.includes('microsoft')) return C.openai;
-  return C.slate;
-}
-function shortName(id) { return id.split('/').pop(); }
 
 // China market overview
 const MKT_LABELS = ['iFlytek', 'Zhipu AI', 'Alibaba', 'SenseTime', 'Baidu', 'MiniMax', 'Others'];
@@ -27,10 +15,12 @@ const MKT_COLORS = [C.openai, C.zhipu, C.deepseek, C.google, C.kimi, C.minimax, 
 const mktData = {
   labels: MKT_LABELS,
   datasets: [{
+    label: 'Market share (%)',
     data: MKT_DATA,
     backgroundColor: MKT_COLORS.map(c => fa(c, 0.75)),
-    borderColor: '#111419',
-    borderWidth: 3,
+    borderColor: MKT_COLORS,
+    borderWidth: 1,
+    borderRadius: 4,
   }],
 };
 
@@ -43,7 +33,6 @@ const GPU_ACCENT = [C.anthropic, C.google, C.openai, C.mistral, C.teal, C.perple
 
 export default function DemandGeneral({ weeks: W }) {
   const { liveData: ld } = useData();
-  const wk = useMemo(() => wkLabels(W), [W]);
 
   // GPU spot prices
   const gpuData = useMemo(() => {
@@ -57,29 +46,47 @@ export default function DemandGeneral({ weeks: W }) {
     };
   }, [ld]);
 
-  // HuggingFace top 5 models
-  const top5   = useMemo(() => (ld?.hf ?? []).slice(0, 5), [ld]);
-  const hfData = useMemo(() => {
-    if (top5.length > 0) {
-      return {
-        labels: wk,
-        datasets: top5.map(m => {
-          const weekly = Math.round(m.downloads / 4.3);
-          return mkDs(shortName(m.id), modelColor(m.id), trend(Math.round(weekly * 0.5), weekly, W, 0.06));
-        }),
-      };
-    }
+  // GPU marketplace availability — scarcity signal
+  const gpuAvailData = useMemo(() => {
+    const a = ld?.gpu?.availability ?? {};
+    const entries = Object.entries(a)
+      .map(([k, v]) => ({ label: GPU_DISPLAY[k] ?? k.replace(/_/g, ' '), value: v }))
+      .sort((x, y) => y.value - x.value);
+    if (entries.length === 0) return null;
     return {
-      labels: wk,
+      labels: entries.map(e => e.label),
+      datasets: [{ label: 'Rentable offers', data: entries.map(e => e.value), backgroundColor: entries.map((_, i) => GPU_ACCENT[i % GPU_ACCENT.length] + 'bf'), borderColor: entries.map((_, i) => GPU_ACCENT[i % GPU_ACCENT.length]), borderWidth: 1, borderRadius: 4 }],
+    };
+  }, [ld]);
+
+  // MCP ecosystem growth
+  const mcp = ld?.mcp;
+  const mcpData = useMemo(() => {
+    if (!mcp?.queries) return null;
+    const labels = Object.keys(mcp.queries);
+    return {
+      labels,
       datasets: [
-        mkDs('Llama-3.1-70B',   C.meta,     trend(21e6, 24.2e6, W, 0.05)),
-        mkDs('Qwen-2.5-72B',    C.deepseek, trend(8e6,  14.8e6, W, 0.08)),
-        mkDs('DeepSeek-V3',     C.deepseek, trend(2.4e6,12.1e6, W, 0.10)),
-        mkDs('Mistral-7B-v0.3', C.mistral,  trend(11e6, 9.4e6,  W, 0.06)),
-        mkDs('Gemma-3-27B',     C.google,   trend(4.2e6,7.6e6,  W, 0.07)),
+        { label: 'New repos (7d)',  data: labels.map(l => mcp.queries[l].new7d),  backgroundColor: fa(C.anthropic, 0.75), borderColor: C.anthropic, borderWidth: 1, borderRadius: 4 },
+        { label: 'New repos (30d)', data: labels.map(l => mcp.queries[l].new30d), backgroundColor: fa(C.teal, 0.75),      borderColor: C.teal,      borderWidth: 1, borderRadius: 4 },
       ],
     };
-  }, [wk, W, top5]);
+  }, [mcp]);
+
+  // SEC filing AI mentions
+  const sec = ld?.sec;
+  const secData = useMemo(() => {
+    if (!sec?.terms) return null;
+    const entries = Object.entries(sec.terms).filter(([, v]) => v);
+    if (entries.length === 0) return null;
+    return {
+      labels: entries.map(([term]) => term),
+      datasets: [
+        { label: 'Prior 90 days', data: entries.map(([, v]) => v.prior90d), backgroundColor: fa(C.slate, 0.6),   borderColor: C.slate,   borderWidth: 1, borderRadius: 4 },
+        { label: 'Last 90 days',  data: entries.map(([, v]) => v.last90d),  backgroundColor: fa(C.openai, 0.75), borderColor: C.openai,  borderWidth: 1, borderRadius: 4 },
+      ],
+    };
+  }, [sec]);
 
   // GitHub OSS commit velocity
   const COMMIT_COLORS = [C.openai, C.anthropic, C.google, C.mistral, C.teal, C.perplexity, '#f59e0b', '#8b5cf6'];
@@ -139,18 +146,49 @@ export default function DemandGeneral({ weeks: W }) {
         <Bar data={gpuData} options={hBarOpts(v => `$${v.toFixed(2)}`)} />
       </ChartCard>
 
-      <ChartCard
-        chartId="gen-hf"
-        title="HuggingFace — weekly model download velocity"
-        src="huggingface.co/models"
-        srcUrl="https://huggingface.co/models?sort=downloads"
-        freq="weekly"
-        subtitle="Top open-weight models by estimated weekly downloads. Llama and Qwen dominate."
-        legend={top5.length > 0 ? top5.map(m => [shortName(m.id), modelColor(m.id)]) : [['Llama-3.1', C.meta], ['Qwen-2.5', C.deepseek], ['DeepSeek-V3', C.deepseek], ['Mistral-7B', C.mistral], ['Gemma-3', C.google]]}
-        height={220} span2
-      >
-        <Line data={hfData} options={baseOpts(fmtM)} />
-      </ChartCard>
+      {gpuAvailData && (
+        <ChartCard
+          chartId="gen-gpu-avail"
+          title="GPU marketplace availability — rentable offers on vast.ai"
+          src="vast.ai"
+          srcUrl="https://vast.ai/"
+          freq="daily"
+          subtitle="Scarcity signal: fewer rentable offers for a GPU = demand outrunning supply."
+          height={220}
+        >
+          <Bar data={gpuAvailData} options={hBarOpts(v => String(v))} />
+        </ChartCard>
+      )}
+
+      {mcpData && (
+        <ChartCard
+          chartId="gen-mcp"
+          title="MCP ecosystem — new GitHub repos created"
+          src="api.github.com/search"
+          srcUrl="https://github.com/search?q=%22mcp+server%22&type=repositories"
+          freq="daily"
+          subtitle={`Agent-economy growth. "mcp server": ${mcp.queries['mcp server']?.total?.toLocaleString() ?? '—'} repos total · official servers repo: ${mcp.serversRepo?.stars?.toLocaleString() ?? '—'} stars.`}
+          legend={[['New repos (7d)', C.anthropic], ['New repos (30d)', C.teal]]}
+          height={220}
+        >
+          <Bar data={mcpData} options={baseOpts(fmtK)} />
+        </ChartCard>
+      )}
+
+      {secData && (
+        <ChartCard
+          chartId="gen-sec"
+          title="SEC filings mentioning AI terms — 10-K/10-Q, 90-day windows"
+          src="efts.sec.gov full-text search"
+          srcUrl="https://efts.sec.gov/LATEST/search-index?q=%22AI+agent%22&forms=10-K"
+          freq="daily"
+          subtitle="Enterprise adoption signal: how many annual/quarterly reports mention each term."
+          legend={[['Prior 90 days', C.slate], ['Last 90 days', C.openai]]}
+          height={220} span2
+        >
+          <Bar data={secData} options={baseOpts(fmtK)} />
+        </ChartCard>
+      )}
 
       <ChartCard
         chartId="gen-commits"
@@ -198,7 +236,7 @@ export default function DemandGeneral({ weeks: W }) {
         srcNote="Source: Zhipu AI HK IPO prospectus (Jan 2026) · IDC China AI Platform Tracker 2024"
         height={220}
       >
-        <Doughnut data={mktData} options={doughnutOpts('50%')} />
+        <Bar data={mktData} options={hBarOpts(v => `${v.toFixed(1)}%`)} />
       </ChartCard>
     </EditableGrid>
   );

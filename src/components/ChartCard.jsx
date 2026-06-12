@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useUI } from '../context/UIContext';
 import { useDashboard } from '../context/DashboardContext';
 import InlineLegend from './InlineLegend';
@@ -25,11 +25,76 @@ export default function ChartCard({
   const { tableMode } = useUI();
   const { sectorOverviewMode, activeSector, isPinned } = useDashboard();
 
+  // Series filter: any chart with 2+ labeled datasets gets a dropdown to
+  // toggle individual series on/off (hidden labels are card-local state)
+  const [hiddenSeries, setHiddenSeries] = useState([]);
+  const [filterOpen, setFilterOpen]     = useState(false);
+  const filterRef = useRef(null);
+
+  useEffect(() => {
+    if (!filterOpen) return;
+    const close = e => {
+      if (filterRef.current && !filterRef.current.contains(e.target)) setFilterOpen(false);
+    };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, [filterOpen]);
+
   if (sectorOverviewMode && chartId && !isPinned(chartId, activeSector)) return null;
   const cls = ['cbox', isNew && 'new', span2 && 'span2'].filter(Boolean).join(' ');
 
   const chartChild = React.Children.toArray(children)[0];
-  const chartData = chartChild?.props?.data;
+  const rawData    = chartChild?.props?.data;
+
+  const filterable = rawData?.datasets?.length > 1 && rawData.datasets.every(d => d.label);
+  const hidden     = new Set(hiddenSeries);
+  const chartData  = filterable && hiddenSeries.length > 0
+    ? { ...rawData, datasets: rawData.datasets.filter(d => !hidden.has(d.label)) }
+    : rawData;
+  const content = filterable && chartData !== rawData
+    ? React.cloneElement(chartChild, { data: chartData })
+    : children;
+
+  const toggleSeries = label => {
+    setHiddenSeries(prev => {
+      const next = prev.includes(label) ? prev.filter(l => l !== label) : [...prev, label];
+      // Never allow hiding the last visible series
+      return next.length >= rawData.datasets.length ? prev : next;
+    });
+  };
+
+  const seriesFilter = filterable && (
+    <div className="ch-filter" ref={filterRef}>
+      <button
+        className={`ch-filter-btn${hiddenSeries.length > 0 ? ' ch-filter-btn--active' : ''}`}
+        title="Filter series"
+        onClick={() => setFilterOpen(o => !o)}
+      >
+        {hiddenSeries.length > 0
+          ? `${rawData.datasets.length - hiddenSeries.length}/${rawData.datasets.length} series ▾`
+          : 'series ▾'}
+      </button>
+      {filterOpen && (
+        <div className="ch-filter-menu">
+          {rawData.datasets.map(ds => (
+            <label key={ds.label} className="ch-filter-item">
+              <input
+                type="checkbox"
+                checked={!hidden.has(ds.label)}
+                onChange={() => toggleSeries(ds.label)}
+              />
+              <span
+                className="ch-filter-dot"
+                style={{ background: ds.borderColor ?? ds.backgroundColor }}
+              />
+              {ds.label}
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
   const showTable = tableMode && chartData?.labels?.length > 0 && chartData?.datasets?.length > 0;
 
   const STICKY_W = 180;
@@ -41,8 +106,9 @@ export default function ChartCard({
     <div className={cls}>
       {clean ? (
         <>
-          <div style={{ textAlign: 'center', marginBottom: 12 }}>
+          <div style={{ textAlign: 'center', marginBottom: 12, position: 'relative' }}>
             <div className="ch-title">{title}</div>
+            {seriesFilter && <div style={{ position: 'absolute', right: 0, top: 0 }}>{seriesFilter}</div>}
           </div>
           {legend && !showTable && <InlineLegend items={legend} />}
         </>
@@ -51,6 +117,7 @@ export default function ChartCard({
           <div className="ch-head">
             <div className="ch-title">{title}</div>
             <div className="ch-meta">
+              {seriesFilter}
               {freq && <span className={`freq-badge freq-${freq}`}>{freq}</span>}
               {src && (
                 srcUrl
@@ -133,7 +200,7 @@ export default function ChartCard({
           </table>
         </div>
       ) : (
-        <div style={{ position: 'relative', height }}>{children}</div>
+        <div style={{ position: 'relative', height }}>{content}</div>
       )}
 
       {insight && <InsightBox html={insight} />}

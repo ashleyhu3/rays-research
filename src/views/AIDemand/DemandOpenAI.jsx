@@ -6,6 +6,7 @@ import { wkLabels, dayLabels } from '../../utils/labels';
 import { baseOpts, hBarOpts, stackedOpts, mkDs, mkBar, fmtM, fmtK, fmtP } from '../../utils/chartHelpers';
 import { orProviderSeries, fmtTok } from '../../utils/openrouterProvider';
 import { orComboCard } from '../../components/OrGrowthCards';
+import { metricTrendCard } from '../../components/MetricTrendCard';
 import ChartCard from '../../components/ChartCard';
 import EditableGrid from '../../components/EditableGrid';
 import { useData } from '../../context/DataContext';
@@ -38,12 +39,6 @@ export default function DemandOpenAI({ weeks: W }) {
     ],
   }), [wk, pyVals, npVals]);
 
-  // Web traffic — chatgpt.com
-  const webData = useMemo(() => ({
-    labels: wk,
-    datasets: [mkDs('chatgpt.com', C.openai, trend(1.82e9, 1.95e9, W, 0.04), true)],
-  }), [wk, W]);
-
   // Google Trends
   const td = ld?.trends;
   const trendsData = useMemo(() => {
@@ -65,22 +60,8 @@ export default function DemandOpenAI({ weeks: W }) {
     };
   }, [days, D, td]);
 
-  // Reddit
-  const rd    = ld?.reddit;
-  const cgVal = rd?.ChatGPT != null ? Math.round(rd.ChatGPT * 28) : 7900;
-  const redditData = useMemo(() => ({
-    labels: days,
-    datasets: [mkDs('ChatGPT', C.openai, trend(cgVal * 0.9, cgVal, D, 0.09), true)],
-  }), [days, D, cgVal]);
-
-  // Jobs
-  const jd      = ld?.jobs;
-  const oaTotal = jd?.OpenAI?.total       ?? 486;
-  const oaEng   = jd?.OpenAI?.engineering ?? 210;
-  const jobsData = useMemo(() => ({
-    labels: ['Total roles', 'Engineering'],
-    datasets: [{ data: [oaTotal, oaEng], backgroundColor: [fa(C.openai, 0.7), fa(C.teal, 0.7)], borderColor: [C.openai, C.teal], borderWidth: 1, borderRadius: 4 }],
-  }), [oaTotal, oaEng]);
+  // Daily snapshot history (server-accumulated) for point-in-time metrics
+  const mh = ld?.metricsHistory;
 
   // Wikipedia pageviews
   const wikiArr = ld?.wikipedia?.articles?.['ChatGPT'] ?? [];
@@ -150,18 +131,6 @@ export default function DemandOpenAI({ weeks: W }) {
       )}
 
       <ChartCard
-        chartId="oa-web"
-        title="chatgpt.com — monthly web visits"
-        src="similarweb.com"
-        srcUrl="https://www.similarweb.com/website/chatgpt.com/"
-        freq="monthly"
-        subtitle="Total monthly unique visits. Largest consumer AI platform by traffic globally."
-        height={220}
-      >
-        <Line data={webData} options={baseOpts(v => v >= 1e9 ? `${(v / 1e9).toFixed(2)}B` : `${(v / 1e6).toFixed(0)}M`)} />
-      </ChartCard>
-
-      <ChartCard
         chartId="oa-trends"
         title="Google Trends — ChatGPT API & brand search interest"
         src="trends.google.com"
@@ -174,29 +143,63 @@ export default function DemandOpenAI({ weeks: W }) {
         <Bar data={trendsData} options={stackedOpts(fmtP)} />
       </ChartCard>
 
-      <ChartCard
-        chartId="oa-reddit"
-        title="Reddit daily mentions — ChatGPT"
-        src="reddit.com/search"
-        srcUrl="https://www.reddit.com/search/?q=ChatGPT&sort=new"
-        freq="daily"
-        subtitle={`~${cgVal.toLocaleString()} estimated daily mentions across AI-related subreddits.`}
-        height={220}
-      >
-        <Line data={redditData} options={baseOpts(fmtK)} />
-      </ChartCard>
+      {metricTrendCard({
+        chartId: 'oa-reddit',
+        title: 'Reddit — weekly "ChatGPT" mentions & community size',
+        src: 'reddit.com',
+        srcUrl: 'https://www.reddit.com/r/ChatGPT/',
+        freq: '6-hourly',
+        subtitle: 'Weekly search mentions plus r/ChatGPT and r/OpenAI subscribers.',
+        hist: { ...mh?.reddit, ...mh?.redditCommunities },
+        series: [
+          { metric: 'ChatGPT.weeklyMentions', label: 'Weekly mentions',       color: C.openai },
+          { metric: 'ChatGPT.subscribers',    label: 'r/ChatGPT subscribers', color: C.teal },
+          { metric: 'OpenAI.subscribers',     label: 'r/OpenAI subscribers',  color: C.slate },
+        ],
+        fmt: fmtK,
+      })}
 
-      <ChartCard
-        chartId="oa-jobs"
-        title="OpenAI — open roles (Greenhouse)"
-        src="boards.greenhouse.io"
-        srcUrl="https://boards.greenhouse.io/openai"
-        freq="live"
-        subtitle={`${oaTotal} total open roles · ${oaEng} engineering`}
-        height={220}
-      >
-        <Bar data={jobsData} options={hBarOpts(v => String(v))} />
-      </ChartCard>
+      {metricTrendCard({
+        chartId: 'oa-jobs',
+        title: 'OpenAI — open roles (Greenhouse)',
+        src: 'boards.greenhouse.io',
+        srcUrl: 'https://boards.greenhouse.io/openai',
+        subtitle: 'Hiring demand: total and engineering openings.',
+        hist: mh?.jobs,
+        series: [
+          { metric: 'OpenAI.total',       label: 'Total roles', color: C.openai },
+          { metric: 'OpenAI.engineering', label: 'Engineering', color: C.teal },
+        ],
+        fmt: v => String(Math.round(v)),
+      })}
+
+      {metricTrendCard({
+        chartId: 'oa-github',
+        title: 'openai-python — GitHub stars & dependent repos',
+        src: 'github.com',
+        srcUrl: 'https://github.com/openai/openai-python',
+        subtitle: 'Production adoption: repos that depend on the SDK, plus stars.',
+        hist: mh?.github,
+        series: [
+          { metric: 'openai/openai-python.dependents', label: 'Dependent repos', color: C.openai },
+          { metric: 'openai/openai-python.stars',      label: 'Stars',           color: C.teal },
+        ],
+        fmt: fmtK,
+      })}
+
+      {metricTrendCard({
+        chartId: 'oa-so',
+        title: 'Stack Overflow — [openai-api] tag activity',
+        src: 'stackexchange.com',
+        srcUrl: 'https://stackoverflow.com/questions/tagged/openai-api',
+        subtitle: 'Developer troubleshooting volume around the OpenAI API.',
+        hist: mh?.stackoverflow,
+        series: [
+          { metric: 'openai-api.questions',   label: 'Questions all-time', color: C.openai },
+          { metric: 'openai-api.newThisWeek', label: 'New this week',      color: C.teal },
+        ],
+        fmt: v => String(Math.round(v)),
+      })}
 
       <ChartCard
         chartId="oa-wiki"
