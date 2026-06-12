@@ -22,7 +22,6 @@ const SUB_VIEW_LABELS = {
   pypi:        'PyPI / npm / Stack Overflow',
   github:      'GitHub dependents',
   trends:      'Google Trends & Jobs',
-  reddit:      'App Store & Reddit',
   web:         'Web traffic & stickiness',
   hf:          'HuggingFace downloads',
   gpu:         'GPU spot pricing',

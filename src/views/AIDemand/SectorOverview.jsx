@@ -5,7 +5,6 @@ import { chartsForSector } from '../../config/charts';
 import PyPI        from './PyPI';
 import GitHub      from './GitHub';
 import Trends      from './Trends';
-import Reddit      from './Reddit';
 import Web         from './Web';
 import HuggingFace from './HuggingFace';
 import Pricing     from '../Pricing/Pricing';
@@ -17,7 +16,6 @@ const DEMAND_VIEWS = [
   { Component: PyPI        },
   { Component: GitHub      },
   { Component: Trends      },
-  { Component: Reddit      },
   { Component: Web         },
   { Component: HuggingFace },
   { Component: Pricing     },
@@ -29,7 +27,7 @@ const DEMAND_VIEWS = [
 const SECTOR_VIEWS = {
   overview:  DEMAND_VIEWS,
   dev:      [{ Component: PyPI }, { Component: GitHub }, { Component: Trends }],
-  consumer: [{ Component: Reddit }, { Component: Web }, { Component: HuggingFace }],
+  consumer: [{ Component: Web }, { Component: HuggingFace }],
   infra:    [{ Component: Pricing }, { Component: Datacenter }, { Component: Electricity }],
   tokens:   [{ Component: Chinese }],
 };

@@ -20,7 +20,6 @@ import PyPI          from './views/AIDemand/PyPI';
 import GitHub        from './views/AIDemand/GitHub';
 import Trends        from './views/AIDemand/Trends';
 import Web           from './views/AIDemand/Web';
-import Reddit        from './views/AIDemand/Reddit';
 import HuggingFace   from './views/AIDemand/HuggingFace';
 import Pricing       from './views/Pricing/Pricing';
 import Datacenter    from './views/AIDemand/Datacenter';
@@ -42,7 +41,7 @@ import DemandOpenRouter   from './views/AIDemand/DemandOpenRouter';
 
 /** Views that use EditableGrid and support layout customisation */
 const LAYOUT_EDITABLE = new Set([
-  'pypi','github','trends','web','reddit','hf','pricing','datacenter','electricity','chinese',
+  'pypi','github','trends','web','hf','pricing','datacenter','electricity','chinese',
   'demand-openai','demand-anthropic','demand-google','demand-zhipu','demand-minimax','demand-general','openrouter-rankings',
 ]);
 
@@ -52,7 +51,6 @@ const VIEW_COMPONENTS = {
   github:      GitHub,
   trends:      Trends,
   web:         Web,
-  reddit:      Reddit,
   hf:          HuggingFace,
   pricing:     Pricing,
   datacenter:  Datacenter,
@@ -97,7 +95,7 @@ export default function App() {
   // Check if this is a sector overview page
   const sectorId = SECTOR_OVERVIEW_IDS[currentView] ?? null;
   const ViewComponent = sectorId ? null : VIEW_COMPONENTS[currentView];
-  const showSidebar = currentView !== 'pricing' && currentView !== 'options';
+  const showSidebar = currentView !== 'pricing' && currentView !== 'options' && currentView !== 'chat';
 
   return (
     <DashboardProvider>

@@ -1,10 +1,12 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Line, Bar } from 'react-chartjs-2';
 import { C } from '../config/colors';
 import { useData } from '../context/DataContext';
 import { baseOpts, hBarOpts, mkDs, mkBar, fmtM, fmtK, fmtP } from '../utils/chartHelpers';
 import { wkLabels, dayLabels } from '../utils/labels';
 import { trend } from '../utils/dataGenerators';
+
+const PALETTE = [C.openai, C.anthropic, C.google, C.mistral, C.teal, C.perplexity, C.orange, C.deepseek];
 
 function MiniCard({ title, children }) {
   return (
@@ -13,6 +15,42 @@ function MiniCard({ title, children }) {
       <div className="chat-mini-card-body">{children}</div>
     </div>
   );
+}
+
+// Dense line dataset (no point markers — for daily series with 100+ points)
+const mkLine = (label, color, data) => ({ ...mkDs(label, color, data), pointRadius: 0, pointHoverRadius: 4 });
+
+/* ── Daily-snapshot time series from /api/metrics-history ──────────────────
+   The snapshot store records one value per metric per day. Sources without
+   any other history (job counts, stars, filing counts…) chart as lines once
+   ≥3 days have accrued; until then the minis fall back to a snapshot bar. */
+function mhSeries(mh, source, picks, minDays = 3) {
+  const src = mh?.[source];
+  if (!src) return null;
+  const dateSet = new Set();
+  for (const { metric } of picks) {
+    for (const d of Object.keys(src[metric] ?? {})) dateSet.add(d);
+  }
+  const dates = [...dateSet].sort();
+  if (dates.length < minDays) return null;
+  return {
+    labels: dates.map(d => d.slice(5)),
+    datasets: picks
+      .filter(({ metric }) => src[metric])
+      .map(({ metric, label, color }) => mkDs(label, color, dates.map(d => src[metric][d] ?? null))),
+  };
+}
+
+/* Line chart over weekly arrays already held in cache (oldest → newest) */
+function weeklyLineData(entries, n = 12) {
+  const series = entries.filter(([, weeks]) => Array.isArray(weeks) && weeks.length >= 2);
+  if (series.length === 0) return null;
+  const len = Math.min(n, Math.max(...series.map(([, w]) => w.length)));
+  return {
+    labels: wkLabels(len),
+    datasets: series.map(([label, weeks], i) =>
+      mkDs(label, PALETTE[i % PALETTE.length], weeks.slice(-len))),
+  };
 }
 
 // ── PyPI Downloads ─────────────────────────────────────────────────────────
@@ -54,7 +92,18 @@ export function PyPIMini() {
 export function GitHubMini() {
   const { liveData } = useData();
 
-  const data = useMemo(() => {
+  const ts = useMemo(() => {
+    const gh = liveData?.github;
+    if (!gh) return null;
+    const picks = Object.keys(gh).map((repo, i) => ({
+      metric: `${repo}.stars`,
+      label:  repo.split('/')[0],
+      color:  PALETTE[i % PALETTE.length],
+    }));
+    return mhSeries(liveData?.metricsHistory, 'github', picks);
+  }, [liveData]);
+
+  const barData = useMemo(() => {
     const gh = liveData?.github;
     const entries = gh
       ? Object.entries(gh)
@@ -86,9 +135,16 @@ export function GitHubMini() {
     };
   }, [liveData]);
 
+  if (ts) {
+    return (
+      <MiniCard title="GitHub Stars Over Time">
+        <Line data={ts} options={baseOpts(fmtK)} />
+      </MiniCard>
+    );
+  }
   return (
-    <MiniCard title="GitHub Stars">
-      <Bar data={data} options={hBarOpts(fmtK)} />
+    <MiniCard title="GitHub Stars (trend accrues daily)">
+      <Bar data={barData} options={hBarOpts(fmtK)} />
     </MiniCard>
   );
 }
@@ -129,7 +185,7 @@ export function TrendsMini() {
   }, [liveData, days]);
 
   return (
-    <MiniCard title="Google Trends — API Search Interest">
+    <MiniCard title="Google Trends — API Search Interest (daily)">
       <Line data={data} options={baseOpts(fmtP)} />
     </MiniCard>
   );
@@ -143,7 +199,11 @@ const JOB_STATIC    = { Anthropic: 312, OpenAI: 486, 'Google DM': 891, Mistral: 
 export function JobsMini() {
   const { liveData } = useData();
 
-  const data = useMemo(() => ({
+  const ts = useMemo(() => mhSeries(liveData?.metricsHistory, 'jobs',
+    JOB_COMPANIES.map((co, i) => ({ metric: `${co}.total`, label: co, color: JOB_COLORS[i] }))
+  ), [liveData]);
+
+  const barData = useMemo(() => ({
     labels: JOB_COMPANIES,
     datasets: [{
       label:           'Open Roles',
@@ -154,98 +214,248 @@ export function JobsMini() {
     }],
   }), [liveData]);
 
+  if (ts) {
+    return (
+      <MiniCard title="Open Job Postings Over Time">
+        <Line data={ts} options={baseOpts(v => String(v))} />
+      </MiniCard>
+    );
+  }
   return (
-    <MiniCard title="Open Job Postings">
-      <Bar data={data} options={hBarOpts(v => String(v))} />
+    <MiniCard title="Open Job Postings (trend accrues daily)">
+      <Bar data={barData} options={hBarOpts(v => String(v))} />
     </MiniCard>
   );
 }
 
 // ── Reddit Mentions ────────────────────────────────────────────────────────
+const REDDIT_NAMES  = ['ChatGPT', 'Claude', 'Gemini', 'Mistral'];
+const REDDIT_COLORS = [C.openai, C.anthropic, C.google, C.mistral];
+
 export function RedditMini() {
   const { liveData } = useData();
-  const NAMES  = ['ChatGPT', 'Claude', 'Gemini', 'Mistral'];
-  const COLORS = [C.openai, C.anthropic, C.google, C.mistral];
 
-  const data = useMemo(() => ({
-    labels: NAMES,
+  const ts = useMemo(() => mhSeries(liveData?.metricsHistory, 'reddit',
+    REDDIT_NAMES.map((n, i) => ({ metric: `${n}.weeklyMentions`, label: n, color: REDDIT_COLORS[i] }))
+  ), [liveData]);
+
+  const barData = useMemo(() => ({
+    labels: REDDIT_NAMES,
     datasets: [{
       label:           'Posts This Week',
-      data:            NAMES.map(n => liveData?.reddit?.[n] ?? 0),
-      backgroundColor: COLORS.map(c => c + 'bf'),
-      borderColor:     COLORS,
+      data:            REDDIT_NAMES.map(n => liveData?.reddit?.[n] ?? 0),
+      backgroundColor: REDDIT_COLORS.map(c => c + 'bf'),
+      borderColor:     REDDIT_COLORS,
       borderWidth: 1, borderRadius: 4,
     }],
   }), [liveData]);
 
+  if (ts) {
+    return (
+      <MiniCard title="Reddit Weekly Mentions Over Time">
+        <Line data={ts} options={baseOpts(fmtK)} />
+      </MiniCard>
+    );
+  }
   return (
-    <MiniCard title="Reddit Weekly Mentions">
-      <Bar data={data} options={hBarOpts(fmtK)} />
+    <MiniCard title="Reddit Weekly Mentions (trend accrues daily)">
+      <Bar data={barData} options={hBarOpts(fmtK)} />
     </MiniCard>
   );
 }
 
 // ── GPU Spot Prices ────────────────────────────────────────────────────────
-const GPU_DISPLAY = {
-  H100_SXM4: 'H100 SXM4', H100_PCIE: 'H100 PCIe', H200_SXM5: 'H200',
-  H200_SXM: 'H200', A100_SXM4: 'A100 SXM4', RTX_4090: 'RTX 4090',
-};
-const GPU_ACCENT = [C.anthropic, C.google, C.openai, C.mistral, C.teal, C.perplexity];
-
 export function GPUMini() {
   const { liveData } = useData();
 
-  const data = useMemo(() => {
-    const g = liveData?.gpu?.prices ?? liveData?.gpu;
-    const entries = g
-      ? Object.entries(g).map(([k, v]) => ({ label: GPU_DISPLAY[k] ?? k.replace(/_/g, ' '), value: v })).sort((a, b) => b.value - a.value)
-      : [
-          { label: 'H200',      value: 4.62 },
-          { label: 'H100 SXM4', value: 2.18 },
-          { label: 'H100 PCIe', value: 1.87 },
-          { label: 'A100 SXM4', value: 1.23 },
-          { label: 'RTX 4090',  value: 0.34 },
-        ];
+  // 3-year daily backfill lives in gpu.history — always chart as time series
+  const ts = useMemo(() => {
+    const h = liveData?.gpu?.history;
+    if (!h?.dates?.length || !h?.series) return null;
+    const N = 180; // last ~6 months keeps the mini readable
+    const labels = h.dates.slice(-N).map(d => d.slice(5));
+    const gpus = Object.entries(h.series)
+      .map(([k, s]) => ({ k, s, latest: [...s].reverse().find(v => v != null) ?? 0 }))
+      .sort((a, b) => b.latest - a.latest)
+      .slice(0, 5);
+    if (gpus.length === 0) return null;
+    return {
+      labels,
+      datasets: gpus.map(({ k, s }, i) =>
+        mkLine(k.replace(/_/g, ' '), PALETTE[i % PALETTE.length], s.slice(-N))),
+    };
+  }, [liveData]);
 
+  const barData = useMemo(() => {
+    const g = liveData?.gpu?.prices ?? liveData?.gpu;
+    const entries = g && !g.history
+      ? Object.entries(g).filter(([, v]) => typeof v === 'number')
+          .map(([k, v]) => ({ label: k.replace(/_/g, ' '), value: v })).sort((a, b) => b.value - a.value)
+      : Object.entries(liveData?.gpu?.prices ?? {})
+          .map(([k, v]) => ({ label: k.replace(/_/g, ' '), value: v })).sort((a, b) => b.value - a.value);
     return {
       labels: entries.map(e => e.label),
       datasets: [{
         label:           '$/hr',
         data:            entries.map(e => e.value),
-        backgroundColor: entries.map((_, i) => GPU_ACCENT[i % GPU_ACCENT.length] + 'bf'),
-        borderColor:     entries.map((_, i) => GPU_ACCENT[i % GPU_ACCENT.length]),
+        backgroundColor: entries.map((_, i) => PALETTE[i % PALETTE.length] + 'bf'),
+        borderColor:     entries.map((_, i) => PALETTE[i % PALETTE.length]),
         borderWidth: 1, borderRadius: 4,
       }],
     };
   }, [liveData]);
 
+  if (ts) {
+    return (
+      <MiniCard title="GPU Spot Prices — $/hr (6 months, vast.ai)">
+        <Line data={ts} options={baseOpts(v => `$${Number(v).toFixed(2)}`)} />
+      </MiniCard>
+    );
+  }
+  if (barData.labels.length === 0) return null;
   return (
     <MiniCard title="GPU Spot Prices (vast.ai, $/hr)">
-      <Bar data={data} options={hBarOpts(v => `$${v.toFixed(2)}`)} />
+      <Bar data={barData} options={hBarOpts(v => `$${v.toFixed(2)}`)} />
+    </MiniCard>
+  );
+}
+
+// ── DRAM Spot Prices ───────────────────────────────────────────────────────
+export function DramMini() {
+  const { liveData } = useData();
+
+  const data = useMemo(() => {
+    const dram = liveData?.dram;
+    // Preferred: TrendForce monthly index (multi-year)
+    if (dram?.index?.values?.length >= 2) {
+      const N = 24;
+      return {
+        kind:   'line',
+        title:  `${dram.index.name ?? 'DRAM Spot Index'} (monthly)`,
+        labels: dram.index.dates.slice(-N),
+        datasets: [mkLine('Index $', C.anthropic, dram.index.values.slice(-N))],
+      };
+    }
+    // Else: per-model daily session history
+    const h = dram?.history;
+    if (h?.dates?.length >= 2 && h?.series) {
+      const N = 90;
+      const models = Object.entries(h.series).slice(0, 5);
+      return {
+        kind:   'line',
+        title:  'DRAM Spot Prices (daily sessions)',
+        labels: h.dates.slice(-N).map(d => d.slice(5)),
+        datasets: models.map(([m, s], i) => mkLine(m, PALETTE[i % PALETTE.length], s.slice(-N))),
+      };
+    }
+    return null;
+  }, [liveData]);
+
+  if (!data) return null;
+  return (
+    <MiniCard title={data.title}>
+      <Line data={{ labels: data.labels, datasets: data.datasets }} options={baseOpts(v => `$${Number(v).toFixed(2)}`)} />
+    </MiniCard>
+  );
+}
+
+// ── OpenRouter Usage Rankings ──────────────────────────────────────────────
+export function OpenRouterRanksMini() {
+  const { liveData } = useData();
+
+  const data = useMemo(() => {
+    const or = liveData?.openrouterRanks;
+    if (!or?.weeklyTotals?.length || or.weeklyTotals.length < 2) return null;
+    const N = 26;
+    const labels = (or.weekLabels ?? []).length === or.weeklyTotals.length
+      ? or.weekLabels.slice(-N).map(d => String(d).slice(5))
+      : wkLabels(Math.min(N, or.weeklyTotals.length));
+    return {
+      labels,
+      datasets: [mkDs('Tokens/week', C.perplexity, or.weeklyTotals.slice(-N))],
+    };
+  }, [liveData]);
+
+  if (!data) return null;
+  return (
+    <MiniCard title="OpenRouter Platform Tokens per Week">
+      <Line data={data} options={baseOpts(fmtM)} />
+    </MiniCard>
+  );
+}
+
+// ── OpenRouter Pricing (point-in-time catalog — no history exists) ─────────
+const PRICE_PROVIDERS = ['openai', 'anthropic', 'google', 'deepseek', 'x-ai', 'meta-llama', 'mistralai', 'qwen'];
+
+export function OpenRouterPricingMini() {
+  const { liveData } = useData();
+
+  const data = useMemo(() => {
+    const models = liveData?.openrouter?.models;
+    if (!models?.length) return null;
+    const flagship = {};
+    for (const m of models) {
+      const provider = m.id.split('/')[0];
+      if (!PRICE_PROVIDERS.includes(provider)) continue;
+      const price = Number(m.pricing?.prompt);
+      if (!Number.isFinite(price) || price <= 0) continue;
+      if (!flagship[provider] || price > flagship[provider]) flagship[provider] = price;
+    }
+    const entries = Object.entries(flagship).sort(([, a], [, b]) => b - a);
+    if (entries.length === 0) return null;
+    return {
+      labels: entries.map(([p]) => p),
+      datasets: [{
+        label:           'Input $/1M tokens (flagship)',
+        data:            entries.map(([, v]) => v),
+        backgroundColor: entries.map((_, i) => PALETTE[i % PALETTE.length] + 'bf'),
+        borderColor:     entries.map((_, i) => PALETTE[i % PALETTE.length]),
+        borderWidth: 1, borderRadius: 4,
+      }],
+    };
+  }, [liveData]);
+
+  if (!data) return null;
+  return (
+    <MiniCard title="Flagship Model Input Price ($/1M tokens, current)">
+      <Bar data={data} options={hBarOpts(v => `$${v}`)} />
     </MiniCard>
   );
 }
 
 // ── Electricity Rates ──────────────────────────────────────────────────────
+const ELEC_STATES = ['US', 'CA', 'TX', 'VA', 'NY'];
+
 export function ElectricityMini() {
   const { liveData } = useData();
 
   const data = useMemo(() => {
-    const eia = liveData?.eia?.rates ?? {};
-    const stateRates = Object.entries(eia)
+    const rates = liveData?.eia?.rates;
+    if (!rates) return null;
+    const yearSet = new Set();
+    for (const s of ELEC_STATES) for (const y of Object.keys(rates[s] ?? {})) yearSet.add(y);
+    const years = [...yearSet].sort();
+    if (years.length >= 2) {
+      return {
+        kind:   'line',
+        labels: years,
+        datasets: ELEC_STATES
+          .filter(s => rates[s])
+          .map((s, i) => mkDs(s, PALETTE[i % PALETTE.length], years.map(y => rates[s][y] ?? null))),
+      };
+    }
+    // Single year of data → cheapest/most expensive snapshot
+    const stateRates = Object.entries(rates)
       .filter(([k]) => k !== 'US')
-      .map(([state, years]) => {
-        const [, rate] = Object.entries(years).sort(([a], [b]) => b.localeCompare(a))[0] ?? [];
+      .map(([state, ys]) => {
+        const [, rate] = Object.entries(ys).sort(([a], [b]) => b.localeCompare(a))[0] ?? [];
         return { state, rate: rate ?? 0 };
       })
       .filter(e => e.rate > 0)
       .sort((a, b) => a.rate - b.rate);
-
-    const cheap     = stateRates.slice(0, 5);
-    const expensive = stateRates.slice(-5).reverse();
-    const entries   = [...cheap, ...expensive];
-
+    const entries = [...stateRates.slice(0, 5), ...stateRates.slice(-5).reverse()];
     return {
+      kind:   'bar',
       labels: entries.map(e => e.state),
       datasets: [{
         label:           '¢/kWh',
@@ -257,9 +467,17 @@ export function ElectricityMini() {
     };
   }, [liveData]);
 
+  if (!data) return null;
+  if (data.kind === 'line') {
+    return (
+      <MiniCard title="Electricity Rates by Year (¢/kWh)">
+        <Line data={{ labels: data.labels, datasets: data.datasets }} options={baseOpts(v => `${v}¢`)} />
+      </MiniCard>
+    );
+  }
   return (
     <MiniCard title="Electricity Rates — 5 Cheapest / 5 Most Expensive (¢/kWh)">
-      <Bar data={data} options={hBarOpts(v => `${v}¢`)} />
+      <Bar data={{ labels: data.labels, datasets: data.datasets }} options={hBarOpts(v => `${v}¢`)} />
     </MiniCard>
   );
 }
@@ -269,127 +487,301 @@ export function MopsMini() {
   const { liveData } = useData();
 
   const data = useMemo(() => {
-    const mops = liveData?.mops;
-    if (!mops?.companies) return { labels: [], datasets: [] };
-
-    const entries = Object.values(mops.companies)
-      .map(c => ({ ticker: c.ticker, group: c.group, revenue: c.monthly?.at(-1)?.revenue ?? 0 }))
-      .filter(c => c.revenue > 0)
-      .sort((a, b) => b.revenue - a.revenue);
-
+    const companies = Object.values(liveData?.mops?.companies ?? {});
+    const top = companies
+      .filter(c => c.monthly?.length >= 2)
+      .sort((a, b) => (b.monthly.at(-1)?.revenue ?? 0) - (a.monthly.at(-1)?.revenue ?? 0))
+      .slice(0, 5);
+    if (top.length === 0) return null;
+    const periodSet = new Set();
+    for (const c of top) for (const m of c.monthly) periodSet.add(m.period);
+    const periods = [...periodSet].sort().slice(-24);
     return {
-      labels: entries.map(e => e.ticker),
-      datasets: [{
-        label:           'NT$M',
-        data:            entries.map(e => e.revenue),
-        backgroundColor: entries.map(e => (e.group === 'optics' ? C.anthropic : C.google) + 'bf'),
-        borderColor:     entries.map(e => e.group === 'optics' ? C.anthropic : C.google),
-        borderWidth: 1, borderRadius: 4,
-      }],
+      labels: periods,
+      datasets: top.map((c, i) => {
+        const byPeriod = Object.fromEntries(c.monthly.map(m => [m.period, m.revenue]));
+        return mkLine(c.ticker, PALETTE[i % PALETTE.length], periods.map(p => byPeriod[p] ?? null));
+      }),
     };
   }, [liveData]);
 
+  if (!data) return null;
   return (
-    <MiniCard title="Taiwan Supply Chain — Monthly Revenue (NT$M)">
-      <Bar data={data} options={hBarOpts(v => `$${v}M`)} />
+    <MiniCard title="Taiwan Supply Chain — Monthly Revenue (NT$M, top 5)">
+      <Line data={data} options={baseOpts(fmtM)} />
     </MiniCard>
   );
 }
 
 // ── GitHub Commit Velocity ─────────────────────────────────────────────────
-const COMMIT_COLORS = [C.openai, C.anthropic, C.google, C.mistral, C.teal, C.perplexity, '#f59e0b', '#8b5cf6'];
-
 export function GitHubCommitsMini() {
   const { liveData } = useData();
 
   const data = useMemo(() => {
-    const commits = liveData?.githubCommits?.commits ?? {};
-    const entries = Object.entries(commits)
-      .map(([repo, weeks]) => ({ label: repo.split('/')[1] ?? repo, value: Array.isArray(weeks) ? weeks.slice(-4).reduce((a,b) => a+b, 0) : 0 }))
-      .filter(e => e.value > 0)
-      .sort((a, b) => b.value - a.value);
-
-    if (entries.length === 0) {
-      return { labels: ['transformers','llama.cpp','vllm','langchain','ollama'], datasets: [{ label: 'Commits (4w)', data: [420,380,290,210,170], backgroundColor: COMMIT_COLORS.map(c=>c+'bf'), borderColor: COMMIT_COLORS, borderWidth:1, borderRadius:4 }] };
-    }
-    return {
-      labels:   entries.map(e => e.label),
-      datasets: [{ label: 'Commits (4w)', data: entries.map(e => e.value), backgroundColor: entries.map((_,i) => COMMIT_COLORS[i%COMMIT_COLORS.length]+'bf'), borderColor: entries.map((_,i) => COMMIT_COLORS[i%COMMIT_COLORS.length]), borderWidth:1, borderRadius:4 }],
-    };
+    const commits = Object.entries(liveData?.githubCommits?.commits ?? {})
+      .filter(([, weeks]) => Array.isArray(weeks) && weeks.length >= 2)
+      .sort(([, a], [, b]) => b.slice(-4).reduce((x, y) => x + y, 0) - a.slice(-4).reduce((x, y) => x + y, 0))
+      .slice(0, 5)
+      .map(([repo, weeks]) => [repo.split('/')[1] ?? repo, weeks]);
+    return weeklyLineData(commits);
   }, [liveData]);
 
+  if (!data) return null;
   return (
-    <MiniCard title="GitHub Commit Velocity — last 4 weeks">
-      <Bar data={data} options={hBarOpts(v => String(v))} />
+    <MiniCard title="GitHub Commits per Week (top repos, 12 weeks)">
+      <Line data={data} options={baseOpts(v => String(v))} />
     </MiniCard>
   );
 }
 
 // ── Docker Hub Pulls ───────────────────────────────────────────────────────
-const DOCKER_COLORS = [C.openai, C.anthropic, C.google, C.teal, C.mistral];
-
 export function DockerMini() {
   const { liveData } = useData();
 
-  const data = useMemo(() => {
-    const images = liveData?.docker?.images ?? {};
-    const entries = Object.entries(images)
+  const ts = useMemo(() => {
+    const images = liveData?.docker?.images;
+    if (!images) return null;
+    const picks = Object.keys(images).map((img, i) => ({
+      metric: `${img}.pulls`, label: img, color: PALETTE[i % PALETTE.length],
+    }));
+    return mhSeries(liveData?.metricsHistory, 'docker', picks);
+  }, [liveData]);
+
+  const barData = useMemo(() => {
+    const entries = Object.entries(liveData?.docker?.images ?? {})
       .map(([label, v]) => ({ label, value: v.pulls ?? 0 }))
       .filter(e => e.value > 0)
       .sort((a, b) => b.value - a.value);
-
-    if (entries.length === 0) {
-      return { labels: ['NVIDIA CUDA','PyTorch','Ollama','HF TGI','vLLM'], datasets: [{ label: 'Total Pulls', data: [8e9,1.4e9,85e6,12e6,3e6], backgroundColor: DOCKER_COLORS.map(c=>c+'bf'), borderColor: DOCKER_COLORS, borderWidth:1, borderRadius:4 }] };
-    }
+    if (entries.length === 0) return null;
     return {
       labels:   entries.map(e => e.label),
-      datasets: [{ label: 'Total Pulls', data: entries.map(e => e.value), backgroundColor: entries.map((_,i) => DOCKER_COLORS[i%DOCKER_COLORS.length]+'bf'), borderColor: entries.map((_,i) => DOCKER_COLORS[i%DOCKER_COLORS.length]), borderWidth:1, borderRadius:4 }],
+      datasets: [{ label: 'Total Pulls', data: entries.map(e => e.value), backgroundColor: entries.map((_, i) => PALETTE[i % PALETTE.length] + 'bf'), borderColor: entries.map((_, i) => PALETTE[i % PALETTE.length]), borderWidth: 1, borderRadius: 4 }],
     };
   }, [liveData]);
 
+  if (ts) {
+    return (
+      <MiniCard title="Docker Hub Pulls Over Time (cumulative)">
+        <Line data={ts} options={baseOpts(fmtM)} />
+      </MiniCard>
+    );
+  }
+  if (!barData) return null;
   return (
-    <MiniCard title="Docker Hub AI Image Pulls (total)">
-      <Bar data={data} options={hBarOpts(fmtM)} />
+    <MiniCard title="Docker Hub AI Image Pulls (trend accrues daily)">
+      <Bar data={barData} options={hBarOpts(fmtM)} />
     </MiniCard>
   );
 }
 
-// ── Hacker News Mentions ───────────────────────────────────────────────────
-const HN_COLORS = [C.openai, C.anthropic, C.google, C.teal, C.mistral];
-
+// ── Hacker News story volume ───────────────────────────────────────────────
 export function CommunityMini() {
   const { liveData } = useData();
 
   const data = useMemo(() => {
-    const perTerm = liveData?.hn?.perTerm ?? {};
-    const entries = Object.entries(perTerm).sort(([,a],[,b]) => b - a);
-
-    if (entries.length === 0) {
-      return { labels: ['ChatGPT','LLM','AI agents','Claude','Gemini'], datasets: [{ label: 'HN Stories (4w)', data: [320,210,185,140,95], backgroundColor: HN_COLORS.map(c=>c+'bf'), borderColor: HN_COLORS, borderWidth:1, borderRadius:4 }] };
-    }
+    const weekly = liveData?.hn?.weekly;
+    if (!Array.isArray(weekly) || weekly.length < 2) return null;
+    const N = Math.min(12, weekly.length);
     return {
-      labels:   entries.map(([t]) => t),
-      datasets: [{ label: 'HN Stories (4w)', data: entries.map(([,v]) => v), backgroundColor: entries.map((_,i) => HN_COLORS[i%HN_COLORS.length]+'bf'), borderColor: entries.map((_,i) => HN_COLORS[i%HN_COLORS.length]), borderWidth:1, borderRadius:4 }],
+      labels:   wkLabels(N),
+      datasets: [mkDs('AI stories/week', C.openai, weekly.slice(-N))],
     };
   }, [liveData]);
 
+  if (!data) return null;
   return (
-    <MiniCard title="Hacker News AI Mentions (last 4 weeks)">
-      <Bar data={data} options={hBarOpts(v => String(v))} />
+    <MiniCard title="Hacker News AI Stories per Week">
+      <Line data={data} options={baseOpts(v => String(v))} />
     </MiniCard>
   );
 }
 
-// ── Registry: view ID → mini chart components ──────────────────────────────
+// ── Wikipedia pageviews ────────────────────────────────────────────────────
+export function WikipediaMini() {
+  const { liveData } = useData();
+
+  const data = useMemo(() => {
+    const articles = Object.entries(liveData?.wikipedia?.articles ?? {}).slice(0, 4);
+    return weeklyLineData(articles);
+  }, [liveData]);
+
+  if (!data) return null;
+  return (
+    <MiniCard title="Wikipedia AI Pageviews per Week">
+      <Line data={data} options={baseOpts(fmtM)} />
+    </MiniCard>
+  );
+}
+
+// ── HuggingFace family downloads ───────────────────────────────────────────
+export function HuggingFaceMini() {
+  const { liveData } = useData();
+
+  const ts = useMemo(() => {
+    const fams = Object.keys(liveData?.hfServer?.families ?? {});
+    if (fams.length === 0) return null;
+    return mhSeries(liveData?.metricsHistory, 'huggingface',
+      fams.map((f, i) => ({ metric: `${f}.downloads`, label: f, color: PALETTE[i % PALETTE.length] })));
+  }, [liveData]);
+
+  const barData = useMemo(() => {
+    const entries = Object.entries(liveData?.hfServer?.families ?? {})
+      .filter(([, v]) => v?.downloads)
+      .sort(([, a], [, b]) => b.downloads - a.downloads);
+    if (entries.length === 0) return null;
+    return {
+      labels:   entries.map(([f]) => f),
+      datasets: [{ label: 'Downloads', data: entries.map(([, v]) => v.downloads), backgroundColor: entries.map((_, i) => PALETTE[i % PALETTE.length] + 'bf'), borderColor: entries.map((_, i) => PALETTE[i % PALETTE.length]), borderWidth: 1, borderRadius: 4 }],
+    };
+  }, [liveData]);
+
+  if (ts) {
+    return (
+      <MiniCard title="HuggingFace Downloads by Family Over Time">
+        <Line data={ts} options={baseOpts(fmtM)} />
+      </MiniCard>
+    );
+  }
+  if (!barData) return null;
+  return (
+    <MiniCard title="HuggingFace Downloads by Model Family (trend accrues daily)">
+      <Bar data={barData} options={hBarOpts(fmtM)} />
+    </MiniCard>
+  );
+}
+
+// ── MCP ecosystem growth ───────────────────────────────────────────────────
+export function McpMini() {
+  const { liveData } = useData();
+
+  const ts = useMemo(() => {
+    const queries = Object.keys(liveData?.mcp?.queries ?? {});
+    if (queries.length === 0) return null;
+    return mhSeries(liveData?.metricsHistory, 'mcp',
+      queries.map((q, i) => ({ metric: `${q}.total`, label: q, color: PALETTE[i % PALETTE.length] })));
+  }, [liveData]);
+
+  const barData = useMemo(() => {
+    const entries = Object.entries(liveData?.mcp?.queries ?? {})
+      .map(([q, v]) => ({ label: q, value: v?.total ?? 0 }))
+      .filter(e => e.value > 0)
+      .sort((a, b) => b.value - a.value);
+    if (entries.length === 0) return null;
+    return {
+      labels:   entries.map(e => e.label),
+      datasets: [{ label: 'GitHub repos', data: entries.map(e => e.value), backgroundColor: entries.map((_, i) => PALETTE[i % PALETTE.length] + 'bf'), borderColor: entries.map((_, i) => PALETTE[i % PALETTE.length]), borderWidth: 1, borderRadius: 4 }],
+    };
+  }, [liveData]);
+
+  if (ts) {
+    return (
+      <MiniCard title="MCP Repos on GitHub Over Time">
+        <Line data={ts} options={baseOpts(fmtK)} />
+      </MiniCard>
+    );
+  }
+  if (!barData) return null;
+  return (
+    <MiniCard title="MCP Ecosystem — GitHub Repos (trend accrues daily)">
+      <Bar data={barData} options={hBarOpts(fmtK)} />
+    </MiniCard>
+  );
+}
+
+// ── SEC filing mentions ────────────────────────────────────────────────────
+export function SecMini() {
+  const { liveData } = useData();
+
+  const ts = useMemo(() => {
+    const terms = Object.keys(liveData?.sec?.terms ?? {});
+    if (terms.length === 0) return null;
+    return mhSeries(liveData?.metricsHistory, 'sec',
+      terms.map((t, i) => ({ metric: `${t}.filings90d`, label: t, color: PALETTE[i % PALETTE.length] })));
+  }, [liveData]);
+
+  // Fallback still shows change over time: prior 90d vs last 90d per term
+  const barData = useMemo(() => {
+    const entries = Object.entries(liveData?.sec?.terms ?? {}).filter(([, v]) => v);
+    if (entries.length === 0) return null;
+    return {
+      labels: entries.map(([t]) => t),
+      datasets: [
+        mkBar('Prior 90d', C.slate,  entries.map(([, v]) => v.prior90d ?? 0)),
+        mkBar('Last 90d',  C.openai, entries.map(([, v]) => v.last90d ?? 0)),
+      ],
+    };
+  }, [liveData]);
+
+  if (ts) {
+    return (
+      <MiniCard title="SEC Filings Mentioning AI Terms Over Time (rolling 90d)">
+        <Line data={ts} options={baseOpts(fmtK)} />
+      </MiniCard>
+    );
+  }
+  if (!barData) return null;
+  return (
+    <MiniCard title="SEC Filings — Prior 90d vs Last 90d">
+      <Bar data={barData} options={baseOpts(fmtK)} />
+    </MiniCard>
+  );
+}
+
+// ── Options flow (per-ticker chain — fetched on demand) ────────────────────
+export function OptionsMini({ ticker = 'NVDA' }) {
+  const [chain, setChain] = useState(null);
+
+  useEffect(() => {
+    const ac = new AbortController();
+    fetch(`/api/options/${ticker}`, { signal: ac.signal })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => { if (d?.calls) setChain(d); })
+      .catch(() => {});
+    return () => ac.abort();
+  }, [ticker]);
+
+  const data = useMemo(() => {
+    if (!chain) return null;
+    const spot = chain.price ?? 0;
+    const inWindow = c => c.strike != null && (!spot || (c.strike >= spot * 0.75 && c.strike <= spot * 1.25));
+    const callOI = new Map(chain.calls.filter(inWindow).map(c => [c.strike, c.openInterest ?? 0]));
+    const putOI  = new Map(chain.puts.filter(inWindow).map(c => [c.strike, c.openInterest ?? 0]));
+    const strikes = [...new Set([...callOI.keys(), ...putOI.keys()])].sort((a, b) => a - b);
+    if (strikes.length === 0) return null;
+    return {
+      labels: strikes.map(s => `$${s}`),
+      datasets: [
+        mkBar('Calls OI', C.openai,    strikes.map(s => callOI.get(s) ?? 0)),
+        mkBar('Puts OI',  C.anthropic, strikes.map(s => putOI.get(s) ?? 0)),
+      ],
+    };
+  }, [chain]);
+
+  if (!data) return null;
+  return (
+    <MiniCard title={`${chain.ticker} Open Interest by Strike (exp ${chain.selectedDate ?? 'nearest'}, spot $${chain.price ?? '—'})`}>
+      <Bar data={data} options={baseOpts(fmtK)} />
+    </MiniCard>
+  );
+}
+
+// ── Registry: chart ID (from the RAG's SECTION_TO_CHART) → mini components ─
 export const CHART_REGISTRY = {
-  pypi:             [PyPIMini],
-  github:           [GitHubMini],
-  trends:           [TrendsMini, JobsMini],
-  reddit:           [RedditMini],
-  gpu:              [GPUMini],
-  electricity:      [ElectricityMini],
-  'ai-supply':      [MopsMini],
-  'github-commits': [GitHubCommitsMini],
-  docker:           [DockerMini],
-  community:        [CommunityMini],
+  pypi:                  [PyPIMini],
+  github:                [GitHubMini],
+  trends:                [TrendsMini, JobsMini],
+  reddit:                [RedditMini],
+  gpu:                   [GPUMini],
+  dram:                  [DramMini],
+  openrouter:            [OpenRouterPricingMini],
+  'openrouter-rankings': [OpenRouterRanksMini],
+  electricity:           [ElectricityMini],
+  'ai-supply':           [MopsMini],
+  'github-commits':      [GitHubCommitsMini],
+  docker:                [DockerMini],
+  community:             [CommunityMini, WikipediaMini],
+  hf:                    [HuggingFaceMini],
+  mcp:                   [McpMini],
+  sec:                   [SecMini],
+  options:               [OptionsMini],
 };

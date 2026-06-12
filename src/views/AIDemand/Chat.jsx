@@ -5,7 +5,7 @@ const SOURCE_META = {
   pypi:             { label: 'PyPI Downloads',     view: 'pypi'           },
   github:           { label: 'GitHub SDKs',        view: 'github'         },
   trends:           { label: 'Trends & Jobs',      view: 'trends'         },
-  reddit:           { label: 'Reddit',             view: 'reddit'         },
+  reddit:           { label: 'Reddit' }, // standalone Reddit page removed — label only
   gpu:              { label: 'GPU & OpenRouter',   view: 'pricing'        },
   electricity:      { label: 'Electricity',        view: 'electricity'    },
   'ai-supply':      { label: 'Supply Chain',       view: 'ai-supply'      },
@@ -18,6 +18,7 @@ const SOURCE_META = {
   openrouter:       { label: 'OpenRouter Pricing', view: 'pricing'        },
   mcp:              { label: 'MCP Ecosystem',      view: 'demand-general' },
   sec:              { label: 'SEC Filings',        view: 'demand-general' },
+  options:          { label: 'Options Flow',       view: 'options'        },
 };
 
 const SUGGESTIONS = [
@@ -142,7 +143,7 @@ export default function Chat({ onNavigate }) {
                     <div className="chat-page-sources">
                       {m.sources.map(s => {
                         const meta = SOURCE_META[s];
-                        return meta ? (
+                        return meta?.view ? (
                           <button
                             key={s}
                             className="chat-page-source-tag chat-page-source-tag--link"
@@ -152,7 +153,7 @@ export default function Chat({ onNavigate }) {
                             {meta.label} ↗
                           </button>
                         ) : (
-                          <span key={s} className="chat-page-source-tag">{s}</span>
+                          <span key={s} className="chat-page-source-tag">{meta?.label ?? s}</span>
                         );
                       })}
                     </div>
