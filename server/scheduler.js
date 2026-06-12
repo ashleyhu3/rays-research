@@ -17,6 +17,9 @@ const scrapers = {
   wikipedia:        () => require('./scrapers/wikipedia').getWikipediaData(),
   openrouterRanks:  () => require('./scrapers/openrouterRankings').getOpenRouterRankings(),
   dram:             () => require('./scrapers/dram').getDramSpot(),
+  npm:              () => require('./scrapers/npm').getNpmHistory(),
+  stackoverflow:    () => require('./scrapers/stackoverflow').getStackOverflowData(),
+  huggingface:      () => require('./scrapers/huggingface').getHuggingFaceData(),
 };
 
 // TTLs match each source's natural update frequency.
@@ -39,6 +42,9 @@ const TTL = {
   wikipedia:        24 * 3600000,  // daily
   openrouterRanks:   6 * 3600000,  // 6-hourly — daily granularity but rankings shift through day
   dram:              6 * 3600000,  // 6-hourly — TrendForce spot sessions update through the trading day
+  npm:           24 * 3600000,  // daily   — api.npmjs.org reports complete days only
+  stackoverflow: 24 * 3600000,  // daily   — tag counts move slowly; respects SE API quota
+  huggingface:   24 * 3600000,  // daily   — all-time download totals grow slowly
 };
 
 // Hard cap per scraper so one hung source can never wedge a refresh
@@ -71,7 +77,7 @@ function setup() {
   cron.schedule('0 */6 * * *', () => refreshAll(['reddit', 'jobs', 'docker', 'openrouterRanks', 'dram']));
 
   // Daily at 03:00 UTC: aggregate stats whose sources only publish once per day
-  cron.schedule('0 3 * * *', () => refreshAll(['gpu', 'pypi', 'trends', 'github', 'eia', 'mops', 'githubCommits', 'wikipedia']));
+  cron.schedule('0 3 * * *', () => refreshAll(['gpu', 'pypi', 'trends', 'github', 'eia', 'mops', 'githubCommits', 'wikipedia', 'npm', 'stackoverflow', 'huggingface']));
 }
 
 module.exports = { setup, refreshAll, scrapers, TTL };

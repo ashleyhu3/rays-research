@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-const PKGS = ['openai', 'anthropic', 'google-generativeai', 'mistralai'];
+const PKGS = ['openai', 'anthropic', 'google-generativeai', 'mistralai', 'langchain', 'langchain-community', 'llama-index-core', 'vllm'];
 const WEEKS = 52;
 
 async function getPkgHistory(pkg) {

@@ -12,6 +12,10 @@ const SOURCE_META = {
   'github-commits': { label: 'GitHub Commits',     view: 'github-commits' },
   docker:           { label: 'Docker Hub',         view: 'docker'         },
   community:        { label: 'HN & Wikipedia',     view: 'community'      },
+  hf:               { label: 'HuggingFace',        view: 'hf'             },
+  'openrouter-rankings': { label: 'OR Rankings',   view: 'openrouter-rankings' },
+  dram:             { label: 'DRAM Spot',          view: 'pricing'        },
+  openrouter:       { label: 'OpenRouter Pricing', view: 'pricing'        },
 };
 
 const SUGGESTIONS = [
@@ -81,7 +85,7 @@ export default function Chat({ onNavigate }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || res.statusText);
-      setMessages(prev => [...prev, { role: 'assistant', text: data.text, sources: data.sources ?? [] }]);
+      setMessages(prev => [...prev, { role: 'assistant', text: data.text, sources: data.sources ?? [], meta: data.meta }]);
     } catch (err) {
       setMessages(prev => [...prev, { role: 'error', text: `Error: ${err.message}` }]);
     } finally {
@@ -121,6 +125,11 @@ export default function Chat({ onNavigate }) {
                 )}
 
                 <div className="chat-page-msg-body">
+                  {m.meta?.total > 0 && (
+                    <p className="chat-page-msg-meta" title={m.meta.intent}>
+                      🔎 Vetted {m.meta.approved} of {m.meta.total} data sources
+                    </p>
+                  )}
                   <p className="chat-page-msg-text">{m.text}</p>
 
                   {/* Inline charts */}

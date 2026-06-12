@@ -59,6 +59,9 @@ app.get('/api/hn',             cachedRoute('hn',            s.hn));
 app.get('/api/wikipedia',         cachedRoute('wikipedia',        s.wikipedia));
 app.get('/api/openrouter-ranks',  cachedRoute('openrouterRanks',  s.openrouterRanks));
 app.get('/api/dram',              cachedRoute('dram',             s.dram));
+app.get('/api/npm',               cachedRoute('npm',              s.npm));
+app.get('/api/stackoverflow',     cachedRoute('stackoverflow',    s.stackoverflow));
+app.get('/api/huggingface',       cachedRoute('huggingface',      s.huggingface));
 
 app.post('/api/refresh', async (req, res) => {
   const keys = req.body?.keys ?? Object.keys(scheduler.scrapers);

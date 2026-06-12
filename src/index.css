@@ -433,6 +433,11 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
   white-space: pre-wrap; word-break: break-word;
 }
 
+.chat-page-msg-meta {
+  font-size: 10px; color: var(--ter); font-family: var(--font-m);
+  letter-spacing: .02em; margin-bottom: 6px;
+}
+
 .chat-page-msg--user .chat-page-msg-body {
   display: flex; flex-direction: column; align-items: flex-end;
 }

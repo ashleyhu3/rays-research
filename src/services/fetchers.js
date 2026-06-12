@@ -67,7 +67,7 @@ async function fetchSoTotals() {
   const res = await fetchT(url);
   if (!res.ok) return {};
   const { items = [] } = await res.json();
-  return Object.fromEntries(items.map(t => [t.tag_name, t.count]));
+  return Object.fromEntries(items.map(t => [t.name ?? t.tag_name, t.count]));
 }
 
 async function fetchSoWeekly(tag) {
