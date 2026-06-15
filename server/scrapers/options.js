@@ -59,7 +59,7 @@ function fmtContract(c) {
 }
 
 // Fetch the raw options chain. In production OPTIONS_PROXY_URL points at the
-// serverless proxy (see proxy/api/options.js): Yahoo rate-limits Render's
+// serverless proxy (see api/options.js, deployed to Vercel): Yahoo rate-limits Render's
 // shared egress IPs, so we let the proxy do the Yahoo handshake from a clean IP
 // and return the raw chain. Unset locally → call Yahoo directly (works fine
 // from a laptop / Codespace).
