@@ -58,14 +58,40 @@ function fmtContract(c) {
   };
 }
 
+// Fetch the raw options chain. In production OPTIONS_PROXY_URL points at the
+// serverless proxy (see proxy/api/options.js): Yahoo rate-limits Render's
+// shared egress IPs, so we let the proxy do the Yahoo handshake from a clean IP
+// and return the raw chain. Unset locally → call Yahoo directly (works fine
+// from a laptop / Codespace).
+async function fetchChain(symbol, queryOpts, dateStr) {
+  const proxy = process.env.OPTIONS_PROXY_URL;
+  if (!proxy) {
+    return withRetry(() => getYF().options(symbol, queryOpts, { validateResult: false }));
+  }
+  const url = new URL(proxy);
+  url.searchParams.set('ticker', symbol);
+  if (dateStr) url.searchParams.set('date', dateStr);
+  const headers = {};
+  if (process.env.PROXY_SECRET) headers['x-proxy-key'] = process.env.PROXY_SECRET;
+
+  const r = await fetch(url, { headers });
+  if (!r.ok) {
+    const body = await r.text().catch(() => '');
+    // Prefix 429 on the proxy's rate-limit status so server.js maps it to the
+    // friendly "try again in a moment" 503 just like a direct Yahoo 429.
+    const tag = r.status === 503 ? '429 ' : '';
+    throw new Error(`${tag}options proxy ${r.status}: ${body.slice(0, 200)}`);
+  }
+  return r.json();
+}
+
 async function getOptionsData(ticker, dateStr) {
-  const yf     = getYF();
   const symbol = ticker.trim().toUpperCase();
 
   // v3 API: yf.options(symbol, { date? }, moduleOpts)
   // Response: { expirationDates, quote, options: [{ expirationDate, calls, puts }] }
   const queryOpts = dateStr ? { date: dateStr } : {};
-  const chain = await withRetry(() => yf.options(symbol, queryOpts, { validateResult: false }));
+  const chain = await fetchChain(symbol, queryOpts, dateStr);
 
   // Limit expirations to ≤ 2 months from today
   const now    = new Date();
