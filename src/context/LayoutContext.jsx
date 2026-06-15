@@ -1,6 +1,9 @@
 import { createContext, useContext, useCallback, useState } from 'react';
 
-const STORAGE_KEY = 'chart-layouts-v1';
+// v2: v1 eagerly persisted every visited view's default order, which would now
+// mask the dynamic "biggest recent mover first" ordering. Bumping the key drops
+// those stale auto-seeded layouts; only explicit user arrangements are stored now.
+const STORAGE_KEY = 'chart-layouts-v2';
 
 function loadLayouts() {
   try {
@@ -15,7 +18,6 @@ function persist(layouts) {
 
 const LayoutContext = createContext({
   getLayout:   () => null,
-  initLayout:  () => {},
   moveChart:   () => {},
   setSpan:     () => {},
   setCol:      () => {},
@@ -24,59 +26,41 @@ const LayoutContext = createContext({
 
 export const useLayout = () => useContext(LayoutContext);
 
+// A view only gets a stored layout once the user explicitly rearranges it.
+// Until then EditableGrid follows its dynamic "biggest recent mover first"
+// order (which tracks the live data), so we never freeze that default. The
+// mutators take the current effective layout as their base so the first edit
+// seeds storage from whatever order is on screen.
 export function LayoutProvider({ children }) {
   const [layouts, setLayouts] = useState(loadLayouts);
 
   const getLayout = useCallback((viewId) => layouts[viewId] ?? null, [layouts]);
 
-  const initLayout = useCallback((viewId, defaults) => {
+  const commit = useCallback((viewId, layout) => {
     setLayouts(prev => {
-      const cur = prev[viewId];
-      if (!cur) {
-        const next = { ...prev, [viewId]: defaults };
-        persist(next);
-        return next;
-      }
-      // Append charts added after the layout was first stored
-      const known   = new Set(cur.map(item => item.chartId));
-      const missing = defaults.filter(d => !known.has(d.chartId));
-      if (missing.length === 0) return prev;
-      const next = { ...prev, [viewId]: [...cur, ...missing] };
+      const next = { ...prev, [viewId]: layout };
       persist(next);
       return next;
     });
   }, []);
 
-  const update = useCallback((viewId, fn) => {
-    setLayouts(prev => {
-      const next = { ...prev, [viewId]: fn(prev[viewId]) };
-      persist(next);
-      return next;
-    });
-  }, []);
+  const moveChart = useCallback((viewId, layout, fromIdx, dir) => {
+    const arr = [...layout];
+    const toIdx = fromIdx + dir;
+    if (toIdx < 0 || toIdx >= arr.length) return;
+    [arr[fromIdx], arr[toIdx]] = [arr[toIdx], arr[fromIdx]];
+    commit(viewId, arr);
+  }, [commit]);
 
-  const moveChart = useCallback((viewId, fromIdx, dir) => {
-    update(viewId, cur => {
-      if (!cur) return cur;
-      const arr  = [...cur];
-      const toIdx = fromIdx + dir;
-      if (toIdx < 0 || toIdx >= arr.length) return arr;
-      [arr[fromIdx], arr[toIdx]] = [arr[toIdx], arr[fromIdx]];
-      return arr;
-    });
-  }, [update]);
+  const setSpan = useCallback((viewId, layout, chartId, span) => {
+    commit(viewId, layout.map(item =>
+      item.chartId === chartId ? { ...item, span, col: 'auto' } : item));
+  }, [commit]);
 
-  const setSpan = useCallback((viewId, chartId, span) => {
-    update(viewId, cur =>
-      cur?.map(item => item.chartId === chartId ? { ...item, span, col: 'auto' } : item) ?? cur
-    );
-  }, [update]);
-
-  const setCol = useCallback((viewId, chartId, col) => {
-    update(viewId, cur =>
-      cur?.map(item => item.chartId === chartId ? { ...item, col } : item) ?? cur
-    );
-  }, [update]);
+  const setCol = useCallback((viewId, layout, chartId, col) => {
+    commit(viewId, layout.map(item =>
+      item.chartId === chartId ? { ...item, col } : item));
+  }, [commit]);
 
   const resetLayout = useCallback((viewId) => {
     setLayouts(prev => {
@@ -88,7 +72,7 @@ export function LayoutProvider({ children }) {
   }, []);
 
   return (
-    <LayoutContext.Provider value={{ getLayout, initLayout, moveChart, setSpan, setCol, resetLayout }}>
+    <LayoutContext.Provider value={{ getLayout, moveChart, setSpan, setCol, resetLayout }}>
       {children}
     </LayoutContext.Provider>
   );

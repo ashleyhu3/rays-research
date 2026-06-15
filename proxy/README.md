@@ -16,11 +16,20 @@ request header.
 
 ## Deploy (one time, free tier)
 
+> ⚠️ Only this `proxy/` folder goes on Vercel. The dashboard itself is an
+> Express app (it serves `/api/*` and generates its HTML from the Vite manifest
+> at runtime — there is no `index.html`), so it runs on Render, **not** Vercel.
+> If Vercel runs `vite build` and fails with *"Could not resolve entry module
+> index.html"*, it's building the repo root instead of `proxy/` — fix the Root
+> Directory (step 3).
+
 1. Push this repo to GitHub (the `proxy/` directory must be included).
 2. In Vercel: **Add New… → Project → import this repo**.
-3. **Set Root Directory to `proxy`** (Settings → General, or on the import
-   screen). This is the key step — it deploys only this folder, not the Vite
-   app. Vercel auto-detects the `api/` function; no build command needed.
+3. **Set Root Directory to `proxy`** — this is the critical step. On the import
+   screen, find **Root Directory → Edit → select `proxy`**. (Existing project:
+   Settings → General → Root Directory → `proxy` → Save, then redeploy.) This
+   makes Vercel deploy only this folder. It has no build step — `framework` is
+   pinned to `null` in `vercel.json` and the `api/` function is auto-detected.
 4. (Recommended) Settings → **Environment Variables** → add `PROXY_SECRET` to a
    value of your choice.
 5. Deploy. Your endpoint is `https://<project>.vercel.app/api/options`.

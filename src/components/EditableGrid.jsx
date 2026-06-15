@@ -1,37 +1,91 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useMemo } from 'react';
+import { Line } from 'react-chartjs-2';
 import { useLayout } from '../context/LayoutContext';
 import { useUI } from '../context/UIContext';
 
 function MoveUpIcon()   { return <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><path d="M5 1 L9 7 H1 Z"/></svg>; }
 function MoveDownIcon() { return <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><path d="M5 9 L1 3 H9 Z"/></svg>; }
 
+// ── "Biggest recent mover first" ordering ──────────────────────────────────
+// Charts are ranked by how much their data has moved lately so the clearest
+// trends rise to the top; snapshot/categorical charts (current rates, rankings
+// by entity, distributions) have no time axis and sink to the bottom.
+const MONTH = /\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\b/i;
+function timeish(s) {
+  return typeof s === 'string' && (
+    MONTH.test(s) ||
+    /\b(19|20)\d{2}\b/.test(s) ||   // 2024, 2026e
+    /\bQ[1-4]\b/i.test(s) ||        // Q1 25
+    /^\d{4}-\d{2}/.test(s) ||       // 2024-06
+    /\b\d{1,2}\/\d{1,2}\b/.test(s)  // 6/15
+  );
+}
+// A bar chart counts as a trend only when its x-axis labels read like a time
+// axis; line charts in this app are always time-series.
+function looksTemporal(labels) {
+  if (!Array.isArray(labels) || labels.length < 3) return false;
+  let hits = 0;
+  for (const l of labels) if (timeish(l)) hits++;
+  return hits >= Math.ceil(labels.length * 0.6);
+}
+// Largest absolute % change over the last ~quarter of points, across datasets.
+// Returns -1 for non-trend (snapshot) charts so they sort beneath every trend.
+function moveScore(card) {
+  const inner = React.Children.toArray(card.props.children)[0];
+  const data  = inner?.props?.data;
+  if (!data || !Array.isArray(data.datasets)) return -1;
+  if (inner.type !== Line && !looksTemporal(data.labels)) return -1;
+
+  let best = -1;
+  for (const d of data.datasets) {
+    const arr = (d.data ?? []).filter(v => typeof v === 'number' && Number.isFinite(v));
+    if (arr.length < 2) continue;
+    const look = Math.min(arr.length - 1, Math.max(1, Math.ceil(arr.length * 0.25)));
+    const last = arr[arr.length - 1];
+    const prev = arr[arr.length - 1 - look];
+    if (!Number.isFinite(prev) || prev === 0) { best = Math.max(best, 0); continue; }
+    best = Math.max(best, Math.abs((last - prev) / prev));
+  }
+  return best;
+}
+
 export default function EditableGrid({ viewId, children }) {
-  const { getLayout, initLayout, moveChart, setSpan, setCol } = useLayout();
+  const { getLayout, moveChart, setSpan, setCol } = useLayout();
   const { editMode } = useUI();
 
   const cards = useMemo(() =>
     React.Children.toArray(children).filter(c => c?.props?.chartId),
   [children]);
 
-  // Build defaults from JSX props (span2 prop → 'full', absence → 'half')
-  const defaults = useMemo(() =>
-    cards.map(c => ({
-      chartId: c.props.chartId,
-      span: c.props.span2 ? 'full' : 'half',
-      col: 'auto',
-    })),
-  [cards]);
-
-  useEffect(() => {
-    if (defaults.length > 0) initLayout(viewId, defaults);
-  }, [viewId, defaults]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const stored = getLayout(viewId);
-  const layout = stored ?? defaults;
-
   const cardMap = useMemo(() =>
     Object.fromEntries(cards.map(c => [c.props.chartId, c])),
   [cards]);
+
+  // Dynamic default order: biggest recent mover first (span2 → 'full', absence
+  // → 'half'). Ties keep their original JSX position. Recomputed as live data
+  // updates, so the order tracks whatever is trending — until the user pins an
+  // explicit arrangement (below), which then wins.
+  const dynamicDefault = useMemo(() => {
+    const scored = cards.map((c, i) => ({
+      item: { chartId: c.props.chartId, span: c.props.span2 ? 'full' : 'half', col: 'auto' },
+      score: moveScore(c),
+      i,
+    }));
+    scored.sort((a, b) => b.score - a.score || a.i - b.i);
+    return scored.map(s => s.item);
+  }, [cards]);
+
+  const stored = getLayout(viewId);
+
+  // Stored (user-arranged) layout wins; otherwise follow the dynamic order.
+  // Any chart missing from a stored layout (e.g. added in a later release) is
+  // appended so it still renders.
+  const layout = useMemo(() => {
+    if (!stored) return dynamicDefault;
+    const known = new Set(stored.map(it => it.chartId));
+    const extra = dynamicDefault.filter(d => !known.has(d.chartId));
+    return extra.length ? [...stored, ...extra] : stored;
+  }, [stored, dynamicDefault]);
 
   return (
     <div className={`cgrid${editMode ? ' cgrid--editing' : ''}`}>
@@ -66,7 +120,7 @@ export default function EditableGrid({ viewId, children }) {
                   className="lc-btn"
                   title="Move up"
                   disabled={idx === 0}
-                  onClick={() => moveChart(viewId, idx, -1)}
+                  onClick={() => moveChart(viewId, layout, idx, -1)}
                 >
                   <MoveUpIcon />
                 </button>
@@ -74,7 +128,7 @@ export default function EditableGrid({ viewId, children }) {
                   className="lc-btn"
                   title="Move down"
                   disabled={idx === layout.length - 1}
-                  onClick={() => moveChart(viewId, idx, 1)}
+                  onClick={() => moveChart(viewId, layout, idx, 1)}
                 >
                   <MoveDownIcon />
                 </button>
@@ -86,12 +140,12 @@ export default function EditableGrid({ viewId, children }) {
                 <button
                   className={`lc-btn lc-text${isFull ? ' lc-active' : ''}`}
                   title="Full width"
-                  onClick={() => setSpan(viewId, item.chartId, 'full')}
+                  onClick={() => setSpan(viewId, layout, item.chartId, 'full')}
                 >Full</button>
                 <button
                   className={`lc-btn lc-text${!isFull ? ' lc-active' : ''}`}
                   title="Half width"
-                  onClick={() => setSpan(viewId, item.chartId, 'half')}
+                  onClick={() => setSpan(viewId, layout, item.chartId, 'half')}
                 >Half</button>
               </div>
 
@@ -102,12 +156,12 @@ export default function EditableGrid({ viewId, children }) {
                     <button
                       className={`lc-btn lc-text${col !== 'right' ? ' lc-active' : ''}`}
                       title="Left column"
-                      onClick={() => setCol(viewId, item.chartId, 'left')}
+                      onClick={() => setCol(viewId, layout, item.chartId, 'left')}
                     >L</button>
                     <button
                       className={`lc-btn lc-text${col === 'right' ? ' lc-active' : ''}`}
                       title="Right column"
-                      onClick={() => setCol(viewId, item.chartId, 'right')}
+                      onClick={() => setCol(viewId, layout, item.chartId, 'right')}
                     >R</button>
                   </div>
                 </>

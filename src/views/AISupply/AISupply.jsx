@@ -3,6 +3,7 @@ import { Line } from 'react-chartjs-2';
 import { C } from '../../config/colors';
 import { baseOpts, mkDs, GRID, TICK, BORD } from '../../utils/chartHelpers';
 import ChartCard from '../../components/ChartCard';
+import EditableGrid from '../../components/EditableGrid';
 import { useData } from '../../context/DataContext';
 import { useUI } from '../../context/UIContext';
 
@@ -207,31 +208,35 @@ export default function AISupplyOverview({ months = 12 }) {
   const allColLinks = ALL_COMPANIES.map(c => goodInfoUrl(c.id));
 
   return (
-    <div className="cgrid">
-      <ChartCard chartId="supply-all-yoy" title="YoY growth (%) — All companies"
-        legend={allLegend} colLinks={allColLinks} height={360} isNew span2={tableMode} colorPct clean>
-        {hasLive && allYoyData.datasets.length > 0 ? <Line data={allYoyData} options={pctOpts} /> : <NoData />}
-      </ChartCard>
-
-      <ChartCard chartId="supply-all-mom" title="MoM growth (%) — All companies"
-        legend={allLegend} colLinks={allColLinks} height={360} isNew span2={tableMode} colorPct clean>
-        {hasLive && allMomData.datasets.length > 0 ? <Line data={allMomData} options={pctOpts} /> : <NoData />}
-      </ChartCard>
-
-      {!tableMode && (
-        <ChartCard chartId="supply-total-rev" title="Total monthly revenue (NT$M) — All companies"
-          height={300} span2 isNew clean>
-          {hasLive && totalRevData.datasets[0]?.data.some(v => v != null) ? <Line data={totalRevData} options={revOpts} /> : <NoData />}
+    <>
+      <EditableGrid viewId="ai-supply">
+        <ChartCard chartId="supply-all-yoy" title="YoY growth (%) — All companies"
+          legend={allLegend} colLinks={allColLinks} height={360} isNew span2={tableMode} colorPct clean>
+          {hasLive && allYoyData.datasets.length > 0 ? <Line data={allYoyData} options={pctOpts} /> : <NoData />}
         </ChartCard>
-      )}
 
-      <CompanyDirectory optics={optics} pcb={pcb} />
+        <ChartCard chartId="supply-all-mom" title="MoM growth (%) — All companies"
+          legend={allLegend} colLinks={allColLinks} height={360} isNew span2={tableMode} colorPct clean>
+          {hasLive && allMomData.datasets.length > 0 ? <Line data={allMomData} options={pctOpts} /> : <NoData />}
+        </ChartCard>
 
-      <ChartCard chartId="supply-all-rev" title="Monthly revenue (NT$M) — All companies"
-        legend={allLegend} colLinks={allColLinks} height={360} span2 isNew clean>
-        {hasLive && allRevData.datasets.length > 0 ? <Line data={allRevData} options={revOpts} /> : <NoData />}
-      </ChartCard>
-    </div>
+        {!tableMode && (
+          <ChartCard chartId="supply-total-rev" title="Total monthly revenue (NT$M) — All companies"
+            height={300} span2 isNew clean>
+            {hasLive && totalRevData.datasets[0]?.data.some(v => v != null) ? <Line data={totalRevData} options={revOpts} /> : <NoData />}
+          </ChartCard>
+        )}
+
+        <ChartCard chartId="supply-all-rev" title="Monthly revenue (NT$M) — All companies"
+          legend={allLegend} colLinks={allColLinks} height={360} span2 isNew clean>
+          {hasLive && allRevData.datasets.length > 0 ? <Line data={allRevData} options={revOpts} /> : <NoData />}
+        </ChartCard>
+      </EditableGrid>
+
+      <div className="cgrid">
+        <CompanyDirectory optics={optics} pcb={pcb} />
+      </div>
+    </>
   );
 }
 
@@ -249,7 +254,7 @@ export function AISupplyOptics({ months = 12 }) {
   const colLinks = OPTICS.map(c => goodInfoUrl(c.id));
 
   return (
-    <div className="cgrid">
+    <EditableGrid viewId="ai-supply-optics">
       <ChartCard chartId="supply-optics-yoy" title="YoY growth (%) — Optics"
         legend={legend} colLinks={colLinks} height={360} isNew span2={tableMode} colorPct clean>
         {hasLive && yoyData.datasets.length > 0 ? <Line data={yoyData} options={pctOpts} /> : <NoData />}
@@ -264,7 +269,7 @@ export function AISupplyOptics({ months = 12 }) {
         legend={legend} colLinks={colLinks} height={360} span2 isNew clean>
         {hasLive && revData.datasets.length > 0 ? <Line data={revData} options={revOpts} /> : <NoData />}
       </ChartCard>
-    </div>
+    </EditableGrid>
   );
 }
 
@@ -282,7 +287,7 @@ export function AISupplyPCB({ months = 12 }) {
   const colLinks = PCB.map(c => goodInfoUrl(c.id));
 
   return (
-    <div className="cgrid">
+    <EditableGrid viewId="ai-supply-pcb">
       <ChartCard chartId="supply-pcb-yoy" title="YoY growth (%) — PCB"
         legend={legend} colLinks={colLinks} height={360} isNew span2={tableMode} colorPct clean>
         {hasLive && yoyData.datasets.length > 0 ? <Line data={yoyData} options={pctOpts} /> : <NoData />}
@@ -297,6 +302,6 @@ export function AISupplyPCB({ months = 12 }) {
         legend={legend} colLinks={colLinks} height={360} span2 isNew clean>
         {hasLive && revData.datasets.length > 0 ? <Line data={revData} options={revOpts} /> : <NoData />}
       </ChartCard>
-    </div>
+    </EditableGrid>
   );
 }
