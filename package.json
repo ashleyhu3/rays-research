@@ -12,6 +12,7 @@
     "backfill:github-stars": "node --env-file=.env server/scripts/backfillGithubStars.js",
     "backfill:gpu-history": "node --env-file=.env server/scripts/backfillGpuHistory.js",
     "backfill:dram": "node --env-file=.env server/scripts/backfillDram.js",
+    "backfill:aws-spot": "node --env-file=.env server/scripts/backfillAwsSpot.js",
     "backfill:all": "npm run backfill:sec && npm run backfill:mcp && npm run backfill:github-stars",
     "db:ping": "node --env-file=.env server/scripts/dbPing.js",
     "db:seed": "node --env-file=.env server/scripts/seedMongo.js",
@@ -33,6 +34,7 @@
     "yahoo-finance2": "^3.15.2"
   },
   "devDependencies": {
+    "@aws-sdk/client-ec2": "^3.1068.0",
     "@vitejs/plugin-react": "^4.2.1",
     "vite": "^5.4.0"
   }

@@ -17,6 +17,7 @@ const BLOBS = [
   { name: 'metricsHistory', file: path.join(DATA_DIR, 'metricsHistory.json') },
   { name: 'gpuHistory',     file: path.join(DATA_DIR, 'gpuHistory.json') },
   { name: 'dramHistory',    file: path.join(DATA_DIR, 'dramHistory.json') },
+  { name: 'awsHistory',     file: path.join(DATA_DIR, 'awsHistory.json') },
 ];
 
 storage.seedFromFiles(BLOBS)

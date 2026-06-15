@@ -261,6 +261,70 @@ export default function Pricing({ weeks: W = 52 }) {
     };
   }, [gpuHist, gpuWindow, W]);
 
+  /* ── AWS accelerator spot pricing ─────────────────────────────────── */
+  // Exact EC2 spot backfill (≤90d) continued forward via the free Spot Advisor.
+  const aws = liveData?.aws;
+  const AWS_COLOR = { H100: C.openai, H200: C.anthropic, A100: C.teal, Trainium: C.google, Inferentia2: C.minimax };
+  const awsLegend = ds => (ds?.datasets ?? []).map(d => [d.label, d.borderColor]);
+
+  // Master time axis = AWS history (reaches furthest back), windowed to W weeks.
+  const awsWindow = useMemo(() => {
+    const dates = aws?.history?.dates;
+    if (!dates?.length) return null;
+    const cutoff = Date.now() - W * 7 * 86400000;
+    let start = dates.findIndex(d => new Date(d + 'T00:00:00Z').getTime() >= cutoff);
+    if (start < 0) start = 0;
+    return { start, dates: dates.slice(start) };
+  }, [aws, W]);
+
+  function awsLineChart(series, keys) {
+    if (!series || !awsWindow) return null;
+    const present = keys.filter(k => (series[k]?.slice(awsWindow.start) ?? []).some(Number.isFinite));
+    if (present.length === 0) return null;
+    return {
+      labels: awsWindow.dates.map(d => historyLabel(d, W)),
+      datasets: present.map(k => ({ ...mkDs(k, AWS_COLOR[k], series[k].slice(awsWindow.start)), spanGaps: true, pointRadius: 0 })),
+    };
+  }
+  // AWS-exclusive AI chips (no vast.ai equivalent) — shown as raw AWS spot.
+  const awsChipData = useMemo(() => awsLineChart(aws?.history?.spotSeries, ['Trainium', 'Inferentia2']), [aws, awsWindow]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Combined GPU spot line: vast.ai's actual price where it exists, with the
+  // earlier period filled by AWS's spot SHAPE rebased ("indexed") to vast.ai's
+  // level at the join point — a single continuous line per GPU. Different
+  // markets, so the pre-vast.ai portion is an indexed estimate, not AWS prices.
+  const GPU_PAIRS = [['H100_SXM', 'H100'], ['H200', 'H200'], ['A100_SXM', 'A100']];
+  const combinedSpotData = useMemo(() => {
+    const aH = aws?.history, gH = gpuHist;
+    if (!aH?.dates?.length || !awsWindow) return null;
+    const gIdx = gH?.dates ? Object.fromEntries(gH.dates.map((d, i) => [d, i])) : {};
+    const vastVal = (vk, d) => {
+      const i = gIdx[d]; if (i == null) return null;
+      const sp = gH.spotSeries?.[vk]?.[i]; if (Number.isFinite(sp)) return sp;
+      const od = gH.series?.[vk]?.[i]; return Number.isFinite(od) ? od : null;
+    };
+    const datasets = [];
+    for (const [vk, ak] of GPU_PAIRS) {
+      const awsArr = aH.spotSeries?.[ak];
+      if (!awsArr) continue;
+      // Scale = vast.ai ÷ AWS at the earliest day vast.ai has a real price.
+      let scale = 1;
+      for (let i = 0; i < aH.dates.length; i++) {
+        const v = vastVal(vk, aH.dates[i]);
+        if (Number.isFinite(v) && Number.isFinite(awsArr[i]) && awsArr[i] !== 0) { scale = v / awsArr[i]; break; }
+      }
+      const combined = aH.dates.map((d, i) => {
+        const v = vastVal(vk, d);
+        if (Number.isFinite(v)) return v;                          // vast.ai actual
+        return Number.isFinite(awsArr[i]) ? +(awsArr[i] * scale).toFixed(2) : null; // indexed AWS
+      }).slice(awsWindow.start);
+      if (!combined.some(Number.isFinite)) continue;
+      datasets.push({ ...mkDs(GPU_LABELS[vk] ?? vk, GPU_PALETTE[vk] ?? AWS_COLOR[ak], combined), spanGaps: true, pointRadius: 0 });
+    }
+    if (datasets.length === 0) return null;
+    return { labels: awsWindow.dates.map(d => historyLabel(d, W)), datasets };
+  }, [aws, gpuHist, awsWindow, W]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const changeData = useMemo(() => {
     if (models.length === 0) return null;
     const sorted = [...models].sort((a, b) => b.changePct - a.changePct);
@@ -351,6 +415,36 @@ export default function Pricing({ weeks: W = 52 }) {
           height={240} span2
         >
           <Line data={gpuIndexData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
+        </ChartCard>
+      )}
+
+      {combinedSpotData && (
+        <ChartCard
+          chartId="gpu-spot-combined"
+          title="GPU spot price ($/hr) — vast.ai, pre-history indexed from AWS"
+          src="vast.ai + AWS EC2"
+          srcUrl="https://aws.amazon.com/ec2/spot/instance-advisor/"
+          freq="daily"
+          subtitle="Single continuous line per GPU: vast.ai's actual price where available, with the earlier period filled by AWS EC2 spot history rebased ('indexed') to vast.ai's level at the join point. The two are different markets, so the pre-vast.ai portion shows AWS's historical shape at vast.ai's price level — an estimate, not literal vast.ai prices."
+          legend={awsLegend(combinedSpotData)}
+          height={240} span2
+        >
+          <Line data={combinedSpotData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
+        </ChartCard>
+      )}
+
+      {awsChipData && (
+        <ChartCard
+          chartId="aws-chip-spot"
+          title="AWS AI-chip spot price ($/chip/hr) — Trainium / Inferentia"
+          src="AWS EC2 + Spot Advisor"
+          srcUrl="https://aws.amazon.com/ec2/spot/instance-advisor/"
+          freq="daily"
+          subtitle="AWS's in-house AI accelerators (no third-party market equivalent). Per-chip interruptible spot price: exact EC2 DescribeSpotPriceHistory backfill (≤90 days), continued forward via the free AWS Spot Advisor. Daily median across us-east-1 / us-west-2 / us-east-2."
+          legend={awsLegend(awsChipData)}
+          height={220} span2
+        >
+          <Line data={awsChipData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
         </ChartCard>
       )}
 
