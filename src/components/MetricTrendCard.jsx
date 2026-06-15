@@ -15,13 +15,16 @@ import ChartCard from './ChartCard';
  * series: [{ metric: 'OpenAI.total', label: 'Total roles', color }]
  * hist:   liveData.metricsHistory[source] — { metric: { date: value } }
  */
-export function metricTrendCard({ chartId, title, src, srcUrl, freq = 'daily', subtitle, hist, series, fmt, height = 220, span2 = false }) {
+export function metricTrendCard({ chartId, title, src, srcUrl, freq = 'daily', subtitle, hist, series, fmt, height = 220, span2 = false, weeks }) {
   const present = series
     .map(s => ({ ...s, points: hist?.[s.metric] ?? null }))
     .filter(s => s.points && Object.keys(s.points).length > 0);
   if (present.length === 0) return null;
 
-  const allDates = [...new Set(present.flatMap(s => Object.keys(s.points)))].sort();
+  // Respond to the global time toggle: keep only the most recent `weeks * 7`
+  // daily snapshots. `weeks` undefined → show the full accumulated history.
+  let allDates = [...new Set(present.flatMap(s => Object.keys(s.points)))].sort();
+  if (weeks > 0) allDates = allDates.slice(-weeks * 7);
   const isTrend  = allDates.length >= 2;
 
   const data = isTrend

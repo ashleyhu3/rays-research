@@ -12,7 +12,7 @@ export default function Web() {
       <p style={{ lineHeight: 1.7, color: 'var(--ter)' }}>
         They have been removed rather than risk presenting fabricated numbers as
         real. For consumer-demand signals backed by real data, see Google Trends,
-        Reddit, Wikipedia pageviews, and the OpenRouter usage rankings views.
+        Wikipedia pageviews, and the OpenRouter usage rankings views.
       </p>
     </div>
   );

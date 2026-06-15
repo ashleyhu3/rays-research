@@ -4,7 +4,7 @@ const cheerio = require('cheerio');
 const REPOS = [
   { owner: 'openai',      repo: 'openai-python',          label: 'openai/openai-python' },
   { owner: 'anthropics',  repo: 'anthropic-sdk-python',   label: 'anthropics/anthropic-sdk-python' },
-  { owner: 'google',      repo: 'generative-ai-python',   label: 'google/generative-ai-python' },
+  { owner: 'googleapis',  repo: 'python-genai',           label: 'googleapis/python-genai' },
   { owner: 'mistralai',   repo: 'client-python',          label: 'mistralai/client-python' },
 ];
 

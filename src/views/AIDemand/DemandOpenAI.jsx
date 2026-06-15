@@ -144,23 +144,8 @@ export default function DemandOpenAI({ weeks: W }) {
       </ChartCard>
 
       {metricTrendCard({
-        chartId: 'oa-reddit',
-        title: 'Reddit — weekly "ChatGPT" mentions & community size',
-        src: 'reddit.com',
-        srcUrl: 'https://www.reddit.com/r/ChatGPT/',
-        freq: '6-hourly',
-        subtitle: 'Weekly search mentions plus r/ChatGPT and r/OpenAI subscribers.',
-        hist: { ...mh?.reddit, ...mh?.redditCommunities },
-        series: [
-          { metric: 'ChatGPT.weeklyMentions', label: 'Weekly mentions',       color: C.openai },
-          { metric: 'ChatGPT.subscribers',    label: 'r/ChatGPT subscribers', color: C.teal },
-          { metric: 'OpenAI.subscribers',     label: 'r/OpenAI subscribers',  color: C.slate },
-        ],
-        fmt: fmtK,
-      })}
-
-      {metricTrendCard({
         chartId: 'oa-jobs',
+        weeks: W,
         title: 'OpenAI — open roles (Greenhouse)',
         src: 'boards.greenhouse.io',
         srcUrl: 'https://boards.greenhouse.io/openai',
@@ -175,6 +160,7 @@ export default function DemandOpenAI({ weeks: W }) {
 
       {metricTrendCard({
         chartId: 'oa-github',
+        weeks: W,
         title: 'openai-python — GitHub stars & dependent repos',
         src: 'github.com',
         srcUrl: 'https://github.com/openai/openai-python',
@@ -189,6 +175,7 @@ export default function DemandOpenAI({ weeks: W }) {
 
       {metricTrendCard({
         chartId: 'oa-so',
+        weeks: W,
         title: 'Stack Overflow — [openai-api] tag activity',
         src: 'stackexchange.com',
         srcUrl: 'https://stackoverflow.com/questions/tagged/openai-api',

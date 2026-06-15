@@ -4,6 +4,7 @@ import { C, fa } from '../../config/colors';
 import { trend } from '../../utils/dataGenerators';
 import { wkLabels } from '../../utils/labels';
 import { baseOpts, hBarOpts, mkDs, fmtM, fmtK } from '../../utils/chartHelpers';
+import { metricTrendCard } from '../../components/MetricTrendCard';
 import ChartCard from '../../components/ChartCard';
 import EditableGrid from '../../components/EditableGrid';
 import { useData } from '../../context/DataContext';
@@ -33,6 +34,7 @@ const GPU_ACCENT = [C.anthropic, C.google, C.openai, C.mistral, C.teal, C.perple
 
 export default function DemandGeneral({ weeks: W }) {
   const { liveData: ld } = useData();
+  const mh = ld?.metricsHistory;
 
   // GPU spot prices
   const gpuData = useMemo(() => {
@@ -59,34 +61,11 @@ export default function DemandGeneral({ weeks: W }) {
     };
   }, [ld]);
 
-  // MCP ecosystem growth
+  // MCP ecosystem & SEC AI-mention charts are rendered below as time series
+  // from the accumulated daily-snapshot history (see metricTrendCard), which
+  // is backfilled two years by server/scripts/backfillMcp.js & backfillSec.js
+  // and extended daily by the scheduler — so both honour the time toggle.
   const mcp = ld?.mcp;
-  const mcpData = useMemo(() => {
-    if (!mcp?.queries) return null;
-    const labels = Object.keys(mcp.queries);
-    return {
-      labels,
-      datasets: [
-        { label: 'New repos (7d)',  data: labels.map(l => mcp.queries[l].new7d),  backgroundColor: fa(C.anthropic, 0.75), borderColor: C.anthropic, borderWidth: 1, borderRadius: 4 },
-        { label: 'New repos (30d)', data: labels.map(l => mcp.queries[l].new30d), backgroundColor: fa(C.teal, 0.75),      borderColor: C.teal,      borderWidth: 1, borderRadius: 4 },
-      ],
-    };
-  }, [mcp]);
-
-  // SEC filing AI mentions
-  const sec = ld?.sec;
-  const secData = useMemo(() => {
-    if (!sec?.terms) return null;
-    const entries = Object.entries(sec.terms).filter(([, v]) => v);
-    if (entries.length === 0) return null;
-    return {
-      labels: entries.map(([term]) => term),
-      datasets: [
-        { label: 'Prior 90 days', data: entries.map(([, v]) => v.prior90d), backgroundColor: fa(C.slate, 0.6),   borderColor: C.slate,   borderWidth: 1, borderRadius: 4 },
-        { label: 'Last 90 days',  data: entries.map(([, v]) => v.last90d),  backgroundColor: fa(C.openai, 0.75), borderColor: C.openai,  borderWidth: 1, borderRadius: 4 },
-      ],
-    };
-  }, [sec]);
 
   // GitHub OSS commit velocity
   const COMMIT_COLORS = [C.openai, C.anthropic, C.google, C.mistral, C.teal, C.perplexity, '#f59e0b', '#8b5cf6'];
@@ -160,35 +139,40 @@ export default function DemandGeneral({ weeks: W }) {
         </ChartCard>
       )}
 
-      {mcpData && (
-        <ChartCard
-          chartId="gen-mcp"
-          title="MCP ecosystem — new GitHub repos created"
-          src="api.github.com/search"
-          srcUrl="https://github.com/search?q=%22mcp+server%22&type=repositories"
-          freq="daily"
-          subtitle={`Agent-economy growth. "mcp server": ${mcp.queries['mcp server']?.total?.toLocaleString() ?? '—'} repos total · official servers repo: ${mcp.serversRepo?.stars?.toLocaleString() ?? '—'} stars.`}
-          legend={[['New repos (7d)', C.anthropic], ['New repos (30d)', C.teal]]}
-          height={220}
-        >
-          <Bar data={mcpData} options={baseOpts(fmtK)} />
-        </ChartCard>
-      )}
+      {metricTrendCard({
+        chartId: 'gen-mcp',
+        weeks: W,
+        title: 'MCP ecosystem — cumulative GitHub repos',
+        src: 'api.github.com/search',
+        srcUrl: 'https://github.com/search?q=%22mcp+server%22&type=repositories',
+        freq: 'daily',
+        subtitle: `Agent-economy growth. Cumulative repos matching each MCP phrase${mcp?.serversRepo?.stars ? ` · official servers repo: ${mcp.serversRepo.stars.toLocaleString()} stars` : ''}.`,
+        hist: mh?.mcp,
+        series: [
+          { metric: 'mcp server.total',             label: '"mcp server" repos',             color: C.anthropic },
+          { metric: 'model context protocol.total', label: '"model context protocol" repos', color: C.teal },
+        ],
+        fmt: fmtK,
+      })}
 
-      {secData && (
-        <ChartCard
-          chartId="gen-sec"
-          title="SEC filings mentioning AI terms — 10-K/10-Q, 90-day windows"
-          src="efts.sec.gov full-text search"
-          srcUrl="https://efts.sec.gov/LATEST/search-index?q=%22AI+agent%22&forms=10-K"
-          freq="daily"
-          subtitle="Enterprise adoption signal: how many annual/quarterly reports mention each term."
-          legend={[['Prior 90 days', C.slate], ['Last 90 days', C.openai]]}
-          height={220} span2
-        >
-          <Bar data={secData} options={baseOpts(fmtK)} />
-        </ChartCard>
-      )}
+      {metricTrendCard({
+        chartId: 'gen-sec',
+        weeks: W,
+        title: 'SEC filings mentioning AI terms — 10-K/10-Q, trailing 90 days',
+        src: 'efts.sec.gov full-text search',
+        srcUrl: 'https://efts.sec.gov/LATEST/search-index?q=%22AI+agent%22&forms=10-K',
+        freq: 'daily',
+        subtitle: 'Enterprise adoption signal: 10-K/10-Q filings mentioning each term in the trailing 90 days.',
+        hist: mh?.sec,
+        series: [
+          { metric: 'artificial intelligence.filings90d', label: 'artificial intelligence', color: C.openai },
+          { metric: 'generative AI.filings90d',           label: 'generative AI',           color: C.google },
+          { metric: 'large language model.filings90d',    label: 'large language model',    color: C.teal },
+          { metric: 'AI agent.filings90d',                label: 'AI agent',                color: C.anthropic },
+        ],
+        fmt: fmtK,
+        span2: true,
+      })}
 
       <ChartCard
         chartId="gen-commits"

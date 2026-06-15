@@ -10,15 +10,15 @@ import { useData } from '../../context/DataContext';
 
 const SO_STATIC = {
   'openai-api':        89400,
-  'anthropic-claude':  14200,
-  'google-gemini-api': 21800,
+  'claude':  14200,
+  'google-gemini': 21800,
   'langchain':         43100,
   'mistral-ai':         6200,
 };
 const SO_TAGS = [
   { tag: 'openai-api',        color: C.openai    },
-  { tag: 'anthropic-claude',  color: C.anthropic },
-  { tag: 'google-gemini-api', color: C.google    },
+  { tag: 'claude',  color: C.anthropic },
+  { tag: 'google-gemini', color: C.google    },
   { tag: 'langchain',         color: C.red       },
   { tag: 'mistral-ai',        color: C.mistral   },
 ];
@@ -48,7 +48,7 @@ export default function PyPI({ weeks: W }) {
 
     const oa = pypiSlice(liveData, 'openai',              W, 38e6,  42e6,   0.05);
     const an = pypiSlice(liveData, 'anthropic',           W, 9e6,   16.2e6, 0.06);
-    const gg = pypiSlice(liveData, 'google-generativeai', W, 14e6,  18e6,   0.05);
+    const gg = pypiSlice(liveData, 'google-genai', W, 14e6,  18e6,   0.05);
     const mi = pypiSlice(liveData, 'mistralai',           W, 3.2e6, 5.1e6,  0.07);
 
     const sAn = an.map((a, i) => parseFloat((a / (a + oa[i]) * 100).toFixed(1)));
@@ -59,7 +59,7 @@ export default function PyPI({ weeks: W }) {
         datasets: [
           mkDs('openai',              C.openai,    oa),
           mkDs('anthropic',           C.anthropic, an, true),
-          mkDs('google-generativeai', C.google,    gg),
+          mkDs('google-genai', C.google,    gg),
           mkDs('mistralai',           C.mistral,   mi),
         ],
       },
@@ -75,7 +75,7 @@ export default function PyPI({ weeks: W }) {
         datasets: [
           mkDs('openai',            C.openai,    npmSlice(liveData, 'openai',              W, 9.2e6, 9.8e6)),
           mkDs('@anthropic-ai/sdk', C.anthropic, npmSlice(liveData, '@anthropic-ai/sdk',   W, 1.8e6, 3.4e6, 0.07)),
-          mkDs('@google/gen-ai',    C.google,    npmSlice(liveData, '@google/generative-ai',W, 3.1e6, 4.2e6, 0.06)),
+          mkDs('@google/genai',    C.google,    npmSlice(liveData, '@google/genai',W, 3.1e6, 4.2e6, 0.06)),
         ],
       },
     };
@@ -112,7 +112,7 @@ export default function PyPI({ weeks: W }) {
         srcUrl="https://pypistats.org/packages/anthropic"
         freq="weekly"
         subtitle="Weekly downloads for each AI provider's Python SDK. Zero cost, fully automatable."
-        legend={[['openai', C.openai], ['anthropic', C.anthropic], ['google-generativeai', C.google], ['mistralai', C.mistral]]}
+        legend={[['openai', C.openai], ['anthropic', C.anthropic], ['google-genai', C.google], ['mistralai', C.mistral]]}
         insight="The <b>anthropic</b> package grew <b>+80% in 12 weeks</b>, the fastest of any major provider SDK. OpenAI leads in volume but growth is flat at ~+5% QoQ."
         height={250} span2
       >
@@ -139,7 +139,7 @@ export default function PyPI({ weeks: W }) {
         srcUrl="https://www.npmjs.com/package/openai"
         freq="weekly"
         subtitle="Node.js ecosystem. OpenAI's npm package still leads but Anthropic is closing."
-        legend={[['openai (npm)', C.openai], ['@anthropic-ai/sdk', C.anthropic], ['@google/generative-ai', C.google]]}
+        legend={[['openai (npm)', C.openai], ['@anthropic-ai/sdk', C.anthropic], ['@google/genai', C.google]]}
         height={200}
       >
         <Line data={npmData} options={baseOpts(fmtM)} />
@@ -149,7 +149,7 @@ export default function PyPI({ weeks: W }) {
         chartId="pypi-so"
         title="Stack Overflow questions (all time) by tag"
         src="stackexchange API"
-        srcUrl="https://api.stackexchange.com/2.3/questions?tagged=anthropic-claude&site=stackoverflow"
+        srcUrl="https://api.stackexchange.com/2.3/questions?tagged=claude&site=stackoverflow"
         freq="weekly"
         subtitle="Cumulative question count per tag — measures ecosystem depth and developer mindshare."
         height={220} span2

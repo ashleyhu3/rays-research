@@ -142,22 +142,8 @@ export default function DemandAnthropic({ weeks: W }) {
       </ChartCard>
 
       {metricTrendCard({
-        chartId: 'an-reddit',
-        title: 'Reddit — weekly "Claude" mentions & r/ClaudeAI size',
-        src: 'reddit.com',
-        srcUrl: 'https://www.reddit.com/r/ClaudeAI/',
-        freq: '6-hourly',
-        subtitle: 'Weekly search mentions and subreddit subscribers.',
-        hist: { ...mh?.reddit, ...mh?.redditCommunities },
-        series: [
-          { metric: 'Claude.weeklyMentions',  label: 'Weekly mentions',        color: C.anthropic },
-          { metric: 'ClaudeAI.subscribers',   label: 'r/ClaudeAI subscribers', color: C.teal },
-        ],
-        fmt: fmtK,
-      })}
-
-      {metricTrendCard({
         chartId: 'an-jobs',
+        weeks: W,
         title: 'Anthropic — open roles (Greenhouse)',
         src: 'boards.greenhouse.io',
         srcUrl: 'https://boards.greenhouse.io/anthropic',
@@ -172,6 +158,7 @@ export default function DemandAnthropic({ weeks: W }) {
 
       {metricTrendCard({
         chartId: 'an-github',
+        weeks: W,
         title: 'anthropic-sdk-python — GitHub stars & dependent repos',
         src: 'github.com',
         srcUrl: 'https://github.com/anthropics/anthropic-sdk-python',
@@ -186,14 +173,15 @@ export default function DemandAnthropic({ weeks: W }) {
 
       {metricTrendCard({
         chartId: 'an-so',
-        title: 'Stack Overflow — [anthropic-claude] tag activity',
+        weeks: W,
+        title: 'Stack Overflow — [claude] tag activity',
         src: 'stackexchange.com',
-        srcUrl: 'https://stackoverflow.com/questions/tagged/anthropic-claude',
+        srcUrl: 'https://stackoverflow.com/questions/tagged/claude',
         subtitle: 'Developer troubleshooting volume around the Claude API.',
         hist: mh?.stackoverflow,
         series: [
-          { metric: 'anthropic-claude.questions',   label: 'Questions all-time', color: C.anthropic },
-          { metric: 'anthropic-claude.newThisWeek', label: 'New this week',      color: C.teal },
+          { metric: 'claude.questions',   label: 'Questions all-time', color: C.anthropic },
+          { metric: 'claude.newThisWeek', label: 'New this week',      color: C.teal },
         ],
         fmt: v => String(Math.round(v)),
       })}

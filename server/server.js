@@ -50,7 +50,6 @@ const s = scheduler.scrapers;
 
 app.get('/api/pypi',       cachedRoute('pypi',       s.pypi));
 app.get('/api/trends',     cachedRoute('trends',     s.trends));
-app.get('/api/reddit',     cachedRoute('reddit',     s.reddit));
 app.get('/api/jobs',       cachedRoute('jobs',       s.jobs));
 app.get('/api/gpu',        cachedRoute('gpu',        s.gpu));
 app.get('/api/github',     cachedRoute('github',     s.github));
@@ -68,7 +67,6 @@ app.get('/api/stackoverflow',     cachedRoute('stackoverflow',    s.stackoverflo
 app.get('/api/huggingface',       cachedRoute('huggingface',      s.huggingface));
 app.get('/api/mcp',               cachedRoute('mcp',              s.mcp));
 app.get('/api/sec',               cachedRoute('sec',              s.sec));
-app.get('/api/reddit-communities', cachedRoute('redditCommunities', s.redditCommunities));
 
 // Accumulated daily snapshots of point-in-time metrics (for trend charts)
 app.get('/api/metrics-history', (_req, res) => res.json(history.all()));

@@ -75,7 +75,7 @@ export function PyPIMini() {
       datasets: [
         mkDs('openai',              C.openai,    sl('openai',              42e6)),
         mkDs('anthropic',           C.anthropic, sl('anthropic',           16e6)),
-        mkDs('google-generativeai', C.google,    sl('google-generativeai', 18e6)),
+        mkDs('google-genai', C.google,    sl('google-genai', 18e6)),
         mkDs('mistralai',           C.mistral,   sl('mistralai',            5e6)),
       ],
     };
@@ -224,42 +224,6 @@ export function JobsMini() {
   return (
     <MiniCard title="Open Job Postings (trend accrues daily)">
       <Bar data={barData} options={hBarOpts(v => String(v))} />
-    </MiniCard>
-  );
-}
-
-// ── Reddit Mentions ────────────────────────────────────────────────────────
-const REDDIT_NAMES  = ['ChatGPT', 'Claude', 'Gemini', 'Mistral'];
-const REDDIT_COLORS = [C.openai, C.anthropic, C.google, C.mistral];
-
-export function RedditMini() {
-  const { liveData } = useData();
-
-  const ts = useMemo(() => mhSeries(liveData?.metricsHistory, 'reddit',
-    REDDIT_NAMES.map((n, i) => ({ metric: `${n}.weeklyMentions`, label: n, color: REDDIT_COLORS[i] }))
-  ), [liveData]);
-
-  const barData = useMemo(() => ({
-    labels: REDDIT_NAMES,
-    datasets: [{
-      label:           'Posts This Week',
-      data:            REDDIT_NAMES.map(n => liveData?.reddit?.[n] ?? 0),
-      backgroundColor: REDDIT_COLORS.map(c => c + 'bf'),
-      borderColor:     REDDIT_COLORS,
-      borderWidth: 1, borderRadius: 4,
-    }],
-  }), [liveData]);
-
-  if (ts) {
-    return (
-      <MiniCard title="Reddit Weekly Mentions Over Time">
-        <Line data={ts} options={baseOpts(fmtK)} />
-      </MiniCard>
-    );
-  }
-  return (
-    <MiniCard title="Reddit Weekly Mentions (trend accrues daily)">
-      <Bar data={barData} options={hBarOpts(fmtK)} />
     </MiniCard>
   );
 }
@@ -770,7 +734,6 @@ export const CHART_REGISTRY = {
   pypi:                  [PyPIMini],
   github:                [GitHubMini],
   trends:                [TrendsMini, JobsMini],
-  reddit:                [RedditMini],
   gpu:                   [GPUMini],
   dram:                  [DramMini],
   openrouter:            [OpenRouterPricingMini],

@@ -42,7 +42,7 @@ export default function Overview({ weeks: W }) {
     },
     {
       val:   soW != null ? String(soW) : '—',
-      label: 'SO questions (anthropic-claude) / wk',
+      label: 'SO questions (claude) / wk',
       delta: soW != null ? 'live · stackexchange API' : 'loading…',
       cls: 'up', color: C.anthropic,
     },
@@ -53,7 +53,7 @@ export default function Overview({ weeks: W }) {
     datasets: [
       mkDs('openai',              C.openai,    pypiSlice(liveData, 'openai',              W, 38e6,  42e6,   0.05)),
       mkDs('anthropic',           C.anthropic, pypiSlice(liveData, 'anthropic',           W, 9e6,   16.2e6, 0.06), true),
-      mkDs('google-generativeai', C.google,    pypiSlice(liveData, 'google-generativeai', W, 14e6,  18e6,   0.05)),
+      mkDs('google-genai', C.google,    pypiSlice(liveData, 'google-genai', W, 14e6,  18e6,   0.05)),
       mkDs('mistralai',           C.mistral,   pypiSlice(liveData, 'mistralai',           W, 3.2e6, 5.1e6,  0.07)),
     ],
   }), [W, liveData]);
@@ -75,7 +75,7 @@ export default function Overview({ weeks: W }) {
           srcUrl="https://pypistats.org/packages/anthropic"
           freq="weekly"
           subtitle="Weekly installs for each AI provider Python SDK. The most direct, automatable developer-adoption signal at zero cost."
-          legend={[['openai', C.openai], ['anthropic', C.anthropic], ['google-generativeai', C.google], ['mistralai', C.mistral]]}
+          legend={[['openai', C.openai], ['anthropic', C.anthropic], ['google-genai', C.google], ['mistralai', C.mistral]]}
           height={300} span2
         >
           <Line data={pypiData} options={baseOpts(fmtM)} />

@@ -127,7 +127,7 @@ function buildPypi() {
   return {
     id:       'pypi',
     title:    'PyPI Weekly Downloads',
-    about:    'Weekly download counts for AI SDK packages (openai, anthropic, google-generativeai, mistralai)',
+    about:    'Weekly download counts for AI SDK packages (openai, anthropic, google-genai, mistralai)',
     source:   'pypistats.org',
     entities: Object.keys(pypi),
     text:     `### PyPI Weekly Downloads\n${lines.join('\n')}`,
@@ -172,7 +172,7 @@ function buildStackOverflow() {
   return {
     id:       'stackoverflow',
     title:    'Stack Overflow Tag Activity',
-    about:    'All-time and weekly question counts for AI developer tags (openai-api, anthropic-claude, google-gemini-api, langchain, mistral-ai)',
+    about:    'All-time and weekly question counts for AI developer tags (openai-api, claude, google-gemini, langchain, mistral-ai)',
     source:   'Stack Exchange API',
     entities: [...tags],
     text:     `### Stack Overflow Tag Activity\n${lines.join('\n')}`,
@@ -212,24 +212,6 @@ function buildJobs() {
     entities: entries.map(([co]) => co),
     text:     `### Open Job Postings (Greenhouse)\n${lines.join('\n')}`,
     detail:   snapshotDetail('jobs', 'open role counts'),
-  };
-}
-
-function buildReddit() {
-  const reddit = cache.get('reddit');
-  if (!reddit) return null;
-  const entries = Object.entries(reddit).filter(([, v]) => v != null);
-  const lines = entries
-    .sort(([, a], [, b]) => b - a)
-    .map(([name, count]) => `  ${name}: ${fmt(count)} posts this week`);
-  return {
-    id:       'reddit',
-    title:    'Reddit Weekly Mentions',
-    about:    'Weekly Reddit post counts mentioning ChatGPT, Claude, Gemini, Mistral',
-    source:   'Reddit search',
-    entities: entries.map(([name]) => name),
-    text:     `### Reddit Weekly Mentions\n${lines.join('\n')}`,
-    detail:   snapshotDetail('reddit', 'weekly mention counts'),
   };
 }
 
@@ -648,27 +630,6 @@ function buildSec() {
   };
 }
 
-function buildRedditCommunities() {
-  const redditComm = cache.get('redditCommunities');
-  if (!redditComm?.subs) return null;
-  const entries = Object.entries(redditComm.subs).filter(([, v]) => v);
-  const lines = entries
-    .sort(([, a], [, b]) => (b.subscribers ?? 0) - (a.subscribers ?? 0))
-    .map(([name, v]) =>
-      `  r/${name}: ${fmt(v.subscribers)} subscribers${v.activeUsers != null ? ` | ${fmt(v.activeUsers)} active now` : ''}`
-    );
-  if (!lines.length) return null;
-  return {
-    id:       'redditCommunities',
-    title:    'Reddit Community Size',
-    about:    'Subscriber counts and active users for AI subreddits (r/ChatGPT, r/ClaudeAI, r/LocalLLaMA, r/singularity, r/OpenAI)',
-    source:   'Reddit API',
-    entities: entries.map(([name]) => `r/${name}`),
-    text:     `### Reddit Community Size (as of ${redditComm.asOf})\n${lines.join('\n')}`,
-    detail:   snapshotDetail('redditCommunities', 'subscriber counts'),
-  };
-}
-
 // Options chains are cached per ticker (`options:<TICKER>:<date>`) only when
 // someone opens the Options Flow tab, so this section appears dynamically.
 function buildOptions() {
@@ -724,7 +685,6 @@ const REGISTRY = [
   { key: 'stackoverflow',     build: buildStackOverflow },
   { key: 'github',            build: buildGitHub },
   { key: 'jobs',              build: buildJobs },
-  { key: 'reddit',            build: buildReddit },
   { key: 'trends',            build: buildTrends },
   { key: 'gpu',               build: buildGpu },
   { key: 'dram',              build: buildDram },
@@ -739,7 +699,6 @@ const REGISTRY = [
   { key: 'huggingface',       build: buildHuggingface },
   { key: 'mcp',               build: buildMcp },
   { key: 'sec',               build: buildSec },
-  { key: 'redditCommunities', build: buildRedditCommunities },
   { key: 'options',           build: buildOptions },
 ];
 
@@ -793,7 +752,7 @@ Grading rules:
 - Never approve a section just because it mentions AI; it must serve THIS question.
 - Match against the "covers" list: it names the exact packages/companies/tickers in each section.
 - Treat companies and their products as the same entity: OpenAI ↔ ChatGPT/GPT/openai SDK,
-  Anthropic ↔ Claude/anthropic SDK, Google ↔ Gemini/google-generativeai, Mistral ↔ mistralai.
+  Anthropic ↔ Claude/anthropic SDK, Google ↔ Gemini/google-genai, Mistral ↔ mistralai.
   A question about a company is served by data about its products, and vice versa.
 
 History rules:
@@ -945,9 +904,6 @@ For broad queries ("all signals for X", "everything about Y", "compare A vs B"):
   **Job Postings**
   OpenAI: 486 total roles | 312 engineering
 
-  **Reddit Mentions**
-  ChatGPT: 45,200 posts this week
-
 For simple single-fact questions ("Which GPU is cheapest?", "What is the price of X?"):
   Answer in one or two direct sentences with the exact figure. No section headers needed.
 
@@ -966,7 +922,7 @@ For simple single-fact questions ("Which GPU is cheapest?", "What is the price o
 End your response with a JSON block on its own line listing the ids of the sections
 whose numbers you ACTUALLY cited in your answer — no more, no less. If you cited
 nothing (e.g. the data could not answer the question), use an empty list.
-{"sections_used": ["pypi", "reddit"]}`;
+{"sections_used": ["pypi", "github"]}`;
 
 async function runWordsmith(userQuery, intent, context) {
   return callModel({
@@ -991,7 +947,6 @@ const SECTION_TO_CHART = {
   github:        'github',
   jobs:          'trends',
   trends:        'trends',
-  reddit:        'reddit',
   gpu:           'gpu',
   dram:          'dram',
   openrouter:    'openrouter',
@@ -1003,7 +958,6 @@ const SECTION_TO_CHART = {
   wikipedia:     'community',
   mcp:               'mcp',
   sec:               'sec',
-  redditCommunities: 'reddit',
   options:           'options',
 };
 

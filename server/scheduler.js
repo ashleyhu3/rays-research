@@ -5,7 +5,6 @@ const history = require('./history');
 const scrapers = {
   pypi:          () => require('./scrapers/pypi').getPypiHistory(),
   trends:        () => require('./scrapers/trends').getTrendsData(),
-  reddit:        () => require('./scrapers/reddit').getRedditData(),
   jobs:          () => require('./scrapers/jobs').getJobsData(),
   gpu:           () => require('./scrapers/gpu').getGpuPrices(),
   github:        () => require('./scrapers/github').getGitHubData(),
@@ -23,7 +22,6 @@ const scrapers = {
   huggingface:      () => require('./scrapers/huggingface').getHuggingFaceData(),
   mcp:              () => require('./scrapers/mcp').getMcpData(),
   sec:              () => require('./scrapers/sec').getSecData(),
-  redditCommunities: () => require('./scrapers/redditCommunities').getRedditCommunities(),
 };
 
 // TTLs match each source's natural update frequency.
@@ -33,7 +31,6 @@ const scrapers = {
 const TTL = {
   pypi:          24 * 3600000,  // daily   — pypistats.org aggregates weekly; intraday changes irrelevant
   trends:        24 * 3600000,  // daily   — Google Trends resolution is one data point per day
-  reddit:         6 * 3600000,  // 6-hourly — social mention counts fluctuate throughout the day
   jobs:           6 * 3600000,  // 6-hourly — job listings open and close continuously
   gpu:           24 * 3600000,  // daily   — persisted as one median snapshot per UTC day
   github:        24 * 3600000,  // daily   — dependent repo counts grow slowly
@@ -51,7 +48,6 @@ const TTL = {
   huggingface:   24 * 3600000,  // daily   — all-time download totals grow slowly
   mcp:           24 * 3600000,  // daily   — repo-creation counts; respects GitHub search quota
   sec:           24 * 3600000,  // daily   — EDGAR full-text index updates daily
-  redditCommunities: 6 * 3600000, // 6-hourly — subscriber counts move through the day
 };
 
 // Hard cap per scraper so one hung source can never wedge a refresh
@@ -82,7 +78,7 @@ function setup() {
   cron.schedule('0 * * * *', () => refreshAll(['openrouter', 'hn']));
 
   // Every 6 hours: social signals and business data updated throughout the day
-  cron.schedule('0 */6 * * *', () => refreshAll(['reddit', 'jobs', 'docker', 'openrouterRanks', 'dram', 'redditCommunities']));
+  cron.schedule('0 */6 * * *', () => refreshAll(['jobs', 'docker', 'openrouterRanks', 'dram']));
 
   // Daily at 03:00 UTC: aggregate stats whose sources only publish once per day
   cron.schedule('0 3 * * *', () => refreshAll(['gpu', 'pypi', 'trends', 'github', 'eia', 'mops', 'githubCommits', 'wikipedia', 'npm', 'stackoverflow', 'huggingface', 'mcp', 'sec']));

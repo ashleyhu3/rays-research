@@ -115,6 +115,7 @@ export default function DemandMiniMax({ weeks: W }) {
 
       {metricTrendCard({
         chartId: 'mm-hf',
+        weeks: W,
         title: 'MiniMax — HuggingFace family downloads',
         src: 'huggingface.co/api',
         srcUrl: 'https://huggingface.co/MiniMaxAI',

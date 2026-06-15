@@ -6,7 +6,13 @@
   "scripts": {
     "dev": "node --env-file=.env server/server.js",
     "build": "vite build",
-    "start": "NODE_ENV=production node server/server.js"
+    "start": "NODE_ENV=production node server/server.js",
+    "backfill:sec": "node --env-file=.env server/scripts/backfillSec.js",
+    "backfill:mcp": "node --env-file=.env server/scripts/backfillMcp.js",
+    "backfill:github-stars": "node --env-file=.env server/scripts/backfillGithubStars.js",
+    "backfill:gpu-history": "node --env-file=.env server/scripts/backfillGpuHistory.js",
+    "backfill:dram": "node --env-file=.env server/scripts/backfillDram.js",
+    "backfill:all": "npm run backfill:sec && npm run backfill:mcp && npm run backfill:github-stars"
   },
   "dependencies": {
     "axios": "^1.17.0",

@@ -5,7 +5,6 @@ const SOURCE_META = {
   pypi:             { label: 'PyPI Downloads',     view: 'pypi'           },
   github:           { label: 'GitHub SDKs',        view: 'github'         },
   trends:           { label: 'Trends & Jobs',      view: 'trends'         },
-  reddit:           { label: 'Reddit' }, // standalone Reddit page removed — label only
   gpu:              { label: 'GPU & OpenRouter',   view: 'pricing'        },
   electricity:      { label: 'Electricity',        view: 'electricity'    },
   'ai-supply':      { label: 'Supply Chain',       view: 'ai-supply'      },

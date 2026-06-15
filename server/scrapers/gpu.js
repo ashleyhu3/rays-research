@@ -2,24 +2,56 @@ const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 
-// No public archive of GPU spot prices exists, so accumulate our own daily
-// history of the scraped medians: { 'YYYY-MM-DD': { gpuName: $/hr } }
+// Live GPU rental pricing from the vast.ai marketplace API (no auth needed for
+// read-only market data). vast.ai is a community/spot marketplace, so it exposes
+// two rates per offer:
+//   • dph_total — the on-demand $/hr you pay to hold the instance
+//   • min_bid   — the interruptible "spot" bid floor (auction; can be preempted)
+// We record the median of each across verified single-GPU offers per day and
+// accumulate our own history. No public archive of vast.ai spot prices exists,
+// so the time series starts the day this scraper first runs and grows daily —
+// we no longer ship fabricated/interpolated pre-history.
 const HISTORY_FILE = path.join(__dirname, '..', 'data', 'gpuHistory.json');
 
-// Marketplace/spot-tier anchors read from published trackers (Silicon Data
-// H100 series, AIMultiple GPU index, vast.ai medians) — see _sources inside.
-// Scraped same-day snapshots take precedence over backfill anchors.
-const BACKFILL_FILE = path.join(__dirname, '..', 'data', 'gpuBackfill.json');
+// GPU names as vast.ai reports them (spaces). We normalize to underscores for
+// stable object keys. Keep the list to mainstream AI accelerators with real
+// marketplace supply; vast.ai returns nothing for absent models, which we skip.
+const VAST_GPUS = ['H100 SXM', 'H100 PCIE', 'H100 NVL', 'H200', 'B200', 'A100 SXM4', 'A100 PCIE', 'RTX 5090', 'RTX 4090'];
 
-function loadDateMap(file) {
-  try {
-    const raw = JSON.parse(fs.readFileSync(file, 'utf8'));
-    return Object.fromEntries(Object.entries(raw).filter(([k]) => /^\d{4}-\d{2}-\d{2}$/.test(k)));
-  } catch { return {}; }
+const KEY_ALIASES = {
+  H100_SXM_New: 'H100_SXM',
+  A100_SXM4: 'A100_SXM',
+  A100_PCIE: 'A100_PCIe',
+  H100_PCIE: 'H100_PCIe',
+};
+
+// Minimum verified offers before we trust a median (spot/bid is thinner and
+// noisier than on-demand, so it needs more samples to be meaningful).
+const MIN_SAMPLES_OD   = 2;
+const MIN_SAMPLES_SPOT = 4;
+
+const DAY_MS = 86400000;
+
+function normalizeKey(key) {
+  return KEY_ALIASES[key] ?? key;
 }
 
 function loadHistory() {
-  return loadDateMap(HISTORY_FILE);
+  try {
+    const raw = JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf8'));
+    const out = {};
+    for (const [date, day] of Object.entries(raw)) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
+      // Migrate legacy flat shape { gpu: number } → { gpu: { od: number } }
+      out[date] = Object.fromEntries(
+        Object.entries(day).map(([g, v]) => [
+          normalizeKey(g),
+          typeof v === 'number' ? { od: v } : v,
+        ])
+      );
+    }
+    return out;
+  } catch { return {}; }
 }
 
 function saveHistory(history) {
@@ -29,45 +61,6 @@ function saveHistory(history) {
   } catch (e) {
     console.warn('[gpu] could not persist history:', e.message);
   }
-}
-
-// vast.ai public bundle API (no auth required for read-only spot prices).
-// gpu_name values use spaces on vast.ai (e.g. "H100 SXM"); we normalize keys
-// to underscores for stable use as object keys downstream.
-const VAST_GPUS = ['H100 SXM', 'H100 PCIE', 'H200', 'B200', 'A100 SXM4', 'RTX 4090'];
-
-const KEY_ALIASES = {
-  H100_SXM_New: 'H100_SXM',
-  A100_SXM4: 'A100_SXM',
-  RTX_6000: 'Quadro_RTX_6000',
-};
-
-const INDEX_GPUS = [
-  'H100_SXM',
-  'H100_PCIe',
-  'H200',
-  'B200',
-  'A100_SXM',
-  'A100_PCIe',
-  'RTX_4090',
-];
-
-const DAY_MS = 86400000;
-
-function normalizeKey(key) {
-  return KEY_ALIASES[key] ?? key;
-}
-
-function normalizePrices(prices) {
-  const out = {};
-  for (const [key, value] of Object.entries(prices || {})) {
-    const normalized = normalizeKey(key);
-    if (!Number.isFinite(value)) continue;
-    // Keep the lower available price when two historical labels describe the
-    // same mainstream GPU variant on a single snapshot.
-    out[normalized] = out[normalized] == null ? value : Math.min(out[normalized], value);
-  }
-  return out;
 }
 
 function isoDay(ts) {
@@ -83,6 +76,16 @@ function dailyDates(startDate, endDate) {
   return dates;
 }
 
+// Trimmed median: drop the cheapest/priciest 10% before taking the middle, so
+// a single mis-priced listing can't swing the marketplace rate.
+function trimmedMedian(values) {
+  const a = values.filter(Number.isFinite).sort((x, y) => x - y);
+  if (a.length === 0) return null;
+  const cut = Math.floor(a.length * 0.1);
+  const core = a.length >= 5 ? a.slice(cut, a.length - cut) : a;
+  return core[Math.floor(core.length / 2)];
+}
+
 async function getVastPrices() {
   const q = JSON.stringify({
     verified:  { eq: true },
@@ -94,128 +97,124 @@ async function getVastPrices() {
   });
   const { data } = await axios.get(
     `https://console.vast.ai/api/v0/bundles/?q=${encodeURIComponent(q)}`,
-    { timeout: 15000 }
+    { timeout: 20000 }
   );
 
   const byGpu = {};
   (data.offers || []).forEach(o => {
     const g = normalizeKey(o.gpu_name.replace(/ /g, '_'));
-    if (!byGpu[g]) byGpu[g] = [];
-    byGpu[g].push(o.dph_total);
+    if (!byGpu[g]) byGpu[g] = { od: [], spot: [] };
+    if (Number.isFinite(o.dph_total)) byGpu[g].od.push(o.dph_total);
+    // A bid floor at/above the on-demand rate is irrational noise — drop it.
+    if (Number.isFinite(o.min_bid) && o.min_bid < o.dph_total) byGpu[g].spot.push(o.min_bid);
   });
 
-  const prices = {};
-  const availability = {};
-  Object.entries(byGpu).forEach(([gpu, samples]) => {
-    samples.sort((a, b) => a - b);
-    availability[gpu] = samples.length;
-    prices[gpu] = parseFloat(samples[Math.floor(samples.length / 2)].toFixed(2));
-  });
-  return { prices, availability };
+  const prices = {};        // on-demand median $/hr
+  const spot = {};          // interruptible (bid) median $/hr
+  const availability = {};  // count of verified single-GPU offers
+  for (const [gpu, s] of Object.entries(byGpu)) {
+    availability[gpu] = s.od.length;
+    if (s.od.length >= MIN_SAMPLES_OD) {
+      const m = trimmedMedian(s.od);
+      if (m != null) prices[gpu] = +m.toFixed(2);
+    }
+    if (s.spot.length >= MIN_SAMPLES_SPOT) {
+      const m = trimmedMedian(s.spot);
+      if (m != null) spot[gpu] = +m.toFixed(2);
+    }
+  }
+  return { prices, spot, availability };
 }
 
 function buildHistoryPayload(history) {
   const snapshotDates = Object.keys(history).sort();
   if (snapshotDates.length === 0) {
-    return { dates: [], snapshotDates: [], series: {}, index: [] };
+    return { dates: [], series: {}, spotSeries: {}, index: [] };
   }
 
-  const normalizedHistory = Object.fromEntries(
-    snapshotDates.map(d => [d, normalizePrices(history[d])])
-  );
   const dates = dailyDates(snapshotDates[0], isoDay(Date.now()));
-  const gpus = [...new Set(snapshotDates.flatMap(d => Object.keys(normalizedHistory[d])))];
-
-  // Linear interpolation between snapshot anchors (null before a GPU's first
-  // snapshot, forward-filled after its last) — sparse anchors would otherwise
-  // render as long flat steps that misread as "no price movement".
   const dateIdx = Object.fromEntries(dates.map((d, i) => [d, i]));
-  const series = {};
-  for (const g of gpus) {
-    const anchors = snapshotDates
-      .filter(d => Number.isFinite(normalizedHistory[d][g]) && dateIdx[d] != null)
-      .map(d => ({ i: dateIdx[d], v: normalizedHistory[d][g] }));
-    const vals = new Array(dates.length).fill(null);
-    for (let a = 0; a < anchors.length; a++) {
-      const cur = anchors[a], next = anchors[a + 1];
-      vals[cur.i] = cur.v;
-      if (next) {
-        const span = next.i - cur.i;
-        for (let i = cur.i + 1; i < next.i; i++) {
-          vals[i] = +(cur.v + (next.v - cur.v) * ((i - cur.i) / span)).toFixed(3);
+  const gpus = [...new Set(snapshotDates.flatMap(d => Object.keys(history[d])))];
+
+  // Linear interpolation between real snapshot anchors (forward-filled after the
+  // last) so an occasional missed scrape day doesn't render as a flat step. This
+  // only ever connects real data points — it never invents pre-history.
+  function fill(field) {
+    const series = {};
+    for (const g of gpus) {
+      const anchors = snapshotDates
+        .filter(d => Number.isFinite(history[d][g]?.[field]) && dateIdx[d] != null)
+        .map(d => ({ i: dateIdx[d], v: history[d][g][field] }));
+      const vals = new Array(dates.length).fill(null);
+      for (let a = 0; a < anchors.length; a++) {
+        const cur = anchors[a], next = anchors[a + 1];
+        vals[cur.i] = cur.v;
+        if (next) {
+          const span = next.i - cur.i;
+          for (let i = cur.i + 1; i < next.i; i++) {
+            vals[i] = +(cur.v + (next.v - cur.v) * ((i - cur.i) / span)).toFixed(3);
+          }
+        } else {
+          for (let i = cur.i + 1; i < dates.length; i++) vals[i] = cur.v;
         }
-      } else {
-        for (let i = cur.i + 1; i < dates.length; i++) vals[i] = cur.v;
       }
+      series[g] = vals;
     }
-    series[g] = vals;
+    return series;
   }
 
-  const filledHistory = {};
-  dates.forEach((d, i) => {
-    filledHistory[d] = Object.fromEntries(gpus.map(g => [g, series[g][i]]).filter(([, v]) => v != null));
+  const series = fill('od');
+  const spotSeries = fill('spot');
+
+  // Mainstream rental benchmark: simple average on-demand $/hr across the GPUs
+  // priced that day. A 7-day centered moving average smooths daily sampling noise.
+  const raw = dates.map((_, i) => {
+    const present = gpus.map(g => series[g][i]).filter(Number.isFinite);
+    return present.length ? present.reduce((a, b) => a + b, 0) / present.length : null;
   });
-
-  // Mainstream index across comparable tracked datacenter GPUs, chain-linked:
-  // each day's level moves by the price ratio of the GPUs present on both
-  // days, so a newly shipped GPU (H200, B200) joining the basket shifts the
-  // composition without jumping the level. A 31-day centered moving average
-  // then smooths the remaining anchor-date kinks into a continuous curve.
-  const rawIndex = [];
-  let level = null, prevSet = [];
-  const avgOf = (set, d) => set.reduce((s, g) => s + filledHistory[d][g], 0) / set.length;
-  for (let i = 0; i < dates.length; i++) {
-    const d = dates[i];
-    const present = INDEX_GPUS.filter(g => Number.isFinite(filledHistory[d]?.[g]));
-    if (present.length === 0) { rawIndex.push(null); continue; }
-    if (level == null) {
-      level = avgOf(present, d);
-    } else {
-      const common = present.filter(g => prevSet.includes(g));
-      // No overlap with yesterday's basket → no comparable ratio; carry the level.
-      if (common.length) level *= avgOf(common, d) / avgOf(common, dates[i - 1]);
-    }
-    prevSet = present;
-    rawIndex.push(level);
-  }
-  const index = rawIndex.map((v, i) => {
+  const index = raw.map((v, i) => {
     if (v == null) return null;
     let sum = 0, n = 0;
-    for (let j = Math.max(0, i - 15); j <= Math.min(rawIndex.length - 1, i + 15); j++) {
-      if (rawIndex[j] != null) { sum += rawIndex[j]; n++; }
+    for (let j = Math.max(0, i - 3); j <= Math.min(raw.length - 1, i + 3); j++) {
+      if (raw[j] != null) { sum += raw[j]; n++; }
     }
     return +(sum / n).toFixed(3);
   });
 
-  return { dates, snapshotDates, series, index };
+  return { dates, series, spotSeries, index };
 }
 
 async function getGpuPrices() {
-  // Lambda Labs' pricing page was retired (404s) — vast.ai is the sole source now
   const market = await getVastPrices().catch(e => {
     console.warn('[gpu] vast.ai fetch failed:', e.message);
-    return { prices: {}, availability: {} };
+    return { prices: {}, spot: {}, availability: {} };
   });
-  const prices = market.prices;
+  const { prices, spot, availability } = market;
   const history = loadHistory();
 
-  // Append today's snapshot (same-day re-scrapes overwrite with the latest medians)
+  // Append today's snapshot (same-day re-scrapes overwrite with latest medians)
   if (Object.keys(prices).length > 0) {
-    const today = new Date().toISOString().slice(0, 10);
-    history[today] = prices;
+    const today = isoDay(Date.now());
+    history[today] = Object.fromEntries(
+      Object.keys(prices).map(g => [g, {
+        od: prices[g],
+        ...(spot[g] != null ? { spot: spot[g] } : {}),
+        n: availability[g],
+      }])
+    );
     saveHistory(history);
   }
-  // Published-tracker anchors fill the years before this dashboard started
-  // scraping; live snapshots win whenever the dates collide.
-  const merged = { ...loadDateMap(BACKFILL_FILE), ...history };
-  const historyPayload = buildHistoryPayload(merged);
+
+  const historyPayload = buildHistoryPayload(history);
   if (Object.keys(prices).length === 0 && historyPayload.dates.length === 0) return null;
 
   return {
     prices,
-    availability: market.availability,
+    spot,
+    availability,
     history: historyPayload,
-    methodology: 'Recent points are vast.ai median market rates scraped daily. Pre-scrape history uses marketplace-tier anchors read from published trackers (Silicon Data H100 rental series, AIMultiple GPU index, vendor price pages), linearly interpolated between anchor dates — approximate market levels, not exact archival spot quotes. AWS official spot history only covers the last 90 days, so no public archive exists.',
+    asOf: new Date().toISOString().slice(0, 10),
+    methodology: 'Live vast.ai marketplace medians across verified single-GPU offers, recorded daily. On-demand = dph_total; spot = the interruptible min_bid floor (only shown where enough offers exist to be meaningful). Both use a 10% trimmed median to reject mis-priced listings. The time series accumulates from the day scraping began — there is no public archive of vast.ai spot history to backfill.',
   };
 }
 

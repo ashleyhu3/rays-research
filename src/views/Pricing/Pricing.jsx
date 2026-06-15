@@ -47,29 +47,33 @@ const dramLegend = models => models.map((m, i) => [m.model, DRAM_PALETTE[i % DRA
 const GPU_PALETTE = {
   H100_SXM: C.openai,
   H100_PCIe: C.deepseek,
+  H100_NVL: C.kimi,
   H200: C.anthropic,
   B200: C.google,
   A100_SXM: C.teal,
   A100_PCIe: C.perplexity,
+  RTX_5090: C.red,
   RTX_4090: C.minimax,
 };
 
 const GPU_LABELS = {
   H100_SXM: 'H100 SXM',
   H100_PCIe: 'H100 PCIe',
+  H100_NVL: 'H100 NVL',
   H200: 'H200',
   B200: 'B200',
   A100_SXM: 'A100 SXM',
   A100_PCIe: 'A100 PCIe',
+  RTX_5090: 'RTX 5090',
   RTX_4090: 'RTX 4090',
 };
 
 // One rental-price chart per NVIDIA GPU family
 const GPU_GROUPS = [
-  { chartId: 'gpu-prices-hopper',    title: 'GPU rental price $/hr — Hopper (H100 / H200)', keys: ['H100_SXM', 'H100_PCIe', 'H200'] },
+  { chartId: 'gpu-prices-hopper',    title: 'GPU rental price $/hr — Hopper (H100 / H200)', keys: ['H100_SXM', 'H100_PCIe', 'H100_NVL', 'H200'] },
   { chartId: 'gpu-prices-blackwell', title: 'GPU rental price $/hr — Blackwell (B200)',     keys: ['B200'] },
   { chartId: 'gpu-prices-ampere',    title: 'GPU rental price $/hr — Ampere (A100)',        keys: ['A100_SXM', 'A100_PCIe'] },
-  { chartId: 'gpu-prices-consumer',  title: 'GPU rental price $/hr — consumer (RTX 4090)',  keys: ['RTX_4090'] },
+  { chartId: 'gpu-prices-consumer',  title: 'GPU rental price $/hr — consumer (RTX 5090 / 4090)',  keys: ['RTX_5090', 'RTX_4090'] },
 ];
 
 const countPoints = values => values.filter(v => v != null && Number.isFinite(v)).length;
@@ -143,6 +147,35 @@ export default function Pricing({ weeks: W = 52 }) {
     }).filter(Boolean);
   }, [gpuHist, gpuWindow, W, h100Current, h200Current, b200Current, a100Current, rtxCurrent]);
 
+  // Current marketplace snapshot: on-demand vs interruptible (spot) $/hr per GPU
+  const spotPrices = gpu?.spot ?? {};
+  const currentRateData = useMemo(() => {
+    if (!hasLive) return null;
+    const keys = Object.keys(gpuPrices)
+      .filter(k => Number.isFinite(gpuPrices[k]))
+      .sort((a, b) => gpuPrices[b] - gpuPrices[a]);
+    if (keys.length === 0) return null;
+    return {
+      labels: keys.map(k => GPU_LABELS[k] ?? k.replace(/_/g, ' ')),
+      datasets: [
+        {
+          label: 'On-demand',
+          data: keys.map(k => gpuPrices[k]),
+          backgroundColor: keys.map(k => fa(GPU_PALETTE[k] ?? C.openai, 0.85)),
+          borderColor: keys.map(k => GPU_PALETTE[k] ?? C.openai),
+          borderWidth: 1, borderRadius: 4,
+        },
+        {
+          label: 'Spot (interruptible)',
+          data: keys.map(k => spotPrices[k] ?? null),
+          backgroundColor: keys.map(k => fa(GPU_PALETTE[k] ?? C.openai, 0.35)),
+          borderColor: keys.map(k => GPU_PALETTE[k] ?? C.openai),
+          borderWidth: 1, borderRadius: 4,
+        },
+      ],
+    };
+  }, [hasLive, gpuPrices, spotPrices]);
+
   const availData = useMemo(() => {
     const availability = gpu?.availability;
     if (!availability || Object.keys(availability).length === 0) return null;
@@ -178,8 +211,8 @@ export default function Pricing({ weeks: W = 52 }) {
   }, [gpuHist, gpuWindow, W]);
 
   const liveNote = hasLive
-    ? `Current vast.ai market medians: H100 $${h100Current}/hr · H200 $${h200Current}/hr · B200 $${b200Current}/hr.`
-    : 'Waiting on live GPU pricing; chart uses stored historical snapshots.';
+    ? `Live vast.ai marketplace medians, recorded daily. History accumulates from the first scrape — H100 $${h100Current}/hr · H200 $${h200Current}/hr · B200 $${b200Current}/hr today.`
+    : 'Waiting on live GPU pricing; chart uses stored daily snapshots.';
 
   /* ── Memory (DRAM) spot pricing — TrendForce ─────────────────────── */
   const dram    = liveData?.dram;
@@ -246,17 +279,32 @@ export default function Pricing({ weeks: W = 52 }) {
 
   return (
     <EditableGrid viewId="pricing">
+      {currentRateData && (
+        <ChartCard
+          chartId="gpu-current-rates"
+          title="GPU rental rates today — on-demand vs spot ($/hr)"
+          src="vast.ai API"
+          srcUrl="https://cloud.vast.ai/create/"
+          freq="live"
+          subtitle="Live vast.ai marketplace medians across verified single-GPU offers. Spot = interruptible min-bid floor (shown only where enough offers exist); on-demand = held-instance rate. Both use a 10% trimmed median."
+          legend={[['On-demand', C.openai], ['Spot (interruptible)', fa(C.openai, 0.45)]]}
+          height={240} span2
+        >
+          <Bar data={currentRateData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
+        </ChartCard>
+      )}
+
       {priceCharts.map(({ group, legend, data }) => (
         <ChartCard
           key={group.chartId}
           chartId={group.chartId}
           title={group.title}
-          src="vast.ai API · Silicon Data · AIMultiple"
-          srcUrl="https://vast.ai/pricing"
-          freq="snapshot"
+          src="vast.ai API"
+          srcUrl="https://cloud.vast.ai/create/"
+          freq="daily"
           subtitle={liveNote}
           legend={legend}
-          insight={`GPU rental rates for ${group.title.toLowerCase()}.`}
+          insight={`Daily vast.ai on-demand median rental rates for ${group.title.toLowerCase()}.`}
           height={230}
           span2
         >
@@ -282,9 +330,9 @@ export default function Pricing({ weeks: W = 52 }) {
         <ChartCard
           chartId="gpu-spread"
           title="H200 – H100 price spread"
-          src="vast.ai API · Silicon Data · AIMultiple"
-          srcUrl="https://vast.ai/pricing"
-          freq="snapshot"
+          src="vast.ai API"
+          srcUrl="https://cloud.vast.ai/create/"
+          freq="daily"
           subtitle="Positive values mean H200 priced above H100 in the same source snapshot."
           height={200}
         >
@@ -295,11 +343,11 @@ export default function Pricing({ weeks: W = 52 }) {
       {gpuIndexData && (
         <ChartCard
           chartId="gpu-index"
-          title="Mainstream GPU rental benchmark — three-year view ($/hr)"
-          src="vast.ai API · Silicon Data · AIMultiple"
-          srcUrl="https://vast.ai/pricing"
-          freq="snapshot"
-          subtitle="Chain-linked $/hr index across mainstream AI GPUs (new GPUs joining the basket don't jump the level), smoothed with a 31-day centered moving average. Recent points are daily vast.ai market medians; pre-2026 history interpolates marketplace-tier anchors from Silicon Data's H100 rental series and the AIMultiple GPU index."
+          title="Mainstream GPU rental benchmark ($/hr)"
+          src="vast.ai API"
+          srcUrl="https://cloud.vast.ai/create/"
+          freq="daily"
+          subtitle="Average on-demand $/hr across the tracked vast.ai GPUs priced each day, smoothed with a 7-day centered moving average. Accumulates daily from the first scrape — no fabricated pre-history."
           height={240} span2
         >
           <Line data={gpuIndexData} options={baseOpts(v => `$${v.toFixed(2)}`)} />

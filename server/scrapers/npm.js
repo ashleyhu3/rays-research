@@ -5,10 +5,9 @@ const axios = require('axios');
 const PKGS = [
   'openai',
   'anthropic',
-  'google-generativeai',
   'mistralai',
   '@anthropic-ai/sdk',
-  '@google/generative-ai',
+  '@google/genai',
   'langchain',
   '@langchain/core',
   'llamaindex',

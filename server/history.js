@@ -55,21 +55,6 @@ const EXTRACTORS = {
     }
     return out;
   },
-  reddit(data) {
-    const out = {};
-    for (const [term, n] of Object.entries(data ?? {})) {
-      if (n != null) out[`${term}.weeklyMentions`] = n;
-    }
-    return out;
-  },
-  redditCommunities(data) {
-    const out = {};
-    for (const [sub, v] of Object.entries(data?.subs ?? {})) {
-      if (v?.subscribers != null) out[`${sub}.subscribers`] = v.subscribers;
-      if (v?.activeUsers != null) out[`${sub}.activeUsers`] = v.activeUsers;
-    }
-    return out;
-  },
   github(data) {
     const out = {};
     for (const [repo, v] of Object.entries(data ?? {})) {

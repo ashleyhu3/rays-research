@@ -29,13 +29,13 @@ export default function DemandGoogle({ weeks: W }) {
   const days = useMemo(() => dayLabels(D), [D]);
 
   // SDK downloads
-  const pyVals = useMemo(() => pypiSlice(ld, 'google-generativeai',      W, 14e6,  18e6), [ld, W]);
-  const npVals = useMemo(() => npmSlice(ld,  '@google/generative-ai',     W, 3.1e6, 4.2e6), [ld, W]);
+  const pyVals = useMemo(() => pypiSlice(ld, 'google-genai',      W, 14e6,  18e6), [ld, W]);
+  const npVals = useMemo(() => npmSlice(ld,  '@google/genai',     W, 3.1e6, 4.2e6), [ld, W]);
   const sdkData = useMemo(() => ({
     labels: wk,
     datasets: [
-      mkBar('google-generativeai (PyPI)', C.google, pyVals),
-      mkBar('@google/generative-ai (npm)', C.teal,  npVals),
+      mkBar('google-genai (PyPI)', C.google, pyVals),
+      mkBar('@google/genai (npm)', C.teal,  npVals),
     ],
   }), [wk, pyVals, npVals]);
 
@@ -86,10 +86,10 @@ export default function DemandGoogle({ weeks: W }) {
         chartId="goo-sdk"
         title="SDK weekly downloads — Google AI Python & JavaScript"
         src="pypistats.org · npmjs.com"
-        srcUrl="https://pypistats.org/packages/google-generativeai"
+        srcUrl="https://pypistats.org/packages/google-genai"
         freq="weekly"
-        subtitle="google-generativeai Python SDK (PyPI) and @google/generative-ai JS/TS SDK (npm) weekly installs."
-        legend={[['google-generativeai (PyPI)', C.google], ['@google/generative-ai (npm)', C.teal]]}
+        subtitle="google-genai Python SDK (PyPI) and @google/genai JS/TS SDK (npm) weekly installs."
+        legend={[['google-genai (PyPI)', C.google], ['@google/genai (npm)', C.teal]]}
         height={260} span2
       >
         <Bar data={sdkData} options={stackedOpts(fmtM)} />
@@ -139,21 +139,8 @@ export default function DemandGoogle({ weeks: W }) {
       </ChartCard>
 
       {metricTrendCard({
-        chartId: 'goo-reddit',
-        title: 'Reddit — weekly "Gemini" mentions',
-        src: 'reddit.com/search',
-        srcUrl: 'https://www.reddit.com/search/?q=Gemini+AI&sort=new',
-        freq: '6-hourly',
-        subtitle: 'Weekly search mentions of Gemini.',
-        hist: mh?.reddit,
-        series: [
-          { metric: 'Gemini.weeklyMentions', label: 'Weekly mentions', color: C.google },
-        ],
-        fmt: fmtK,
-      })}
-
-      {metricTrendCard({
         chartId: 'goo-jobs',
+        weeks: W,
         title: 'Google DeepMind — open roles (Greenhouse)',
         src: 'boards.greenhouse.io',
         srcUrl: 'https://boards.greenhouse.io/deepmind',
@@ -168,34 +155,37 @@ export default function DemandGoogle({ weeks: W }) {
 
       {metricTrendCard({
         chartId: 'goo-github',
-        title: 'google-generativeai — GitHub stars & dependent repos',
+        weeks: W,
+        title: 'google-genai — GitHub stars & dependent repos',
         src: 'github.com',
-        srcUrl: 'https://github.com/google/generative-ai-python',
+        srcUrl: 'https://github.com/googleapis/python-genai',
         subtitle: 'Production adoption: repos that depend on the SDK, plus stars.',
         hist: mh?.github,
         series: [
-          { metric: 'google/generative-ai-python.dependents', label: 'Dependent repos', color: C.google },
-          { metric: 'google/generative-ai-python.stars',      label: 'Stars',           color: C.teal },
+          { metric: 'googleapis/python-genai.dependents', label: 'Dependent repos', color: C.google },
+          { metric: 'googleapis/python-genai.stars',      label: 'Stars',           color: C.teal },
         ],
         fmt: fmtK,
       })}
 
       {metricTrendCard({
         chartId: 'goo-so',
-        title: 'Stack Overflow — [google-gemini-api] tag activity',
+        weeks: W,
+        title: 'Stack Overflow — [google-gemini] tag activity',
         src: 'stackexchange.com',
-        srcUrl: 'https://stackoverflow.com/questions/tagged/google-gemini-api',
+        srcUrl: 'https://stackoverflow.com/questions/tagged/google-gemini',
         subtitle: 'Developer troubleshooting volume around the Gemini API.',
         hist: mh?.stackoverflow,
         series: [
-          { metric: 'google-gemini-api.questions',   label: 'Questions all-time', color: C.google },
-          { metric: 'google-gemini-api.newThisWeek', label: 'New this week',      color: C.teal },
+          { metric: 'google-gemini.questions',   label: 'Questions all-time', color: C.google },
+          { metric: 'google-gemini.newThisWeek', label: 'New this week',      color: C.teal },
         ],
         fmt: v => String(Math.round(v)),
       })}
 
       {metricTrendCard({
         chartId: 'goo-hf',
+        weeks: W,
         title: 'Gemma — HuggingFace family downloads',
         src: 'huggingface.co/api',
         srcUrl: 'https://huggingface.co/google',

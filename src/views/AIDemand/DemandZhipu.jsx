@@ -169,6 +169,7 @@ export default function DemandZhipu({ weeks: W }) {
 
       {metricTrendCard({
         chartId: 'zh-hf',
+        weeks: W,
         title: 'GLM — HuggingFace family downloads',
         src: 'huggingface.co/api',
         srcUrl: 'https://huggingface.co/zai-org',

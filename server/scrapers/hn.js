@@ -13,7 +13,12 @@ function fetchJson(url) {
   });
 }
 
-const BASE_QUERY = '"AI" OR "LLM" OR "machine learning" OR "ChatGPT" OR "Claude" OR "Gemini"';
+// Algolia's `query` param does full-text matching, not boolean OR — a query
+// like '"AI" OR "LLM"' is parsed literally and matches nothing. To approximate
+// "AI story volume" we sum the counts of these individual terms per week. A
+// story mentioning two terms is counted twice, but as a week-over-week
+// attention proxy the relative trend is what matters.
+const WEEKLY_TERMS = ['LLM', 'ChatGPT', 'Claude', 'Gemini', 'AI agents'];
 const PER_TERM_QUERIES = ['ChatGPT', 'Claude', 'Gemini', 'LLM', 'AI agents'];
 
 function weekBounds(weeksAgo) {
@@ -32,9 +37,11 @@ async function queryCount(query, from, to) {
 }
 
 async function getHNData() {
-  const weeklyPromises = Array.from({ length: 8 }, (_, i) => {
+  // Per week: sum hits across the brand terms (Algolia has no boolean OR).
+  const weeklyPromises = Array.from({ length: 8 }, async (_, i) => {
     const { from, to } = weekBounds(7 - i);
-    return queryCount(BASE_QUERY, from, to);
+    const counts = await Promise.all(WEEKLY_TERMS.map(t => queryCount(t, from, to)));
+    return counts.reduce((a, b) => a + b, 0);
   });
 
   const now = Math.floor(Date.now() / 1000);

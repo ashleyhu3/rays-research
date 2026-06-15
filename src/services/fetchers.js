@@ -8,10 +8,9 @@ function fetchT(url, ms = 12000) {
 const NPM_PKGS = [
   'openai',
   'anthropic',
-  'google-generativeai',
   'mistralai',
   '@anthropic-ai/sdk',
-  '@google/generative-ai',
+  '@google/genai',
   'langchain',
   '@langchain/core',
   'llamaindex',
@@ -42,7 +41,7 @@ async function fetchNpm() {
 }
 
 /* ── PyPI last-week snapshot ──────────────────────────────────────── */
-const PYPI_PKGS = ['openai', 'anthropic', 'google-generativeai', 'mistralai', 'langchain', 'langchain-community', 'llama-index-core', 'vllm'];
+const PYPI_PKGS = ['openai', 'anthropic', 'google-genai', 'mistralai', 'langchain', 'langchain-community', 'llama-index-core', 'vllm'];
 
 async function fetchPypiPkg(pkg) {
   const url = `https://pypistats.org/api/packages/${pkg}/recent?period=week`;
@@ -60,7 +59,7 @@ async function fetchPypi() {
 }
 
 /* ── Stack Overflow tag totals + last-week count ──────────────────── */
-const SO_TAGS = ['openai-api', 'anthropic-claude', 'google-gemini-api', 'langchain', 'mistral-ai'];
+const SO_TAGS = ['openai-api', 'claude', 'google-gemini', 'langchain', 'mistral-ai'];
 
 async function fetchSoTotals() {
   const url = `https://api.stackexchange.com/2.3/tags/${SO_TAGS.join(';')}/info?site=stackoverflow`;
@@ -108,7 +107,7 @@ async function fetchJsonSafe(url, ms = 30000) {
 const SLOW_KEYS = new Set(['github-commits']);
 
 async function fetchBackendAll() {
-  const keys = ['pypi', 'trends', 'reddit', 'jobs', 'gpu', 'github', 'openrouter', 'eia', 'mops', 'github-commits', 'docker', 'hn', 'wikipedia', 'openrouter-ranks', 'dram', 'mcp', 'sec', 'reddit-communities', 'huggingface', 'metrics-history'];
+  const keys = ['pypi', 'trends', 'jobs', 'gpu', 'github', 'openrouter', 'eia', 'mops', 'github-commits', 'docker', 'hn', 'wikipedia', 'openrouter-ranks', 'dram', 'mcp', 'sec', 'huggingface', 'metrics-history'];
   const results = await Promise.allSettled(keys.map(k => fetchJsonSafe(`/api/${k}`, SLOW_KEYS.has(k) ? 90000 : 30000)));
   return Object.fromEntries(keys.map((k, i) => [
     k, results[i].status === 'fulfilled' ? results[i].value : null,
@@ -121,7 +120,7 @@ export async function fetchAll() {
     fetchNpm(),
     fetchPypi(),
     fetchSoTotals(),
-    fetchSoWeekly('anthropic-claude'),
+    fetchSoWeekly('claude'),
     fetchHF(),
     fetchBackendAll(),
   ]);
@@ -139,7 +138,6 @@ export async function fetchAll() {
     // Backend-provided (may be null if server not running)
     pypiHistory: be.pypi       ?? null,
     trends:      be.trends     ?? null,
-    reddit:      be.reddit     ?? null,
     jobs:        be.jobs       ?? null,
     gpu:         be.gpu        ?? null,
     github:      be.github     ?? null,
@@ -154,7 +152,6 @@ export async function fetchAll() {
     dram:             be.dram                     ?? null,
     mcp:              be.mcp                      ?? null,
     sec:              be.sec                      ?? null,
-    redditCommunities: be['reddit-communities']   ?? null,
     hfServer:         be.huggingface              ?? null,
     metricsHistory:   be['metrics-history']       ?? null,
   };

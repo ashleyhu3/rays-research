@@ -1,7 +1,7 @@
 const axios = require('axios');
 
 // Mirrors SO_TAGS in src/services/fetchers.js
-const TAGS = ['openai-api', 'anthropic-claude', 'google-gemini-api', 'langchain', 'mistral-ai'];
+const TAGS = ['openai-api', 'claude', 'google-gemini', 'langchain', 'mistral-ai'];
 
 async function getTagTotals() {
   const { data } = await axios.get(
