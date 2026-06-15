@@ -2,6 +2,7 @@ const express      = require('express');
 const cors         = require('cors');
 const path         = require('path');
 const cache        = require('./cache');
+const storage      = require('./storage');
 const history      = require('./history');
 const scheduler    = require('./scheduler');
 const htmlTemplate = require('./htmlTemplate');
@@ -99,7 +100,11 @@ app.get('/api/options/:ticker', async (req, res) => {
     res.json(data);
   } catch (e) {
     console.error('[options]', ticker, e.message);
-    res.status(500).json({ error: e.message });
+    const rateLimited = e.message?.includes('429') || /Too Many Requests|crumb/i.test(e.message ?? '');
+    if (rateLimited) {
+      return res.status(503).json({ error: 'Yahoo Finance is rate-limiting requests right now. Please try again in a moment.' });
+    }
+    res.status(500).json({ error: `Could not load options for ${ticker}: ${e.message}` });
   }
 });
 
@@ -119,8 +124,20 @@ app.post('/api/chat', async (req, res) => {
 
 app.get('/api/health', (_, res) => res.json({ ok: true, ts: new Date().toISOString() }));
 
+/* ── Persistent storage (Mongo in prod, JSON files in dev) ──────────── */
+const DATA_DIR = path.join(__dirname, 'data');
+const STORAGE_BLOBS = [
+  { name: 'metricsHistory', file: path.join(DATA_DIR, 'metricsHistory.json') },
+  { name: 'gpuHistory',     file: path.join(DATA_DIR, 'gpuHistory.json') },
+  { name: 'dramHistory',    file: path.join(DATA_DIR, 'dramHistory.json') },
+];
+
 /* ── Frontend serving ──────────────────────────────────────────────── */
 async function start() {
+  // Connect storage (and seed Mongo from the committed JSON baseline) before
+  // serving requests or running the warmup scrape, so reads/writes are routed.
+  await storage.init(STORAGE_BLOBS);
+
   if (isProd) {
     // Production: serve Vite build output; read manifest for hashed filenames
     const distDir  = path.join(__dirname, '..', 'dist');

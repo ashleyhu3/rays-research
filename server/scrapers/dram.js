@@ -1,25 +1,21 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
-const fs = require('fs');
 const path = require('path');
+const storage = require('../storage');
 
 const URL = 'https://www.trendforce.com/price/dram/dram_spot';
 
 // TrendForce's per-item history charts are members-only, so we accumulate our
 // own daily history of computed model averages: { 'YYYY-MM-DD': { model: price } }
 const HISTORY_FILE = path.join(__dirname, '..', 'data', 'dramHistory.json');
+const BLOB = 'dramHistory';
 
 function loadHistory() {
-  try { return JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf8')); } catch { return {}; }
+  return storage.read(BLOB, HISTORY_FILE);
 }
 
 function saveHistory(history) {
-  try {
-    fs.mkdirSync(path.dirname(HISTORY_FILE), { recursive: true });
-    fs.writeFileSync(HISTORY_FILE, JSON.stringify(history));
-  } catch (e) {
-    console.warn('[dram] could not persist history:', e.message);
-  }
+  storage.write(BLOB, HISTORY_FILE, history);
 }
 const UA  = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36';
 

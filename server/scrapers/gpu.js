@@ -1,6 +1,6 @@
 const axios = require('axios');
-const fs = require('fs');
 const path = require('path');
+const storage = require('../storage');
 
 // Live GPU rental pricing from the vast.ai marketplace API (no auth needed for
 // read-only market data). vast.ai is a community/spot marketplace, so it exposes
@@ -36,31 +36,26 @@ function normalizeKey(key) {
   return KEY_ALIASES[key] ?? key;
 }
 
+const BLOB = 'gpuHistory';
+
 function loadHistory() {
-  try {
-    const raw = JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf8'));
-    const out = {};
-    for (const [date, day] of Object.entries(raw)) {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
-      // Migrate legacy flat shape { gpu: number } → { gpu: { od: number } }
-      out[date] = Object.fromEntries(
-        Object.entries(day).map(([g, v]) => [
-          normalizeKey(g),
-          typeof v === 'number' ? { od: v } : v,
-        ])
-      );
-    }
-    return out;
-  } catch { return {}; }
+  const raw = storage.read(BLOB, HISTORY_FILE);
+  const out = {};
+  for (const [date, day] of Object.entries(raw)) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
+    // Migrate legacy flat shape { gpu: number } → { gpu: { od: number } }
+    out[date] = Object.fromEntries(
+      Object.entries(day).map(([g, v]) => [
+        normalizeKey(g),
+        typeof v === 'number' ? { od: v } : v,
+      ])
+    );
+  }
+  return out;
 }
 
 function saveHistory(history) {
-  try {
-    fs.mkdirSync(path.dirname(HISTORY_FILE), { recursive: true });
-    fs.writeFileSync(HISTORY_FILE, JSON.stringify(history));
-  } catch (e) {
-    console.warn('[gpu] could not persist history:', e.message);
-  }
+  storage.write(BLOB, HISTORY_FILE, history);
 }
 
 function isoDay(ts) {

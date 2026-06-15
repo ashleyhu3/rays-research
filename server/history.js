@@ -1,29 +1,25 @@
 'use strict';
-const fs   = require('fs');
-const path = require('path');
+const path    = require('path');
+const storage = require('./storage');
 
 // Daily snapshot store for point-in-time metrics (job counts, stars,
 // subscribers, filing counts…) so the dashboard can chart their trend.
 // Shape: { [source]: { [metric]: { 'YYYY-MM-DD': value } } }
 // One value per metric per UTC day; same-day re-scrapes overwrite.
+// Persisted via the storage layer (Mongo in prod, JSON file in dev).
 const FILE = path.join(__dirname, 'data', 'metricsHistory.json');
+const BLOB = 'metricsHistory';
 
 let store = null;
 
 function load() {
   if (store) return store;
-  try { store = JSON.parse(fs.readFileSync(FILE, 'utf8')); }
-  catch { store = {}; }
+  store = storage.read(BLOB, FILE);
   return store;
 }
 
 function persist() {
-  try {
-    fs.mkdirSync(path.dirname(FILE), { recursive: true });
-    fs.writeFileSync(FILE, JSON.stringify(store));
-  } catch (e) {
-    console.warn('[history] could not persist:', e.message);
-  }
+  storage.write(BLOB, FILE, store);
 }
 
 function today() {

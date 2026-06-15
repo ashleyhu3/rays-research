@@ -1,0 +1,49 @@
+name: Collect dashboard data
+
+# Render's free web service sleeps when idle, so its in-process cron can't be
+# relied on to scrape daily. This workflow runs the collector on GitHub's
+# always-on scheduler and writes snapshots to the same MongoDB the site reads,
+# so history keeps accumulating even while the site is asleep.
+#
+# Required repo secret: MONGODB_URI
+# Optional repo secrets (improve coverage/limits): OPENROUTER_API_KEY,
+#   EIA_API_KEY, VAST_API_KEY. GITHUB_TOKEN is provided automatically.
+
+on:
+  schedule:
+    # Twice daily (02:00 & 14:00 UTC) — two attempts mean a transient failure
+    # doesn't lose a day; same-day snapshots overwrite, so duplicates are fine.
+    - cron: '0 2,14 * * *'
+  workflow_dispatch: {}   # allow manual runs from the Actions tab
+
+concurrency:
+  group: collect-data
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci --omit=dev
+
+      - name: Run collector
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          MONGODB_DB: ${{ secrets.MONGODB_DB }}
+          # Built-in token — authenticates GitHub API calls (MCP search, stars)
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          EIA_API_KEY: ${{ secrets.EIA_API_KEY }}
+          VAST_API_KEY: ${{ secrets.VAST_API_KEY }}
+        run: node server/scripts/collect.js

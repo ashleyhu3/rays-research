@@ -1,12 +1,37 @@
 'use strict';
 
+// Yahoo aggressively rate-limits (429) the library's default
+// "yahoo-finance2/x.y.z" User-Agent from datacenter IPs — which is why the
+// crumb fetch fails in production but works from a laptop. Presenting a real
+// browser User-Agent makes the crumb/cookie handshake look like an ordinary
+// page load and clears the 429s.
+const BROWSER_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
+
 let _yf;
 function getYF() {
   if (!_yf) {
     const YahooFinance = require('yahoo-finance2').default;
-    _yf = new YahooFinance({ suppressNotices: ['yahooSurvey'] });
+    _yf = new YahooFinance({
+      suppressNotices: ['yahooSurvey'],
+      fetchOptions: { headers: { 'User-Agent': BROWSER_UA } },
+    });
   }
   return _yf;
+}
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// Retry the crumb/quote fetch on transient rate limits. A 429 on the crumb
+// handshake often clears on a second attempt once a cookie is seeded.
+async function withRetry(fn, tries = 3) {
+  for (let i = 1; i <= tries; i++) {
+    try { return await fn(); }
+    catch (e) {
+      const rateLimited = e.message?.includes('429') || /Too Many Requests|crumb/i.test(e.message ?? '');
+      if (i === tries || !rateLimited) throw e;
+      await sleep(1500 * i);
+    }
+  }
 }
 
 function isoDate(d) {
@@ -40,7 +65,7 @@ async function getOptionsData(ticker, dateStr) {
   // v3 API: yf.options(symbol, { date? }, moduleOpts)
   // Response: { expirationDates, quote, options: [{ expirationDate, calls, puts }] }
   const queryOpts = dateStr ? { date: dateStr } : {};
-  const chain = await yf.options(symbol, queryOpts, { validateResult: false });
+  const chain = await withRetry(() => yf.options(symbol, queryOpts, { validateResult: false }));
 
   // Limit expirations to ≤ 2 months from today
   const now    = new Date();
