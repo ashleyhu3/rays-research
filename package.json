@@ -14,7 +14,8 @@
     "backfill:dram": "node --env-file=.env server/scripts/backfillDram.js",
     "backfill:all": "npm run backfill:sec && npm run backfill:mcp && npm run backfill:github-stars",
     "db:ping": "node --env-file=.env server/scripts/dbPing.js",
-    "db:seed": "node --env-file=.env server/scripts/seedMongo.js"
+    "db:seed": "node --env-file=.env server/scripts/seedMongo.js",
+    "collect": "node --env-file=.env server/scripts/collect.js"
   },
   "dependencies": {
     "axios": "^1.17.0",
