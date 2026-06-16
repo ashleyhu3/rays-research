@@ -1,7 +1,9 @@
 import { createContext, useContext, useState, useCallback } from 'react';
 import { defaultPins } from '../config/charts';
 
-const STORAGE_KEY = 'sector-pins-v1';
+// v6: overview relaid out as one flat grid; dropped China token consumption.
+// Bumped so existing users pick up the new default pin set.
+const STORAGE_KEY = 'sector-pins-v6';
 
 const SECTOR_IDS = ['dev', 'consumer', 'infra', 'tokens', 'overview'];
 
@@ -32,6 +34,9 @@ const DashboardContext = createContext({
   activeSector:      null,
   enterSector:       () => {},
   exitSector:        () => {},
+  pageCharts:        null,
+  enterPage:         () => {},
+  exitPage:          () => {},
 });
 
 export const useDashboard = () => useContext(DashboardContext);
@@ -39,6 +44,10 @@ export const useDashboard = () => useContext(DashboardContext);
 export function DashboardProvider({ children }) {
   const [sectorPins, setSectorPins] = useState(loadPins);
   const [activeSector, setActiveSector] = useState(null);
+  // A composed page (e.g. Market signals) can mount several normal views and
+  // restrict them to a fixed set of chart ids — independent of the sector-pin
+  // overview system. null = no restriction.
+  const [pageCharts, setPageCharts] = useState(null);
 
   const isPinned = useCallback((chartId, sectorId) =>
     (sectorPins[sectorId] ?? []).includes(chartId),
@@ -59,6 +68,9 @@ export function DashboardProvider({ children }) {
   const enterSector = useCallback((sectorId) => setActiveSector(sectorId), []);
   const exitSector  = useCallback(() => setActiveSector(null), []);
 
+  const enterPage = useCallback((ids) => setPageCharts(new Set(ids)), []);
+  const exitPage  = useCallback(() => setPageCharts(null), []);
+
   return (
     <DashboardContext.Provider value={{
       sectorPins,
@@ -68,6 +80,9 @@ export function DashboardProvider({ children }) {
       activeSector,
       enterSector,
       exitSector,
+      pageCharts,
+      enterPage,
+      exitPage,
     }}>
       {children}
     </DashboardContext.Provider>

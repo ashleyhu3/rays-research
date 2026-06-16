@@ -191,43 +191,6 @@ export function TrendsMini() {
   );
 }
 
-// ── Job Openings ───────────────────────────────────────────────────────────
-const JOB_COMPANIES = ['Anthropic', 'OpenAI', 'Google DM', 'Mistral', 'Cohere', 'Perplexity'];
-const JOB_COLORS    = [C.anthropic, C.openai, C.google, C.mistral, C.teal, C.perplexity];
-const JOB_STATIC    = { Anthropic: 312, OpenAI: 486, 'Google DM': 891, Mistral: 124, Cohere: 78, Perplexity: 95 };
-
-export function JobsMini() {
-  const { liveData } = useData();
-
-  const ts = useMemo(() => mhSeries(liveData?.metricsHistory, 'jobs',
-    JOB_COMPANIES.map((co, i) => ({ metric: `${co}.total`, label: co, color: JOB_COLORS[i] }))
-  ), [liveData]);
-
-  const barData = useMemo(() => ({
-    labels: JOB_COMPANIES,
-    datasets: [{
-      label:           'Open Roles',
-      data:            JOB_COMPANIES.map(c => liveData?.jobs?.[c]?.total ?? JOB_STATIC[c] ?? 0),
-      backgroundColor: JOB_COLORS.map(c => c + 'bf'),
-      borderColor:     JOB_COLORS,
-      borderWidth: 1, borderRadius: 4,
-    }],
-  }), [liveData]);
-
-  if (ts) {
-    return (
-      <MiniCard title="Open Job Postings Over Time">
-        <Line data={ts} options={baseOpts(v => String(v))} />
-      </MiniCard>
-    );
-  }
-  return (
-    <MiniCard title="Open Job Postings (trend accrues daily)">
-      <Bar data={barData} options={hBarOpts(v => String(v))} />
-    </MiniCard>
-  );
-}
-
 // ── GPU Spot Prices ────────────────────────────────────────────────────────
 export function GPUMini() {
   const { liveData } = useData();
@@ -733,7 +696,7 @@ export function OptionsMini({ ticker = 'NVDA' }) {
 export const CHART_REGISTRY = {
   pypi:                  [PyPIMini],
   github:                [GitHubMini],
-  trends:                [TrendsMini, JobsMini],
+  trends:                [TrendsMini],
   gpu:                   [GPUMini],
   dram:                  [DramMini],
   openrouter:            [OpenRouterPricingMini],

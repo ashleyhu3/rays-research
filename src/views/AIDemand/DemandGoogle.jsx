@@ -105,7 +105,7 @@ export default function DemandGoogle({ weeks: W }) {
           srcUrl="https://openrouter.ai/rankings"
           freq="daily"
           subtitle="Percentage of total weekly OpenRouter token throughput served by Google models."
-          height={220}
+          height={220} pinTop
         >
           <Line data={orShareData} options={baseOpts(v => `${v.toFixed(1)}%`)} />
         </ChartCard>
@@ -119,7 +119,7 @@ export default function DemandGoogle({ weeks: W }) {
           srcUrl="https://openrouter.ai/rankings"
           freq="daily"
           subtitle={`Week of ${orp.latestWeek}. Google models ranked in OpenRouter's top 15 by token volume.`}
-          height={220}
+          height={220} pinTop
         >
           <Bar data={orModelsData} options={hBarOpts(fmtTok)} />
         </ChartCard>
@@ -139,31 +139,29 @@ export default function DemandGoogle({ weeks: W }) {
       </ChartCard>
 
       {metricTrendCard({
-        chartId: 'goo-jobs',
+        chartId: 'goo-stars',
         weeks: W,
-        title: 'Google DeepMind — open roles (Greenhouse)',
-        src: 'boards.greenhouse.io',
-        srcUrl: 'https://boards.greenhouse.io/deepmind',
-        subtitle: 'Hiring demand: total and engineering openings.',
-        hist: mh?.jobs,
+        title: 'google-genai — GitHub stars',
+        src: 'github.com',
+        srcUrl: 'https://github.com/googleapis/python-genai',
+        subtitle: 'Developer mindshare. Stars accumulate; rising slope = accelerating adoption.',
+        hist: mh?.github,
         series: [
-          { metric: 'Google DM.total',       label: 'Total roles', color: C.google },
-          { metric: 'Google DM.engineering', label: 'Engineering', color: C.teal },
+          { metric: 'googleapis/python-genai.stars', label: 'Stars', color: C.google },
         ],
-        fmt: v => String(Math.round(v)),
+        fmt: fmtK,
       })}
 
       {metricTrendCard({
         chartId: 'goo-github',
         weeks: W,
-        title: 'google-genai — GitHub stars & dependent repos',
+        title: 'google-genai — GitHub dependent repos',
         src: 'github.com',
         srcUrl: 'https://github.com/googleapis/python-genai',
-        subtitle: 'Production adoption: repos that depend on the SDK, plus stars.',
+        subtitle: 'Production adoption: repos that depend on the SDK.',
         hist: mh?.github,
         series: [
-          { metric: 'googleapis/python-genai.dependents', label: 'Dependent repos', color: C.google },
-          { metric: 'googleapis/python-genai.stars',      label: 'Stars',           color: C.teal },
+          { metric: 'googleapis/python-genai.dependents', label: 'Dependent repos', color: C.teal },
         ],
         fmt: fmtK,
       })}

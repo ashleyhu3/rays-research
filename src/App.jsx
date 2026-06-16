@@ -38,6 +38,7 @@ import DemandZhipu    from './views/AIDemand/DemandZhipu';
 import DemandMiniMax  from './views/AIDemand/DemandMiniMax';
 import DemandGeneral      from './views/AIDemand/DemandGeneral';
 import DemandOpenRouter   from './views/AIDemand/DemandOpenRouter';
+import MarketSignals      from './views/AIDemand/MarketSignals';
 
 /** Views that use EditableGrid and support layout customisation */
 const LAYOUT_EDITABLE = new Set([
@@ -70,6 +71,7 @@ const VIEW_COMPONENTS = {
   'demand-minimax':   DemandMiniMax,
   'demand-general':        DemandGeneral,
   'openrouter-rankings':   DemandOpenRouter,
+  'market-signals':        MarketSignals,
   chat:                    Chat,
 };
 

@@ -213,6 +213,31 @@ body { font-family: var(--font-b); background: var(--bg); color: var(--text); }
 }
 .cbox.new { border-color: rgba(232,197,71,.2); }
 
+/* ── Overview dashboard: one flat grid with custom per-chart widths ──── */
+/* All charts flow into a single 4-column grid. Each view's own .cgrid collapses
+   (display: contents) so charts from different views share rows. Width is set
+   per chart below; default is one column (quarter width). */
+.sector-overview {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+.sector-overview .cgrid { display: contents; }
+/* Half-page-width charts span two of the four columns. */
+.sector-overview [data-chart-id="or-trend"],
+.sector-overview [data-chart-id="or-provstack"],
+.sector-overview [data-chart-id="or-provshare"],
+.sector-overview [data-chart-id="or-combo"],
+.sector-overview [data-chart-id="trends-api"],
+.sector-overview [data-chart-id="cn-pricing"],
+.sector-overview [data-chart-id="dc-capex"],
+.sector-overview [data-chart-id="elec-consumption"] { grid-column: span 2; }
+/* Drop verbose chrome so the narrow cards stay readable. */
+.sector-overview .cbox  { padding: 12px 14px; }
+.sector-overview .ch-sub,
+.sector-overview .insight,
+.sector-overview .src-note { display: none; }
+
 .ch-head  { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; gap: 12px; }
 .ch-title { font-size: 13px; font-weight: 600; color: var(--text); }
 .ch-meta  { display: flex; align-items: center; gap: 7px; flex-shrink: 0; }
@@ -343,7 +368,11 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
 }
 
 /* ── Editable grid layout ───────────────────────────────────────────── */
-.egrid-item { min-width: 0; }
+/* Each grid cell stretches to its row's height (grid default), and the card
+   inside fills the cell, so chart cards sitting next to each other line up to
+   the same height regardless of how much header/legend/insight text they carry. */
+.egrid-item { min-width: 0; display: flex; flex-direction: column; }
+.egrid-item > .cbox { flex: 1; }
 
 /* Control bar sits above each card, hidden until edit mode is active */
 .lctrl { display: none; }

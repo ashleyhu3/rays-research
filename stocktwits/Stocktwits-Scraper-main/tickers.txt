@@ -1,0 +1,12 @@
+# Tickers for the automated StockTwits collector (one per line).
+# Lines starting with '#' and blank lines are ignored.
+# update_all.py reads this file and refreshes each ticker sequentially.
+#
+# Replace the placeholders below with your actual basket.
+MU
+SNDK
+COHR
+LITE
+AAOI
+TSEM
+AEHR

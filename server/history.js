@@ -43,14 +43,6 @@ function record(source, metrics) {
 
 // Flatteners: cache payload per source → { metricName: value }
 const EXTRACTORS = {
-  jobs(data) {
-    const out = {};
-    for (const [co, v] of Object.entries(data ?? {})) {
-      if (v?.total       != null) out[`${co}.total`]       = v.total;
-      if (v?.engineering != null) out[`${co}.engineering`] = v.engineering;
-    }
-    return out;
-  },
   github(data) {
     const out = {};
     for (const [repo, v] of Object.entries(data ?? {})) {

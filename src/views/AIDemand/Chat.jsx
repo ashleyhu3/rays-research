@@ -4,7 +4,7 @@ import { CHART_REGISTRY } from '../../components/ChatCharts';
 const SOURCE_META = {
   pypi:             { label: 'PyPI Downloads',     view: 'pypi'           },
   github:           { label: 'GitHub SDKs',        view: 'github'         },
-  trends:           { label: 'Trends & Jobs',      view: 'trends'         },
+  trends:           { label: 'Trends',             view: 'trends'         },
   gpu:              { label: 'GPU & OpenRouter',   view: 'pricing'        },
   electricity:      { label: 'Electricity',        view: 'electricity'    },
   'ai-supply':      { label: 'Supply Chain',       view: 'ai-supply'      },
@@ -24,7 +24,6 @@ const SUGGESTIONS = [
   'Give me all data related to OpenAI',
   'Compare Anthropic vs OpenAI across all signals',
   'Which GPU is cheapest right now?',
-  'Which AI company has the most open roles?',
   'How is open-source AI activity trending?',
 ];
 

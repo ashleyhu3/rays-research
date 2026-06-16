@@ -197,24 +197,6 @@ function buildGitHub() {
   };
 }
 
-function buildJobs() {
-  const jobs = cache.get('jobs');
-  if (!jobs) return null;
-  const entries = Object.entries(jobs).filter(([, v]) => v != null);
-  const lines = entries
-    .sort(([, a], [, b]) => b.total - a.total)
-    .map(([co, v]) => `  ${co}: ${v.total} open roles total | ${v.engineering} engineering`);
-  return {
-    id:       'jobs',
-    title:    'Open Job Postings (Greenhouse)',
-    about:    'Open role counts at AI companies (Anthropic, OpenAI, Google DeepMind, Mistral, Cohere, Perplexity)',
-    source:   'Greenhouse boards',
-    entities: entries.map(([co]) => co),
-    text:     `### Open Job Postings (Greenhouse)\n${lines.join('\n')}`,
-    detail:   snapshotDetail('jobs', 'open role counts'),
-  };
-}
-
 function buildTrends() {
   const trends = cache.get('trends');
   if (!trends) return null;
@@ -684,7 +666,6 @@ const REGISTRY = [
   { key: 'npm',               build: buildNpm },
   { key: 'stackoverflow',     build: buildStackOverflow },
   { key: 'github',            build: buildGitHub },
-  { key: 'jobs',              build: buildJobs },
   { key: 'trends',            build: buildTrends },
   { key: 'gpu',               build: buildGpu },
   { key: 'dram',              build: buildDram },
@@ -901,9 +882,6 @@ For broad queries ("all signals for X", "everything about Y", "compare A vs B"):
   **PyPI Downloads**
   openai SDK: 45.2M total (52w) | last week: 1.1M | +6.3% vs prior 4w
 
-  **Job Postings**
-  OpenAI: 486 total roles | 312 engineering
-
 For simple single-fact questions ("Which GPU is cheapest?", "What is the price of X?"):
   Answer in one or two direct sentences with the exact figure. No section headers needed.
 
@@ -945,7 +923,6 @@ const SECTION_TO_CHART = {
   huggingface:    'hf',
   openrouterRanks: 'openrouter-rankings',
   github:        'github',
-  jobs:          'trends',
   trends:        'trends',
   gpu:           'gpu',
   dram:          'dram',

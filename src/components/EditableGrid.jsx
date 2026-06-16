@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Line } from 'react-chartjs-2';
 import { useLayout } from '../context/LayoutContext';
 import { useUI } from '../context/UIContext';
+import { useDashboard } from '../context/DashboardContext';
 
 function MoveUpIcon()   { return <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><path d="M5 1 L9 7 H1 Z"/></svg>; }
 function MoveDownIcon() { return <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><path d="M5 9 L1 3 H9 Z"/></svg>; }
@@ -52,6 +53,7 @@ function moveScore(card) {
 export default function EditableGrid({ viewId, children }) {
   const { getLayout, moveChart, setSpan, setCol } = useLayout();
   const { editMode } = useUI();
+  const { sectorOverviewMode, activeSector, isPinned, pageCharts } = useDashboard();
 
   const cards = useMemo(() =>
     React.Children.toArray(children).filter(c => c?.props?.chartId),
@@ -61,17 +63,24 @@ export default function EditableGrid({ viewId, children }) {
     Object.fromEntries(cards.map(c => [c.props.chartId, c])),
   [cards]);
 
-  // Dynamic default order: biggest recent mover first (span2 → 'full', absence
-  // → 'half'). Ties keep their original JSX position. Recomputed as live data
-  // updates, so the order tracks whatever is trending — until the user pins an
-  // explicit arrangement (below), which then wins.
+  // Dynamic default order: cards flagged `pinTop` come first (kept in their JSX
+  // order), then the rest by biggest recent mover. Ties keep their original JSX
+  // position. Recomputed as live data updates, so the order tracks whatever is
+  // trending — until the user pins an explicit arrangement (below), which then
+  // wins. All charts default to half-width; users can widen any chart to full
+  // via the layout controls.
   const dynamicDefault = useMemo(() => {
     const scored = cards.map((c, i) => ({
-      item: { chartId: c.props.chartId, span: c.props.span2 ? 'full' : 'half', col: 'auto' },
+      item: { chartId: c.props.chartId, span: 'half', col: 'auto' },
+      pin:  c.props.pinTop ? 1 : 0,
       score: moveScore(c),
       i,
     }));
-    scored.sort((a, b) => b.score - a.score || a.i - b.i);
+    scored.sort((a, b) => {
+      if (a.pin !== b.pin) return b.pin - a.pin;       // pinned cards first
+      if (a.pin)           return a.i - b.i;            // …kept in JSX order
+      return b.score - a.score || a.i - b.i;           // rest: biggest mover first
+    });
     return scored.map(s => s.item);
   }, [cards]);
 
@@ -87,9 +96,22 @@ export default function EditableGrid({ viewId, children }) {
     return extra.length ? [...stored, ...extra] : stored;
   }, [stored, dynamicDefault]);
 
+  // On the sector-overview pages only pinned charts render. Drop the unpinned
+  // ones here (rather than letting each ChartCard render null) so they don't
+  // leave empty grid cells — and skip the grid entirely when nothing is pinned,
+  // so a view with no selected charts adds no blank space. The per-page
+  // Edit-Layout flow still operates on the full layout.
+  const renderLayout = pageCharts
+    ? layout.filter(item => pageCharts.has(item.chartId))
+    : (sectorOverviewMode && !editMode)
+      ? layout.filter(item => isPinned(item.chartId, activeSector))
+      : layout;
+
+  if (renderLayout.length === 0) return null;
+
   return (
     <div className={`cgrid${editMode ? ' cgrid--editing' : ''}`}>
-      {layout.map((item, idx) => {
+      {renderLayout.map((item, idx) => {
         const card = cardMap[item.chartId];
         if (!card) return null;
 
@@ -106,14 +128,14 @@ export default function EditableGrid({ viewId, children }) {
 
         if (!editMode) {
           return (
-            <div key={item.chartId} className="egrid-item" style={style}>
+            <div key={item.chartId} className="egrid-item" style={style} data-chart-id={item.chartId}>
               {cloned}
             </div>
           );
         }
 
         return (
-          <div key={item.chartId} className="egrid-item egrid-item--on" style={style}>
+          <div key={item.chartId} className="egrid-item egrid-item--on" style={style} data-chart-id={item.chartId}>
             <div className="lctrl">
               <div className="lctrl-group">
                 <button

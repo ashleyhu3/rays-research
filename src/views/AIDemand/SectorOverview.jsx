@@ -2,35 +2,32 @@ import { useEffect } from 'react';
 import { useDashboard } from '../../context/DashboardContext';
 import { chartsForSector } from '../../config/charts';
 
-import PyPI        from './PyPI';
-import GitHub      from './GitHub';
-import Trends      from './Trends';
-import Web         from './Web';
-import HuggingFace from './HuggingFace';
-import Pricing     from '../Pricing/Pricing';
-import Datacenter  from './Datacenter';
-import Electricity from './Electricity';
-import Chinese     from './Chinese';
+import PyPI            from './PyPI';
+import GitHub          from './GitHub';
+import Trends          from './Trends';
+import DemandOpenRouter from './DemandOpenRouter';
+import DemandGeneral   from './DemandGeneral';
+import HuggingFace     from './HuggingFace';
+import Pricing         from '../Pricing/Pricing';
+import Datacenter      from './Datacenter';
+import Electricity     from './Electricity';
+import Chinese         from './Chinese';
 
-const DEMAND_VIEWS = [
-  { Component: PyPI        },
-  { Component: GitHub      },
-  { Component: Trends      },
-  { Component: Web         },
-  { Component: HuggingFace },
-  { Component: Pricing     },
-  { Component: Datacenter  },
-  { Component: Electricity },
-  { Component: Chinese     },
+// The overview is one flat grid (no section headers). Pinned charts flow in the
+// order their views are mounted here; per-chart width is set in CSS
+// (.sector-overview [data-chart-id=...]). Views with nothing pinned render
+// nothing — PyPI/GitHub/Pricing are mounted last only so the Customise dropdown
+// can still surface their charts if a user pins one.
+const OVERVIEW_VIEWS = [
+  DemandOpenRouter,   // OpenRouter rankings (half-width, top)
+  Trends,             // Google Trends (half)
+  Chinese,            // Input token pricing (half)
+  DemandGeneral,      // OSS signals (quarter each)
+  HuggingFace,        // HuggingFace most-downloaded (quarter)
+  Datacenter,         // Datacenter capex (half)
+  Electricity,        // Electricity (half)
+  PyPI, GitHub, Pricing,
 ];
-
-const SECTOR_VIEWS = {
-  overview:  DEMAND_VIEWS,
-  dev:      [{ Component: PyPI }, { Component: GitHub }, { Component: Trends }],
-  consumer: [{ Component: Web }, { Component: HuggingFace }],
-  infra:    [{ Component: Pricing }, { Component: Datacenter }, { Component: Electricity }],
-  tokens:   [{ Component: Chinese }],
-};
 
 export default function SectorOverview({ sectorId, weeks }) {
   const { enterSector, exitSector, isPinned } = useDashboard();
@@ -40,19 +37,18 @@ export default function SectorOverview({ sectorId, weeks }) {
     return () => exitSector();
   }, [sectorId, enterSector, exitSector]);
 
-  const views = SECTOR_VIEWS[sectorId] ?? [];
   const totalPinned = Object.values(chartsForSector(sectorId))
     .flat()
     .filter(c => isPinned(c.id, sectorId)).length;
 
   return (
-    <div>
+    <div className="sector-overview">
       {totalPinned === 0 && (
-        <div style={{ color: 'var(--sec)', fontSize: 13, padding: '32px 0', textAlign: 'center' }}>
+        <div style={{ gridColumn: '1 / -1', color: 'var(--sec)', fontSize: 13, padding: '32px 0', textAlign: 'center' }}>
           No charts selected. Use <strong style={{ color: 'var(--text)' }}>Customise</strong> in the top right to add charts.
         </div>
       )}
-      {views.map(({ Component }) => (
+      {OVERVIEW_VIEWS.map(Component => (
         <Component key={Component.name} weeks={weeks} />
       ))}
     </div>

@@ -107,7 +107,7 @@ export default function DemandMiniMax({ weeks: W }) {
           srcUrl="https://openrouter.ai/rankings"
           freq="daily"
           subtitle="Percentage of total weekly OpenRouter token throughput served by MiniMax models."
-          height={260}
+          height={260} pinTop
         >
           <Line data={orShareData} options={baseOpts(v => `${v.toFixed(1)}%`)} />
         </ChartCard>

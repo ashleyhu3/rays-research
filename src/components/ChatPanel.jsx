@@ -3,7 +3,6 @@ import { useState, useRef, useEffect } from 'react';
 const SOURCE_LABELS = {
   pypi:       'PyPI',
   trends:     'Trends',
-  jobs:       'Jobs',
   github:     'GitHub',
   gpu:        'GPU',
   openrouter: 'OpenRouter',

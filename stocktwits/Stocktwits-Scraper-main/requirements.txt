@@ -1,0 +1,8 @@
+# Primary (API) scraper — uses curl via subprocess + pandas
+pandas>=2.0
+
+# Fallback (Selenium) scraper only — optional, install if you need the browser scraper
+selenium>=4.0
+beautifulsoup4>=4.12
+python-dateutil>=2.8
+webdriver-manager>=4.0

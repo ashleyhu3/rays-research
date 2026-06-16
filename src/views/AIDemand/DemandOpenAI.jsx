@@ -110,7 +110,7 @@ export default function DemandOpenAI({ weeks: W }) {
           srcUrl="https://openrouter.ai/rankings"
           freq="daily"
           subtitle="Percentage of total weekly OpenRouter token throughput served by OpenAI models."
-          height={220}
+          height={220} pinTop
         >
           <Line data={orShareData} options={baseOpts(v => `${v.toFixed(1)}%`)} />
         </ChartCard>
@@ -124,7 +124,7 @@ export default function DemandOpenAI({ weeks: W }) {
           srcUrl="https://openrouter.ai/rankings"
           freq="daily"
           subtitle={`Week of ${orp.latestWeek}. OpenAI models ranked in OpenRouter's top 15 by token volume.`}
-          height={220}
+          height={220} pinTop
         >
           <Bar data={orModelsData} options={hBarOpts(fmtTok)} />
         </ChartCard>
@@ -144,31 +144,29 @@ export default function DemandOpenAI({ weeks: W }) {
       </ChartCard>
 
       {metricTrendCard({
-        chartId: 'oa-jobs',
+        chartId: 'oa-stars',
         weeks: W,
-        title: 'OpenAI — open roles (Greenhouse)',
-        src: 'boards.greenhouse.io',
-        srcUrl: 'https://boards.greenhouse.io/openai',
-        subtitle: 'Hiring demand: total and engineering openings.',
-        hist: mh?.jobs,
+        title: 'openai-python — GitHub stars',
+        src: 'github.com',
+        srcUrl: 'https://github.com/openai/openai-python',
+        subtitle: 'Developer mindshare. Stars accumulate; rising slope = accelerating adoption.',
+        hist: mh?.github,
         series: [
-          { metric: 'OpenAI.total',       label: 'Total roles', color: C.openai },
-          { metric: 'OpenAI.engineering', label: 'Engineering', color: C.teal },
+          { metric: 'openai/openai-python.stars', label: 'Stars', color: C.openai },
         ],
-        fmt: v => String(Math.round(v)),
+        fmt: fmtK,
       })}
 
       {metricTrendCard({
         chartId: 'oa-github',
         weeks: W,
-        title: 'openai-python — GitHub stars & dependent repos',
+        title: 'openai-python — GitHub dependent repos',
         src: 'github.com',
         srcUrl: 'https://github.com/openai/openai-python',
-        subtitle: 'Production adoption: repos that depend on the SDK, plus stars.',
+        subtitle: 'Production adoption: repos that depend on the SDK.',
         hist: mh?.github,
         series: [
-          { metric: 'openai/openai-python.dependents', label: 'Dependent repos', color: C.openai },
-          { metric: 'openai/openai-python.stars',      label: 'Stars',           color: C.teal },
+          { metric: 'openai/openai-python.dependents', label: 'Dependent repos', color: C.teal },
         ],
         fmt: fmtK,
       })}

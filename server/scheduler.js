@@ -5,7 +5,6 @@ const history = require('./history');
 const scrapers = {
   pypi:          () => require('./scrapers/pypi').getPypiHistory(),
   trends:        () => require('./scrapers/trends').getTrendsData(),
-  jobs:          () => require('./scrapers/jobs').getJobsData(),
   gpu:           () => require('./scrapers/gpu').getGpuPrices(),
   github:        () => require('./scrapers/github').getGitHubData(),
   openrouter:    () => require('./scrapers/openrouter').getOpenRouterData(),
@@ -32,7 +31,6 @@ const scrapers = {
 const TTL = {
   pypi:          24 * 3600000,  // daily   — pypistats.org aggregates weekly; intraday changes irrelevant
   trends:        24 * 3600000,  // daily   — Google Trends resolution is one data point per day
-  jobs:           6 * 3600000,  // 6-hourly — job listings open and close continuously
   gpu:           24 * 3600000,  // daily   — persisted as one median snapshot per UTC day
   github:        24 * 3600000,  // daily   — dependent repo counts grow slowly
   openrouter:     1 * 3600000,  // hourly  — new models and price changes published frequently
@@ -80,7 +78,7 @@ function setup() {
   cron.schedule('0 * * * *', () => refreshAll(['openrouter', 'hn']));
 
   // Every 6 hours: social signals and business data updated throughout the day
-  cron.schedule('0 */6 * * *', () => refreshAll(['jobs', 'docker', 'openrouterRanks', 'dram', 'aws']));
+  cron.schedule('0 */6 * * *', () => refreshAll(['docker', 'openrouterRanks', 'dram', 'aws']));
 
   // Daily at 03:00 UTC: aggregate stats whose sources only publish once per day
   cron.schedule('0 3 * * *', () => refreshAll(['gpu', 'pypi', 'trends', 'github', 'eia', 'mops', 'githubCommits', 'wikipedia', 'npm', 'stackoverflow', 'huggingface', 'mcp', 'sec']));

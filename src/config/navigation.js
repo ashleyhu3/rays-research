@@ -19,12 +19,8 @@ export const NAV_SECTIONS = [
   },
   {
     label: 'Market signals',
-    sectorId: 'market',
     items: [
-      { id: 'openrouter-rankings', label: 'OpenRouter rankings' },
-      { id: 'demand-general',      label: 'Infrastructure & OSS' },
-      { id: 'hf',                  label: 'HuggingFace models'   },
-      { id: 'github',              label: 'GitHub SDK adoption'  },
+      { id: 'market-signals', label: 'Market signals' },
     ],
   },
   {
@@ -62,12 +58,13 @@ export const VIEW_META = {
   'demand-google':    { title: 'GOOGLE / GEMINI',             isNew: false },
   'demand-zhipu':     { title: 'ZHIPU AI / GLM',              isNew: false },
   'demand-minimax':   { title: 'MINIMAX',                     isNew: false },
+  'market-signals':        { title: 'MARKET SIGNALS',                isNew: false },
   'demand-general':        { title: 'INFRASTRUCTURE & OSS SIGNALS',  isNew: false },
   'openrouter-rankings':   { title: 'OPENROUTER MODEL RANKINGS',      isNew: true  },
   // Legacy views — still accessible via direct navigation or Ask tab
   pypi:              { title: 'PYPI / NPM / STACK OVERFLOW',   isNew: false },
   github:            { title: 'GITHUB DEPENDENTS',             isNew: false },
-  trends:            { title: 'GOOGLE TRENDS & JOBS',          isNew: false },
+  trends:            { title: 'GOOGLE TRENDS',                 isNew: false },
   web:               { title: 'WEB TRAFFIC & STICKINESS',      isNew: false },
   hf:                { title: 'HUGGINGFACE DOWNLOADS',         isNew: false },
   pricing:           { title: 'PRICING — GPU & MEMORY SPOT',   isNew: true  },

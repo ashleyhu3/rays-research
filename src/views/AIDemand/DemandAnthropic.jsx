@@ -108,7 +108,7 @@ export default function DemandAnthropic({ weeks: W }) {
           srcUrl="https://openrouter.ai/rankings"
           freq="daily"
           subtitle="Percentage of total weekly OpenRouter token throughput served by Anthropic models."
-          height={220}
+          height={220} pinTop
         >
           <Line data={orShareData} options={baseOpts(v => `${v.toFixed(1)}%`)} />
         </ChartCard>
@@ -122,7 +122,7 @@ export default function DemandAnthropic({ weeks: W }) {
           srcUrl="https://openrouter.ai/rankings"
           freq="daily"
           subtitle={`Week of ${orp.latestWeek}. Anthropic models ranked in OpenRouter's top 15 by token volume.`}
-          height={220}
+          height={220} pinTop
         >
           <Bar data={orModelsData} options={hBarOpts(fmtTok)} />
         </ChartCard>
@@ -142,31 +142,29 @@ export default function DemandAnthropic({ weeks: W }) {
       </ChartCard>
 
       {metricTrendCard({
-        chartId: 'an-jobs',
+        chartId: 'an-stars',
         weeks: W,
-        title: 'Anthropic — open roles (Greenhouse)',
-        src: 'boards.greenhouse.io',
-        srcUrl: 'https://boards.greenhouse.io/anthropic',
-        subtitle: 'Hiring demand: total and engineering openings.',
-        hist: mh?.jobs,
+        title: 'anthropic-sdk-python — GitHub stars',
+        src: 'github.com',
+        srcUrl: 'https://github.com/anthropics/anthropic-sdk-python',
+        subtitle: 'Developer mindshare. Stars accumulate; rising slope = accelerating adoption.',
+        hist: mh?.github,
         series: [
-          { metric: 'Anthropic.total',       label: 'Total roles', color: C.anthropic },
-          { metric: 'Anthropic.engineering', label: 'Engineering', color: C.teal },
+          { metric: 'anthropics/anthropic-sdk-python.stars', label: 'Stars', color: C.anthropic },
         ],
-        fmt: v => String(Math.round(v)),
+        fmt: fmtK,
       })}
 
       {metricTrendCard({
         chartId: 'an-github',
         weeks: W,
-        title: 'anthropic-sdk-python — GitHub stars & dependent repos',
+        title: 'anthropic-sdk-python — GitHub dependent repos',
         src: 'github.com',
         srcUrl: 'https://github.com/anthropics/anthropic-sdk-python',
-        subtitle: 'Production adoption: repos that depend on the SDK, plus stars.',
+        subtitle: 'Production adoption: repos that depend on the SDK.',
         hist: mh?.github,
         series: [
-          { metric: 'anthropics/anthropic-sdk-python.dependents', label: 'Dependent repos', color: C.anthropic },
-          { metric: 'anthropics/anthropic-sdk-python.stars',      label: 'Stars',           color: C.teal },
+          { metric: 'anthropics/anthropic-sdk-python.dependents', label: 'Dependent repos', color: C.teal },
         ],
         fmt: fmtK,
       })}

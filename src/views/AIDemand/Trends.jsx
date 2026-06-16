@@ -3,17 +3,13 @@ import { Line, Bar } from 'react-chartjs-2';
 import { C, fa } from '../../config/colors';
 import { trend } from '../../utils/dataGenerators';
 import { dayLabels } from '../../utils/labels';
-import { baseOpts, hBarOpts, mkDs, fmtP, fmtN } from '../../utils/chartHelpers';
+import { baseOpts, hBarOpts, mkDs, fmtP } from '../../utils/chartHelpers';
 import ChartCard from '../../components/ChartCard';
 import EditableGrid from '../../components/EditableGrid';
 import { useData } from '../../context/DataContext';
 
 const STATIC_GEO_LABELS = ['San Francisco','New York','Seattle','Boston','Austin','Chicago','Los Angeles','Atlanta'];
 const STATIC_GEO_VALS   = [100, 82, 78, 74, 68, 61, 58, 52];
-
-const JOB_COMPANIES  = ['Anthropic', 'OpenAI', 'Google DM', 'Mistral', 'Cohere', 'Perplexity'];
-const JOB_COLORS     = [C.anthropic, C.openai, C.google, C.mistral, C.teal, C.perplexity];
-const STATIC_JOBS    = { Anthropic: 312, OpenAI: 486, 'Google DM': 891, Mistral: 124, Cohere: 78, Perplexity: 95 };
 
 export default function Trends({ weeks: W }) {
   const { liveData } = useData();
@@ -80,20 +76,6 @@ export default function Trends({ weeks: W }) {
     };
   }, [D, days, hasLive, td]);
 
-  const jd = liveData?.jobs;
-  const hasLiveJobs = jd != null;
-  const getTotal = name => jd?.[name]?.total ?? STATIC_JOBS[name] ?? 0;
-
-  const jobsData = useMemo(() => ({
-    labels: JOB_COMPANIES,
-    datasets: [{
-      data:            JOB_COMPANIES.map(getTotal),
-      backgroundColor: JOB_COLORS.map(c => fa(c, 0.7)),
-      borderColor:     JOB_COLORS,
-      borderWidth: 1, borderRadius: 4,
-    }],
-  }), [jd]);
-
   const src = hasLive ? 'google-trends-api · live' : 'pytrends · free · no auth';
 
   return (
@@ -137,20 +119,6 @@ export default function Trends({ weeks: W }) {
         height={200}
       >
         <Line data={brandData} options={baseOpts(fmtP)} />
-      </ChartCard>
-
-      <ChartCard
-        chartId="trends-jobs"
-        title="Open roles by AI lab — from Greenhouse"
-        src="boards.greenhouse.io"
-        srcUrl="https://boards.greenhouse.io/anthropic"
-        freq="live"
-        subtitle={hasLiveJobs
-          ? JOB_COMPANIES.map(n => `${n}: ${getTotal(n)}${jd?.[n]?.engineering != null ? ` (${jd[n].engineering} eng)` : ''}`).join(' · ')
-          : 'Live open engineering + research roles per AI lab via Greenhouse public API.'}
-        height={200}
-      >
-        <Bar data={jobsData} options={baseOpts(fmtN)} />
       </ChartCard>
     </EditableGrid>
   );

@@ -12,7 +12,7 @@ import ChartCard from './ChartCard';
  * Plain function (not a component) for the same reason as orComboCard:
  * EditableGrid reads chartId off its direct children.
  *
- * series: [{ metric: 'OpenAI.total', label: 'Total roles', color }]
+ * series: [{ metric: 'anthropics/anthropic-sdk-python.stars', label: 'Stars', color }]
  * hist:   liveData.metricsHistory[source] — { metric: { date: value } }
  */
 export function metricTrendCard({ chartId, title, src, srcUrl, freq = 'daily', subtitle, hist, series, fmt, height = 220, span2 = false, weeks }) {

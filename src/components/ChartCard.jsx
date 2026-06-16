@@ -23,7 +23,7 @@ export default function ChartCard({
   transposed = false, rowLinks = [], colLinks = [], colorPct = false, clean = false,
 }) {
   const { tableMode } = useUI();
-  const { sectorOverviewMode, activeSector, isPinned } = useDashboard();
+  const { sectorOverviewMode, activeSector, isPinned, pageCharts } = useDashboard();
 
   // Series filter: any chart with 2+ labeled datasets gets a dropdown to
   // toggle individual series on/off (hidden labels are card-local state)
@@ -41,6 +41,7 @@ export default function ChartCard({
   }, [filterOpen]);
 
   if (sectorOverviewMode && chartId && !isPinned(chartId, activeSector)) return null;
+  if (pageCharts && chartId && !pageCharts.has(chartId)) return null;
   const cls = ['cbox', isNew && 'new', span2 && 'span2'].filter(Boolean).join(' ');
 
   const chartChild = React.Children.toArray(children)[0];
