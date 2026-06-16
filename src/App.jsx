@@ -7,38 +7,44 @@ function getModeForView(viewId) {
   }
   return 'demand';
 }
-import Sidebar from './components/Sidebar';
-import Topbar from './components/Topbar';
-import Navbar from './components/Navbar';
-import Chat from './views/AIDemand/Chat';
+import Sidebar from './components/layout/Sidebar';
+import Topbar from './components/layout/Topbar';
+import Navbar from './components/layout/Navbar';
+import Chat from './pages/chat/Chat';
 import { UIProvider } from './context/UIContext';
 import { DashboardProvider } from './context/DashboardContext';
 import { LayoutProvider } from './context/LayoutContext';
 
-// ── View components (static imports for reliability) ─────────────────
-import PyPI          from './views/AIDemand/PyPI';
-import GitHub        from './views/AIDemand/GitHub';
-import Trends        from './views/AIDemand/Trends';
-import Web           from './views/AIDemand/Web';
-import HuggingFace   from './views/AIDemand/HuggingFace';
-import Pricing       from './views/Pricing/Pricing';
-import Datacenter    from './views/AIDemand/Datacenter';
-import Electricity   from './views/AIDemand/Electricity';
-import Chinese       from './views/AIDemand/Chinese';
-import SectorOverview from './views/AIDemand/SectorOverview';
-import AISupply, { AISupplyOptics, AISupplyPCB } from './views/AISupply/AISupply';
-import GitHubActivity from './views/AIDemand/GitHubActivity';
-import Docker         from './views/AIDemand/Docker';
-import Community      from './views/AIDemand/Community';
-import Options        from './views/AIDemand/Options';
-import DemandOpenAI   from './views/AIDemand/DemandOpenAI';
-import DemandAnthropic from './views/AIDemand/DemandAnthropic';
-import DemandGoogle   from './views/AIDemand/DemandGoogle';
-import DemandZhipu    from './views/AIDemand/DemandZhipu';
-import DemandMiniMax  from './views/AIDemand/DemandMiniMax';
-import DemandGeneral      from './views/AIDemand/DemandGeneral';
-import DemandOpenRouter   from './views/AIDemand/DemandOpenRouter';
-import MarketSignals      from './views/AIDemand/MarketSignals';
+// ── Page components (static imports for reliability) ─────────────────
+// Overview
+import SectorOverview from './pages/overview/SectorOverview';
+// AI company pages
+import DemandOpenAI    from './pages/companies/OpenAI';
+import DemandAnthropic from './pages/companies/Anthropic';
+import DemandGoogle    from './pages/companies/Google';
+import DemandZhipu     from './pages/companies/Zhipu';
+import DemandMiniMax   from './pages/companies/MiniMax';
+// Market signals
+import MarketSignals    from './pages/market-signals/MarketSignals';
+import DemandGeneral    from './pages/market-signals/InfrastructureOss';
+import DemandOpenRouter from './pages/market-signals/OpenRouter';
+// Supply chain
+import AISupply, { AISupplyOptics, AISupplyPCB } from './pages/supply-chain/SupplyChain';
+// Tools
+import Options from './pages/options/Options';
+import Pricing from './pages/pricing/Pricing';
+// Source-specific signal pages
+import PyPI          from './pages/sources/PyPI';
+import GitHub        from './pages/sources/GitHub';
+import Trends        from './pages/sources/Trends';
+import Web           from './pages/sources/Web';
+import HuggingFace   from './pages/sources/HuggingFace';
+import Datacenter    from './pages/sources/Datacenter';
+import Electricity   from './pages/sources/Electricity';
+import Chinese       from './pages/sources/Chinese';
+import GitHubActivity from './pages/sources/GitHubActivity';
+import Docker         from './pages/sources/Docker';
+import Community      from './pages/sources/Community';
 
 /** Views that use EditableGrid and support layout customisation */
 const LAYOUT_EDITABLE = new Set([
@@ -80,7 +86,7 @@ export default function App() {
   const [weeks, setWeeks] = useState(52);
   const [months, setMonths] = useState(12);
 
-  const meta = VIEW_META[currentView] ?? { title: currentView.toUpperCase(), isNew: false };
+  const meta = VIEW_META[currentView] ?? { title: currentView.toUpperCase() };
   const mode = getModeForView(currentView);
   const prevView = useRef(null);
 
@@ -110,7 +116,6 @@ export default function App() {
             {currentView !== 'chat' && (
               <Topbar
                 title={meta.title}
-                isNew={meta.isNew}
                 weeks={mode === 'demand' || mode === 'pricing' ? weeks : undefined}
                 onWeeksChange={mode === 'demand' || mode === 'pricing' ? setWeeks : undefined}
                 months={mode === 'supply' ? months : undefined}

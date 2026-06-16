@@ -49,35 +49,35 @@ export const NAV_SECTIONS = [
   },
 ];
 
-/** Flat view metadata — title & isNew flag */
+/** Page title shown in the top bar, keyed by view id. */
 export const VIEW_META = {
-  overview:           { title: 'OVERVIEW DASHBOARD',          isNew: false },
+  overview:           { title: 'OVERVIEW DASHBOARD' },
   // Company demand pages
-  'demand-openai':    { title: 'OPENAI / CHATGPT',            isNew: false },
-  'demand-anthropic': { title: 'ANTHROPIC / CLAUDE',          isNew: false },
-  'demand-google':    { title: 'GOOGLE / GEMINI',             isNew: false },
-  'demand-zhipu':     { title: 'ZHIPU AI / GLM',              isNew: false },
-  'demand-minimax':   { title: 'MINIMAX',                     isNew: false },
-  'market-signals':        { title: 'MARKET SIGNALS',                isNew: false },
-  'demand-general':        { title: 'INFRASTRUCTURE & OSS SIGNALS',  isNew: false },
-  'openrouter-rankings':   { title: 'OPENROUTER MODEL RANKINGS',      isNew: true  },
-  // Legacy views — still accessible via direct navigation or Ask tab
-  pypi:              { title: 'PYPI / NPM / STACK OVERFLOW',   isNew: false },
-  github:            { title: 'GITHUB DEPENDENTS',             isNew: false },
-  trends:            { title: 'GOOGLE TRENDS',                 isNew: false },
-  web:               { title: 'WEB TRAFFIC & STICKINESS',      isNew: false },
-  hf:                { title: 'HUGGINGFACE DOWNLOADS',         isNew: false },
-  pricing:           { title: 'PRICING — GPU & MEMORY SPOT',   isNew: true  },
-  datacenter:        { title: 'US DATACENTER BUILD',           isNew: false },
-  electricity:       { title: 'AI ELECTRICITY DEMAND',         isNew: false },
-  chinese:           { title: 'CHINESE LLM USAGE',             isNew: false },
-  'ai-supply':        { title: 'AI SUPPLY — OVERVIEW',         isNew: true },
-  'ai-supply-optics': { title: 'AI SUPPLY — OPTICS',           isNew: true },
-  'ai-supply-pcb':    { title: 'AI SUPPLY — PCB',              isNew: true },
-  'github-commits':   { title: 'GITHUB COMMIT VELOCITY',       isNew: false },
-  docker:             { title: 'DOCKER HUB DEPLOYS',           isNew: false },
-  community:          { title: 'HN & WIKIPEDIA PULSE',         isNew: false },
-  options:            { title: 'OPTIONS FLOW',                 isNew: true },
+  'demand-openai':    { title: 'OPENAI / CHATGPT' },
+  'demand-anthropic': { title: 'ANTHROPIC / CLAUDE' },
+  'demand-google':    { title: 'GOOGLE / GEMINI' },
+  'demand-zhipu':     { title: 'ZHIPU AI / GLM' },
+  'demand-minimax':   { title: 'MINIMAX' },
+  'market-signals':        { title: 'MARKET SIGNALS' },
+  'demand-general':        { title: 'INFRASTRUCTURE & OSS SIGNALS' },
+  'openrouter-rankings':   { title: 'OPENROUTER MODEL RANKINGS' },
+  // Source-specific signal pages — reachable via direct navigation or Ask tab
+  pypi:              { title: 'PYPI / NPM / STACK OVERFLOW' },
+  github:            { title: 'GITHUB DEPENDENTS' },
+  trends:            { title: 'GOOGLE TRENDS' },
+  web:               { title: 'WEB TRAFFIC & STICKINESS' },
+  hf:                { title: 'HUGGINGFACE DOWNLOADS' },
+  pricing:           { title: 'PRICING — GPU & MEMORY SPOT' },
+  datacenter:        { title: 'US DATACENTER BUILD' },
+  electricity:       { title: 'AI ELECTRICITY DEMAND' },
+  chinese:           { title: 'CHINESE LLM USAGE' },
+  'ai-supply':        { title: 'AI SUPPLY — OVERVIEW' },
+  'ai-supply-optics': { title: 'AI SUPPLY — OPTICS' },
+  'ai-supply-pcb':    { title: 'AI SUPPLY — PCB' },
+  'github-commits':   { title: 'GITHUB COMMIT VELOCITY' },
+  docker:             { title: 'DOCKER HUB DEPLOYS' },
+  community:          { title: 'HN & WIKIPEDIA PULSE' },
+  options:            { title: 'OPTIONS FLOW' },
 };
 
 /** Map sector overview view id → sectorId */

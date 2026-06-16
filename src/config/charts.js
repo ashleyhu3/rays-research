@@ -1,83 +1,92 @@
+import { chartTitle } from './chartMeta';
+
 /**
- * Registry of all individual charts across the dashboard.
- * Each entry maps to one ChartCard in a view file.
- * sectorId groups charts for sector-overview pages.
- * subView groups charts within the edit panel.
- * defaultPinned = shown on sector overview by default.
+ * Registry of which charts appear on the sector-overview pages and in the
+ * "Customise" picker. Each entry maps to one ChartCard in a view file:
+ *   sectorId      — groups charts for sector-overview pages
+ *   subView       — groups charts within the edit panel
+ *   defaultPinned — shown on the sector overview by default
+ *
+ * Chart titles are NOT stored here — they come from src/config/chartText.js
+ * (the single place to edit chart names). Use chartsForSector() / CHART_BY_ID,
+ * which attach the title for you.
  */
-export const CHART_REGISTRY = [
+const REGISTRY = [
   // ── Developer signals ──────────────────────────────────────────────
-  { id: 'pypi-installs',   sectorId: 'dev', subView: 'pypi',   title: 'PyPI weekly downloads',               defaultPinned: false },
-  { id: 'pypi-share',      sectorId: 'dev', subView: 'pypi',   title: 'Share of combined installs',          defaultPinned: false },
-  { id: 'pypi-npm',        sectorId: 'dev', subView: 'pypi',   title: 'npm weekly downloads',                defaultPinned: false },
-  { id: 'pypi-so',         sectorId: 'dev', subView: 'pypi',   title: 'Stack Overflow questions by tag',     defaultPinned: false },
-  { id: 'github-stars',    sectorId: 'dev', subView: 'github', title: 'GitHub stars per SDK repo',            defaultPinned: false },
-  { id: 'github-deps',     sectorId: 'dev', subView: 'github', title: 'GitHub "Used By" dependents',         defaultPinned: false },
-  { id: 'trends-api',      sectorId: 'dev', subView: 'trends', title: 'Google Trends — API search interest', defaultPinned: true  },
-  { id: 'trends-geo',      sectorId: 'dev', subView: 'trends', title: 'Search interest by US metro',         defaultPinned: false },
-  { id: 'trends-brand',    sectorId: 'dev', subView: 'trends', title: 'Brand search (Claude vs ChatGPT)',    defaultPinned: false },
+  { id: 'pypi-installs',   sectorId: 'dev', subView: 'pypi',   defaultPinned: false },
+  { id: 'pypi-share',      sectorId: 'dev', subView: 'pypi',   defaultPinned: false },
+  { id: 'pypi-npm',        sectorId: 'dev', subView: 'pypi',   defaultPinned: false },
+  { id: 'pypi-so',         sectorId: 'dev', subView: 'pypi',   defaultPinned: false },
+  { id: 'github-stars',    sectorId: 'dev', subView: 'github', defaultPinned: false },
+  { id: 'github-deps',     sectorId: 'dev', subView: 'github', defaultPinned: false },
+  { id: 'trends-api',      sectorId: 'dev', subView: 'trends', defaultPinned: true  },
+  { id: 'trends-geo',      sectorId: 'dev', subView: 'trends', defaultPinned: false },
+  { id: 'trends-brand',    sectorId: 'dev', subView: 'trends', defaultPinned: false },
 
   // ── Market signals ─────────────────────────────────────────────────
   // OpenRouter model rankings
-  { id: 'or-top',       sectorId: 'market', subView: 'openrouter', title: 'Top 10 models — weekly tokens',        defaultPinned: false },
-  { id: 'or-trend',     sectorId: 'market', subView: 'openrouter', title: 'Top models — weekly token trend',      defaultPinned: true },
-  { id: 'or-provstack', sectorId: 'market', subView: 'openrouter', title: 'Provider token volume (stacked)',      defaultPinned: true },
-  { id: 'or-provshare', sectorId: 'market', subView: 'openrouter', title: 'Provider market share (%)',            defaultPinned: true },
-  { id: 'or-combo',     sectorId: 'market', subView: 'openrouter', title: 'Total tokens vs YoY growth',           defaultPinned: true },
-  { id: 'or-growth',    sectorId: 'market', subView: 'openrouter', title: 'Week-over-week token growth (%)',       defaultPinned: false },
+  { id: 'or-top',       sectorId: 'market', subView: 'openrouter', defaultPinned: false },
+  { id: 'or-trend',     sectorId: 'market', subView: 'openrouter', defaultPinned: true },
+  { id: 'or-provstack', sectorId: 'market', subView: 'openrouter', defaultPinned: true },
+  { id: 'or-provshare', sectorId: 'market', subView: 'openrouter', defaultPinned: true },
+  { id: 'or-combo',     sectorId: 'market', subView: 'openrouter', defaultPinned: true },
+  { id: 'or-growth',    sectorId: 'market', subView: 'openrouter', defaultPinned: false },
   // Infrastructure & OSS signals
-  { id: 'gen-mcp',       sectorId: 'market', subView: 'general', title: 'MCP ecosystem — GitHub repos',        defaultPinned: true },
-  { id: 'gen-sec',       sectorId: 'market', subView: 'general', title: 'SEC filings mentioning AI terms',     defaultPinned: true },
-  { id: 'gen-commits',   sectorId: 'market', subView: 'general', title: 'OSS commit velocity',                 defaultPinned: false },
-  { id: 'gen-docker',    sectorId: 'market', subView: 'general', title: 'Docker Hub AI image pulls',           defaultPinned: false },
-  { id: 'gen-hn',        sectorId: 'market', subView: 'general', title: 'Hacker News AI story volume',         defaultPinned: true },
-  { id: 'gen-cnmarket',  sectorId: 'market', subView: 'general', title: 'China enterprise LLM market share',   defaultPinned: false },
+  { id: 'gen-mcp',       sectorId: 'market', subView: 'general', defaultPinned: true },
+  { id: 'gen-sec',       sectorId: 'market', subView: 'general', defaultPinned: true },
+  { id: 'gen-commits',   sectorId: 'market', subView: 'general', defaultPinned: false },
+  { id: 'gen-docker',    sectorId: 'market', subView: 'general', defaultPinned: false },
+  { id: 'gen-hn',        sectorId: 'market', subView: 'general', defaultPinned: true },
+  { id: 'gen-cnmarket',  sectorId: 'market', subView: 'general', defaultPinned: false },
 
   // ── Consumer signals ───────────────────────────────────────────────
-  { id: 'hf-downloads',     sectorId: 'consumer', subView: 'hf',     title: 'Most-downloaded models',           defaultPinned: true  },
-  { id: 'hf-families',      sectorId: 'consumer', subView: 'hf',     title: 'Open-model demand by family',      defaultPinned: false },
-  { id: 'hf-categories',    sectorId: 'consumer', subView: 'hf',     title: 'Model category breakdown',         defaultPinned: false },
-  { id: 'hf-uploads',       sectorId: 'consumer', subView: 'hf',     title: 'Model creation rate',              defaultPinned: false },
+  { id: 'hf-downloads',     sectorId: 'consumer', subView: 'hf',     defaultPinned: true  },
+  { id: 'hf-families',      sectorId: 'consumer', subView: 'hf',     defaultPinned: false },
+  { id: 'hf-categories',    sectorId: 'consumer', subView: 'hf',     defaultPinned: false },
+  { id: 'hf-uploads',       sectorId: 'consumer', subView: 'hf',     defaultPinned: false },
 
   // ── Infrastructure ─────────────────────────────────────────────────
-  { id: 'dram-index',      sectorId: 'infra', subView: 'pricing',     title: 'Mainstream DRAM spot price index',      defaultPinned: false },
-  { id: 'dram-chips',      sectorId: 'infra', subView: 'pricing',     title: 'DRAM chip & GDDR spot price',           defaultPinned: false },
-  { id: 'dram-modules',    sectorId: 'infra', subView: 'pricing',     title: 'Memory module spot price',              defaultPinned: false },
-  { id: 'dram-change',     sectorId: 'infra', subView: 'pricing',     title: 'DRAM spot session change (%)',          defaultPinned: false },
-  { id: 'dc-capex',        sectorId: 'infra', subView: 'datacenter',  title: 'Hyperscaler capex committed',           defaultPinned: true  },
-  { id: 'dc-capacity',     sectorId: 'infra', subView: 'datacenter',  title: 'Capacity under construction (GW)',      defaultPinned: false },
-  { id: 'dc-state',        sectorId: 'infra', subView: 'datacenter',  title: 'Permitted capacity by US state',        defaultPinned: false },
-  { id: 'dc-grid',         sectorId: 'infra', subView: 'datacenter',  title: 'Grid interconnection queue',            defaultPinned: false },
-  { id: 'dc-btm',          sectorId: 'infra', subView: 'datacenter',  title: 'Behind-the-meter generation',          defaultPinned: false },
-  { id: 'dc-deals',        sectorId: 'infra', subView: 'datacenter',  title: 'Datacenter deals signed per quarter',  defaultPinned: false },
-  { id: 'elec-consumption',sectorId: 'infra', subView: 'electricity', title: 'US datacenter electricity consumption', defaultPinned: true  },
-  { id: 'elec-state',      sectorId: 'infra', subView: 'electricity', title: 'State share of datacenter electricity', defaultPinned: false },
-  { id: 'elec-ai-share',   sectorId: 'infra', subView: 'electricity', title: 'AI electricity as % of US total',      defaultPinned: false },
-  { id: 'elec-rates',      sectorId: 'infra', subView: 'electricity', title: 'Household electricity rate impact',    defaultPinned: false },
-  { id: 'elec-mix',        sectorId: 'infra', subView: 'electricity', title: 'Renewable vs fossil share',            defaultPinned: false },
-  { id: 'elec-pue',        sectorId: 'infra', subView: 'electricity', title: 'Power Usage Effectiveness (PUE)',      defaultPinned: false },
+  { id: 'dram-index',      sectorId: 'infra', subView: 'pricing',     defaultPinned: false },
+  { id: 'dram-chips',      sectorId: 'infra', subView: 'pricing',     defaultPinned: false },
+  { id: 'dram-modules',    sectorId: 'infra', subView: 'pricing',     defaultPinned: false },
+  { id: 'dram-change',     sectorId: 'infra', subView: 'pricing',     defaultPinned: false },
+  { id: 'dc-capex',        sectorId: 'infra', subView: 'datacenter',  defaultPinned: true  },
+  { id: 'dc-capacity',     sectorId: 'infra', subView: 'datacenter',  defaultPinned: false },
+  { id: 'dc-state',        sectorId: 'infra', subView: 'datacenter',  defaultPinned: false },
+  { id: 'dc-grid',         sectorId: 'infra', subView: 'datacenter',  defaultPinned: false },
+  { id: 'dc-btm',          sectorId: 'infra', subView: 'datacenter',  defaultPinned: false },
+  { id: 'dc-deals',        sectorId: 'infra', subView: 'datacenter',  defaultPinned: false },
+  { id: 'elec-consumption',sectorId: 'infra', subView: 'electricity', defaultPinned: true  },
+  { id: 'elec-state',      sectorId: 'infra', subView: 'electricity', defaultPinned: false },
+  { id: 'elec-ai-share',   sectorId: 'infra', subView: 'electricity', defaultPinned: false },
+  { id: 'elec-rates',      sectorId: 'infra', subView: 'electricity', defaultPinned: false },
+  { id: 'elec-mix',        sectorId: 'infra', subView: 'electricity', defaultPinned: false },
+  { id: 'elec-pue',        sectorId: 'infra', subView: 'electricity', defaultPinned: false },
 
   // ── Token consumption ──────────────────────────────────────────────
-  { id: 'cn-tokens',  sectorId: 'tokens', subView: 'chinese', title: 'Chinese LLM token consumption',    defaultPinned: false },
-  { id: 'cn-market',  sectorId: 'tokens', subView: 'chinese', title: 'China LLM market share (enterprise)', defaultPinned: false },
-  { id: 'cn-pricing', sectorId: 'tokens', subView: 'chinese', title: 'Chinese vs US model pricing',      defaultPinned: true  },
-  { id: 'cn-mau',     sectorId: 'tokens', subView: 'chinese', title: 'MiniMax consumer app MAU',         defaultPinned: false },
-  { id: 'cn-revenue', sectorId: 'tokens', subView: 'chinese', title: 'Zhipu AI revenue',                 defaultPinned: false },
-  { id: 'cn-bench',   sectorId: 'tokens', subView: 'chinese', title: 'SWE-bench scores',                 defaultPinned: false },
+  { id: 'cn-tokens',  sectorId: 'tokens', subView: 'chinese', defaultPinned: false },
+  { id: 'cn-market',  sectorId: 'tokens', subView: 'chinese', defaultPinned: false },
+  { id: 'cn-pricing', sectorId: 'tokens', subView: 'chinese', defaultPinned: true  },
+  { id: 'cn-mau',     sectorId: 'tokens', subView: 'chinese', defaultPinned: false },
+  { id: 'cn-revenue', sectorId: 'tokens', subView: 'chinese', defaultPinned: false },
+  { id: 'cn-bench',   sectorId: 'tokens', subView: 'chinese', defaultPinned: false },
 
   // ── Supply chain ───────────────────────────────────────────────────
-  { id: 'supply-all-rev',    sectorId: 'supply', subView: 'ai-supply',        title: 'All companies — monthly revenue',         defaultPinned: true  },
-  { id: 'supply-all-yoy',    sectorId: 'supply', subView: 'ai-supply',        title: 'All companies — revenue YoY growth (%)',  defaultPinned: false },
-  { id: 'supply-all-mom',    sectorId: 'supply', subView: 'ai-supply',        title: 'All companies — revenue MoM growth (%)',  defaultPinned: false },
-  { id: 'supply-optics-rev', sectorId: 'supply', subView: 'ai-supply-optics', title: 'Optics supply chain — monthly revenue',   defaultPinned: true  },
-  { id: 'supply-optics-yoy', sectorId: 'supply', subView: 'ai-supply-optics', title: 'Optics — revenue YoY growth (%)',         defaultPinned: false },
-  { id: 'supply-optics-mom', sectorId: 'supply', subView: 'ai-supply-optics', title: 'Optics — revenue MoM growth (%)',         defaultPinned: false },
-  { id: 'supply-pcb-rev',    sectorId: 'supply', subView: 'ai-supply-pcb',    title: 'PCB supply chain — monthly revenue',      defaultPinned: true  },
-  { id: 'supply-pcb-yoy',    sectorId: 'supply', subView: 'ai-supply-pcb',    title: 'PCB — revenue YoY growth (%)',            defaultPinned: false },
-  { id: 'supply-pcb-mom',    sectorId: 'supply', subView: 'ai-supply-pcb',    title: 'PCB — revenue MoM growth (%)',            defaultPinned: false },
+  { id: 'supply-all-rev',    sectorId: 'supply', subView: 'ai-supply',        defaultPinned: true  },
+  { id: 'supply-all-yoy',    sectorId: 'supply', subView: 'ai-supply',        defaultPinned: false },
+  { id: 'supply-all-mom',    sectorId: 'supply', subView: 'ai-supply',        defaultPinned: false },
+  { id: 'supply-optics-rev', sectorId: 'supply', subView: 'ai-supply-optics', defaultPinned: true  },
+  { id: 'supply-optics-yoy', sectorId: 'supply', subView: 'ai-supply-optics', defaultPinned: false },
+  { id: 'supply-optics-mom', sectorId: 'supply', subView: 'ai-supply-optics', defaultPinned: false },
+  { id: 'supply-pcb-rev',    sectorId: 'supply', subView: 'ai-supply-pcb',    defaultPinned: true  },
+  { id: 'supply-pcb-yoy',    sectorId: 'supply', subView: 'ai-supply-pcb',    defaultPinned: false },
+  { id: 'supply-pcb-mom',    sectorId: 'supply', subView: 'ai-supply-pcb',    defaultPinned: false },
 ];
 
-/** Quick lookup: chartId → registry entry */
+/** Registry with the display title attached from chartText.js. */
+export const CHART_REGISTRY = REGISTRY.map(c => ({ ...c, title: chartTitle(c.id) ?? c.id }));
+
+/** Quick lookup: chartId → registry entry (title included) */
 export const CHART_BY_ID = Object.fromEntries(CHART_REGISTRY.map(c => [c.id, c]));
 
 const DEMAND = ['dev', 'consumer', 'market', 'infra', 'tokens'];
