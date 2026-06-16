@@ -20,11 +20,11 @@ import Chinese         from '../sources/Chinese';
 // can still surface their charts if a user pins one.
 const OVERVIEW_VIEWS = [
   DemandOpenRouter,   // OpenRouter rankings (half-width, top)
+  Datacenter,         // Datacenter capex (half) — directly below OpenRouter
   Trends,             // Google Trends (half)
   Chinese,            // Input token pricing (half)
   DemandGeneral,      // OSS signals (quarter each)
   HuggingFace,        // HuggingFace most-downloaded (quarter)
-  Datacenter,         // Datacenter capex (half)
   Electricity,        // Electricity (half)
   PyPI, GitHub, Pricing,
 ];

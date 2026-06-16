@@ -22,6 +22,7 @@ const scrapers = {
   mcp:              () => require('./scrapers/mcp').getMcpData(),
   sec:              () => require('./scrapers/sec').getSecData(),
   aws:              () => require('./scrapers/aws').getAwsData(),
+  cloudGpu:         () => require('./scrapers/cloudGpu').getCloudGpuPrices(),
 };
 
 // TTLs match each source's natural update frequency.
@@ -48,6 +49,7 @@ const TTL = {
   mcp:           24 * 3600000,  // daily   — repo-creation counts; respects GitHub search quota
   sec:           24 * 3600000,  // daily   — EDGAR full-text index updates daily
   aws:            6 * 3600000,  // 6-hourly — AWS Spot Advisor refreshes a few times per day
+  cloudGpu:      24 * 3600000,  // daily   — curated list-price table, one snapshot per UTC day
 };
 
 // Hard cap per scraper so one hung source can never wedge a refresh
@@ -81,7 +83,7 @@ function setup() {
   cron.schedule('0 */6 * * *', () => refreshAll(['docker', 'openrouterRanks', 'dram', 'aws']));
 
   // Daily at 03:00 UTC: aggregate stats whose sources only publish once per day
-  cron.schedule('0 3 * * *', () => refreshAll(['gpu', 'pypi', 'trends', 'github', 'eia', 'mops', 'githubCommits', 'wikipedia', 'npm', 'stackoverflow', 'huggingface', 'mcp', 'sec']));
+  cron.schedule('0 3 * * *', () => refreshAll(['gpu', 'cloudGpu', 'pypi', 'trends', 'github', 'eia', 'mops', 'githubCommits', 'wikipedia', 'npm', 'stackoverflow', 'huggingface', 'mcp', 'sec']));
 }
 
 module.exports = { setup, refreshAll, scrapers, TTL };

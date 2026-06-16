@@ -1,8 +1,8 @@
 import { createContext, useContext, useCallback, useState } from 'react';
 
-// v2: v1 eagerly persisted every visited view's default order, which would now
-// mask the dynamic "biggest recent mover first" ordering. Bumping the key drops
-// those stale auto-seeded layouts; only explicit user arrangements are stored now.
+// v2: v1 eagerly persisted every visited view's default order. Bumping the key
+// dropped those stale auto-seeded layouts; only explicit user arrangements are
+// stored now, so unedited pages always follow the fixed default order in code.
 const STORAGE_KEY = 'chart-layouts-v2';
 
 function loadLayouts() {
@@ -27,10 +27,10 @@ const LayoutContext = createContext({
 export const useLayout = () => useContext(LayoutContext);
 
 // A view only gets a stored layout once the user explicitly rearranges it.
-// Until then EditableGrid follows its dynamic "biggest recent mover first"
-// order (which tracks the live data), so we never freeze that default. The
-// mutators take the current effective layout as their base so the first edit
-// seeds storage from whatever order is on screen.
+// Until then EditableGrid follows its fixed default order (pinTop cards first,
+// then the order written in the view file). The mutators take the current
+// effective layout as their base so the first edit seeds storage from whatever
+// order is on screen.
 export function LayoutProvider({ children }) {
   const [layouts, setLayouts] = useState(loadLayouts);
 

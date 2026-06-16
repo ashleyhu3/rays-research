@@ -207,6 +207,10 @@ export const CHART_TEXT = {
     title: 'AWS AI-chip spot price ($/chip/hr) — Trainium / Inferentia',
     subtitle: "AWS's in-house AI accelerators (no third-party market equivalent). Per-chip interruptible spot price: exact EC2 DescribeSpotPriceHistory backfill (≤90 days), continued forward via the free AWS Spot Advisor. Daily median across us-east-1 / us-west-2 / us-east-2.",
   },
+  'gpu-cloud-avg': {
+    title: 'Average GPU rental price across major clouds ($/GPU/hr)',
+    subtitle: 'Mean on-demand list price per GPU across AWS, Azure, GCP, CoreWeave, Nebius, and Oracle. The H100 line pools H100 and H200. Collected daily — fetched live where a cloud has a public price feed (Azure), with maintained reference rates for the rest. Forward-filled, accumulating from the day collection began.',
+  },
   'dram-index': {
     // The card shows a live title (index name + unit); this static title is the
     // fallback used in the overview "Customise" chart picker.

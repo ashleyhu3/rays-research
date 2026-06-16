@@ -75,6 +75,7 @@ export const CHART_SOURCES = {
   'gpu-index':         { src: 'vast.ai + AWS EC2',    srcUrl: 'https://aws.amazon.com/ec2/spot/instance-advisor/', freq: 'daily' },
   'gpu-spot-combined': { src: 'vast.ai + AWS EC2',    srcUrl: 'https://aws.amazon.com/ec2/spot/instance-advisor/', freq: 'daily' },
   'aws-chip-spot':     { src: 'AWS EC2 + Spot Advisor', srcUrl: 'https://aws.amazon.com/ec2/spot/instance-advisor/', freq: 'daily' },
+  'gpu-cloud-avg':     { src: 'AWS · Azure · GCP · CoreWeave · Nebius · Oracle', srcUrl: 'https://cloud-gpus.com/', freq: 'daily' },
   'dram-index':        { src: 'datatrack.trendforce.com', srcUrl: 'https://datatrack.trendforce.com/Chart/content/4694/mainstream-dram-spot-price', freq: 'monthly' },
   'dram-chips':        { src: 'trendforce.com/price/dram/dram_spot', srcUrl: 'https://www.trendforce.com/price/dram/dram_spot', freq: 'daily' },
   'dram-modules':      { src: 'trendforce.com/price/dram/dram_spot', srcUrl: 'https://www.trendforce.com/price/dram/dram_spot', freq: 'daily' },

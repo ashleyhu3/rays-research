@@ -82,7 +82,7 @@ const VIEW_COMPONENTS = {
 };
 
 export default function App() {
-  const [currentView, setCurrentView] = useState('demand-openai');
+  const [currentView, setCurrentView] = useState('overview');
   const [weeks, setWeeks] = useState(52);
   const [months, setMonths] = useState(12);
 

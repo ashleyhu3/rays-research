@@ -63,6 +63,7 @@ app.get('/api/wikipedia',         cachedRoute('wikipedia',        s.wikipedia));
 app.get('/api/openrouter-ranks',  cachedRoute('openrouterRanks',  s.openrouterRanks));
 app.get('/api/dram',              cachedRoute('dram',             s.dram));
 app.get('/api/aws',               cachedRoute('aws',              s.aws));
+app.get('/api/cloud-gpu',         cachedRoute('cloudGpu',         s.cloudGpu));
 app.get('/api/npm',               cachedRoute('npm',              s.npm));
 app.get('/api/stackoverflow',     cachedRoute('stackoverflow',    s.stackoverflow));
 app.get('/api/huggingface',       cachedRoute('huggingface',      s.huggingface));
@@ -131,6 +132,7 @@ const STORAGE_BLOBS = [
   { name: 'gpuHistory',     file: path.join(DATA_DIR, 'gpuHistory.json') },
   { name: 'dramHistory',    file: path.join(DATA_DIR, 'dramHistory.json') },
   { name: 'awsHistory',     file: path.join(DATA_DIR, 'awsHistory.json') },
+  { name: 'cloudGpuHistory', file: path.join(DATA_DIR, 'cloudGpuHistory.json') },
 ];
 
 /* ── Frontend serving ──────────────────────────────────────────────── */

@@ -19,6 +19,7 @@
     "collect": "node --env-file=.env server/scripts/collect.js"
   },
   "dependencies": {
+    "@aws-sdk/client-pricing": "^3.1069.0",
     "axios": "^1.17.0",
     "chart.js": "^4.4.1",
     "cheerio": "^1.2.0",

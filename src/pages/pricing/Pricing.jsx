@@ -192,6 +192,28 @@ export default function Pricing({ weeks: W = 52 }) {
   // AWS-exclusive AI chips (no vast.ai equivalent) — shown as raw AWS spot.
   const awsChipData = useMemo(() => awsLineChart(aws?.history?.spotSeries, ['Trainium', 'Inferentia2']), [aws, awsWindow]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  /* ── Average GPU rental price across the major clouds ─────────────── */
+  // One forward-filled line per GPU bucket (H100 pools H100 + H200), each the
+  // mean on-demand $/GPU/hr across the platforms in server/scrapers/cloudGpu.js.
+  const cloudGpu = liveData?.cloudGpu;
+  const CLOUD_COLORS = { A100: C.teal, H100: C.anthropic, B200: C.google, R400: C.red };
+  const CLOUD_LABELS = { A100: 'A100', H100: 'H100 / H200', B200: 'B200', R400: 'R400' };
+  const cloudAvgData = useMemo(() => {
+    if (!cloudGpu?.dates?.length) return null;
+    const cutoff = Date.now() - W * 7 * 86400000;
+    let start = cloudGpu.dates.findIndex(d => new Date(d + 'T00:00:00Z').getTime() >= cutoff);
+    if (start < 0) start = 0;
+    const dates = cloudGpu.dates.slice(start);
+    const datasets = Object.entries(cloudGpu.series ?? {})
+      .filter(([, arr]) => arr.slice(start).some(Number.isFinite))
+      .map(([bucket, arr]) => ({
+        ...mkDs(CLOUD_LABELS[bucket] ?? bucket, CLOUD_COLORS[bucket] ?? C.slate, arr.slice(start), true),
+        spanGaps: true, pointRadius: 0,
+      }));
+    if (datasets.length === 0) return null;
+    return { labels: dates.map(d => historyLabel(d, W)), datasets };
+  }, [cloudGpu, W]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Combined GPU spot line: vast.ai's actual price where it exists, with the
   // earlier period filled by AWS's spot SHAPE rebased ("indexed") to vast.ai's
   // level at the join point — a single continuous line per GPU. Different
@@ -309,6 +331,48 @@ export default function Pricing({ weeks: W = 52 }) {
 
   return (
     <EditableGrid viewId="pricing">
+      {dramIndexData && (
+        <ChartCard
+          chartId="dram-index"
+          title={`${dramIndex.name} — monthly (${dramIndex.unit})`}
+          height={240} span2
+        >
+          <Line data={dramIndexData} options={baseOpts(v => `$${v.toFixed(1)}`)} />
+        </ChartCard>
+      )}
+
+      {chipData && (
+        <ChartCard
+          chartId="dram-chips"
+          subtitle={`${DRAM_METHOD}${dramAsOf}`}
+          legend={dramLegend(chips)}
+          height={260} span2
+        >
+          <Line data={chipData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
+        </ChartCard>
+      )}
+
+      {moduleData && (
+        <ChartCard
+          chartId="dram-modules"
+          subtitle={`SO-DIMM / UDIMM / RDIMM modules. ${DRAM_METHOD}${dramAsOf}`}
+          legend={dramLegend(modules)}
+          height={240}
+        >
+          <Line data={moduleData} options={baseOpts(v => `$${v.toFixed(0)}`)} />
+        </ChartCard>
+      )}
+
+      {changeData && (
+        <ChartCard
+          chartId="dram-change"
+          subtitle={`Average session change across each model's variants${dramAsOf}. Red = declining.`}
+          height={240}
+        >
+          <Bar data={changeData} options={hBarOpts(v => `${v > 0 ? '+' : ''}${v.toFixed(1)}%`)} />
+        </ChartCard>
+      )}
+
       {currentRateData && (
         <ChartCard
           chartId="gpu-current-rates"
@@ -357,45 +421,13 @@ export default function Pricing({ weeks: W = 52 }) {
         </ChartCard>
       )}
 
-      {dramIndexData && (
+      {cloudAvgData && (
         <ChartCard
-          chartId="dram-index"
-          title={`${dramIndex.name} — monthly (${dramIndex.unit})`}
+          chartId="gpu-cloud-avg"
+          legend={cloudAvgData.datasets.map(d => [d.label, d.borderColor])}
           height={240} span2
         >
-          <Line data={dramIndexData} options={baseOpts(v => `$${v.toFixed(1)}`)} />
-        </ChartCard>
-      )}
-
-      {chipData && (
-        <ChartCard
-          chartId="dram-chips"
-          subtitle={`${DRAM_METHOD}${dramAsOf}`}
-          legend={dramLegend(chips)}
-          height={260} span2
-        >
-          <Line data={chipData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
-        </ChartCard>
-      )}
-
-      {moduleData && (
-        <ChartCard
-          chartId="dram-modules"
-          subtitle={`SO-DIMM / UDIMM / RDIMM modules. ${DRAM_METHOD}${dramAsOf}`}
-          legend={dramLegend(modules)}
-          height={240}
-        >
-          <Line data={moduleData} options={baseOpts(v => `$${v.toFixed(0)}`)} />
-        </ChartCard>
-      )}
-
-      {changeData && (
-        <ChartCard
-          chartId="dram-change"
-          subtitle={`Average session change across each model's variants${dramAsOf}. Red = declining.`}
-          height={240}
-        >
-          <Bar data={changeData} options={hBarOpts(v => `${v > 0 ? '+' : ''}${v.toFixed(1)}%`)} />
+          <Line data={cloudAvgData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
         </ChartCard>
       )}
     </EditableGrid>
