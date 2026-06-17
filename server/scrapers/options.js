@@ -104,7 +104,7 @@ async function getOptionsData(ticker, dateStr) {
   const contracts = chain.options?.[0] ?? {};
   const quote     = chain.quote ?? {};
 
-  return {
+  const result = {
     ticker:       symbol,
     price:        quote.regularMarketPrice          ?? null,
     priceChange:  quote.regularMarketChange         ?? null,
@@ -114,6 +114,20 @@ async function getOptionsData(ticker, dateStr) {
     calls: (contracts.calls ?? []).map(fmtContract),
     puts:  (contracts.puts  ?? []).map(fmtContract),
   };
+
+  // Capture today's nonzero OI, then backfill any zeros from the most recent
+  // nonzero snapshot so the chart always has real open-interest values.
+  // Best-effort: never let a storage hiccup break the options response.
+  try {
+    const optionsStore = require('../optionsStore');
+    optionsStore.record(symbol, result);
+    const oiAsOf = optionsStore.backfill(symbol, result);
+    if (oiAsOf) result.oiAsOf = oiAsOf;
+  } catch (e) {
+    console.warn('[options] OI store skipped:', e.message);
+  }
+
+  return result;
 }
 
 module.exports = { getOptionsData };

@@ -98,6 +98,31 @@ async function warmOptions(tickers = OPTIONS_BASKET) {
   console.log(`[warmOptions] warmed ${ok}/${tickers.length} tickers`);
 }
 
+// Daily sweep that fetches the near expirations for each basket ticker so the
+// options store captures their open interest while Yahoo is serving it (OI is
+// blank intraday). getOptionsData records the nonzero OI as a side effect; the
+// chart later backfills from it whenever Yahoo returns a zero-OI chain.
+async function captureOptionsOI(tickers = OPTIONS_BASKET, maxExpiries = 4) {
+  const { getOptionsData } = require('./scrapers/options');
+  let captured = 0;
+  for (const ticker of tickers) {
+    try {
+      const base = await getOptionsData(ticker);                 // nearest (records OI)
+      cache.set(`options:${ticker}:nearest`, base, OPTIONS_TTL);
+      captured++;
+      for (const d of (base.expirations ?? []).slice(0, maxExpiries)) {
+        if (d === base.selectedDate) continue;
+        try { await getOptionsData(ticker, d); } catch { /* skip a bad expiry */ }
+        await new Promise(r => setTimeout(r, 400));
+      }
+    } catch (e) {
+      console.warn(`[captureOptionsOI] ${ticker} failed:`, e.message);
+    }
+    await new Promise(r => setTimeout(r, 600));
+  }
+  console.log(`[captureOptionsOI] swept OI for ${captured}/${tickers.length} tickers`);
+}
+
 function setup() {
   // Hourly: model listings and discussion flow change continuously
   cron.schedule('0 * * * *', () => refreshAll(['openrouter', 'hn']));
@@ -111,6 +136,9 @@ function setup() {
   // Options: warm every 6h, plus once shortly after boot so the RAG has data fast
   cron.schedule('30 */6 * * *', () => warmOptions());
   setTimeout(() => warmOptions().catch(e => console.warn('[warmOptions] startup warm failed:', e.message)), 20000);
+
+  // Daily: sweep near expirations to capture open interest into the options store
+  cron.schedule('20 3 * * *', () => captureOptionsOI());
 }
 
-module.exports = { setup, refreshAll, scrapers, TTL, warmOptions };
+module.exports = { setup, refreshAll, scrapers, TTL, warmOptions, captureOptionsOI };
