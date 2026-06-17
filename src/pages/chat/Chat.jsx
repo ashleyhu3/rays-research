@@ -18,6 +18,17 @@ const SOURCE_META = {
   mcp:              { label: 'MCP Ecosystem',      view: 'demand-general' },
   sec:              { label: 'SEC Filings',        view: 'demand-general' },
   options:          { label: 'Options Flow',       view: 'options'        },
+  // Company-specific charts (mirrored from the company pages)
+  'oa-pricing':   { label: 'OpenAI Pricing',     view: 'demand-openai'    },
+  'an-pricing':   { label: 'Anthropic Pricing',  view: 'demand-anthropic' },
+  'goo-pricing':  { label: 'Google Pricing',     view: 'demand-google'    },
+  'zh-pricing':   { label: 'Zhipu Pricing',      view: 'demand-zhipu'     },
+  'mm-pricing':   { label: 'MiniMax Pricing',    view: 'demand-minimax'   },
+  'oa-or-share':  { label: 'OpenAI OR Share',    view: 'demand-openai'    },
+  'an-or-share':  { label: 'Anthropic OR Share', view: 'demand-anthropic' },
+  'goo-or-share': { label: 'Google OR Share',    view: 'demand-google'    },
+  'zh-or-share':  { label: 'Zhipu OR Share',     view: 'demand-zhipu'     },
+  'mm-or-share':  { label: 'MiniMax OR Share',   view: 'demand-minimax'   },
 };
 
 const SUGGESTIONS = [

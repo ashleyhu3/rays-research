@@ -75,6 +75,29 @@ async function refreshAll(keys = Object.keys(scrapers)) {
   });
 }
 
+// Options chains are otherwise fetched only on-demand by the Options tab and
+// cached under `options:<ticker>:nearest`. The RAG's buildOptions() reads those
+// keys, so on a cold server it has zero options data until a user happens to
+// open that tab. Proactively warm a default AI-relevant basket so the Ask tab
+// can always answer options-flow questions.
+const OPTIONS_BASKET = ['NVDA', 'AMD', 'TSM', 'AVGO', 'MSFT', 'AAPL', 'AMZN', 'META'];
+const OPTIONS_TTL    = 6 * 3600000;
+
+async function warmOptions(tickers = OPTIONS_BASKET) {
+  const { getOptionsData } = require('./scrapers/options');
+  let ok = 0;
+  for (const ticker of tickers) {
+    try {
+      const data = await getOptionsData(ticker);
+      if (data) { cache.set(`options:${ticker}:nearest`, data, OPTIONS_TTL); ok++; }
+    } catch (e) {
+      console.warn(`[warmOptions] ${ticker} failed:`, e.message);
+    }
+    await new Promise(r => setTimeout(r, 600)); // be gentle with Yahoo
+  }
+  console.log(`[warmOptions] warmed ${ok}/${tickers.length} tickers`);
+}
+
 function setup() {
   // Hourly: model listings and discussion flow change continuously
   cron.schedule('0 * * * *', () => refreshAll(['openrouter', 'hn']));
@@ -84,6 +107,10 @@ function setup() {
 
   // Daily at 03:00 UTC: aggregate stats whose sources only publish once per day
   cron.schedule('0 3 * * *', () => refreshAll(['gpu', 'cloudGpu', 'pypi', 'trends', 'github', 'eia', 'mops', 'githubCommits', 'wikipedia', 'npm', 'huggingface', 'mcp', 'sec']));
+
+  // Options: warm every 6h, plus once shortly after boot so the RAG has data fast
+  cron.schedule('30 */6 * * *', () => warmOptions());
+  setTimeout(() => warmOptions().catch(e => console.warn('[warmOptions] startup warm failed:', e.message)), 20000);
 }
 
-module.exports = { setup, refreshAll, scrapers, TTL };
+module.exports = { setup, refreshAll, scrapers, TTL, warmOptions };

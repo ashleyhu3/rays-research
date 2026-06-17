@@ -5,6 +5,8 @@ import { useData } from '../../context/DataContext';
 import { baseOpts, hBarOpts, mkDs, mkBar, fmtM, fmtK, fmtP } from '../../utils/chartHelpers';
 import { wkLabels, dayLabels } from '../../utils/labels';
 import { trend } from '../../utils/dataGenerators';
+import { companyPriceSeries, priceHistory } from '../../utils/modelPricing';
+import { orProviderSeries } from '../../utils/openrouterProvider';
 import { ExpandButton, ChartModal } from '../chart/ChartExpand';
 
 const PALETTE = [C.openai, C.anthropic, C.google, C.mistral, C.teal, C.perplexity, C.orange, C.deepseek];
@@ -838,7 +840,81 @@ export function CloudGpuMini() {
 }
 
 // ── Registry: chart ID (from the RAG's SECTION_TO_CHART) → mini components ─
+/* ── Company-specific charts (mirror the company dashboard pages) ──────────
+   These render the SAME real data as the per-company pages (same utils), so the
+   Ask rail shows what's actually on the site rather than an aggregate mini. */
+const COMPANIES = {
+  oa:  { provider: 'OpenAI',    orName: 'OpenAI',    color: C.openai },
+  an:  { provider: 'Anthropic', orName: 'Anthropic', color: C.anthropic },
+  goo: { provider: 'Google',    orName: 'Google',    color: C.google },
+  zh:  { provider: 'Zhipu',     orName: 'Zhipu AI',  color: C.zhipu },
+  mm:  { provider: 'MiniMax',   orName: 'MiniMax',   color: C.minimax },
+};
+
+function CompanyPricingMini({ code }) {
+  const { liveData } = useData();
+  const co = COMPANIES[code];
+  const data = useMemo(() => {
+    const hist   = priceHistory(liveData);
+    const series = companyPriceSeries(co.provider);
+    const present = series
+      .map(s => ({ ...s, points: hist[s.metric] ?? null }))
+      .filter(s => s.points && Object.keys(s.points).length > 0);
+    if (!present.length) return null;
+    const dates = [...new Set(present.flatMap(s => Object.keys(s.points)))].sort();
+    if (dates.length >= 2) {
+      return { kind: 'line', labels: dates.map(d => d.slice(5)),
+        datasets: present.map(s => mkLine(s.label, s.color, dates.map(d => s.points[d] ?? null))) };
+    }
+    return { kind: 'bar', labels: present.map(s => s.label),
+      datasets: [{ data: present.map(s => s.points[dates[0]]),
+        backgroundColor: present.map(s => s.color + 'bf'), borderColor: present.map(s => s.color),
+        borderWidth: 1, borderRadius: 4 }] };
+  }, [liveData, code]);
+
+  if (!data) return null;
+  return (
+    <MiniCard title={`${co.provider} — Input $/1M tokens`}>
+      {data.kind === 'line'
+        ? <Line data={data} options={baseOpts(v => `$${v.toFixed(2)}`)} />
+        : <Bar  data={data} options={hBarOpts(v => `$${v.toFixed(2)}`)} />}
+    </MiniCard>
+  );
+}
+
+function CompanyShareMini({ code }) {
+  const { liveData } = useData();
+  const co = COMPANIES[code];
+  const data = useMemo(() => {
+    const orp = orProviderSeries(liveData?.openrouterRanks, co.orName, 26);
+    if (!orp || !(orp.share?.length >= 2)) return null;
+    return { labels: orp.labels, datasets: [mkLine('Share of tokens %', co.color, orp.share)] };
+  }, [liveData, code]);
+
+  if (!data) return null;
+  return (
+    <MiniCard title={`${co.provider} — OpenRouter Token Share %`}>
+      <Line data={data} options={baseOpts(v => `${v.toFixed(1)}%`)} />
+    </MiniCard>
+  );
+}
+
+const companyPricing = code => () => <CompanyPricingMini code={code} />;
+const companyShare   = code => () => <CompanyShareMini   code={code} />;
+
 export const CHART_REGISTRY = {
+  // Company-specific (mirrored from the company pages)
+  'oa-pricing':  [companyPricing('oa')],
+  'an-pricing':  [companyPricing('an')],
+  'goo-pricing': [companyPricing('goo')],
+  'zh-pricing':  [companyPricing('zh')],
+  'mm-pricing':  [companyPricing('mm')],
+  'oa-or-share':  [companyShare('oa')],
+  'an-or-share':  [companyShare('an')],
+  'goo-or-share': [companyShare('goo')],
+  'zh-or-share':  [companyShare('zh')],
+  'mm-or-share':  [companyShare('mm')],
+
   pypi:                  [PyPIMini],
   github:                [GitHubMini],
   trends:                [TrendsMini],

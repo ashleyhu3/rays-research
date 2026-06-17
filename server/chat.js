@@ -428,7 +428,10 @@ function buildOpenrouter() {
     source:   'OpenRouter API',
     entities: Object.keys(byProvider),
     text:     `### OpenRouter AI Model Catalog & Pricing\n${lines.join('\n')}`,
-    detail:   null,
+    // Per-model input-price daily series (Claude Opus.input, GPT-5.input, …),
+    // recorded by the openrouter history extractor — lets the RAG answer
+    // "how has input-token pricing trended" with real numbers, not just today's.
+    detail:   snapshotDetail('openrouter', 'model input $/1M tokens'),
   };
 }
 
@@ -739,6 +742,18 @@ function buildOptions() {
       ` | open interest: calls ${fmt(callOI)}${topCall?.strike != null ? ` (heaviest at $${topCall.strike} strike)` : ''} vs puts ${fmt(putOI)}` +
       `${ivCalls ? ` | avg IV: calls ${ivCalls}% / puts ${ivPuts ?? 'N/A'}%` : ''}`;
   });
+  // Per-ticker top contracts by volume — attached on expansion so questions like
+  // "top 3 options by volume for X" can be answered from real contract rows.
+  const topByVol = (arr, side, d) => (arr ?? [])
+    .slice().sort((a, b) => (b.volume ?? 0) - (a.volume ?? 0)).slice(0, 5)
+    .map(c => `    ${side} $${c.strike} exp ${d.selectedDate ?? 'N/A'}: vol ${fmt(c.volume)} | OI ${fmt(c.openInterest)}`
+      + ` | IV ${c.impliedVolatility != null ? `${c.impliedVolatility.toFixed(1)}%` : 'N/A'}`);
+  const detailLines = [...byTicker.values()].flatMap(d => [
+    `  ${d.ticker} — top contracts by volume:`,
+    ...topByVol(d.calls, 'CALL', d),
+    ...topByVol(d.puts, 'PUT', d),
+  ]);
+
   return {
     id:       'options',
     title:    'Stock Options Flow',
@@ -746,7 +761,7 @@ function buildOptions() {
     source:   'Yahoo Finance options chains',
     entities: [...byTicker.keys()],
     text:     `### Stock Options Flow (near-dated expiries)\n${lines.join('\n')}`,
-    detail:   null,
+    detail:   detailLines.length ? `Recent detail — top options contracts by volume:\n${detailLines.join('\n')}` : null,
   };
 }
 
@@ -1075,7 +1090,129 @@ const SECTION_TO_CHART = {
   options:           'options',
 };
 
+// Only charts that have a navigable page on the dashboard are surfaced to the
+// user (rendered + freshness-tagged). aws-spot and cloud-gpu are chat-only minis
+// with no standalone view, so they're excluded — the answer text can still cite
+// their data, but no chart/source tag is returned for them. Mirrors the `view`
+// fields in SOURCE_META (src/pages/chat/Chat.jsx).
+const NAVIGABLE_CHARTS = new Set([
+  'pypi', 'github', 'trends', 'gpu', 'dram', 'openrouter', 'openrouter-rankings',
+  'electricity', 'ai-supply', 'github-commits', 'docker', 'community', 'hf',
+  'mcp', 'sec', 'options',
+  // Company-specific charts (mirror the company dashboard pages)
+  'oa-pricing', 'an-pricing', 'goo-pricing', 'zh-pricing', 'mm-pricing',
+  'oa-or-share', 'an-or-share', 'goo-or-share', 'zh-or-share', 'mm-or-share',
+]);
+
+// Company-aware chart routing: when a question targets a specific provider,
+// surface that company's chart (the one on its dashboard page) instead of the
+// generic aggregate. 'openrouter' (pricing) → <code>-pricing,
+// 'openrouter-rankings' (token share) → <code>-or-share.
+const COMPANY_CODES = [
+  { code: 'oa',  rx: /\b(openai|chatgpt|gpt[\s-]?\d|\bgpt\b)\b/i },
+  { code: 'an',  rx: /\b(anthropic|claude)\b/i },
+  { code: 'goo', rx: /\b(google|gemini|deepmind|gemma)\b/i },
+  { code: 'zh',  rx: /\b(zhipu|\bglm\b|z[\s-]?ai)\b/i },
+  { code: 'mm',  rx: /\b(minimax)\b/i },
+];
+function companyChartSwap(chart, codes) {
+  if (!codes.length) return [chart];
+  if (chart === 'openrouter')          return codes.map(c => `${c}-pricing`);
+  if (chart === 'openrouter-rankings') return codes.map(c => `${c}-or-share`);
+  return [chart];
+}
+
+// ── Agentic tool layer (allowlist) ─────────────────────────────────────────
+// The model can pull live data into the cache before retrieval. Each tool is a
+// {definition, impl} pair; the impl warms the request cache so the normal RAG
+// section builders pick the data up. Add a tool by extending TOOLS + TOOL_IMPL.
+const TOOLS = [{
+  type: 'function',
+  function: {
+    name: 'fetch_options',
+    description: 'Fetch live options-chain data (calls/puts with volume, open interest, implied '
+      + 'volatility, plus spot price and put/call ratio) for one or more US stock tickers. Use for '
+      + 'any question about options, options flow, top options by volume, put/call ratios, or '
+      + 'implied volatility for specific tickers.',
+    parameters: {
+      type: 'object',
+      properties: {
+        tickers: { type: 'array', items: { type: 'string' },
+          description: 'Uppercase US stock tickers, e.g. ["NVDA","AMD","MU"]' },
+      },
+      required: ['tickers'],
+    },
+  },
+}];
+
+const TOOL_IMPL = {
+  async fetch_options({ tickers }) {
+    const { getOptionsData } = require('./scrapers/options');
+    const out = [];
+    for (const raw of (Array.isArray(tickers) ? tickers : []).slice(0, 8)) {
+      const ticker = String(raw).toUpperCase().replace(/[^A-Z.]/g, '');
+      if (!ticker) continue;
+      try {
+        const data = await getOptionsData(ticker);
+        if (data) { cache.set(`options:${ticker}:nearest`, data, 6 * 3600000); out.push(ticker); }
+      } catch { /* skip a bad/illiquid ticker */ }
+      await new Promise(r => setTimeout(r, 400)); // gentle with Yahoo
+    }
+    return { fetched: out };
+  },
+};
+
+// Only run the (extra) tool pass when the question plausibly needs a live fetch.
+const TOOL_GATE_RX = /\b(option|options|put|call|implied vol|\biv\b|open interest|p\/?c|contract|strike)\b/i;
+
+const TOOL_SYSTEM = `You fetch live market data via tools for an AI-industry dashboard.
+If the question needs live options-chain data for specific stock tickers (options flow, top options
+by volume, put/call ratios, implied volatility, open interest), call fetch_options with the relevant
+uppercase tickers. If the user names no tickers, infer the obvious ones from company names. Do not
+call a tool when none is needed.`;
+
+// Run the model with tools; execute any tool calls (which warm the cache).
+// Returns the list of tickers fetched. Best-effort — never throws to the caller.
+async function runToolPrefetch(message) {
+  const groq = makeGroq();
+  const messages = [
+    { role: 'system', content: TOOL_SYSTEM },
+    { role: 'user',   content: message },
+  ];
+  const fetched = [];
+  for (let hop = 0; hop < 2; hop++) {
+    const resp = await groq.chat.completions.create({
+      model: DETECTIVE_MODEL, temperature: 0, max_tokens: 300,
+      tools: TOOLS, tool_choice: 'auto', messages,
+    });
+    const msg = resp.choices[0]?.message;
+    if (!msg?.tool_calls?.length) break;
+    messages.push(msg);
+    for (const tc of msg.tool_calls) {
+      let args = {};
+      try { args = JSON.parse(tc.function?.arguments || '{}'); } catch { /* malformed args */ }
+      const impl = TOOL_IMPL[tc.function?.name];
+      const result = impl ? await impl(args) : { error: 'unknown tool' };
+      if (Array.isArray(result.fetched)) fetched.push(...result.fetched);
+      messages.push({ role: 'tool', tool_call_id: tc.id, content: JSON.stringify(result) });
+    }
+  }
+  return [...new Set(fetched)];
+}
+
 async function chat(message, history = []) {
+  // Agentic pre-fetch: let the model pull live data (e.g. options for specific
+  // tickers) into the cache first, so the normal RAG pipeline answers from it.
+  // Gated to options-style questions and entirely best-effort.
+  if (TOOL_GATE_RX.test(message)) {
+    try {
+      const fetched = await runToolPrefetch(message);
+      if (fetched.length) console.log(`[chat] tool prefetch warmed options: ${fetched.join(', ')}`);
+    } catch (e) {
+      console.warn('[chat] tool prefetch skipped:', rateLimitMessage(e) ? 'rate limited' : e.message);
+    }
+  }
+
   const sections = buildSections();
 
   if (sections.length === 0) {
@@ -1186,18 +1323,39 @@ async function chat(message, history = []) {
   // omits the block entirely the fallback above would otherwise attach every
   // vetted section's chart to a "we have nothing" reply — suppress that.
   if (NO_DATA_RX.test(text)) used = [];
-  const sources = [...new Set(used.map(id => SECTION_TO_CHART[id]).filter(Boolean))];
 
-  // Freshness passport, keyed by frontend chart id, for the cited sources.
-  // Deduped by chart (first/most-relevant section wins) so each rendered chart
-  // gets one color-coded "updated Xm ago" tag.
+  // Which providers is this question about? (drives company-specific charts)
+  const codes = COMPANY_CODES.filter(c => c.rx.test(`${message} ${intent}`)).map(c => c.code);
+
+  // Freshness per *generic* cited chart, taken from its section.
   const bySecId   = new Map(sections.map(s => [s.id, s]));
-  const freshness = {};
+  const baseFresh = {};
+  const rawCharts = [];
   for (const id of used) {
     const chart = SECTION_TO_CHART[id];
     const s     = bySecId.get(id);
-    if (!chart || !s || freshness[chart]) continue;
-    freshness[chart] = { source: s.source, updated: s.updated, level: freshnessLevel(s.fetchedAt) };
+    if (!chart) continue;
+    rawCharts.push(chart);
+    if (s && !baseFresh[chart]) {
+      baseFresh[chart] = { source: s.source, updated: s.updated, level: freshnessLevel(s.fetchedAt) };
+    }
+  }
+
+  // Swap generic openrouter pricing/rankings for the named companies' charts,
+  // then keep only charts that exist as a navigable page on the dashboard.
+  const sources = [...new Set(rawCharts.flatMap(c => companyChartSwap(c, codes)))]
+    .filter(chart => NAVIGABLE_CHARTS.has(chart));
+
+  // Freshness, keyed by chart id: company charts inherit their generic parent's.
+  const freshness = {};
+  for (const chart of sources) {
+    let f = baseFresh[chart];
+    if (!f) {
+      const parent = /-pricing$/.test(chart) ? 'openrouter'
+                   : /-or-share$/.test(chart) ? 'openrouter-rankings' : null;
+      if (parent) f = baseFresh[parent];
+    }
+    if (f) freshness[chart] = f;
   }
 
   return {
