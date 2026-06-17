@@ -1,6 +1,32 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
+import { Line } from 'react-chartjs-2';
+import { GRID, TICK, BORD, fmtM } from '../../utils/chartHelpers';
+import { fa } from '../../config/colors';
 
 const SAMPLES = ['AAPL', 'NVDA', 'TSLA', 'SPY', 'QQQ', 'AMZN', 'META'];
+
+const CALL_COLOR = '#10b981';
+const PUT_COLOR  = '#f87171';
+const PRICE_COLOR = '#b0b0a8';
+
+// Open-interest-by-strike distribution, restricted to strikes within ±30% of
+// the current price so the heart of the chain isn't squeezed by far-OTM tails.
+function buildOiChart(data) {
+  const price = data?.price;
+  if (price == null) return null;
+  const lo = price * 0.7, hi = price * 1.3;
+  const pts = contracts => [...(contracts ?? [])]
+    .filter(c => c.strike != null && c.strike >= lo && c.strike <= hi)
+    .map(c => ({ x: c.strike, y: c.openInterest ?? 0 }))
+    .sort((a, b) => a.x - b.x);
+
+  const callPts = pts(data.calls);
+  const putPts  = pts(data.puts);
+  if (!callPts.length && !putPts.length) return null;
+
+  const maxOI = Math.max(1, ...callPts.map(p => p.y), ...putPts.map(p => p.y));
+  return { price, callPts, putPts, maxOI };
+}
 
 function fmtUSD(v)   { return v != null ? `$${v.toFixed(2)}` : '—'; }
 function fmtVol(v)   { return v > 0 ? v.toLocaleString() : '—'; }
@@ -40,9 +66,12 @@ export default function Options() {
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState(null);
   const [side, setSide]       = useState('calls');
+  const [chartLines, setChartLines] = useState({ calls: true, puts: true });
   const [selectedDate, setSelectedDate] = useState(null);
   const [expirations, setExpirations]   = useState([]);
   const inputRef = useRef(null);
+
+  const toggleLine = which => setChartLines(prev => ({ ...prev, [which]: !prev[which] }));
 
   async function fetchChain(sym, date) {
     const url = date ? `/api/options/${sym}?date=${date}` : `/api/options/${sym}`;
@@ -91,6 +120,90 @@ export default function Options() {
 
   const isEmpty = !data && !loading && !error;
   const rows    = topThree(side === 'calls' ? data?.calls : data?.puts);
+  const oiChart = useMemo(() => buildOiChart(data), [data]);
+
+  const oiChartData = oiChart && {
+    datasets: [
+      ...(chartLines.calls ? [{
+        label: 'Calls',
+        data: oiChart.callPts,
+        borderColor: CALL_COLOR,
+        backgroundColor: fa(CALL_COLOR, 0.10),
+        pointBackgroundColor: CALL_COLOR,
+        pointRadius: 2,
+        pointHoverRadius: 4,
+        borderWidth: 2,
+        tension: 0.3,
+        fill: true,
+      }] : []),
+      ...(chartLines.puts ? [{
+        label: 'Puts',
+        data: oiChart.putPts,
+        borderColor: PUT_COLOR,
+        backgroundColor: fa(PUT_COLOR, 0.10),
+        pointBackgroundColor: PUT_COLOR,
+        pointRadius: 2,
+        pointHoverRadius: 4,
+        borderWidth: 2,
+        tension: 0.3,
+        fill: true,
+      }] : []),
+      {
+        label: `Current ${fmtUSD(oiChart.price)}`,
+        data: [{ x: oiChart.price, y: 0 }, { x: oiChart.price, y: oiChart.maxOI }],
+        borderColor: PRICE_COLOR,
+        borderWidth: 1.5,
+        borderDash: [5, 4],
+        pointRadius: 0,
+        pointHoverRadius: 0,
+        fill: false,
+        tension: 0,
+      },
+    ],
+  };
+
+  const oiChartOpts = {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: { duration: 300 },
+    interaction: { mode: 'nearest', intersect: false },
+    plugins: {
+      legend: {
+        display: true,
+        position: 'bottom',
+        labels: { color: '#c8c8c0', font: { size: 11, family: "'Inter',sans-serif" }, padding: 12, boxWidth: 12 },
+      },
+      tooltip: {
+        backgroundColor: '#1a1f2a',
+        borderColor: 'rgba(255,255,255,.12)',
+        borderWidth: 1,
+        titleFont: { family: "'Inter',sans-serif", size: 11 },
+        bodyFont:  { family: "'Inter',sans-serif", size: 11 },
+        padding: 10,
+        filter: item => !item.dataset.label.startsWith('Current'),
+        callbacks: {
+          title: items => (items.length ? `Strike ${fmtUSD(items[0].parsed.x)}` : ''),
+          label: c => ` ${c.dataset.label}: ${fmtOI(c.parsed.y)}`,
+        },
+      },
+    },
+    scales: {
+      x: {
+        type: 'linear',
+        title: { display: true, text: 'Strike Price', color: '#b0b0a8', font: { size: 11, family: "'Inter',sans-serif" } },
+        grid: GRID,
+        ticks: { ...TICK, maxTicksLimit: 10, callback: v => `$${v}` },
+        border: BORD,
+      },
+      y: {
+        title: { display: true, text: 'Open Interest', color: '#b0b0a8', font: { size: 11, family: "'Inter',sans-serif" } },
+        grid: GRID,
+        ticks: { ...TICK, callback: v => fmtM(v) },
+        border: BORD,
+        beginAtZero: true,
+      },
+    },
+  };
 
   return (
     <div className="opts-page">
@@ -225,6 +338,41 @@ export default function Options() {
               <p className="opts-footer">
                 Top 3 {side} by volume · {data.ticker} · expires {fmtExpiry(selectedDate ?? '')}
               </p>
+            </div>
+          )}
+
+          {/* Open-interest-by-strike distribution */}
+          {!loading && oiChartData && (
+            <div className="opts-chart-wrap">
+              <div className="opts-chart-head">
+                <div>
+                  <h3 className="opts-chart-title">Open Interest by Strike</h3>
+                  <p className="opts-chart-sub">
+                    Strikes within ±30% of current price · expires {fmtExpiry(selectedDate ?? '')}
+                  </p>
+                </div>
+                <div className="opts-chart-toggle">
+                  <button
+                    className={`opts-chart-toggle-btn calls${chartLines.calls ? ' active' : ''}`}
+                    onClick={() => toggleLine('calls')}
+                  >
+                    ▲ Calls
+                  </button>
+                  <button
+                    className={`opts-chart-toggle-btn puts${chartLines.puts ? ' active' : ''}`}
+                    onClick={() => toggleLine('puts')}
+                  >
+                    ▼ Puts
+                  </button>
+                </div>
+              </div>
+              {chartLines.calls || chartLines.puts ? (
+                <div className="opts-chart-canvas">
+                  <Line data={oiChartData} options={oiChartOpts} />
+                </div>
+              ) : (
+                <div className="opts-loading">Select a line to display.</div>
+              )}
             </div>
           )}
         </div>

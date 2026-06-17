@@ -728,3 +728,27 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
 .opts-footer {
   font-size: 11px; color: var(--ter); padding: 10px 2px 0; text-align: right;
 }
+
+.opts-chart-wrap {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255,255,255,.06);
+}
+.opts-chart-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap; margin-bottom: 14px;
+}
+.opts-chart-title { color: var(--text); font-size: 15px; font-weight: 600; margin-bottom: 2px; }
+.opts-chart-sub   { font-size: 11px; color: var(--ter); }
+.opts-chart-toggle {
+  display: flex; gap: 4px; background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.08); border-radius: 8px; padding: 3px;
+}
+.opts-chart-toggle-btn {
+  font-size: 12px; font-weight: 500; padding: 5px 12px; border-radius: 6px;
+  border: none; background: transparent; color: var(--sec); cursor: pointer;
+}
+.opts-chart-toggle-btn:hover { color: var(--text); }
+.opts-chart-toggle-btn.calls.active { background: rgba(16,185,129,.14); color: #10b981; }
+.opts-chart-toggle-btn.puts.active  { background: rgba(248,113,113,.14); color: #f87171; }
+.opts-chart-canvas { height: 340px; }

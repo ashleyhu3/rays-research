@@ -4,6 +4,7 @@ const path         = require('path');
 const cache        = require('./cache');
 const storage      = require('./storage');
 const history      = require('./history');
+const snapshotStore = require('./snapshotStore');
 const scheduler    = require('./scheduler');
 const htmlTemplate = require('./htmlTemplate');
 const { chat, invalidateEmbeddings } = require('./chat');
@@ -37,6 +38,7 @@ function cachedRoute(key, scraper) {
       if (data != null) {
         cache.set(key, data, scheduler.TTL[key] ?? 3600000);
         history.snapshot(key, data);
+        snapshotStore.put(key, data);
       }
       res.json(data ?? {});
     } catch (e) {
@@ -133,6 +135,9 @@ const STORAGE_BLOBS = [
   { name: 'dramHistory',    file: path.join(DATA_DIR, 'dramHistory.json') },
   { name: 'awsHistory',     file: path.join(DATA_DIR, 'awsHistory.json') },
   { name: 'cloudGpuHistory', file: path.join(DATA_DIR, 'cloudGpuHistory.json') },
+  // Latest scrape per source — loaded into the request cache on boot for an
+  // instant first paint instead of blocking on live re-scrapes.
+  { name: 'latestSnapshots', file: path.join(DATA_DIR, 'latestSnapshots.json') },
 ];
 
 /* ── Frontend serving ──────────────────────────────────────────────── */
@@ -140,6 +145,12 @@ async function start() {
   // Connect storage (and seed Mongo from the committed JSON baseline) before
   // serving requests or running the warmup scrape, so reads/writes are routed.
   await storage.init(STORAGE_BLOBS);
+
+  // Seed the request cache from the last persisted scrape so the first visitor
+  // after a restart is served instantly; the background warmup below then
+  // refreshes every source to replace the stale snapshots.
+  const seeded = snapshotStore.seed(cache, scheduler.TTL);
+  if (seeded.length > 0) console.log(`[warmup] seeded cache from snapshots: ${seeded.join(', ')}`);
 
   if (isProd) {
     // Production: serve Vite build output; read manifest for hashed filenames
@@ -183,14 +194,13 @@ async function start() {
   app.listen(PORT, () => {
     console.log(`[server] ${isProd ? 'production' : 'development'} — http://localhost:${PORT}`);
     scheduler.setup();
-    // Seed all scrapers on startup so the Ask tab has full data immediately.
-    // Everything runs in background (fire-and-forget) so startup isn't delayed.
+    // Refresh every source in the background so stale seeded snapshots get
+    // replaced with fresh data. Fire-and-forget so startup isn't delayed; the
+    // cache (seeded above) already serves last-known values in the meantime.
     setImmediate(() => {
-      const allKeys = Object.keys(scheduler.scrapers).filter(k => cache.get(k) === null);
-      if (allKeys.length > 0) {
-        console.log('[warmup] seeding in background:', allKeys.join(', '));
-        scheduler.refreshAll(allKeys).catch(e => console.error('[warmup]', e.message));
-      }
+      const allKeys = Object.keys(scheduler.scrapers);
+      console.log('[warmup] refreshing in background:', allKeys.join(', '));
+      scheduler.refreshAll(allKeys).catch(e => console.error('[warmup]', e.message));
     });
   });
 }

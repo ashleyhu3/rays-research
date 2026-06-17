@@ -1,4 +1,25 @@
 const axios = require('axios');
+const path = require('path');
+const storage = require('../storage');
+
+// The computed payload is persisted (Mongo in prod, JSON file in dev) so the
+// site can serve it instantly on a cold start and even when this process has no
+// API key — the GitHub Action refreshes it twice daily with its own key. A
+// stored payload older than ~36h is treated as stale and triggers a live fetch.
+const BLOB = 'openrouterRanks';
+const STORE_FILE = path.join(__dirname, '..', 'data', 'openrouterRanks.json');
+
+function loadStored() {
+  const v = storage.read(BLOB, STORE_FILE);
+  return v && Array.isArray(v.weekLabels) && v.weekLabels.length ? v : null;
+}
+function saveStored(payload) {
+  storage.write(BLOB, STORE_FILE, payload);
+}
+function isStale(payload) {
+  const t = Date.parse((payload?.asOf ?? '') + 'T00:00:00Z');
+  return !Number.isFinite(t) || (Date.now() - t) > 36 * 3600 * 1000;
+}
 
 // Provider slug → display name
 const PROVIDER_NAMES = {

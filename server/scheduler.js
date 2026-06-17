@@ -1,6 +1,7 @@
 const cron = require('node-cron');
 const cache = require('./cache');
 const history = require('./history');
+const snapshotStore = require('./snapshotStore');
 
 const scrapers = {
   pypi:          () => require('./scrapers/pypi').getPypiHistory(),
@@ -68,6 +69,7 @@ async function refreshAll(keys = Object.keys(scrapers)) {
     if (results[i].status === 'fulfilled' && results[i].value != null) {
       cache.set(k, results[i].value, TTL[k]);
       history.snapshot(k, results[i].value);
+      snapshotStore.put(k, results[i].value);
       console.log(`[refresh] ✓ ${k}`);
     } else {
       console.warn(`[refresh] ✗ ${k}:`, results[i].reason?.message ?? 'null result');
