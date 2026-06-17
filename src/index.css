@@ -789,6 +789,10 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
 
 .opts-results { display: flex; flex-direction: column; gap: 0; }
 
+/* Multi-ticker search: stack each ticker's panel with a separator */
+.opts-multi { display: flex; flex-direction: column; gap: 36px; }
+.opts-multi > .opts-panel + .opts-panel { border-top: 1px solid var(--border); padding-top: 28px; }
+
 .opts-ticker-header {
   display: flex; align-items: baseline; gap: 12px;
   padding: 6px 0 18px; flex-wrap: wrap;
