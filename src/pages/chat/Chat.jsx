@@ -137,13 +137,30 @@ function FreshnessRow({ sources, freshness, onNavigate }) {
   );
 }
 
-function RailCharts({ sources }) {
-  const charts = (sources ?? []).flatMap(viewId => {
-    const comps = CHART_REGISTRY[viewId] ?? [];
-    return comps.map((Comp, i) => <Comp key={`${viewId}-${i}`} />);
-  });
-  if (!charts.length) return null;
-  return <div className="chat-rail-charts">{charts}</div>;
+function RailCharts({ sources, onNavigate }) {
+  const groups = (sources ?? [])
+    .map(viewId => ({ viewId, meta: SOURCE_META[viewId], comps: CHART_REGISTRY[viewId] ?? [] }))
+    .filter(g => g.comps.length);
+  if (!groups.length) return null;
+  return (
+    <div className="chat-rail-charts">
+      {groups.map(({ viewId, meta, comps }) => (
+        <div className="chat-rail-group" key={viewId}>
+          {comps.map((Comp, i) => <Comp key={`${viewId}-${i}`} />)}
+          {meta?.view && (
+            <button
+              type="button"
+              className="chat-rail-open"
+              onClick={() => onNavigate?.(meta.view)}
+              title={`Open ${meta.label} on the dashboard`}
+            >
+              Open on dashboard: {meta.label} ↗
+            </button>
+          )}
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export default function Chat({ onNavigate }) {
@@ -284,7 +301,7 @@ export default function Chat({ onNavigate }) {
       <aside className="chat-page-rail">
         <div className="chat-rail-head">Live Charts</div>
         {active ? (
-          <RailCharts sources={active.sources} />
+          <RailCharts sources={active.sources} onNavigate={onNavigate} />
         ) : (
           <div className="chat-rail-empty">
             Charts cited in an answer appear here — each exportable to CSV.

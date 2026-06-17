@@ -1165,37 +1165,35 @@ const TOOL_IMPL = {
 // Only run the (extra) tool pass when the question plausibly needs a live fetch.
 const TOOL_GATE_RX = /\b(option|options|put|call|implied vol|\biv\b|open interest|p\/?c|contract|strike)\b/i;
 
-const TOOL_SYSTEM = `You fetch live market data via tools for an AI-industry dashboard.
-If the question needs live options-chain data for specific stock tickers (options flow, top options
-by volume, put/call ratios, implied volatility, open interest), call fetch_options with the relevant
-uppercase tickers. If the user names no tickers, infer the obvious ones from company names. Do not
-call a tool when none is needed.`;
+const TOOL_SYSTEM = `Extract the stock tickers an options question is about and call fetch_options.
+Map company names to tickers (Micron→MU, SanDisk→SNDK, Nvidia→NVDA, AMD→AMD, Broadcom→AVGO,
+Seagate→STX, Western Digital→WDC, Microsoft→MSFT, Apple→AAPL, Amazon→AMZN, Meta→META, Google→GOOGL).
+Tickers may appear lowercase in the question — return them UPPERCASE. Always include every ticker the
+user mentions.`;
 
-// Run the model with tools; execute any tool calls (which warm the cache).
+// Force the (reliable, 70B) model to extract tickers and call fetch_options,
+// which warms the cache. Single round-trip; the gate has already decided this
+// is an options question so there's no "should I call a tool" judgement to make.
 // Returns the list of tickers fetched. Best-effort — never throws to the caller.
 async function runToolPrefetch(message) {
   const groq = makeGroq();
-  const messages = [
-    { role: 'system', content: TOOL_SYSTEM },
-    { role: 'user',   content: message },
-  ];
+  const resp = await groq.chat.completions.create({
+    model: MODEL, temperature: 0, max_tokens: 200,
+    tools: TOOLS,
+    tool_choice: { type: 'function', function: { name: 'fetch_options' } },
+    messages: [
+      { role: 'system', content: TOOL_SYSTEM },
+      { role: 'user',   content: message },
+    ],
+  });
+  const calls = resp.choices[0]?.message?.tool_calls ?? [];
   const fetched = [];
-  for (let hop = 0; hop < 2; hop++) {
-    const resp = await groq.chat.completions.create({
-      model: DETECTIVE_MODEL, temperature: 0, max_tokens: 300,
-      tools: TOOLS, tool_choice: 'auto', messages,
-    });
-    const msg = resp.choices[0]?.message;
-    if (!msg?.tool_calls?.length) break;
-    messages.push(msg);
-    for (const tc of msg.tool_calls) {
-      let args = {};
-      try { args = JSON.parse(tc.function?.arguments || '{}'); } catch { /* malformed args */ }
-      const impl = TOOL_IMPL[tc.function?.name];
-      const result = impl ? await impl(args) : { error: 'unknown tool' };
-      if (Array.isArray(result.fetched)) fetched.push(...result.fetched);
-      messages.push({ role: 'tool', tool_call_id: tc.id, content: JSON.stringify(result) });
-    }
+  for (const tc of calls) {
+    if (tc.function?.name !== 'fetch_options') continue;
+    let args = {};
+    try { args = JSON.parse(tc.function.arguments || '{}'); } catch { /* malformed args */ }
+    const result = await TOOL_IMPL.fetch_options(args);
+    if (Array.isArray(result.fetched)) fetched.push(...result.fetched);
   }
   return [...new Set(fetched)];
 }
@@ -1204,10 +1202,11 @@ async function chat(message, history = []) {
   // Agentic pre-fetch: let the model pull live data (e.g. options for specific
   // tickers) into the cache first, so the normal RAG pipeline answers from it.
   // Gated to options-style questions and entirely best-effort.
+  let prefetched = [];
   if (TOOL_GATE_RX.test(message)) {
     try {
-      const fetched = await runToolPrefetch(message);
-      if (fetched.length) console.log(`[chat] tool prefetch warmed options: ${fetched.join(', ')}`);
+      prefetched = await runToolPrefetch(message);
+      if (prefetched.length) console.log(`[chat] tool prefetch warmed options: ${prefetched.join(', ')}`);
     } catch (e) {
       console.warn('[chat] tool prefetch skipped:', rateLimitMessage(e) ? 'rate limited' : e.message);
     }
@@ -1368,6 +1367,7 @@ async function chat(message, history = []) {
       sections: used,
       expanded: kept.filter(id => expandIds.has(id)),
       hop:      hopAdded,
+      fetched:  prefetched,
       freshness,
     },
   };
