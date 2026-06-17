@@ -5,6 +5,10 @@
  * One entry per chart, keyed by its `chartId`. `title` is the heading shown
  * on the card; `subtitle` is the description line beneath it.
  *
+ * Keep titles as plain, logical chart labels. Subtitles should only explain
+ * what the metric is or call out a notable change in the data — never how the
+ * data was collected (source and cadence live in chartSources.js).
+ *
  * To rename a chart or reword its description, edit the strings below — you
  * do NOT need to touch the view files. (A handful of charts whose title or
  * description is computed from live data keep that text in the view and are
@@ -14,94 +18,89 @@
  * Insight & footnote text in chartInsights.js
  */
 export const CHART_TEXT = {
-  // ── Developer signals · PyPI / npm / Stack Overflow (view: pypi) ──────
+  // ── Developer signals · PyPI / npm (view: pypi) ──────────────────────
   'pypi-installs': {
-    title: 'PyPI weekly downloads — Python SDK installs',
-    subtitle: "Weekly downloads for each AI provider's Python SDK. Zero cost, fully automatable.",
+    title: 'Python SDK Weekly Downloads',
+    subtitle: "Weekly PyPI downloads for each AI provider's Python SDK.",
   },
   'pypi-share': {
-    title: 'Anthropic vs OpenAI — share of combined installs',
-    subtitle: "Anthropic's share of the combined install base has nearly doubled in 6 months.",
+    title: 'Anthropic vs OpenAI Install Share',
+    subtitle: "Anthropic's share of combined installs has nearly doubled in 6 months.",
   },
   'pypi-npm': {
-    title: 'npm weekly downloads — JS/TS SDKs',
-    subtitle: "Node.js ecosystem. OpenAI's npm package still leads but Anthropic is closing.",
+    title: 'JavaScript/TypeScript SDK Weekly Downloads',
+    subtitle: "Weekly npm downloads. OpenAI still leads, but Anthropic is closing.",
   },
-  'pypi-so': {
-    title: 'Stack Overflow questions (all time) by tag',
-    subtitle: 'Cumulative question count per tag — measures ecosystem depth and developer mindshare.',
-  },
-
   // ── Developer signals · GitHub (view: github) ─────────────────────────
   'github-stars': {
-    title: 'GitHub stars per SDK repository — over time',
-    subtitle: 'Developer mindshare. Stars accumulate; rising slope = accelerating adoption.',
+    title: 'GitHub Stars by SDK',
+    subtitle: 'Cumulative stars per repository; a rising slope signals accelerating adoption.',
   },
   'github-deps': {
-    title: 'GitHub "Used By" — repositories depending on each SDK',
-    subtitle: 'Production adoption signal — separates code that ships from code that demos.',
+    title: 'Repositories Depending on Each SDK',
+    subtitle: 'How many public repos depend on each SDK — a production-adoption signal.',
   },
 
   // ── Developer signals · Google Trends (view: trends) ──────────────────
   'trends-api': {
-    title: 'Google Trends — relative search interest (0–100)',
-    subtitle: 'Daily relative search volume in the US. Index 100 = peak of leading term in period.',
+    title: 'Search Interest by Provider',
+    subtitle: 'Relative US search interest (0–100); 100 = the leading term at its peak.',
   },
   'trends-geo': {
-    title: 'Search interest by metro — "Claude API" (US)',
+    title: 'Claude API Search Interest by Metro',
     subtitle: 'Top US cities by relative Claude API search interest.',
   },
   'trends-brand': {
-    title: '"Claude" vs "ChatGPT" — consumer brand search',
-    subtitle: 'Brand awareness proxy. ChatGPT dominant but Claude closing at accelerating rate.',
+    title: 'Claude vs ChatGPT Brand Search',
+    subtitle: 'Consumer brand-awareness proxy; ChatGPT leads but Claude is closing.',
   },
 
   // ── Consumer signals · HuggingFace (view: hf) ─────────────────────────
   'hf-downloads': {
-    title: 'HuggingFace — most-downloaded models (all-time)',
+    title: 'Most-Downloaded Models',
     subtitle: 'Top 10 models on the Hub by cumulative downloads.',
   },
   'hf-families': {
-    title: 'Open-model demand by family',
+    title: 'Open-Model Demand by Family',
     // subtitle is computed from live data in the view
   },
   'hf-categories': {
-    title: 'Top-model category breakdown',
+    title: 'Top Model Categories',
     subtitle: 'Pipeline tags across the current top-30 most-downloaded models.',
   },
   'hf-uploads': {
-    title: 'Model creation rate on the Hub',
+    title: 'Model Creation Rate',
     // subtitle is computed from live data in the view
   },
 
   // ── Infrastructure & OSS · Docker (view: docker) ──────────────────────
   'docker-pulls': {
-    title: 'Docker Hub — all-time pull counts for AI infrastructure images',
-    subtitle: 'Pull counts proxy how widely AI infrastructure is deployed. NVIDIA CUDA and PyTorch dominate; inference servers (vLLM, Ollama, HF TGI) show the inference tier.',
+    title: 'AI Image Pull Counts',
+    subtitle: 'Cumulative pulls proxy how widely each image is deployed; CUDA and PyTorch dominate.',
   },
   'docker-stars': {
-    title: 'Docker Hub — star count by image',
-    subtitle: 'Stars reflect community approval. Newer inference images (Ollama, vLLM) gaining fast relative to pulls.',
+    title: 'AI Image Stars',
+    subtitle: 'Community approval; newer inference images (Ollama, vLLM) are gaining fast.',
   },
 
   // ── Community · Hacker News & Wikipedia (view: community) ─────────────
   'hn-volume': {
-    title: 'Hacker News — weekly AI story volume',
-    subtitle: 'Stories matching "AI", "LLM", "ChatGPT", "Claude", or "Gemini". HN volume is a leading indicator — technically-minded early adopters discuss here before mainstream.',
+    title: 'Weekly AI Story Volume on Hacker News',
+    subtitle: 'A leading indicator — technical early adopters discuss here before the mainstream.',
   },
   'hn-terms': {
-    title: 'HN mentions by term — last 4 weeks',
-    subtitle: 'Which AI brands and concepts dominate HN discussion. ChatGPT leads volume; Claude and AI agents track developer mindshare.',
+    title: 'HN Mentions by Term',
+    subtitle: 'Which AI brands and concepts dominate Hacker News discussion.',
   },
   'wiki-views': {
-    title: 'Wikipedia — weekly pageviews for AI articles',
-    subtitle: 'Wikipedia pageviews measure public interest, not developer interest. Spikes follow news cycles. ChatGPT stays top; LLM views rise as the concept goes mainstream.',
+    title: 'Weekly Pageviews for AI Articles',
+    subtitle: 'A public-interest proxy; spikes follow news cycles.',
   },
 
   // ── Infrastructure & OSS · GitHub commit activity (view: github-commits)
   'github-commit-velocity': {
-    title: 'Weekly commit velocity — top AI OSS repositories',
-    subtitle: 'Commit cadence tracks active development intensity. Spikes often precede major releases.',
+    title: 'Weekly Commit Velocity',
+    subtitle: 'Commit cadence tracks development intensity; spikes often precede major releases.',
   },
   'github-commit-totals': {
     // title is computed from the time window in the view
@@ -110,349 +109,345 @@ export const CHART_TEXT = {
 
   // ── Token consumption · Chinese LLMs (view: chinese) ──────────────────
   'cn-tokens': {
-    title: 'Chinese LLM weekly token consumption on OpenRouter',
-    subtitle: "Real weekly token throughput for Chinese models ranked in OpenRouter's top 10. Production developer traffic, not benchmark scores.",
+    title: 'Chinese LLM Weekly Token Consumption',
+    subtitle: "Weekly token throughput for Chinese models in OpenRouter's top 10 — real production traffic.",
   },
   'cn-market': {
-    title: 'China domestic LLM market share (enterprise, %)',
-    subtitle: "China's enterprise LLM market. iFlytek leads at 9.4%, Zhipu second at 6.6%. Market is highly fragmented — no single player dominates.",
+    title: 'China Enterprise LLM Market Share',
+    subtitle: 'iFlytek leads at 9.4%, Zhipu second at 6.6%; the market is highly fragmented.',
   },
   'cn-pricing': {
-    title: 'Input token pricing — Chinese vs US models ($/M tokens)',
-    subtitle: 'The pricing gap driving developer adoption. Chinese models average $0.28–0.40/M input tokens vs $2.50–5.00/M for comparable US models. Near-parity quality at 10–17× lower cost.',
+    title: 'Input Token Pricing — Frontier Models',
+    subtitle: 'Input $/M tokens across major providers (US, Chinese, and open models). Chinese and open models cluster near $0.30/M; Western flagships range to $15/M.',
   },
   'cn-mau': {
-    title: 'MiniMax consumer app MAU (millions)',
-    subtitle: "Talkie/Xingye (AI companion) and Hailuo AI (video generation) are MiniMax's consumer anchors. Talkie reached 20M MAU in the first 9 months of 2025 — among the fastest-growing AI apps globally.",
+    title: 'MiniMax Consumer App MAU',
+    subtitle: 'Talkie reached 20M MAU in the first 9 months of 2025 — among the fastest-growing AI apps globally.',
   },
   'cn-revenue': {
-    title: 'Zhipu AI revenue (million yuan)',
-    subtitle: "Zhipu AI's annual revenue grew 132% YoY to 724M yuan (~$99M USD) in 2025 — driven by enterprise AI agent deployments (+249%) and its Model-as-a-Service platform across finance, manufacturing, and healthcare.",
+    title: 'Zhipu AI Annual Revenue',
+    subtitle: 'Revenue grew 132% YoY to ¥724M (~$99M) in 2025, led by enterprise AI agent deployments.',
   },
   'cn-bench': {
-    title: 'SWE-bench Verified scores — Chinese vs US frontier models',
-    subtitle: 'Software engineering benchmark as a quality proxy. Chinese models now approach or match US frontier models. GLM-5 scores 77.8%, MiniMax M2.5 at 80.2% — vs Claude Opus 4.6 at 80.9%.',
+    title: 'SWE-bench Verified — Chinese vs US Frontier Models',
+    subtitle: 'GLM-5 at 77.8% and MiniMax M2.5 at 80.2% now approach Claude Opus 4.6 at 80.9%.',
   },
 
   // ── Infrastructure · US datacenter build (view: datacenter) ───────────
   'dc-capex': {
-    title: 'Hyperscaler capex committed to datacenter build ($B)',
-    subtitle: 'Annual capital expenditure dedicated to AI datacenter construction. The top 5 tech companies alone exceeded $400B in 2025 — more than global oil & gas investment. IEA projects a further 75% increase in 2026.',
+    title: 'Hyperscaler Datacenter Capex ($B)',
+    subtitle: 'The top 5 tech firms alone exceeded $400B in 2025; IEA projects a further 75% rise in 2026.',
   },
   'dc-capacity': {
-    title: 'US datacenter capacity under construction (GW)',
-    subtitle: 'AI "factory" datacenter capacity actually breaking ground, per IEA satellite-based tracking. "AI factories" tripled in capacity in the past 18 months. Of 240 GW announced, roughly one-third are under active construction.',
+    title: 'US Datacenter Capacity Under Construction (GW)',
+    subtitle: 'AI datacenter capacity tripled in the past 18 months; ~⅓ of the 240 GW announced is under active construction.',
   },
   'dc-state': {
-    title: 'Permitted capacity by US state (GW, top 8)',
-    subtitle: 'States with the largest pipeline of permitted (not yet built) datacenter load. Virginia hosts 26% of current US datacenter electricity consumption. Texas and Oregon are the fastest-growing.',
+    title: 'Permitted Capacity by US State (GW, top 8)',
+    subtitle: 'Largest pipelines of permitted (not yet built) load. Virginia hosts 26% of US datacenter electricity use; Texas and Oregon grow fastest.',
   },
   'dc-grid': {
-    title: 'Grid interconnection queue — large loads (GW, PJM + MISO)',
-    subtitle: 'New datacenter load applications waiting for grid connection. PJM queue wait is now 8+ years for projects approved in 2025. A rising queue = rising demand but also rising supply constraint.',
+    title: 'Grid Interconnection Queue — Large Loads (GW, PJM + MISO)',
+    subtitle: 'Datacenter load awaiting grid connection; PJM waits now exceed 8 years for 2025 approvals.',
   },
   'dc-btm': {
-    title: 'Behind-the-meter generation deployments (MW)',
-    subtitle: 'On-site natural gas, solar, and nuclear power deployed directly at datacenter sites ("bring your own power"). Hyperscalers are bypassing the grid to avoid interconnection delays.',
+    title: 'Behind-the-Meter Generation (MW)',
+    subtitle: 'On-site gas, solar, and nuclear deployed at datacenter sites to bypass grid interconnection delays.',
   },
   'dc-deals': {
-    title: 'New datacenter deals signed per quarter',
-    subtitle: 'Leasing activity is a leading indicator — signed deals become construction starts 6–18 months later. New deals fell 40%+ in Q4 2025 amid capital crunch concerns.',
+    title: 'New Datacenter Deals per Quarter',
+    subtitle: 'A leading indicator of construction starts; new deals fell 40%+ in Q4 2025 amid capital-crunch concerns.',
   },
 
   // ── Infrastructure · AI electricity demand (view: electricity) ────────
   'elec-consumption': {
-    title: 'US datacenter electricity consumption (TWh / year)',
-    subtitle: "Annual US datacenter electricity demand. At 183 TWh in 2024, datacenters consumed ~4.4% of total US electricity — equivalent to Pakistan's entire national demand. IEA projects 325–580 TWh by 2028, driven almost entirely by AI workloads.",
+    title: 'US Datacenter Electricity Consumption (TWh/yr)',
+    subtitle: '183 TWh in 2024 (~4.4% of US electricity); IEA projects 325–580 TWh by 2028, driven almost entirely by AI.',
   },
   'elec-state': {
-    title: 'State share of national datacenter electricity (%)',
-    subtitle: "Virginia alone consumes 26% of US datacenter electricity — a single-state concentration risk. Northern Virginia is the world's largest datacenter cluster.",
+    title: 'State Share of Datacenter Electricity (%)',
+    subtitle: 'Virginia alone consumes 26% of US datacenter electricity — a single-state concentration risk.',
   },
   'elec-ai-share': {
-    title: 'AI electricity as % of US total consumption',
-    subtitle: "AI compute's growing share of the US grid. Was under 1% in 2020; on track for 8–12% by 2028 in the high-growth scenario.",
+    title: 'AI Share of US Electricity (%)',
+    subtitle: 'Under 1% in 2020; on track for 8–12% by 2028 in the high-growth scenario.',
   },
   'elec-rates': {
-    title: 'Average household electricity rate impact (¢/kWh)',
-    subtitle: "Grid infrastructure upgrades for datacenters are being passed to ratepayers. Virginia's Dominion Energy proposed its first base-rate increase since 1992 in Feb 2025, partly attributable to datacenter load growth.",
+    title: 'Household Electricity Rate Impact (¢/kWh)',
+    subtitle: "Datacenter grid upgrades are passed to ratepayers; Dominion proposed its first base-rate rise since 1992.",
   },
   'elec-mix': {
-    title: 'Renewable vs fossil share of datacenter power',
-    subtitle: 'Renewables currently supply ~27% of datacenter electricity globally. Hyperscalers are signing PPAs faster than the grid can deliver, forcing gas turbine bridging.',
+    title: 'Renewable vs Fossil Datacenter Power',
+    subtitle: 'Renewables supply ~27% globally; PPAs are outpacing grid delivery, forcing gas-turbine bridging.',
   },
   'elec-pue': {
-    title: 'Power Usage Effectiveness (PUE) — industry trend',
-    subtitle: 'PUE = total facility power ÷ IT equipment power. Lower is better (1.0 = perfect). AI GPU clusters run hotter than traditional compute — driving PUE higher at cutting-edge facilities.',
+    title: 'Power Usage Effectiveness (PUE)',
+    subtitle: 'Total facility power ÷ IT power (1.0 = ideal); hotter AI GPU clusters push PUE higher.',
   },
 
   // ── Pricing · GPU & memory spot (view: pricing) ───────────────────────
   'gpu-current-rates': {
-    title: 'GPU rental rates today — on-demand vs spot ($/hr)',
-    subtitle: 'Live vast.ai marketplace medians across verified single-GPU offers. Spot = interruptible min-bid floor (shown only where enough offers exist); on-demand = held-instance rate. Both use a 10% trimmed median.',
+    title: 'GPU Rental Rates — On-Demand vs Spot ($/hr)',
+    subtitle: 'Spot = interruptible floor price; on-demand = held-instance rate.',
   },
   'gpu-avail': {
-    title: 'GPU availability — rentable vast.ai offers',
-    subtitle: 'Count of verified, unrented, rentable one-GPU offers returned by the vast.ai market API.',
+    title: 'GPU Availability ($/hr offers)',
+    subtitle: 'Count of rentable single-GPU offers — a supply/scarcity signal.',
   },
   'gpu-index': {
-    title: 'Mainstream GPU rental benchmark ($/hr)',
-    subtitle: "Average on-demand $/hr across the tracked vast.ai GPUs priced each day. The pre-vast.ai period is filled by AWS EC2 spot history — an H100/H200/A100 composite rebased ('indexed') to the vast.ai benchmark level at the join point — so it shows AWS's historical shape at vast.ai's level, an estimate, not literal vast.ai prices.",
+    title: 'Mainstream GPU Rental Benchmark ($/hr)',
+    subtitle: 'Average on-demand $/hr across the tracked GPUs.',
   },
   'gpu-spot-combined': {
-    title: 'GPU spot price ($/hr) — vast.ai, pre-history indexed from AWS',
-    subtitle: "Single continuous line per GPU: vast.ai's actual price where available, with the earlier period filled by AWS EC2 spot history rebased ('indexed') to vast.ai's level at the join point. The two are different markets, so the pre-vast.ai portion shows AWS's historical shape at vast.ai's price level — an estimate, not literal vast.ai prices.",
+    title: 'GPU Spot Price by Model ($/hr)',
+    subtitle: 'Interruptible spot price for each tracked GPU over time.',
   },
   'aws-chip-spot': {
-    title: 'AWS AI-chip spot price ($/chip/hr) — Trainium / Inferentia',
-    subtitle: "AWS's in-house AI accelerators (no third-party market equivalent). Per-chip interruptible spot price: exact EC2 DescribeSpotPriceHistory backfill (≤90 days), continued forward via the free AWS Spot Advisor. Daily median across us-east-1 / us-west-2 / us-east-2.",
+    title: 'AWS AI-Chip Spot Price — Trainium / Inferentia ($/chip/hr)',
+    subtitle: "Per-chip spot price for AWS's in-house AI accelerators (no third-party market equivalent).",
   },
   'gpu-cloud-avg': {
-    title: 'Average GPU rental price across major clouds ($/GPU/hr)',
-    subtitle: 'Mean on-demand list price per GPU across AWS, Azure, GCP, CoreWeave, Nebius, and Oracle. The H100 line pools H100 and H200. Collected daily — fetched live where a cloud has a public price feed (Azure), with maintained reference rates for the rest. Forward-filled, accumulating from the day collection began.',
+    title: 'Average GPU Price Across Major Clouds ($/GPU/hr)',
+    subtitle: 'Mean on-demand list price per GPU across the major clouds; the H100 line pools H100 and H200.',
   },
   'dram-index': {
     // The card shows a live title (index name + unit); this static title is the
     // fallback used in the overview "Customise" chart picker.
-    title: 'Mainstream DRAM spot price index',
-    subtitle: "TrendForce's official mainstream DRAM spot price index. Monthly resolution, published on DataTrack.",
+    title: 'Mainstream DRAM Spot Price Index',
+    subtitle: 'Benchmark spot price for mainstream DRAM, at monthly resolution.',
   },
   'dram-chips': {
-    title: 'DRAM chip & GDDR spot price over time — average per model ($)',
+    title: 'DRAM & GDDR Spot Price by Model ($)',
     // subtitle is computed (methodology + as-of date) in the view
   },
   'dram-modules': {
-    title: 'Memory module spot price over time — average per model ($)',
+    title: 'Memory Module Spot Price by Model ($)',
     // subtitle is computed in the view
   },
   'dram-change': {
-    title: 'DRAM spot — session change by model (%)',
+    title: 'DRAM Spot — Session Change by Model (%)',
     // subtitle is computed (as-of date) in the view
   },
 
   // ── Supply chain (views: ai-supply / ai-supply-optics / ai-supply-pcb) ─
-  'supply-all-rev':    { title: 'Monthly revenue (NT$M) — All companies' },
-  'supply-all-yoy':    { title: 'YoY growth (%) — All companies' },
-  'supply-all-mom':    { title: 'MoM growth (%) — All companies' },
-  'supply-total-rev':  { title: 'Total monthly revenue (NT$M) — All companies' },
-  'supply-optics-rev': { title: 'Monthly revenue (NT$M) — Optics' },
-  'supply-optics-yoy': { title: 'YoY growth (%) — Optics' },
-  'supply-optics-mom': { title: 'MoM growth (%) — Optics' },
-  'supply-pcb-rev':    { title: 'Monthly revenue (NT$M) — PCB' },
-  'supply-pcb-yoy':    { title: 'YoY growth (%) — PCB' },
-  'supply-pcb-mom':    { title: 'MoM growth (%) — PCB' },
+  'supply-all-rev':    { title: 'Monthly Revenue — All Companies (NT$M)' },
+  'supply-all-yoy':    { title: 'YoY Growth — All Companies (%)' },
+  'supply-all-mom':    { title: 'MoM Growth — All Companies (%)' },
+  'supply-total-rev':  { title: 'Total Monthly Revenue — All Companies (NT$M)' },
+  'supply-optics-rev': { title: 'Monthly Revenue — Optics (NT$M)' },
+  'supply-optics-yoy': { title: 'YoY Growth — Optics (%)' },
+  'supply-optics-mom': { title: 'MoM Growth — Optics (%)' },
+  'supply-pcb-rev':    { title: 'Monthly Revenue — PCB (NT$M)' },
+  'supply-pcb-yoy':    { title: 'YoY Growth — PCB (%)' },
+  'supply-pcb-mom':    { title: 'MoM Growth — PCB (%)' },
 
   // ── Company · OpenAI / ChatGPT (view: demand-openai) ──────────────────
   'oa-sdk': {
-    title: 'SDK weekly downloads — openai Python & JavaScript',
-    subtitle: 'openai Python SDK (PyPI) and openai JS/TS SDK (npm) weekly installs.',
+    title: 'OpenAI SDK Weekly Downloads',
+    subtitle: 'openai Python (PyPI) and JS/TS (npm) weekly installs.',
   },
   'oa-or-share': {
-    title: 'OpenAI — share of OpenRouter weekly tokens (%)',
-    subtitle: 'Percentage of total weekly OpenRouter token throughput served by OpenAI models.',
+    title: 'OpenAI Share of OpenRouter Tokens (%)',
+    subtitle: 'OpenAI models as a percentage of weekly OpenRouter token throughput.',
   },
   'oa-or-models': {
-    title: 'OpenAI models in OpenRouter top 15 — latest week tokens',
+    title: 'OpenAI Models in OpenRouter Top 15',
     // subtitle is computed (latest week) in the view
   },
   'oa-trends': {
-    title: 'Google Trends — ChatGPT API & brand search interest',
-    subtitle: 'Relative search volume 0–100. API intent (developer) vs brand (consumer).',
+    title: 'ChatGPT Search Interest — API vs Brand',
+    subtitle: 'Relative search interest (0–100): developer (API) vs consumer (brand).',
   },
   'oa-stars': {
-    title: 'openai-python — GitHub stars',
-    subtitle: 'Developer mindshare. Stars accumulate; rising slope = accelerating adoption.',
+    title: 'openai-python GitHub Stars',
+    subtitle: 'Cumulative stars; a rising slope signals accelerating adoption.',
   },
-  'oa-github': {
-    title: 'openai-python — GitHub dependent repos',
-    subtitle: 'Production adoption: repos that depend on the SDK.',
-  },
-  'oa-so': {
-    title: 'Stack Overflow — [openai-api] tag activity',
-    subtitle: 'Developer troubleshooting volume around the OpenAI API.',
+  'oa-pricing': {
+    title: 'OpenAI Model Input Pricing ($/M tokens)',
+    subtitle: "Input price per 1M tokens for OpenAI's models, tracked daily.",
   },
   'oa-wiki': {
-    title: 'Wikipedia — ChatGPT article weekly pageviews',
+    title: 'ChatGPT Wikipedia Pageviews',
     // subtitle is computed (HN mentions + latest views) in the view
   },
 
   // ── Company · Anthropic / Claude (view: demand-anthropic) ─────────────
   'an-sdk': {
-    title: 'SDK weekly downloads — anthropic Python & JavaScript',
-    subtitle: 'anthropic Python SDK (PyPI) and @anthropic-ai/sdk JS/TS SDK (npm) weekly installs.',
+    title: 'Anthropic SDK Weekly Downloads',
+    subtitle: 'anthropic Python (PyPI) and @anthropic-ai/sdk (npm) weekly installs.',
   },
   'an-or-share': {
-    title: 'Anthropic — share of OpenRouter weekly tokens (%)',
-    subtitle: 'Percentage of total weekly OpenRouter token throughput served by Anthropic models.',
+    title: 'Anthropic Share of OpenRouter Tokens (%)',
+    subtitle: 'Anthropic models as a percentage of weekly OpenRouter token throughput.',
   },
   'an-or-models': {
-    title: 'Anthropic models in OpenRouter top 15 — latest week tokens',
+    title: 'Anthropic Models in OpenRouter Top 15',
     // subtitle is computed (latest week) in the view
   },
   'an-trends': {
-    title: 'Google Trends — Claude API & brand search interest',
-    subtitle: 'Relative search volume 0–100. Claude API intent growing fastest of all providers.',
+    title: 'Claude Search Interest — API vs Brand',
+    subtitle: 'Relative search interest (0–100); Claude API intent is growing fastest of all providers.',
   },
   'an-stars': {
-    title: 'anthropic-sdk-python — GitHub stars',
-    subtitle: 'Developer mindshare. Stars accumulate; rising slope = accelerating adoption.',
+    title: 'anthropic-sdk-python GitHub Stars',
+    subtitle: 'Cumulative stars; a rising slope signals accelerating adoption.',
   },
   'an-github': {
-    title: 'anthropic-sdk-python — GitHub dependent repos',
-    subtitle: 'Production adoption: repos that depend on the SDK.',
+    title: 'anthropic-sdk-python Dependent Repos',
+    subtitle: 'Public repos that depend on the SDK — a production-adoption signal.',
   },
-  'an-so': {
-    title: 'Stack Overflow — [claude] tag activity',
-    subtitle: 'Developer troubleshooting volume around the Claude API.',
+  'an-pricing': {
+    title: 'Anthropic Model Input Pricing ($/M tokens)',
+    subtitle: "Input price per 1M tokens for Anthropic's Claude models, tracked daily.",
   },
   'an-wiki': {
-    title: 'Wikipedia — Claude article weekly pageviews',
+    title: 'Claude Wikipedia Pageviews',
     // subtitle is computed (HN mentions + latest views) in the view
   },
 
   // ── Company · Google / Gemini (view: demand-google) ───────────────────
   'goo-sdk': {
-    title: 'SDK weekly downloads — Google AI Python & JavaScript',
-    subtitle: 'google-genai Python SDK (PyPI) and @google/genai JS/TS SDK (npm) weekly installs.',
+    title: 'Google AI SDK Weekly Downloads',
+    subtitle: 'google-genai Python (PyPI) and @google/genai (npm) weekly installs.',
   },
   'goo-or-share': {
-    title: 'Google — share of OpenRouter weekly tokens (%)',
-    subtitle: 'Percentage of total weekly OpenRouter token throughput served by Google models.',
+    title: 'Google Share of OpenRouter Tokens (%)',
+    subtitle: 'Google models as a percentage of weekly OpenRouter token throughput.',
   },
   'goo-or-models': {
-    title: 'Google models in OpenRouter top 15 — latest week tokens',
+    title: 'Google Models in OpenRouter Top 15',
     // subtitle is computed (latest week) in the view
   },
   'goo-trends': {
-    title: 'Google Trends — Gemini API & brand search interest',
-    subtitle: 'Relative search volume 0–100.',
+    title: 'Gemini Search Interest — API vs Brand',
+    subtitle: 'Relative search interest (0–100).',
   },
   'goo-stars': {
-    title: 'google-genai — GitHub stars',
-    subtitle: 'Developer mindshare. Stars accumulate; rising slope = accelerating adoption.',
+    title: 'google-genai GitHub Stars',
+    subtitle: 'Cumulative stars; a rising slope signals accelerating adoption.',
   },
   'goo-github': {
-    title: 'google-genai — GitHub dependent repos',
-    subtitle: 'Production adoption: repos that depend on the SDK.',
-  },
-  'goo-so': {
-    title: 'Stack Overflow — [google-gemini] tag activity',
-    subtitle: 'Developer troubleshooting volume around the Gemini API.',
+    title: 'google-genai Dependent Repos',
+    subtitle: 'Public repos that depend on the SDK — a production-adoption signal.',
   },
   'goo-hf': {
-    title: 'Gemma — HuggingFace family downloads',
-    subtitle: 'Open-model demand: cumulative downloads of the Gemma family.',
+    title: 'Gemma HuggingFace Downloads',
+    subtitle: 'Cumulative downloads of the Gemma model family.',
+  },
+  'goo-pricing': {
+    title: 'Google Model Input Pricing ($/M tokens)',
+    subtitle: "Input price per 1M tokens for Google's Gemini models, tracked daily.",
   },
   'goo-wiki': {
-    title: 'Wikipedia — Gemini article weekly pageviews',
+    title: 'Gemini Wikipedia Pageviews',
     // subtitle is computed (HN mentions + latest views) in the view
   },
 
   // ── Company · Zhipu AI / GLM (view: demand-zhipu) ─────────────────────
   'zh-or-share': {
-    title: 'Zhipu AI — share of OpenRouter weekly tokens (%)',
-    subtitle: 'Percentage of total weekly OpenRouter token throughput served by Zhipu GLM models.',
+    title: 'Zhipu AI Share of OpenRouter Tokens (%)',
+    subtitle: 'Zhipu GLM models as a percentage of weekly OpenRouter token throughput.',
   },
   'zh-revenue': {
-    title: 'Zhipu AI — annual revenue (million yuan)',
-    subtitle: "Zhipu AI's annual revenue grew 132% YoY to ¥724M (~$99M USD) in 2025. Enterprise AI agent deployments +249% YoY.",
+    title: 'Zhipu AI Annual Revenue (¥M)',
+    subtitle: 'Revenue grew 132% YoY to ¥724M (~$99M) in 2025; enterprise AI agent deployments +249% YoY.',
   },
   'zh-market': {
-    title: 'China domestic enterprise LLM market share (%)',
-    subtitle: "Zhipu AI holds 6.6% of China's enterprise LLM market — second only to iFlytek. Market remains highly fragmented.",
+    title: 'China Enterprise LLM Market Share (%)',
+    subtitle: 'Zhipu holds 6.6% — second only to iFlytek; the market remains highly fragmented.',
   },
   'zh-hf': {
-    title: 'GLM — HuggingFace family downloads',
-    subtitle: 'Open-model demand: cumulative downloads of the GLM family (zai-org).',
+    title: 'GLM HuggingFace Downloads',
+    subtitle: 'Cumulative downloads of the GLM family (zai-org).',
   },
   'zh-pricing': {
-    title: 'Input token pricing — GLM-5 vs global frontier models ($/M tokens)',
-    subtitle: 'GLM-5 at $0.30/M input tokens vs $2.50–15.00/M for comparable US models. Near-parity quality at 8–50× lower cost.',
+    title: 'GLM Model Input Pricing ($/M tokens)',
+    subtitle: "Input price per 1M tokens for Zhipu's GLM models, tracked daily.",
   },
   'zh-bench': {
-    title: 'SWE-bench Verified — GLM-5 vs frontier models',
-    subtitle: 'GLM-5 scores 77.8% on SWE-bench Verified — within 3 points of Claude Opus. The capability gap has effectively closed.',
+    title: 'SWE-bench Verified — GLM-5 vs Frontier Models',
+    subtitle: 'GLM-5 scores 77.8% — within 3 points of Claude Opus; the capability gap has effectively closed.',
   },
 
   // ── Company · MiniMax (view: demand-minimax) ──────────────────────────
   'mm-or-share': {
-    title: 'MiniMax — share of OpenRouter weekly tokens (%)',
-    subtitle: 'Percentage of total weekly OpenRouter token throughput served by MiniMax models.',
+    title: 'MiniMax Share of OpenRouter Tokens (%)',
+    subtitle: 'MiniMax models as a percentage of weekly OpenRouter token throughput.',
   },
   'mm-hf': {
-    title: 'MiniMax — HuggingFace family downloads',
-    subtitle: 'Open-model demand: cumulative downloads of MiniMaxAI models.',
+    title: 'MiniMax HuggingFace Downloads',
+    subtitle: 'Cumulative downloads of MiniMaxAI models.',
   },
   'mm-mau': {
-    title: 'MiniMax consumer app MAU (millions)',
-    subtitle: "Talkie/Xingye (AI companion) and Hailuo AI (video generation) are MiniMax's consumer anchors.",
+    title: 'MiniMax Consumer App MAU',
+    subtitle: "Talkie/Xingye (AI companion) and Hailuo AI (video) are MiniMax's consumer anchors.",
   },
   'mm-pricing': {
-    title: 'Input token pricing — MiniMax M2.5 vs global frontier models ($/M tokens)',
-    subtitle: 'MiniMax M2.5 at $0.30/M input tokens vs $2.50–15.00/M for comparable US models.',
+    title: 'MiniMax Model Input Pricing ($/M tokens)',
+    subtitle: "Input price per 1M tokens for MiniMax's models, tracked daily.",
   },
   'mm-bench': {
-    title: 'SWE-bench Verified — MiniMax M2.5 vs frontier models',
-    subtitle: 'MiniMax M2.5 scores 80.2% on SWE-bench Verified — essentially tied with Claude Opus 4.6 at 80.9%.',
+    title: 'SWE-bench Verified — MiniMax M2.5 vs Frontier Models',
+    subtitle: 'MiniMax M2.5 scores 80.2% — essentially tied with Claude Opus 4.6 at 80.9%.',
   },
 
   // ── Market signals · Infrastructure & OSS (view: demand-general) ──────
   'gen-gpu': {
-    title: 'GPU spot prices — vast.ai median $/hr',
-    subtitle: 'Spot pricing for the most-rented AI accelerators. H200 commands a significant premium over H100.',
+    title: 'GPU Spot Prices ($/hr)',
+    subtitle: 'Spot pricing for the most-rented AI accelerators; H200 commands a premium over H100.',
   },
   'gen-gpu-avail': {
-    title: 'GPU marketplace availability — rentable offers on vast.ai',
-    subtitle: 'Scarcity signal: fewer rentable offers for a GPU = demand outrunning supply.',
+    title: 'GPU Marketplace Availability',
+    subtitle: 'Scarcity signal: fewer rentable offers = demand outrunning supply.',
   },
   'gen-mcp': {
-    title: 'MCP ecosystem — cumulative GitHub repos',
+    title: 'MCP Ecosystem — Cumulative GitHub Repos',
     // subtitle is computed (servers-repo stars) in the view
   },
   'gen-sec': {
-    title: 'SEC filings mentioning AI terms — 10-K/10-Q, trailing 90 days',
-    subtitle: 'Enterprise adoption signal: 10-K/10-Q filings mentioning each term in the trailing 90 days.',
+    title: 'SEC Filings Mentioning AI Terms',
+    subtitle: 'Count of 10-K/10-Q filings mentioning each term in the trailing 90 days — an enterprise-adoption signal.',
   },
   'gen-commits': {
-    title: 'GitHub OSS commit velocity — major AI repos (last 4 weeks)',
+    title: 'AI OSS Commit Velocity (Last 4 Weeks)',
     subtitle: 'Total commits in the last 4 weeks across key open-source AI frameworks.',
   },
   'gen-docker': {
-    title: 'Docker Hub — AI infrastructure image pull counts (total)',
-    subtitle: 'Cumulative pull counts for the most-used AI infrastructure container images.',
+    title: 'AI Image Pull Counts',
+    subtitle: 'Cumulative pulls for the most-used AI infrastructure container images.',
   },
   'gen-hn': {
-    title: 'Hacker News — weekly AI story volume',
-    subtitle: 'Stories mentioning AI, LLM, ChatGPT, Claude, or Gemini per week. Community attention proxy.',
+    title: 'Weekly AI Story Volume on Hacker News',
+    subtitle: 'AI, LLM, ChatGPT, Claude, or Gemini stories per week — a community-attention proxy.',
   },
   'gen-cnmarket': {
-    title: 'China domestic enterprise LLM market share (%)',
-    subtitle: "China's enterprise LLM market is highly fragmented — top 6 players hold only 37% combined. No single dominant player.",
+    title: 'China Enterprise LLM Market Share (%)',
+    subtitle: 'Highly fragmented — the top 6 players hold only 37% combined.',
   },
 
   // ── Market signals · OpenRouter model rankings (view: openrouter-rankings)
   'or-top': {
-    title: 'Top 10 models — weekly token volume',
+    title: 'Top 10 Models by Weekly Token Volume',
     // subtitle is computed (latest week / as-of) in the view
   },
   'or-trend': {
-    title: 'Top 8 models — weekly token trend (last 4 weeks)',
-    subtitle: 'Rising lines = accelerating developer adoption. Each point is one week of total token throughput.',
+    title: 'Top 8 Models — Weekly Token Trend',
+    subtitle: 'Rising lines signal accelerating adoption; each point is one week of token throughput.',
   },
   'or-provstack': {
-    title: 'Provider token volume — stacked weekly breakdown',
-    subtitle: 'Weekly token volume stacked by model provider. Shows which companies are gaining or losing share over time.',
+    title: 'Provider Token Volume (Stacked Weekly)',
+    subtitle: 'Weekly tokens by provider — shows which companies are gaining or losing share.',
   },
   'or-provshare': {
-    title: 'Provider market share — % of weekly tokens (last 4 weeks)',
-    subtitle: "Each line is a provider's percentage of total weekly OpenRouter traffic. Crossing lines = share shifts.",
+    title: 'Provider Market Share (%)',
+    subtitle: "Each line is a provider's percentage of total weekly OpenRouter traffic; crossing lines = share shifts.",
   },
   'or-combo': {
-    title: 'OpenRouter — total weekly tokens (bars) vs YoY growth (line)',
-    subtitle: "Bars show total platform token volume (left axis); the line shows year-over-year growth in % (right axis). OpenRouter's dataset starts Jan 2025, so the line begins Jan 2026. The in-progress week is excluded.",
+    title: 'Total Weekly Tokens vs YoY Growth',
+    subtitle: 'Bars show total platform tokens (left axis); the line shows year-over-year growth in % (right axis).',
   },
   'or-growth': {
-    title: 'Week-over-week token growth — top models (%)',
-    subtitle: '% change in weekly tokens vs the prior week. Faded bars = declining models.',
+    title: 'Week-over-Week Token Growth — Top Models (%)',
+    subtitle: '% change in weekly tokens vs the prior week; faded bars mark declining models.',
   },
 };

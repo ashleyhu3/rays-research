@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Bar } from 'react-chartjs-2';
 import { C, fa } from '../../config/colors';
-import { hBarOpts, fmtM, fmtN } from '../../utils/chartHelpers';
+import { baseOpts, hBarOpts, fmtM, fmtN, GRID, TICK, BORD } from '../../utils/chartHelpers';
 import ChartCard from '../../components/chart/ChartCard';
 import EditableGrid from '../../components/chart/EditableGrid';
 import { useData } from '../../context/DataContext';
@@ -33,6 +33,15 @@ export default function HuggingFace() {
   const hfServer = liveData?.hfServer;
 
   const top10 = useMemo(() => hfList.slice(0, 10), [hfList]);
+
+  // Vertical bars; show every model label (defeat baseOpts' autoSkip cap).
+  const dlOpts = {
+    ...baseOpts(fmtM),
+    scales: {
+      x: { grid: GRID, ticks: { ...TICK, autoSkip: false, maxRotation: 60, minRotation: 45 }, border: BORD },
+      y: { grid: GRID, ticks: { ...TICK, callback: v => fmtM(v) }, border: BORD, beginAtZero: true },
+    },
+  };
 
   const downloadsData = useMemo(() => top10.length === 0 ? null : {
     labels: top10.map(m => shortName(m.id)),
@@ -89,7 +98,7 @@ export default function HuggingFace() {
           chartId="hf-downloads"
           height={260} span2
         >
-          <Bar data={downloadsData} options={hBarOpts(fmtM)} />
+          <Bar data={downloadsData} options={dlOpts} />
         </ChartCard>
       )}
 

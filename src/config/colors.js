@@ -12,6 +12,8 @@ export const C = {
   kimi:       '#fb923c',
   xiaomi:     '#f43f5e',
   baidu:      '#3b82f6',
+  xai:        '#e5e7eb',
+  qwen:       '#6366f1',
   red:        '#f87171',
   teal:       '#39d0b4',
   orange:     '#f0883e',

@@ -16,7 +16,6 @@ const REGISTRY = [
   { id: 'pypi-installs',   sectorId: 'dev', subView: 'pypi',   defaultPinned: false },
   { id: 'pypi-share',      sectorId: 'dev', subView: 'pypi',   defaultPinned: false },
   { id: 'pypi-npm',        sectorId: 'dev', subView: 'pypi',   defaultPinned: false },
-  { id: 'pypi-so',         sectorId: 'dev', subView: 'pypi',   defaultPinned: false },
   { id: 'github-stars',    sectorId: 'dev', subView: 'github', defaultPinned: false },
   { id: 'github-deps',     sectorId: 'dev', subView: 'github', defaultPinned: false },
   { id: 'trends-api',      sectorId: 'dev', subView: 'trends', defaultPinned: true  },

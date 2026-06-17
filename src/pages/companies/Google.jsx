@@ -4,6 +4,7 @@ import { C, fa } from '../../config/colors';
 import { trend } from '../../utils/dataGenerators';
 import { wkLabels, dayLabels } from '../../utils/labels';
 import { baseOpts, hBarOpts, stackedOpts, mkDs, mkBar, fmtM, fmtK, fmtP } from '../../utils/chartHelpers';
+import { companyPriceSeries, priceHistory } from '../../utils/modelPricing';
 import { orProviderSeries, fmtTok } from '../../utils/openrouterProvider';
 import { orComboCard } from '../../components/chart/OrGrowthCards';
 import { metricTrendCard } from '../../components/chart/MetricTrendCard';
@@ -80,6 +81,9 @@ export default function DemandGoogle({ weeks: W }) {
     datasets: [{ data: orp.models.map(m => m.tokens), backgroundColor: fa(C.google, 0.75), borderColor: C.google, borderWidth: 1, borderRadius: 4 }],
   } : null, [orp]);
 
+  // Daily input-price history for Google's own models (live snapshot + history)
+  const priceHist = useMemo(() => priceHistory(ld), [ld]);
+
   return (
     <EditableGrid viewId="demand-google">
       <ChartCard
@@ -140,14 +144,14 @@ export default function DemandGoogle({ weeks: W }) {
       })}
 
       {metricTrendCard({
-        chartId: 'goo-so',
+        chartId: 'goo-pricing',
         weeks: W,
-        hist: mh?.stackoverflow,
-        series: [
-          { metric: 'google-gemini.questions',   label: 'Questions all-time', color: C.google },
-          { metric: 'google-gemini.newThisWeek', label: 'New this week',      color: C.teal },
-        ],
-        fmt: v => String(Math.round(v)),
+        src: 'openrouter.ai/api/v1/models',
+        freq: 'daily',
+        hist: priceHist,
+        series: companyPriceSeries('Google'),
+        fmt: v => `$${v.toFixed(2)}`,
+        height: 260, span2: true,
       })}
 
       {metricTrendCard({

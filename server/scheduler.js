@@ -18,7 +18,6 @@ const scrapers = {
   openrouterRanks:  () => require('./scrapers/openrouterRankings').getOpenRouterRankings(),
   dram:             () => require('./scrapers/dram').getDramSpot(),
   npm:              () => require('./scrapers/npm').getNpmHistory(),
-  stackoverflow:    () => require('./scrapers/stackoverflow').getStackOverflowData(),
   huggingface:      () => require('./scrapers/huggingface').getHuggingFaceData(),
   mcp:              () => require('./scrapers/mcp').getMcpData(),
   sec:              () => require('./scrapers/sec').getSecData(),
@@ -45,7 +44,6 @@ const TTL = {
   openrouterRanks:   6 * 3600000,  // 6-hourly — daily granularity but rankings shift through day
   dram:              6 * 3600000,  // 6-hourly — TrendForce spot sessions update through the trading day
   npm:           24 * 3600000,  // daily   — api.npmjs.org reports complete days only
-  stackoverflow: 24 * 3600000,  // daily   — tag counts move slowly; respects SE API quota
   huggingface:   24 * 3600000,  // daily   — all-time download totals grow slowly
   mcp:           24 * 3600000,  // daily   — repo-creation counts; respects GitHub search quota
   sec:           24 * 3600000,  // daily   — EDGAR full-text index updates daily
@@ -85,7 +83,7 @@ function setup() {
   cron.schedule('0 */6 * * *', () => refreshAll(['docker', 'openrouterRanks', 'dram', 'aws']));
 
   // Daily at 03:00 UTC: aggregate stats whose sources only publish once per day
-  cron.schedule('0 3 * * *', () => refreshAll(['gpu', 'cloudGpu', 'pypi', 'trends', 'github', 'eia', 'mops', 'githubCommits', 'wikipedia', 'npm', 'stackoverflow', 'huggingface', 'mcp', 'sec']));
+  cron.schedule('0 3 * * *', () => refreshAll(['gpu', 'cloudGpu', 'pypi', 'trends', 'github', 'eia', 'mops', 'githubCommits', 'wikipedia', 'npm', 'huggingface', 'mcp', 'sec']));
 }
 
 module.exports = { setup, refreshAll, scrapers, TTL };

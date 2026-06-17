@@ -21,11 +21,11 @@ import Chinese         from '../sources/Chinese';
 const OVERVIEW_VIEWS = [
   DemandOpenRouter,   // OpenRouter rankings (half-width, top)
   Datacenter,         // Datacenter capex (half) — directly below OpenRouter
+  Electricity,        // Datacenter electricity (half) — sits to the right of Datacenter
   Trends,             // Google Trends (half)
   Chinese,            // Input token pricing (half)
   DemandGeneral,      // OSS signals (quarter each)
   HuggingFace,        // HuggingFace most-downloaded (quarter)
-  Electricity,        // Electricity (half)
   PyPI, GitHub, Pricing,
 ];
 

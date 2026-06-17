@@ -19,7 +19,7 @@ const MONTH_OPTIONS = [
 ];
 
 const SUB_VIEW_LABELS = {
-  pypi:        'PyPI / npm / Stack Overflow',
+  pypi:        'PyPI / npm',
   github:      'GitHub dependents',
   trends:      'Google Trends',
   openrouter:  'OpenRouter rankings',

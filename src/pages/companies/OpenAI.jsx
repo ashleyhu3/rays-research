@@ -4,6 +4,7 @@ import { C, fa } from '../../config/colors';
 import { trend } from '../../utils/dataGenerators';
 import { wkLabels, dayLabels } from '../../utils/labels';
 import { baseOpts, hBarOpts, stackedOpts, mkDs, mkBar, fmtM, fmtK, fmtP } from '../../utils/chartHelpers';
+import { companyPriceSeries, priceHistory } from '../../utils/modelPricing';
 import { orProviderSeries, fmtTok } from '../../utils/openrouterProvider';
 import { orComboCard } from '../../components/chart/OrGrowthCards';
 import { metricTrendCard } from '../../components/chart/MetricTrendCard';
@@ -84,6 +85,9 @@ export default function DemandOpenAI({ weeks: W }) {
     datasets: [{ data: orp.models.map(m => m.tokens), backgroundColor: fa(C.openai, 0.75), borderColor: C.openai, borderWidth: 1, borderRadius: 4 }],
   } : null, [orp]);
 
+  // Daily input-price history for OpenAI's own models (live snapshot + history)
+  const priceHist = useMemo(() => priceHistory(ld), [ld]);
+
   return (
     <EditableGrid viewId="demand-openai">
       <ChartCard
@@ -134,24 +138,14 @@ export default function DemandOpenAI({ weeks: W }) {
       })}
 
       {metricTrendCard({
-        chartId: 'oa-github',
+        chartId: 'oa-pricing',
         weeks: W,
-        hist: mh?.github,
-        series: [
-          { metric: 'openai/openai-python.dependents', label: 'Dependent repos', color: C.teal },
-        ],
-        fmt: fmtK,
-      })}
-
-      {metricTrendCard({
-        chartId: 'oa-so',
-        weeks: W,
-        hist: mh?.stackoverflow,
-        series: [
-          { metric: 'openai-api.questions',   label: 'Questions all-time', color: C.openai },
-          { metric: 'openai-api.newThisWeek', label: 'New this week',      color: C.teal },
-        ],
-        fmt: v => String(Math.round(v)),
+        src: 'openrouter.ai/api/v1/models',
+        freq: 'daily',
+        hist: priceHist,
+        series: companyPriceSeries('OpenAI'),
+        fmt: v => `$${v.toFixed(2)}`,
+        height: 260, span2: true,
       })}
 
       <ChartCard

@@ -7,8 +7,12 @@ function get(key) {
   return entry.data;
 }
 
-function set(key, data, ttlMs = 24 * 60 * 60 * 1000) {
-  store.set(key, { data, expires: Date.now() + ttlMs, fetchedAt: Date.now() });
+// `fetchedAt` is decoupled from `expires` on purpose: when seeding the cache
+// from a persisted snapshot on boot we want the entry to be servable (a fresh
+// expiry) yet still report its true age, so the Ask tab's freshness passport
+// ("updated: 3h ago") stays honest instead of resetting to "just now".
+function set(key, data, ttlMs = 24 * 60 * 60 * 1000, fetchedAt = Date.now()) {
+  store.set(key, { data, expires: Date.now() + ttlMs, fetchedAt });
 }
 
 // When the entry was fetched (null if missing/expired) — used by the RAG to

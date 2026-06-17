@@ -2,11 +2,30 @@
 # Lines starting with '#' and blank lines are ignored.
 # update_all.py reads this file and refreshes each ticker sequentially.
 #
-# Replace the placeholders below with your actual basket.
-MU
+# Grouped by sector for reference (grouping is via comments only; the
+# collector treats this as a flat list).
+
+# ── Memory / storage semiconductors ──────────────────────────────────
 SNDK
-COHR
-LITE
+MU
+WDC
+STX
+
+# ── Optics ───────────────────────────────────────────────────────────
 AAOI
+CIEN
+LITE
+COHR
+GLW
+
+# ── Optics equipment ─────────────────────────────────────────────────
+TER
 TSEM
+VIAV
+KEYS
 AEHR
+
+# ── Semi equipment ───────────────────────────────────────────────────
+LRCX
+AMAT
+KLAC

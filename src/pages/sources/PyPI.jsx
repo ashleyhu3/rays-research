@@ -1,27 +1,12 @@
 import { useMemo } from 'react';
-import { Line, Bar } from 'react-chartjs-2';
-import { C, fa } from '../../config/colors';
+import { Line } from 'react-chartjs-2';
+import { C } from '../../config/colors';
 import { trend } from '../../utils/dataGenerators';
 import { wkLabels } from '../../utils/labels';
-import { baseOpts, hBarOpts, mkDs, fmtM, fmtK } from '../../utils/chartHelpers';
+import { baseOpts, mkDs, fmtM } from '../../utils/chartHelpers';
 import ChartCard from '../../components/chart/ChartCard';
 import EditableGrid from '../../components/chart/EditableGrid';
 import { useData } from '../../context/DataContext';
-
-const SO_STATIC = {
-  'openai-api':        89400,
-  'claude':  14200,
-  'google-gemini': 21800,
-  'langchain':         43100,
-  'mistral-ai':         6200,
-};
-const SO_TAGS = [
-  { tag: 'openai-api',        color: C.openai    },
-  { tag: 'claude',  color: C.anthropic },
-  { tag: 'google-gemini', color: C.google    },
-  { tag: 'langchain',         color: C.red       },
-  { tag: 'mistral-ai',        color: C.mistral   },
-];
 
 function pypiSlice(liveData, pkg, W, fallbackStart, fallbackEnd, ns = 0.05) {
   // Prefer full 52-wk history from backend
@@ -81,28 +66,6 @@ export default function PyPI({ weeks: W }) {
     };
   }, [W, liveData]);
 
-  const soTotals = useMemo(() => {
-    const real = liveData?.soTotals ?? {};
-    return SO_TAGS.map(({ tag, color }) => ({
-      tag, color, count: real[tag] ?? SO_STATIC[tag],
-    }));
-  }, [liveData]);
-
-  const soData = useMemo(() => ({
-    labels: soTotals.map(t => t.tag),
-    datasets: [{
-      data:            soTotals.map(t => t.count),
-      backgroundColor: soTotals.map(t => fa(t.color, 0.7)),
-      borderColor:     soTotals.map(t => t.color),
-      borderWidth: 1, borderRadius: 4,
-    }],
-  }), [soTotals]);
-
-  const hasLiveNpm      = (liveData?.npm?.['openai']?.length ?? 0) > 0;
-  const hasLivePypiHist = (liveData?.pypiHistory?.['anthropic']?.length ?? 0) > 0;
-  const hasLivePypi     = hasLivePypiHist || liveData?.pypi?.['anthropic'] != null;
-  const hasLiveSO       = Object.keys(liveData?.soTotals ?? {}).length > 0;
-
   return (
     <EditableGrid viewId="pypi">
       <ChartCard
@@ -127,13 +90,6 @@ export default function PyPI({ weeks: W }) {
         height={200}
       >
         <Line data={npmData} options={baseOpts(fmtM)} />
-      </ChartCard>
-
-      <ChartCard
-        chartId="pypi-so"
-        height={220} span2
-      >
-        <Bar data={soData} options={hBarOpts(fmtK)} />
       </ChartCard>
     </EditableGrid>
   );

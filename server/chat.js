@@ -70,6 +70,32 @@ function agoText(ts) {
   return `${Math.round(hrs / 24)}d ago`;
 }
 
+// Color band for the freshness passport (traders judge claims by recency):
+//   green  — fetched within 12h, amber — within 7d, red — older/unknown.
+function freshnessLevel(ts) {
+  if (!ts) return 'red';
+  const hrs = (Date.now() - ts) / 3600000;
+  if (hrs < 12)  return 'green';
+  if (hrs < 168) return 'amber';
+  return 'red';
+}
+
+// Recent conversation turns, compacted for the Detective's query-rewrite step
+// so follow-ups ("what about Google?", "and the trend?") resolve into a
+// self-contained research intent. Capped in turns and per-line length to keep
+// the 8B grading call cheap; only the Detective sees this — the Wordsmith stays
+// grounded in retrieved data, working from the resolved intent.
+const HISTORY_TURNS = 6;
+const HISTORY_LINE_CHARS = 400;
+function formatHistory(history) {
+  if (!Array.isArray(history)) return null;
+  const turns = history
+    .filter(m => m && typeof m.text === 'string' && (m.role === 'user' || m.role === 'assistant'))
+    .slice(-HISTORY_TURNS)
+    .map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.text.replace(/\s+/g, ' ').trim().slice(0, HISTORY_LINE_CHARS)}`);
+  return turns.length ? turns.join('\n') : null;
+}
+
 // ── History helpers (the "parent" side of each section) ────────────────────
 // Sections are deliberately small summaries so the Detective can grade them
 // cheaply. Each one can carry a `detail` payload — its full recent time
@@ -157,26 +183,6 @@ function buildNpm() {
     entities: Object.keys(npm),
     text:     `### npm Weekly Downloads\n${lines.join('\n')}`,
     detail:   detail.length ? `Recent history — weekly downloads, last 12 weeks (oldest → newest):\n${detail.join('\n')}` : null,
-  };
-}
-
-function buildStackOverflow() {
-  const so = cache.get('stackoverflow');
-  if (!so || !(Object.keys(so.totals ?? {}).length || Object.keys(so.weekly ?? {}).length)) return null;
-  const tags  = new Set([...Object.keys(so.totals ?? {}), ...Object.keys(so.weekly ?? {})]);
-  const lines = [...tags].map(tag => {
-    const total  = so.totals?.[tag];
-    const weekly = so.weekly?.[tag];
-    return `  ${tag}: ${total != null ? `${fmt(total)} questions all-time` : 'total N/A'}${weekly != null ? ` | ${fmt(weekly)} new this week` : ''}`;
-  });
-  return {
-    id:       'stackoverflow',
-    title:    'Stack Overflow Tag Activity',
-    about:    'All-time and weekly question counts for AI developer tags (openai-api, claude, google-gemini, langchain, mistral-ai)',
-    source:   'Stack Exchange API',
-    entities: [...tags],
-    text:     `### Stack Overflow Tag Activity\n${lines.join('\n')}`,
-    detail:   snapshotDetail('stackoverflow', 'question counts'),
   };
 }
 
@@ -305,6 +311,91 @@ function buildDram() {
     entities: dram.models.map(m => m.model),
     text:     `### DRAM Memory Spot Prices (TrendForce, session average × (1 + session change), averaged per model, as of ${dram.asOf})\n${lines.join('\n')}`,
     detail:   detail.length ? `Recent history — DRAM prices:\n${detail.join('\n')}` : null,
+  };
+}
+
+function buildAws() {
+  const aws = cache.get('aws');
+  const current = aws?.current ?? {};
+  const accels = Object.keys(current);
+  if (accels.length === 0) return null;
+
+  // interrupt is an index into the advisor's rating ranges (0 = lowest churn)
+  const ranges = aws.ranges;
+  const interruptLabel = i => {
+    if (i == null) return null;
+    const r = Array.isArray(ranges) ? ranges[i] : ranges?.[i];
+    return r?.label ?? `rating ${i}`;
+  };
+
+  const lines = accels.map(accel => {
+    const c = current[accel];
+    const parts = [];
+    if (c.spot     != null) parts.push(`spot $${c.spot}/accelerator-hr`);
+    if (c.onDemand != null) parts.push(`on-demand $${c.onDemand}/hr`);
+    if (c.savings  != null) parts.push(`${c.savings}% spot savings`);
+    const il = interruptLabel(c.interrupt);
+    if (il) parts.push(`interruption ${il}`);
+    return `  ${accel}: ${parts.join(' | ') || 'no data'}`;
+  });
+
+  // Parent payload: recent per-accelerator spot price series
+  const h = aws.history;
+  const detail = [];
+  if (h?.dates?.length >= 2) {
+    const n = Math.min(14, h.dates.length);
+    for (const [accel, series] of Object.entries(h.spotSeries ?? {})) {
+      const window = series.slice(-n);
+      const tail = h.dates.slice(-n)
+        .map((d, i) => { const v = window[i]; return v != null ? `${d.slice(5)}: $${v}` : null; })
+        .filter(Boolean).join(' | ');
+      if (tail) detail.push(`  ${accel} (spot $/accelerator-hr, daily): ${tail}`);
+    }
+  }
+  return {
+    id:       'aws',
+    title:    'AWS Accelerator Spot Economics',
+    about:    'AWS EC2 spot prices, spot savings %, and interruption frequency per AI accelerator (H100, H200, A100, Trainium, Inferentia2) — cloud compute cost/availability signal',
+    source:   'AWS Spot Instance Advisor + EC2 spot price history',
+    entities: accels,
+    text:     `### AWS Accelerator Spot Economics (per-chip, as of ${aws.asOf})\n${lines.join('\n')}`,
+    detail:   detail.length ? `Recent history — AWS spot prices:\n${detail.join('\n')}` : null,
+  };
+}
+
+function buildCloudGpu() {
+  const cg = cache.get('cloudGpu');
+  const current = cg?.current ?? {};
+  const buckets = Object.keys(current).filter(b => current[b] != null);
+  if (buckets.length === 0) return null;
+
+  const lines = buckets
+    .sort((a, b) => current[b] - current[a])
+    .map(b => `  ${b}: $${current[b]}/GPU-hr avg list price`);
+  if (cg.platforms?.length) {
+    lines.push(`  Platforms averaged: ${cg.platforms.join(', ')}${cg.live?.length ? ` | live this run: ${cg.live.join(', ')}` : ''}`);
+  }
+
+  // Parent payload: recent per-bucket price series
+  const detail = [];
+  if (cg.dates?.length >= 2) {
+    const n = Math.min(14, cg.dates.length);
+    for (const [bucket, series] of Object.entries(cg.series ?? {})) {
+      const window = series.slice(-n);
+      const tail = cg.dates.slice(-n)
+        .map((d, i) => { const v = window[i]; return v != null ? `${d.slice(5)}: $${v}` : null; })
+        .filter(Boolean).join(' | ');
+      if (tail) detail.push(`  ${bucket} ($/GPU-hr, daily): ${tail}`);
+    }
+  }
+  return {
+    id:       'cloudGpu',
+    title:    'Cloud GPU List Prices',
+    about:    'Average on-demand list price per GPU per hour across major clouds (AWS, Azure, GCP, CoreWeave, Nebius, Oracle) for A100, H100/H200, B200, R400',
+    source:   'Cloud provider price feeds + maintained reference rates',
+    entities: [...buckets, ...(cg.platforms ?? [])],
+    text:     `### Cloud GPU List Prices (on-demand $/GPU-hr, as of ${cg.asOf})\n${lines.join('\n')}`,
+    detail:   detail.length ? `Recent history — cloud GPU list prices:\n${detail.join('\n')}` : null,
   };
 }
 
@@ -576,9 +667,13 @@ function buildHuggingface() {
 function buildMcp() {
   const mcp = cache.get('mcp');
   if (!mcp?.queries) return null;
-  const lines = Object.entries(mcp.queries).map(([label, v]) =>
-    `  "${label}" repos on GitHub: ${fmt(v.total)} total | ${fmt(v.new7d)} created last 7d | ${fmt(v.new30d)} created last 30d`
-  );
+  const lines = Object.entries(mcp.queries).map(([label, v]) => {
+    // Precompute the 30-day growth so the Wordsmith reports it rather than
+    // (mis)deriving a percentage itself: new repos over the prior base.
+    const prior = (v.total != null && v.new30d != null) ? v.total - v.new30d : null;
+    const grow  = prior > 0 ? ` | trend: +${(v.new30d / prior * 100).toFixed(1)}% over 30d` : '';
+    return `  "${label}" repos on GitHub: ${fmt(v.total)} total | ${fmt(v.new7d)} created last 7d | ${fmt(v.new30d)} created last 30d${grow}`;
+  });
   if (mcp.serversRepo) {
     lines.push(`  modelcontextprotocol/servers (official): ${fmt(mcp.serversRepo.stars)} stars | ${fmt(mcp.serversRepo.forks)} forks`);
   }
@@ -664,11 +759,12 @@ function buildOptions() {
 const REGISTRY = [
   { key: 'pypi',              build: buildPypi },
   { key: 'npm',               build: buildNpm },
-  { key: 'stackoverflow',     build: buildStackOverflow },
   { key: 'github',            build: buildGitHub },
   { key: 'trends',            build: buildTrends },
   { key: 'gpu',               build: buildGpu },
   { key: 'dram',              build: buildDram },
+  { key: 'aws',               build: buildAws },
+  { key: 'cloudGpu',          build: buildCloudGpu },
   { key: 'openrouter',        build: buildOpenrouter },
   { key: 'openrouterRanks',   build: buildOpenrouterRanks },
   { key: 'eia',               build: buildElectricity },
@@ -704,7 +800,9 @@ function buildSections() {
     try {
       const s = build();
       if (!s) continue;
-      s.updated = agoText(cache.meta(key)?.fetchedAt);
+      const fetchedAt = cache.meta(key)?.fetchedAt;
+      s.fetchedAt = fetchedAt ?? null;
+      s.updated   = agoText(fetchedAt);
       sections.push(s);
     } catch (e) {
       console.warn(`[chat] section ${key} failed to build:`, e.message);
@@ -722,7 +820,10 @@ function buildSections() {
 const DETECTIVE_PROMPT = `You are 'The Detective', the research gatekeeper for an AI industry signals dashboard.
 You receive a user question and a catalog of available data sections (id, title, covers, description, sample).
 Your three jobs:
-1. Rewrite the user's question into a single precise research intent (what data is actually needed).
+1. Rewrite the user's question into a single precise, self-contained research intent (what data is
+   actually needed). If a "Conversation So Far" is provided, use it to resolve follow-ups, pronouns,
+   and ellipsis (e.g. "what about Google?", "and the trend?") into a standalone intent — the later
+   stages never see the conversation, only your intent, so it must stand on its own.
 2. Grade each section: is it relevant to answering this question?
 3. Flag which approved sections need their HISTORICAL time series, not just the latest summary.
 
@@ -749,12 +850,13 @@ function catalogEntry(s) {
   return `- id: ${s.id}\n  title: ${s.title}\n  covers: ${s.entities?.slice(0, 14).join(', ') || 'n/a'}\n  description: ${s.about}\n  sample: ${sample}`;
 }
 
-async function runDetective(userQuery, sections) {
+async function runDetective(userQuery, sections, history) {
   const catalog = sections.map(catalogEntry).join('\n');
+  const convo   = formatHistory(history);
 
   const raw = await callModel({
     system:      DETECTIVE_PROMPT,
-    user:        `User Question: ${userQuery}\n\nAvailable Data Sections:\n${catalog}`,
+    user:        `${convo ? `Conversation So Far:\n${convo}\n\n` : ''}User Question: ${userQuery}\n\nAvailable Data Sections:\n${catalog}`,
     model:       DETECTIVE_MODEL,
     temperature: 0,
     maxTokens:   512,
@@ -813,8 +915,28 @@ async function runDetectiveHop(intent, vetted, remaining) {
   return Array.isArray(parsed.add) ? [...new Set(parsed.add.filter(id => validIds.has(id)))] : [];
 }
 
-// Lexical safety net for history expansion when the Detective under-flags
-const TREND_RX = /\b(trend(s|ing)?|history|historical|over time|momentum|trajector\w*|grow(th|ing|n)?|grew|chang(e|ed|ing)|accelerat\w*|declin\w*|since|last (few )?(week|month|quarter|year)s?|past (week|month|quarter|year))\b/i;
+// Lexical safety net for history expansion when the Detective under-flags.
+// Beyond plain "trend" words it also catches the institutional trading
+// vocabulary a hedge-fund user reaches for — any of these implies the answer
+// needs the full time series, not just the latest snapshot.
+const TREND_RX = new RegExp(
+  '\\b(' + [
+    // generic trend language
+    'trend(s|ing)?', 'history', 'historical', 'over time', 'momentum', 'trajector\\w*',
+    'grow(th|ing|n)?', 'grew', 'chang(e|ed|ing)', 'accelerat\\w*', 'declin\\w*',
+    'since', 'last (few )?(week|month|quarter|year)s?', 'past (week|month|quarter|year)',
+    // institutional / market-move vocabulary
+    'spike(d|s)?', 'surg(e|ed|ing)', 'plunge(d)?', 'crash(ed|ing)?', 'rally(ing)?', 'rallied',
+    'sell-?off', 'break(out|down)', 'volatil\\w*', 'liquidity', 'drawdown', 'in-?flow(s)?',
+    'out-?flow(s)?', 'bullish', 'bearish', 'support', 'resistance', 'volume', 'spread',
+    'swing(s|ing)?', 'run-?up', 'pull-?back', 'reversal', 'squeeze', 'dip(ped|s)?',
+    'ramp(ed|ing)?', 'cool(ed|ing|down)?', 'spik\\w*', 'YoY', 'WoW', 'MoM', 'QoQ',
+  ].join('|') + ')\\b', 'i'
+);
+
+// Matches the Wordsmith's "dashboard has no data" refusal so charts aren't
+// attached to an answer that cites no figures.
+const NO_DATA_RX = /\b(no data|does not contain|doesn't contain|no information|no relevant (data|information)|not (?:have|contain) (?:any )?(?:data|information))\b/i;
 
 // ── Context assembly & compression ──────────────────────────────────────────
 // Each vetted section is rendered with a passport header (provenance,
@@ -870,24 +992,38 @@ vetted as relevant to the user's question. Every section you receive matters —
   latest weekly data") rather than implying real-time figures.
 
 ## Output format
+Write for a hedge-fund desk: maximum data density, minimum prose. Lead with numbers.
+Never write a long paragraph where a table or bullet list would do. No preamble, no
+"based on the data" filler — state the figures.
 
-For broad queries ("all signals for X", "everything about Y", "compare A vs B"):
-  Structure your response as one section per signal in the DATA CONTEXT.
-  Use this exact format for each section:
+For comparisons across entities ("compare A vs B", "rank the GPUs", multiple rows of the
+same metric): use a GitHub-flavored markdown table. Keep cells to raw values.
 
-  **[Signal Name]**
-  [entity]: [value] | [value2] | [trend if available]
+  | Model | Input $/M | Trend |
+  | --- | --- | --- |
+  | Claude Opus | $15.00 | +0.0% |
+  | GPT-5 | $1.25 | -2.1% |
 
-  Example:
+For broad queries ("all signals for X", "everything about Y"): one block per signal,
+a bold header then one compact pipe-delimited line per entity:
+
   **PyPI Downloads**
   openai SDK: 45.2M total (52w) | last week: 1.1M | +6.3% vs prior 4w
 
+For a list of discrete facts, use "- " bullets.
+
 For simple single-fact questions ("Which GPU is cheapest?", "What is the price of X?"):
-  Answer in one or two direct sentences with the exact figure. No section headers needed.
+  Answer in ONE direct sentence with the exact figure. No header, no table.
 
 ## Rules
 - ONLY use numbers present in the DATA CONTEXT. Never invent or estimate.
 - Cite exact figures (e.g. "30,954 stars", "$2.18/hr").
+- Do NOT compute or estimate percentages, ratios, growth rates, or savings yourself.
+  Only state a percentage/change figure if it appears verbatim in the DATA CONTEXT
+  (e.g. a "trend: …%", "YoY", "WoW", or "savings" field). When the context gives a
+  time series but no precomputed percentage, describe the direction and quote the
+  actual start and end values (e.g. "rose from 105.8K to 107.6K") instead of
+  calculating a percentage.
 - Treat companies and their products as the same entity: OpenAI ↔ ChatGPT/GPT,
   Anthropic ↔ Claude, Google ↔ Gemini, Mistral ↔ mistralai. Data about a product
   answers questions about its company, and vice versa — say so explicitly.
@@ -919,13 +1055,14 @@ async function runWordsmith(userQuery, intent, context) {
 const SECTION_TO_CHART = {
   pypi:           'pypi',
   npm:            'pypi',
-  stackoverflow:  'pypi',
   huggingface:    'hf',
   openrouterRanks: 'openrouter-rankings',
   github:        'github',
   trends:        'trends',
   gpu:           'gpu',
   dram:          'dram',
+  aws:           'aws-spot',
+  cloudGpu:      'cloud-gpu',
   openrouter:    'openrouter',
   electricity:   'electricity',
   mops:          'ai-supply',
@@ -938,7 +1075,7 @@ const SECTION_TO_CHART = {
   options:           'options',
 };
 
-async function chat(message) {
+async function chat(message, history = []) {
   const sections = buildSections();
 
   if (sections.length === 0) {
@@ -956,7 +1093,7 @@ async function chat(message) {
   let detected  = false;
   let hopAdded  = [];
   try {
-    const verdict = await runDetective(message, sections);
+    const verdict = await runDetective(message, sections, history);
     intent = verdict.intent;
     console.log(`[chat] detective intent: "${intent}" | approved ${verdict.relevant.length}/${sections.length} sections: ${verdict.relevant.join(', ') || '(none)'} | expand: ${verdict.expand.join(', ') || '(none)'}`);
 
@@ -1044,7 +1181,24 @@ async function chat(message) {
   if (used === null) {
     used = detected ? kept : [];
   }
+  // A no-data answer cites nothing, so it must not drag charts along. The
+  // Wordsmith is told to emit an empty sections_used on a refusal, but when it
+  // omits the block entirely the fallback above would otherwise attach every
+  // vetted section's chart to a "we have nothing" reply — suppress that.
+  if (NO_DATA_RX.test(text)) used = [];
   const sources = [...new Set(used.map(id => SECTION_TO_CHART[id]).filter(Boolean))];
+
+  // Freshness passport, keyed by frontend chart id, for the cited sources.
+  // Deduped by chart (first/most-relevant section wins) so each rendered chart
+  // gets one color-coded "updated Xm ago" tag.
+  const bySecId   = new Map(sections.map(s => [s.id, s]));
+  const freshness = {};
+  for (const id of used) {
+    const chart = SECTION_TO_CHART[id];
+    const s     = bySecId.get(id);
+    if (!chart || !s || freshness[chart]) continue;
+    freshness[chart] = { source: s.source, updated: s.updated, level: freshnessLevel(s.fetchedAt) };
+  }
 
   return {
     text,
@@ -1056,8 +1210,9 @@ async function chat(message) {
       sections: used,
       expanded: kept.filter(id => expandIds.has(id)),
       hop:      hopAdded,
+      freshness,
     },
   };
 }
 
-module.exports = { chat, buildSections, invalidateEmbeddings: () => {} };
+module.exports = { chat, buildSections };

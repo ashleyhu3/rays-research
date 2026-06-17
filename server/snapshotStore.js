@@ -29,15 +29,16 @@ function put(key, data) {
 }
 
 // Seed the in-memory request cache from the persisted snapshots. Entries are
-// inserted with each source's normal TTL so routes serve them immediately;
-// callers should still kick off a background refresh to replace stale values.
-// Returns the list of seeded keys.
+// inserted with each source's normal TTL so routes serve them immediately, but
+// carry their ORIGINAL fetch time so the Ask tab's freshness passport reflects
+// when the data was really scraped, not boot time. Callers should still kick
+// off a background refresh to replace stale values. Returns the seeded keys.
 function seed(cache, ttlByKey = {}) {
   const s = load();
   const seeded = [];
   for (const [key, entry] of Object.entries(s)) {
     if (!entry || entry.data == null) continue;
-    cache.set(key, entry.data, ttlByKey[key] ?? 24 * 60 * 60 * 1000);
+    cache.set(key, entry.data, ttlByKey[key] ?? 24 * 60 * 60 * 1000, entry.fetchedAt);
     seeded.push(key);
   }
   return seeded;

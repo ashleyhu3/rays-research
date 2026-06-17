@@ -47,14 +47,92 @@ function SparkleIcon() {
   );
 }
 
-function InlineCharts({ sources }) {
+/* ── Lightweight markdown rendering (bold / tables / bullets) ──────────────
+   The Wordsmith is prompted to answer in dense markdown — tables for
+   comparisons, bullets for lists. We render the common subset without pulling
+   in a markdown dependency. */
+function inlineBold(s, base) {
+  return s.split(/(\*\*[^*]+\*\*)/g).map((p, i) =>
+    /^\*\*[^*]+\*\*$/.test(p) ? <strong key={`${base}-${i}`}>{p.slice(2, -2)}</strong> : p
+  );
+}
+const isTableRow = l => /^\s*\|.*\|\s*$/.test(l);
+const isSepRow   = l => /^\s*\|?[\s:|-]+\|?\s*$/.test(l) && l.includes('-');
+const splitCells = l => l.trim().replace(/^\||\|$/g, '').split('|').map(c => c.trim());
+
+function renderRich(text) {
+  const lines = String(text).split('\n');
+  const out = [];
+  let i = 0, key = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    if (isTableRow(line)) {
+      const block = [];
+      while (i < lines.length && isTableRow(lines[i])) block.push(lines[i++]);
+      const rows = block.filter(l => !isSepRow(l));
+      if (rows.length) {
+        const header = splitCells(rows[0]);
+        const body = rows.slice(1).map(splitCells);
+        out.push(
+          <table className="chat-md-table" key={`t${key++}`}>
+            <thead><tr>{header.map((h, j) => <th key={j}>{inlineBold(h, `h${j}`)}</th>)}</tr></thead>
+            <tbody>{body.map((r, ri) => (
+              <tr key={ri}>{header.map((_, ci) => <td key={ci}>{inlineBold(r[ci] ?? '', `c${ri}-${ci}`)}</td>)}</tr>
+            ))}</tbody>
+          </table>
+        );
+      }
+      continue;
+    }
+    if (/^\s*[-•]\s+/.test(line)) {
+      const items = [];
+      while (i < lines.length && /^\s*[-•]\s+/.test(lines[i])) items.push(lines[i++].replace(/^\s*[-•]\s+/, ''));
+      out.push(<ul className="chat-md-list" key={`u${key++}`}>{items.map((it, ii) => <li key={ii}>{inlineBold(it, `li${ii}`)}</li>)}</ul>);
+      continue;
+    }
+    if (line.trim() === '') { i++; continue; }
+    out.push(<p className="chat-md-p" key={`p${key++}`}>{inlineBold(line, `p${key}`)}</p>);
+    i++;
+  }
+  return out;
+}
+
+/* Color-coded freshness passport row — one clickable, timestamped tag per
+   cited source, colored by recency (green < 12h, amber < 7d, red older). */
+function FreshnessRow({ sources, freshness, onNavigate }) {
   if (!sources?.length) return null;
-  const charts = sources.flatMap(viewId => {
+  return (
+    <div className="chat-fresh-row">
+      {sources.map(s => {
+        const meta  = SOURCE_META[s];
+        const f     = freshness?.[s];
+        const level = f?.level ?? 'amber';
+        const view  = meta?.view;
+        return (
+          <button
+            key={s}
+            className={`chat-fresh-tag chat-fresh-tag--${level}${view ? ' chat-fresh-tag--link' : ''}`}
+            onClick={() => view && onNavigate?.(view)}
+            title={`${f?.source ?? meta?.label ?? s}${f?.updated ? ` · updated ${f.updated}` : ''}${view ? ' · open view' : ''}`}
+          >
+            <span className="chat-fresh-dot" />
+            {meta?.label ?? s}
+            {f?.updated ? <span className="chat-fresh-ago"> · {f.updated}</span> : null}
+            {view ? ' ↗' : ''}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function RailCharts({ sources }) {
+  const charts = (sources ?? []).flatMap(viewId => {
     const comps = CHART_REGISTRY[viewId] ?? [];
     return comps.map((Comp, i) => <Comp key={`${viewId}-${i}`} />);
   });
   if (!charts.length) return null;
-  return <div className="chat-inline-charts">{charts}</div>;
+  return <div className="chat-rail-charts">{charts}</div>;
 }
 
 export default function Chat({ onNavigate }) {
@@ -82,7 +160,17 @@ export default function Chat({ onNavigate }) {
       const res  = await fetch('/api/chat', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ message: msg }),
+        // Send the prior turns so the server can resolve follow-up questions
+        // ("what about Google?") into a self-contained query. `messages` here is
+        // the conversation before this turn (the new user line is appended above
+        // via setMessages, which doesn't mutate this closure's value).
+        body:    JSON.stringify({
+          message: msg,
+          history: messages
+            .filter(m => m.role === 'user' || m.role === 'assistant')
+            .slice(-6)
+            .map(({ role, text }) => ({ role, text })),
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || res.statusText);
@@ -96,105 +184,102 @@ export default function Chat({ onNavigate }) {
   }
 
   const isEmpty = messages.length === 0 && !loading;
+  // Most recent answer that produced charts drives the right-hand rail.
+  const active  = [...messages].reverse().find(m => m.role === 'assistant' && m.sources?.length);
 
   return (
-    <div className="chat-page">
-      <div className={`chat-page-messages${isEmpty ? ' chat-page-messages--empty' : ''}`}>
+    <div className="chat-page chat-page--split">
+      <div className="chat-page-main">
+        <div className={`chat-page-messages${isEmpty ? ' chat-page-messages--empty' : ''}`}>
 
-        {isEmpty ? (
-          <div className="chat-page-hero">
-            <div className="chat-page-hero-icon"><SparkleIcon /></div>
-            <h1 className="chat-page-hero-title">Ask the data</h1>
-            <p className="chat-page-hero-sub">
-              Query all live signals — downloads, rankings, GPU prices, supply chain revenue, and more.
-            </p>
-            <div className="chat-page-suggestions">
-              {SUGGESTIONS.map(s => (
-                <button key={s} className="chat-page-suggestion" onClick={() => send(s)}>{s}</button>
-              ))}
+          {isEmpty ? (
+            <div className="chat-page-hero">
+              <div className="chat-page-hero-icon"><SparkleIcon /></div>
+              <h1 className="chat-page-hero-title">Ask the data</h1>
+              <p className="chat-page-hero-sub">
+                Query all live signals — downloads, rankings, GPU prices, supply chain revenue, and more.
+              </p>
+              <div className="chat-page-suggestions">
+                {SUGGESTIONS.map(s => (
+                  <button key={s} className="chat-page-suggestion" onClick={() => send(s)}>{s}</button>
+                ))}
+              </div>
             </div>
-          </div>
-        ) : (
-          <div className="chat-page-thread">
-            {messages.map((m, i) => (
-              <div key={i} className={`chat-page-msg chat-page-msg--${m.role}`}>
+          ) : (
+            <div className="chat-page-thread">
+              {messages.map((m, i) => (
+                <div key={i} className={`chat-page-msg chat-page-msg--${m.role}`}>
 
-                {m.role !== 'user' && (
-                  <div className="chat-page-msg-avatar">
-                    {m.role === 'assistant' ? <SparkleIcon /> : '!'}
-                  </div>
-                )}
-
-                <div className="chat-page-msg-body">
-                  {m.meta?.total > 0 && (
-                    <p className="chat-page-msg-meta" title={m.meta.intent}>
-                      🔎 Vetted {m.meta.approved} of {m.meta.total} data sources
-                    </p>
-                  )}
-                  <p className="chat-page-msg-text">{m.text}</p>
-
-                  {/* Inline charts */}
-                  {m.role === 'assistant' && <InlineCharts sources={m.sources} />}
-
-                  {/* Source nav tags */}
-                  {m.sources?.length > 0 && (
-                    <div className="chat-page-sources">
-                      {m.sources.map(s => {
-                        const meta = SOURCE_META[s];
-                        return meta?.view ? (
-                          <button
-                            key={s}
-                            className="chat-page-source-tag chat-page-source-tag--link"
-                            onClick={() => onNavigate?.(meta.view)}
-                            title={`Open ${meta.label} view`}
-                          >
-                            {meta.label} ↗
-                          </button>
-                        ) : (
-                          <span key={s} className="chat-page-source-tag">{meta?.label ?? s}</span>
-                        );
-                      })}
+                  {m.role !== 'user' && (
+                    <div className="chat-page-msg-avatar">
+                      {m.role === 'assistant' ? <SparkleIcon /> : '!'}
                     </div>
                   )}
-                </div>
-              </div>
-            ))}
 
-            {loading && (
-              <div className="chat-page-msg chat-page-msg--assistant">
-                <div className="chat-page-msg-avatar"><SparkleIcon /></div>
-                <div className="chat-page-msg-body">
-                  <div className="chat-page-dots"><span /><span /><span /></div>
+                  <div className="chat-page-msg-body">
+                    {m.role === 'assistant' && (
+                      <FreshnessRow sources={m.sources} freshness={m.meta?.freshness} onNavigate={onNavigate} />
+                    )}
+                    {m.meta?.total > 0 && (
+                      <p className="chat-page-msg-meta" title={m.meta.intent}>
+                        🔎 Vetted {m.meta.approved} of {m.meta.total} sources
+                      </p>
+                    )}
+                    {m.role === 'assistant'
+                      ? <div className="chat-page-msg-text chat-page-msg-text--rich">{renderRich(m.text)}</div>
+                      : <p className="chat-page-msg-text">{m.text}</p>}
+                  </div>
                 </div>
-              </div>
-            )}
-            <div ref={bottomRef} />
+              ))}
+
+              {loading && (
+                <div className="chat-page-msg chat-page-msg--assistant">
+                  <div className="chat-page-msg-avatar"><SparkleIcon /></div>
+                  <div className="chat-page-msg-body">
+                    <div className="chat-page-dots"><span /><span /><span /></div>
+                  </div>
+                </div>
+              )}
+              <div ref={bottomRef} />
+            </div>
+          )}
+        </div>
+
+        <div className="chat-page-input-wrap">
+          <form className="chat-page-form" onSubmit={e => { e.preventDefault(); send(); }}>
+            <input
+              ref={inputRef}
+              className="chat-page-input"
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              placeholder={isEmpty ? 'Ask anything about the AI industry…' : 'Ask a follow-up…'}
+              disabled={loading}
+            />
+            <button
+              className="chat-page-send"
+              type="submit"
+              disabled={loading || !input.trim()}
+            >
+              <SendIcon />
+            </button>
+          </form>
+          <p className="chat-page-disclaimer">
+            Answers generated from live dashboard data only — no outside knowledge.
+          </p>
+        </div>
+      </div>
+
+      {/* Terminal-style chart rail — auto-populates with the latest answer's charts */}
+      <aside className="chat-page-rail">
+        <div className="chat-rail-head">Live Charts</div>
+        {active ? (
+          <RailCharts sources={active.sources} />
+        ) : (
+          <div className="chat-rail-empty">
+            Charts cited in an answer appear here — each exportable to CSV.
           </div>
         )}
-      </div>
-
-      <div className="chat-page-input-wrap">
-        <form className="chat-page-form" onSubmit={e => { e.preventDefault(); send(); }}>
-          <input
-            ref={inputRef}
-            className="chat-page-input"
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            placeholder={isEmpty ? 'Ask anything about the AI industry…' : 'Ask a follow-up…'}
-            disabled={loading}
-          />
-          <button
-            className="chat-page-send"
-            type="submit"
-            disabled={loading || !input.trim()}
-          >
-            <SendIcon />
-          </button>
-        </form>
-        <p className="chat-page-disclaimer">
-          Answers generated from live dashboard data only — no outside knowledge.
-        </p>
-      </div>
+      </aside>
     </div>
   );
 }

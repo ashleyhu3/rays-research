@@ -1,18 +1,69 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Children, useEffect, useMemo, useState } from 'react';
 import { Line, Bar } from 'react-chartjs-2';
 import { C } from '../../config/colors';
 import { useData } from '../../context/DataContext';
 import { baseOpts, hBarOpts, mkDs, mkBar, fmtM, fmtK, fmtP } from '../../utils/chartHelpers';
 import { wkLabels, dayLabels } from '../../utils/labels';
 import { trend } from '../../utils/dataGenerators';
+import { ExpandButton, ChartModal } from '../chart/ChartExpand';
 
 const PALETTE = [C.openai, C.anthropic, C.google, C.mistral, C.teal, C.perplexity, C.orange, C.deepseek];
 
+/* ── One-click CSV export of a chart's underlying series ───────────────────
+   Reads {labels, datasets} straight off the rendered chart child, so every
+   mini gets export for free — traders pull the raw numbers into Excel/Python. */
+function csvCell(v) {
+  const s = v == null ? '' : String(v);
+  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+function chartToCSV(data) {
+  if (!data?.labels || !data?.datasets) return null;
+  const head = ['', ...data.datasets.map((d, i) => d.label ?? `series_${i + 1}`)].map(csvCell).join(',');
+  const rows = data.labels.map((lab, i) =>
+    [lab, ...data.datasets.map(d => d.data?.[i] ?? '')].map(csvCell).join(','));
+  return [head, ...rows].join('\n');
+}
+function downloadCSV(title, data) {
+  const csv = chartToCSV(data);
+  if (!csv) return;
+  const name = (title || 'chart').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  const a = Object.assign(document.createElement('a'), { href: url, download: `${name}.csv` });
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function CsvIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 3v12" /><polyline points="7 11 12 16 17 11" /><path d="M5 21h14" />
+    </svg>
+  );
+}
+
 function MiniCard({ title, children }) {
+  const [expanded, setExpanded] = useState(false);
+  const chartData = Children.toArray(children)[0]?.props?.data;
   return (
     <div className="chat-mini-card">
-      <span className="chat-mini-card-title">{title}</span>
+      <div className="chat-mini-card-head">
+        <span className="chat-mini-card-title">{title}</span>
+        <div className="chat-mini-card-actions">
+          {chartData && (
+            <button className="ch-expand-btn" title="Download CSV" onClick={() => downloadCSV(title, chartData)}>
+              <CsvIcon />
+            </button>
+          )}
+          <ExpandButton onClick={() => setExpanded(true)} />
+        </div>
+      </div>
       <div className="chat-mini-card-body">{children}</div>
+      {expanded && (
+        <ChartModal title={title} onClose={() => setExpanded(false)}>
+          <div className="ch-modal-chart">{children}</div>
+        </ChartModal>
+      )}
     </div>
   );
 }
@@ -692,6 +743,100 @@ export function OptionsMini({ ticker = 'NVDA' }) {
   );
 }
 
+// ── AWS accelerator spot prices ────────────────────────────────────────────
+export function AwsSpotMini() {
+  const { liveData } = useData();
+
+  const ts = useMemo(() => {
+    const h = liveData?.aws?.history;
+    if (!h?.dates?.length || !h?.spotSeries) return null;
+    const N = 90;
+    const labels = h.dates.slice(-N).map(d => d.slice(5));
+    const accels = Object.entries(h.spotSeries)
+      .map(([k, s]) => ({ k, s, latest: [...s].reverse().find(v => v != null) ?? 0 }))
+      .filter(a => a.s.some(v => v != null))
+      .sort((a, b) => b.latest - a.latest);
+    if (accels.length === 0) return null;
+    return {
+      labels,
+      datasets: accels.map(({ k, s }, i) => mkLine(k, PALETTE[i % PALETTE.length], s.slice(-N))),
+    };
+  }, [liveData]);
+
+  const barData = useMemo(() => {
+    const entries = Object.entries(liveData?.aws?.current ?? {})
+      .map(([k, v]) => ({ label: k, value: v?.spot ?? 0 }))
+      .filter(e => e.value > 0)
+      .sort((a, b) => b.value - a.value);
+    if (entries.length === 0) return null;
+    return {
+      labels:   entries.map(e => e.label),
+      datasets: [{ label: '$/accelerator-hr', data: entries.map(e => e.value), backgroundColor: entries.map((_, i) => PALETTE[i % PALETTE.length] + 'bf'), borderColor: entries.map((_, i) => PALETTE[i % PALETTE.length]), borderWidth: 1, borderRadius: 4 }],
+    };
+  }, [liveData]);
+
+  if (ts) {
+    return (
+      <MiniCard title="AWS Spot Price per Accelerator — $/hr (90 days)">
+        <Line data={ts} options={baseOpts(v => `$${Number(v).toFixed(2)}`)} />
+      </MiniCard>
+    );
+  }
+  if (!barData) return null;
+  return (
+    <MiniCard title="AWS Spot Price per Accelerator ($/hr)">
+      <Bar data={barData} options={hBarOpts(v => `$${v.toFixed(2)}`)} />
+    </MiniCard>
+  );
+}
+
+// ── Cloud GPU list prices ──────────────────────────────────────────────────
+export function CloudGpuMini() {
+  const { liveData } = useData();
+
+  const ts = useMemo(() => {
+    const cg = liveData?.cloudGpu;
+    if (!cg?.dates?.length || !cg?.series) return null;
+    const N = 90;
+    const labels = cg.dates.slice(-N).map(d => d.slice(5));
+    const buckets = Object.entries(cg.series)
+      .map(([k, s]) => ({ k, s, latest: [...s].reverse().find(v => v != null) ?? 0 }))
+      .filter(b => b.s.some(v => v != null))
+      .sort((a, b) => b.latest - a.latest);
+    if (buckets.length === 0) return null;
+    return {
+      labels,
+      datasets: buckets.map(({ k, s }, i) => mkLine(k, PALETTE[i % PALETTE.length], s.slice(-N))),
+    };
+  }, [liveData]);
+
+  const barData = useMemo(() => {
+    const entries = Object.entries(liveData?.cloudGpu?.current ?? {})
+      .map(([k, v]) => ({ label: k, value: v ?? 0 }))
+      .filter(e => e.value > 0)
+      .sort((a, b) => b.value - a.value);
+    if (entries.length === 0) return null;
+    return {
+      labels:   entries.map(e => e.label),
+      datasets: [{ label: '$/GPU-hr', data: entries.map(e => e.value), backgroundColor: entries.map((_, i) => PALETTE[i % PALETTE.length] + 'bf'), borderColor: entries.map((_, i) => PALETTE[i % PALETTE.length]), borderWidth: 1, borderRadius: 4 }],
+    };
+  }, [liveData]);
+
+  if (ts) {
+    return (
+      <MiniCard title="Cloud GPU List Price — $/GPU-hr (90 days)">
+        <Line data={ts} options={baseOpts(v => `$${Number(v).toFixed(2)}`)} />
+      </MiniCard>
+    );
+  }
+  if (!barData) return null;
+  return (
+    <MiniCard title="Cloud GPU List Price ($/GPU-hr)">
+      <Bar data={barData} options={hBarOpts(v => `$${v.toFixed(2)}`)} />
+    </MiniCard>
+  );
+}
+
 // ── Registry: chart ID (from the RAG's SECTION_TO_CHART) → mini components ─
 export const CHART_REGISTRY = {
   pypi:                  [PyPIMini],
@@ -699,6 +844,8 @@ export const CHART_REGISTRY = {
   trends:                [TrendsMini],
   gpu:                   [GPUMini],
   dram:                  [DramMini],
+  'aws-spot':            [AwsSpotMini],
+  'cloud-gpu':           [CloudGpuMini],
   openrouter:            [OpenRouterPricingMini],
   'openrouter-rankings': [OpenRouterRanksMini],
   electricity:           [ElectricityMini],

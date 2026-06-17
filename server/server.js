@@ -7,7 +7,7 @@ const history      = require('./history');
 const snapshotStore = require('./snapshotStore');
 const scheduler    = require('./scheduler');
 const htmlTemplate = require('./htmlTemplate');
-const { chat, invalidateEmbeddings } = require('./chat');
+const { chat } = require('./chat');
 const { getOptionsData }             = require('./scrapers/options');
 
 const app   = express();
@@ -67,7 +67,6 @@ app.get('/api/dram',              cachedRoute('dram',             s.dram));
 app.get('/api/aws',               cachedRoute('aws',              s.aws));
 app.get('/api/cloud-gpu',         cachedRoute('cloudGpu',         s.cloudGpu));
 app.get('/api/npm',               cachedRoute('npm',              s.npm));
-app.get('/api/stackoverflow',     cachedRoute('stackoverflow',    s.stackoverflow));
 app.get('/api/huggingface',       cachedRoute('huggingface',      s.huggingface));
 app.get('/api/mcp',               cachedRoute('mcp',              s.mcp));
 app.get('/api/sec',               cachedRoute('sec',              s.sec));
@@ -79,7 +78,6 @@ app.post('/api/refresh', async (req, res) => {
   const keys = req.body?.keys ?? Object.keys(scheduler.scrapers);
   try {
     await scheduler.refreshAll(keys);
-    invalidateEmbeddings();
     res.json({ ok: true, refreshed: keys, ts: new Date().toISOString() });
   } catch (e) {
     console.error('[refresh]', e.message);
@@ -112,12 +110,12 @@ app.get('/api/options/:ticker', async (req, res) => {
 });
 
 app.post('/api/chat', async (req, res) => {
-  const { message } = req.body ?? {};
+  const { message, history } = req.body ?? {};
   if (!message || typeof message !== 'string') {
     return res.status(400).json({ error: 'message required' });
   }
   try {
-    const result = await chat(message);
+    const result = await chat(message, Array.isArray(history) ? history : []);
     res.json(result);
   } catch (e) {
     console.error('[chat]', e.message);

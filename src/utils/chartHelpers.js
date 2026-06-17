@@ -44,14 +44,28 @@ export const baseOpts = (yFmt) => ({
 });
 
 /* ─── Horizontal bar overrides ──────────────────────────────────────── */
-export const hBarOpts = (xFmt) => ({
-  ...baseOpts(xFmt),
-  indexAxis: 'y',
-  scales: {
-    x: { grid: GRID, ticks: { ...TICK, callback: v => xFmt(v) }, border: BORD, beginAtZero: true },
-    y: { grid: GRID, ticks: { ...TICK }, border: BORD },
-  },
-});
+export const hBarOpts = (xFmt) => {
+  const base = baseOpts(xFmt);
+  return {
+    ...base,
+    indexAxis: 'y',
+    plugins: {
+      ...base.plugins,
+      tooltip: {
+        ...base.plugins.tooltip,
+        callbacks: {
+          // Value lives on the x-axis for horizontal bars (not y). Drop the
+          // "label:" prefix when a dataset has no label.
+          label: c => `${c.dataset.label ? ` ${c.dataset.label}: ` : ' '}${xFmt(c.parsed.x)}`,
+        },
+      },
+    },
+    scales: {
+      x: { grid: GRID, ticks: { ...TICK, callback: v => xFmt(v) }, border: BORD, beginAtZero: true },
+      y: { grid: GRID, ticks: { ...TICK }, border: BORD },
+    },
+  };
+};
 
 /* ─── Doughnut chart options ────────────────────────────────────────── */
 export const doughnutOpts = (cutout = '55%') => ({

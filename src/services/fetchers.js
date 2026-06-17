@@ -58,27 +58,6 @@ async function fetchPypi() {
   );
 }
 
-/* ── Stack Overflow tag totals + last-week count ──────────────────── */
-const SO_TAGS = ['openai-api', 'claude', 'google-gemini', 'langchain', 'mistral-ai'];
-
-async function fetchSoTotals() {
-  const url = `https://api.stackexchange.com/2.3/tags/${SO_TAGS.join(';')}/info?site=stackoverflow`;
-  const res = await fetchT(url);
-  if (!res.ok) return {};
-  const { items = [] } = await res.json();
-  return Object.fromEntries(items.map(t => [t.name ?? t.tag_name, t.count]));
-}
-
-async function fetchSoWeekly(tag) {
-  const now = Math.floor(Date.now() / 1000);
-  const week = now - 7 * 86400;
-  const url = `https://api.stackexchange.com/2.3/questions?tagged=${tag}&site=stackoverflow&fromdate=${week}&todate=${now}&pagesize=1`;
-  const res = await fetchT(url);
-  if (!res.ok) return null;
-  const json = await res.json();
-  return json.total ?? null;
-}
-
 /* ── HuggingFace top models ───────────────────────────────────────── */
 async function fetchHF() {
   const url = 'https://huggingface.co/api/models?sort=downloads&direction=-1&limit=30';
@@ -116,11 +95,9 @@ async function fetchBackendAll() {
 
 /* ── Aggregate ────────────────────────────────────────────────────── */
 export async function fetchAll() {
-  const [npm, pypi, soTotals, soWeekly, hf, backend] = await Promise.allSettled([
+  const [npm, pypi, hf, backend] = await Promise.allSettled([
     fetchNpm(),
     fetchPypi(),
-    fetchSoTotals(),
-    fetchSoWeekly('claude'),
     fetchHF(),
     fetchBackendAll(),
   ]);
@@ -132,8 +109,6 @@ export async function fetchAll() {
     // Browser-direct fetches
     npm:         ok(npm)      ?? {},
     pypi:        ok(pypi)     ?? {},
-    soTotals:    ok(soTotals) ?? {},
-    soWeekly:    ok(soWeekly),
     hf:          ok(hf)       ?? [],
     // Backend-provided (may be null if server not running)
     pypiHistory: be.pypi       ?? null,

@@ -62,7 +62,7 @@ export const VIEW_META = {
   'demand-general':        { title: 'INFRASTRUCTURE & OSS SIGNALS' },
   'openrouter-rankings':   { title: 'OPENROUTER MODEL RANKINGS' },
   // Source-specific signal pages — reachable via direct navigation or Ask tab
-  pypi:              { title: 'PYPI / NPM / STACK OVERFLOW' },
+  pypi:              { title: 'PYPI / NPM' },
   github:            { title: 'GITHUB DEPENDENTS' },
   trends:            { title: 'GOOGLE TRENDS' },
   web:               { title: 'WEB TRAFFIC & STICKINESS' },

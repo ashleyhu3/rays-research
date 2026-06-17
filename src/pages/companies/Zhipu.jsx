@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { Line, Bar } from 'react-chartjs-2';
 import { C, fa } from '../../config/colors';
 import { baseOpts, hBarOpts, stackedOpts, mkDs, fmtM, GRID, TICK, BORD } from '../../utils/chartHelpers';
+import { companyPriceSeries, priceHistory } from '../../utils/modelPricing';
 import { orProviderSeries } from '../../utils/openrouterProvider';
 import { orComboCard } from '../../components/chart/OrGrowthCards';
 import { metricTrendCard } from '../../components/chart/MetricTrendCard';
@@ -36,8 +37,7 @@ const benchData = {
   datasets: [{ data: BENCH_VALS, backgroundColor: BENCH_COLORS.map(c => fa(c, 0.75)), borderColor: BENCH_COLORS, borderWidth: 1, borderRadius: 4 }],
 };
 const benchOpts = {
-  ...baseOpts(v => `${v.toFixed(1)}%`),
-  indexAxis: 'y',
+  ...hBarOpts(v => `${v.toFixed(1)}%`),
   scales: {
     x: { grid: GRID, ticks: TICK, border: BORD, min: 60, max: 85 },
     y: { grid: GRID, ticks: TICK, border: BORD },
@@ -55,22 +55,6 @@ const stackedRevOpts = {
     y: { grid: GRID, ticks: { ...TICK, callback: v => `¥${v}M` }, border: BORD, stacked: true },
   },
 };
-
-// Pricing comparison — Zhipu vs others (static + live via OpenRouter)
-const PRICE_KEY_MODELS = [
-  { match: 'anthropic/claude-opus', label: 'Claude Opus',    color: C.anthropic },
-  { match: 'openai/gpt-4o',         label: 'GPT-4o',         color: C.openai    },
-  { match: 'google/gemini-pro',     label: 'Gemini Pro',     color: C.google    },
-  { match: 'thudm/glm',             label: 'GLM-5 (Zhipu)', color: C.zhipu     },
-  { match: 'deepseek/deepseek',     label: 'DeepSeek V3',    color: C.deepseek  },
-];
-const STATIC_PRICE = [
-  { label: 'Claude Opus',    color: C.anthropic, price: 15.00 },
-  { label: 'GPT-4o',         color: C.openai,    price:  2.50 },
-  { label: 'Gemini Pro',     color: C.google,    price:  1.25 },
-  { label: 'GLM-5 (Zhipu)', color: C.zhipu,     price:  0.30 },
-  { label: 'DeepSeek V3',    color: C.deepseek,  price:  0.28 },
-];
 
 export default function DemandZhipu({ weeks: W }) {
   const { liveData: ld } = useData();
@@ -92,35 +76,8 @@ export default function DemandZhipu({ weeks: W }) {
     ],
   }), [qN]);
 
-  // Pricing (live if available, else static)
-  const { priceData, priceSrc } = useMemo(() => {
-    const models = ld?.openrouter?.models;
-    if (models?.length > 0) {
-      const matched = PRICE_KEY_MODELS
-        .map(({ match, label, color }) => {
-          const m = models.find(m => m.id.startsWith(match));
-          return m && m.pricing?.prompt > 0 ? { label, color, price: m.pricing.prompt } : null;
-        })
-        .filter(Boolean)
-        .sort((a, b) => b.price - a.price);
-      if (matched.length >= 3) {
-        return {
-          priceSrc: 'openrouter.ai/api/v1/models · live',
-          priceData: {
-            labels: matched.map(m => m.label),
-            datasets: [{ data: matched.map(m => m.price), backgroundColor: matched.map(m => fa(m.color, 0.75)), borderColor: matched.map(m => m.color), borderWidth: 1, borderRadius: 4 }],
-          },
-        };
-      }
-    }
-    return {
-      priceSrc: 'openrouter.ai · provider docs',
-      priceData: {
-        labels: STATIC_PRICE.map(m => m.label),
-        datasets: [{ data: STATIC_PRICE.map(m => m.price), backgroundColor: STATIC_PRICE.map(m => fa(m.color, 0.75)), borderColor: STATIC_PRICE.map(m => m.color), borderWidth: 1, borderRadius: 4 }],
-      },
-    };
-  }, [ld]);
+  // Daily input-price history for Zhipu's own (GLM) models (live snapshot + history)
+  const priceHist = useMemo(() => priceHistory(ld), [ld]);
 
   return (
     <EditableGrid viewId="demand-zhipu">
@@ -161,13 +118,16 @@ export default function DemandZhipu({ weeks: W }) {
         height: 260,
       })}
 
-      <ChartCard
-        chartId="zh-pricing"
-        src={priceSrc}
-        height={260}
-      >
-        <Bar data={priceData} options={hBarOpts(v => `$${v.toFixed(2)}`)} />
-      </ChartCard>
+      {metricTrendCard({
+        chartId: 'zh-pricing',
+        weeks: W,
+        src: 'openrouter.ai/api/v1/models',
+        freq: 'daily',
+        hist: priceHist,
+        series: companyPriceSeries('Zhipu'),
+        fmt: v => `$${v.toFixed(2)}`,
+        height: 260, span2: true,
+      })}
 
       <ChartCard
         chartId="zh-bench"

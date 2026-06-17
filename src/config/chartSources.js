@@ -16,7 +16,6 @@ export const CHART_SOURCES = {
   'pypi-installs': { src: 'pypistats.org',    srcUrl: 'https://pypistats.org/packages/anthropic', freq: 'weekly' },
   'pypi-share':    { src: 'pypistats.org',    srcUrl: 'https://pypistats.org/packages/anthropic', freq: 'weekly' },
   'pypi-npm':      { src: 'npmjs.com',        srcUrl: 'https://www.npmjs.com/package/openai',      freq: 'weekly' },
-  'pypi-so':       { src: 'stackexchange API', srcUrl: 'https://api.stackexchange.com/2.3/questions?tagged=claude&site=stackoverflow', freq: 'weekly' },
 
   'github-stars': { src: 'github.com',                    srcUrl: 'https://github.com/openai/openai-python', freq: 'daily' },
   'github-deps':  { src: 'github.com/network/dependents', srcUrl: 'https://github.com/anthropics/anthropic-sdk-python/network/dependents', freq: 'daily' },
@@ -36,8 +35,8 @@ export const CHART_SOURCES = {
   'docker-stars': { src: 'hub.docker.com',                 srcUrl: 'https://hub.docker.com',                       freq: '6-hourly' },
 
   // ── Community · Hacker News & Wikipedia ───────────────────────────────
-  'hn-volume': { src: 'hn.algolia.com · search_by_date', srcUrl: 'https://hn.algolia.com/?query=AI%20OR%20LLM%20OR%20ChatGPT&type=story', freq: 'hourly' },
-  'hn-terms':  { src: 'hn.algolia.com',                  srcUrl: 'https://hn.algolia.com',                                                 freq: 'hourly' },
+  'hn-volume': { src: 'hn.algolia.com · search_by_date', srcUrl: 'https://hn.algolia.com/?query=AI%20OR%20LLM%20OR%20ChatGPT&type=story', freq: 'weekly' },
+  'hn-terms':  { src: 'hn.algolia.com',                  srcUrl: 'https://hn.algolia.com',                                                 freq: 'weekly' },
   'wiki-views': { src: 'wikimedia.org/api/rest_v1/metrics/pageviews', srcUrl: 'https://pageviews.wmcloud.org/?project=en.wikipedia.org&pages=ChatGPT|Large_language_model', freq: 'daily' },
 
   // ── Infrastructure & OSS · GitHub commit activity ─────────────────────
@@ -53,21 +52,21 @@ export const CHART_SOURCES = {
   'cn-bench':   { src: 'swebench.com',           srcUrl: 'https://www.swebench.com/',      freq: 'static' },
 
   // ── Infrastructure · US datacenter build ──────────────────────────────
-  'dc-capex':    { src: 'iea.org/reports', srcUrl: 'https://www.iea.org/reports/key-questions-on-energy-and-ai', freq: 'static' },
-  'dc-capacity': { src: 'iea.org · cbre.com', srcUrl: 'https://www.iea.org/reports/key-questions-on-energy-and-ai', freq: 'static' },
+  'dc-capex':    { src: 'iea.org/reports', srcUrl: 'https://www.iea.org/reports/key-questions-on-energy-and-ai', freq: 'yearly' },
+  'dc-capacity': { src: 'iea.org · cbre.com', srcUrl: 'https://www.iea.org/reports/key-questions-on-energy-and-ai', freq: 'yearly' },
   'dc-state':    { src: 'ferc.gov · epri.org', srcUrl: 'https://www.ferc.gov/industries-data/electric/industry-activities/interconnection-queues', freq: 'static' },
   'dc-grid':     { src: 'ferc.gov · pjm.com', srcUrl: 'https://www.ferc.gov/industries-data/electric/industry-activities/interconnection-queues', freq: 'static' },
   'dc-btm':      { src: 'eia.gov/860', srcUrl: 'https://www.eia.gov/electricity/data/eia860/', freq: 'static' },
   'dc-deals':    { src: 'cbre.com/datacenters', srcUrl: 'https://www.cbre.com/insights/reports/north-america-data-center-trends', freq: 'static' },
 
   // ── Infrastructure · AI electricity demand ────────────────────────────
-  'elec-consumption': { src: 'iea.org · eia.gov', srcUrl: 'https://www.iea.org/reports/key-questions-on-energy-and-ai', freq: 'static' },
-  'elec-state':       { src: 'eia.gov/electricity/state', srcUrl: 'https://www.eia.gov/electricity/state/', freq: 'static' },
-  'elec-ai-share':    { src: 'iea.org · eia.gov', srcUrl: 'https://www.iea.org/reports/key-questions-on-energy-and-ai', freq: 'static' },
+  'elec-consumption': { src: 'iea.org · eia.gov', srcUrl: 'https://www.iea.org/reports/key-questions-on-energy-and-ai', freq: 'yearly' },
+  'elec-state':       { src: 'eia.gov/electricity/state', srcUrl: 'https://www.eia.gov/electricity/state/', freq: 'yearly' },
+  'elec-ai-share':    { src: 'iea.org · eia.gov', srcUrl: 'https://www.iea.org/reports/key-questions-on-energy-and-ai', freq: 'yearly' },
   // elec-rates: src & freq depend on whether live EIA data is present (kept in view)
   'elec-rates':       { srcUrl: 'https://www.eia.gov/electricity/monthly/' },
-  'elec-mix':         { src: 'iea.org · woodmac.com', srcUrl: 'https://www.iea.org/reports/key-questions-on-energy-and-ai', freq: 'static' },
-  'elec-pue':         { src: 'uptimeinstitute.com', srcUrl: 'https://uptimeinstitute.com/resources/research-and-reports', freq: 'static' },
+  'elec-mix':         { src: 'iea.org · woodmac.com', srcUrl: 'https://www.iea.org/reports/key-questions-on-energy-and-ai', freq: 'yearly' },
+  'elec-pue':         { src: 'uptimeinstitute.com', srcUrl: 'https://uptimeinstitute.com/resources/research-and-reports', freq: 'yearly' },
 
   // ── Pricing · GPU & memory spot ───────────────────────────────────────
   'gpu-current-rates': { src: 'vast.ai API',          srcUrl: 'https://cloud.vast.ai/create/', freq: 'live' },
@@ -83,38 +82,40 @@ export const CHART_SOURCES = {
 
   // ── Company · OpenAI / ChatGPT ────────────────────────────────────────
   'oa-sdk':       { src: 'pypistats.org · npmjs.com', srcUrl: 'https://pypistats.org/packages/openai', freq: 'weekly' },
-  'oa-or-share':  { src: 'openrouter.ai/rankings',    srcUrl: 'https://openrouter.ai/rankings', freq: 'daily' },
-  'oa-or-models': { src: 'openrouter.ai/rankings',    srcUrl: 'https://openrouter.ai/rankings', freq: 'daily' },
+  'oa-or-share':  { src: 'openrouter.ai/rankings',    srcUrl: 'https://openrouter.ai/rankings', freq: 'weekly' },
+  'oa-or-models': { src: 'openrouter.ai/rankings',    srcUrl: 'https://openrouter.ai/rankings', freq: 'weekly' },
   'oa-trends':    { src: 'trends.google.com',         srcUrl: 'https://trends.google.com/trends/explore?q=ChatGPT+API,ChatGPT', freq: 'daily' },
   'oa-stars':     { src: 'github.com',                srcUrl: 'https://github.com/openai/openai-python', freq: 'daily' },
-  'oa-github':    { src: 'github.com',                srcUrl: 'https://github.com/openai/openai-python', freq: 'daily' },
-  'oa-so':        { src: 'stackexchange.com',         srcUrl: 'https://stackoverflow.com/questions/tagged/openai-api', freq: 'daily' },
+  // oa-pricing: src reflects whether live OpenRouter pricing is present (kept in view)
+  'oa-pricing':   { srcUrl: 'https://openrouter.ai/models', freq: 'live' },
   'oa-wiki':      { src: 'wikimedia.org',             srcUrl: 'https://en.wikipedia.org/wiki/ChatGPT', freq: 'weekly' },
 
   // ── Company · Anthropic / Claude ──────────────────────────────────────
   'an-sdk':       { src: 'pypistats.org · npmjs.com', srcUrl: 'https://pypistats.org/packages/anthropic', freq: 'weekly' },
-  'an-or-share':  { src: 'openrouter.ai/rankings',    srcUrl: 'https://openrouter.ai/rankings', freq: 'daily' },
-  'an-or-models': { src: 'openrouter.ai/rankings',    srcUrl: 'https://openrouter.ai/rankings', freq: 'daily' },
+  'an-or-share':  { src: 'openrouter.ai/rankings',    srcUrl: 'https://openrouter.ai/rankings', freq: 'weekly' },
+  'an-or-models': { src: 'openrouter.ai/rankings',    srcUrl: 'https://openrouter.ai/rankings', freq: 'weekly' },
   'an-trends':    { src: 'trends.google.com',         srcUrl: 'https://trends.google.com/trends/explore?q=Claude+API,Claude', freq: 'daily' },
   'an-stars':     { src: 'github.com',                srcUrl: 'https://github.com/anthropics/anthropic-sdk-python', freq: 'daily' },
   'an-github':    { src: 'github.com',                srcUrl: 'https://github.com/anthropics/anthropic-sdk-python', freq: 'daily' },
-  'an-so':        { src: 'stackexchange.com',         srcUrl: 'https://stackoverflow.com/questions/tagged/claude', freq: 'daily' },
+  // an-pricing: src reflects whether live OpenRouter pricing is present (kept in view)
+  'an-pricing':   { srcUrl: 'https://openrouter.ai/models', freq: 'live' },
   'an-wiki':      { src: 'wikimedia.org',             srcUrl: 'https://en.wikipedia.org/wiki/Claude_(language_model)', freq: 'weekly' },
 
   // ── Company · Google / Gemini ─────────────────────────────────────────
   'goo-sdk':       { src: 'pypistats.org · npmjs.com', srcUrl: 'https://pypistats.org/packages/google-genai', freq: 'weekly' },
-  'goo-or-share':  { src: 'openrouter.ai/rankings',    srcUrl: 'https://openrouter.ai/rankings', freq: 'daily' },
-  'goo-or-models': { src: 'openrouter.ai/rankings',    srcUrl: 'https://openrouter.ai/rankings', freq: 'daily' },
+  'goo-or-share':  { src: 'openrouter.ai/rankings',    srcUrl: 'https://openrouter.ai/rankings', freq: 'weekly' },
+  'goo-or-models': { src: 'openrouter.ai/rankings',    srcUrl: 'https://openrouter.ai/rankings', freq: 'weekly' },
   'goo-trends':    { src: 'trends.google.com',         srcUrl: 'https://trends.google.com/trends/explore?q=Gemini+API,Gemini', freq: 'daily' },
   'goo-stars':     { src: 'github.com',                srcUrl: 'https://github.com/googleapis/python-genai', freq: 'daily' },
   'goo-github':    { src: 'github.com',                srcUrl: 'https://github.com/googleapis/python-genai', freq: 'daily' },
-  'goo-so':        { src: 'stackexchange.com',         srcUrl: 'https://stackoverflow.com/questions/tagged/google-gemini', freq: 'daily' },
+  // goo-pricing: src reflects whether live OpenRouter pricing is present (kept in view)
+  'goo-pricing':   { srcUrl: 'https://openrouter.ai/models', freq: 'live' },
   'goo-hf':        { src: 'huggingface.co/api',        srcUrl: 'https://huggingface.co/google', freq: 'daily' },
   'goo-wiki':      { src: 'wikimedia.org',             srcUrl: 'https://en.wikipedia.org/wiki/Gemini_(language_model)', freq: 'weekly' },
 
   // ── Company · Zhipu AI / GLM ──────────────────────────────────────────
-  'zh-or-share': { src: 'openrouter.ai/rankings', srcUrl: 'https://openrouter.ai/rankings', freq: 'daily' },
-  'zh-revenue':  { src: 'zhipuai.cn · IPO prospectus', srcUrl: 'https://www.zhipuai.cn/', freq: 'static' },
+  'zh-or-share': { src: 'openrouter.ai/rankings', srcUrl: 'https://openrouter.ai/rankings', freq: 'weekly' },
+  'zh-revenue':  { src: 'zhipuai.cn · IPO prospectus', srcUrl: 'https://www.zhipuai.cn/', freq: 'yearly' },
   'zh-market':   { src: 'idc.com · zhipuai.cn', srcUrl: 'https://www.zhipuai.cn/', freq: 'static' },
   'zh-hf':       { src: 'huggingface.co/api', srcUrl: 'https://huggingface.co/zai-org', freq: 'daily' },
   // zh-pricing: src reflects whether live OpenRouter pricing is present (kept in view)
@@ -122,9 +123,9 @@ export const CHART_SOURCES = {
   'zh-bench':    { src: 'swebench.com', srcUrl: 'https://www.swebench.com/', freq: 'static' },
 
   // ── Company · MiniMax ─────────────────────────────────────────────────
-  'mm-or-share': { src: 'openrouter.ai/rankings', srcUrl: 'https://openrouter.ai/rankings', freq: 'daily' },
+  'mm-or-share': { src: 'openrouter.ai/rankings', srcUrl: 'https://openrouter.ai/rankings', freq: 'weekly' },
   'mm-hf':       { src: 'huggingface.co/api', srcUrl: 'https://huggingface.co/MiniMaxAI', freq: 'daily' },
-  'mm-mau':      { src: 'sensortower.com · minimaxi.com', srcUrl: 'https://www.minimaxi.com/', freq: 'static' },
+  'mm-mau':      { src: 'sensortower.com · minimaxi.com', srcUrl: 'https://www.minimaxi.com/', freq: 'quarterly' },
   // mm-pricing: src reflects whether live OpenRouter pricing is present (kept in view)
   'mm-pricing':  { srcUrl: 'https://openrouter.ai/models', freq: 'live' },
   'mm-bench':    { src: 'swebench.com', srcUrl: 'https://www.swebench.com/', freq: 'static' },
@@ -136,14 +137,14 @@ export const CHART_SOURCES = {
   'gen-sec':       { src: 'efts.sec.gov full-text search', srcUrl: 'https://efts.sec.gov/LATEST/search-index?q=%22AI+agent%22&forms=10-K', freq: 'daily' },
   'gen-commits':   { src: 'github.com', srcUrl: 'https://github.com/huggingface/transformers', freq: 'weekly' },
   'gen-docker':    { src: 'hub.docker.com', srcUrl: 'https://hub.docker.com/r/nvidia/cuda', freq: '6-hourly' },
-  'gen-hn':        { src: 'hn.algolia.com', srcUrl: 'https://hn.algolia.com/?q=AI', freq: 'hourly' },
+  'gen-hn':        { src: 'hn.algolia.com', srcUrl: 'https://hn.algolia.com/?q=AI', freq: 'weekly' },
   'gen-cnmarket':  { src: 'idc.com · zhipuai.cn', srcUrl: 'https://www.zhipuai.cn/', freq: 'static' },
 
   // ── Market signals · OpenRouter model rankings ────────────────────────
-  'or-top':       { src: 'openrouter.ai/rankings', srcUrl: 'https://openrouter.ai/rankings', freq: 'daily' },
-  'or-trend':     { src: 'openrouter.ai/rankings', srcUrl: 'https://openrouter.ai/rankings', freq: 'daily' },
-  'or-provstack': { src: 'openrouter.ai/rankings', srcUrl: 'https://openrouter.ai/rankings', freq: 'daily' },
-  'or-provshare': { src: 'openrouter.ai/rankings', srcUrl: 'https://openrouter.ai/rankings', freq: 'daily' },
-  'or-combo':     { src: 'openrouter.ai/rankings', srcUrl: 'https://openrouter.ai/rankings', freq: 'daily' },
-  'or-growth':    { src: 'openrouter.ai/rankings', srcUrl: 'https://openrouter.ai/rankings', freq: 'daily' },
+  'or-top':       { src: 'openrouter.ai/rankings', srcUrl: 'https://openrouter.ai/rankings', freq: 'weekly' },
+  'or-trend':     { src: 'openrouter.ai/rankings', srcUrl: 'https://openrouter.ai/rankings', freq: 'weekly' },
+  'or-provstack': { src: 'openrouter.ai/rankings', srcUrl: 'https://openrouter.ai/rankings', freq: 'weekly' },
+  'or-provshare': { src: 'openrouter.ai/rankings', srcUrl: 'https://openrouter.ai/rankings', freq: 'weekly' },
+  'or-combo':     { src: 'openrouter.ai/rankings', srcUrl: 'https://openrouter.ai/rankings', freq: 'weekly' },
+  'or-growth':    { src: 'openrouter.ai/rankings', srcUrl: 'https://openrouter.ai/rankings', freq: 'weekly' },
 };

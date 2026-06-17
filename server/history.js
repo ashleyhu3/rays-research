@@ -41,8 +41,51 @@ function record(source, metrics) {
   if (changed) persist();
 }
 
+// Tracked input-price models. MIRROR of PRICE_MODELS in
+// src/utils/modelPricing.js (label + match filters only — colours/static prices
+// live client-side). Keep the `label`s in sync so the per-company price trend
+// keys (`<label>.input`) match the client series.
+const PRICE_SPECS = [
+  { match: 'anthropic/claude-opus',       exclude: ['fast'],                                     label: 'Claude Opus' },
+  { match: 'anthropic/claude-sonnet',     exclude: ['fast'],                                     label: 'Claude Sonnet' },
+  { match: 'openai/gpt-5',                exclude: ['mini', 'nano', 'image', 'chat', 'pro', 'codex'], label: 'GPT-5' },
+  { match: 'openai/gpt-5',                require: 'mini',                                       label: 'GPT-5 mini' },
+  { match: 'openai/o3',                   exclude: ['mini', 'pro', 'deep'],                      label: 'OpenAI o3' },
+  { match: 'google/gemini',               require: 'pro',   exclude: ['image', 'customtools', 'deep'], label: 'Gemini Pro' },
+  { match: 'google/gemini',               require: 'flash', exclude: ['lite', 'image', 'preview'],     label: 'Gemini Flash' },
+  { match: 'x-ai/grok',                   exclude: ['build', 'multi-agent', 'image', 'mini', 'fast'], label: 'Grok' },
+  { match: 'mistralai/mistral-large',     exclude: [],                                           label: 'Mistral Large' },
+  { match: 'meta-llama/llama-4-maverick', exclude: [':free'],                                    label: 'Llama 4 Maverick' },
+  { match: 'deepseek/deepseek-v',         exclude: ['flash', 'exp'],                             label: 'DeepSeek V' },
+  { match: 'moonshotai/kimi-k2',          exclude: ['code', 'thinking'],                         label: 'Kimi K2' },
+  { match: 'z-ai/glm',                    exclude: ['flash', 'turbo', 'air'],                    label: 'GLM' },
+  { match: 'minimax/minimax-m',           exclude: ['her'],                                      label: 'MiniMax' },
+  { match: 'qwen/qwen',                   require: 'max',   exclude: ['preview'],                label: 'Qwen Max' },
+];
+
+// Cleanest live model for a spec: shortest id matching the prefix/require/exclude
+// filters with a positive prompt price (mirrors pickLive in modelPricing.js).
+function pickPrice(models, { match, require, exclude }) {
+  const c = models
+    .filter(m => m.id.startsWith(match) && m.pricing?.prompt > 0)
+    .filter(m => (require ? m.id.includes(require) : true))
+    .filter(m => !(exclude ?? []).some(x => m.id.includes(x)))
+    .sort((a, b) => a.id.length - b.id.length);
+  return c[0] ?? null;
+}
+
 // Flatteners: cache payload per source → { metricName: value }
 const EXTRACTORS = {
+  openrouter(data) {
+    const models = data?.models;
+    if (!Array.isArray(models)) return {};
+    const out = {};
+    for (const spec of PRICE_SPECS) {
+      const m = pickPrice(models, spec);
+      if (m) out[`${spec.label}.input`] = Number(m.pricing.prompt.toFixed(4));
+    }
+    return out;
+  },
   github(data) {
     const out = {};
     for (const [repo, v] of Object.entries(data ?? {})) {
@@ -80,16 +123,6 @@ const EXTRACTORS = {
       if (v?.downloads != null) out[`${fam}.downloads`] = v.downloads;
     }
     if (data?.newModels?.perDay != null) out['hub.newModelsPerDay'] = data.newModels.perDay;
-    return out;
-  },
-  stackoverflow(data) {
-    const out = {};
-    for (const [tag, n] of Object.entries(data?.totals ?? {})) {
-      if (n != null) out[`${tag}.questions`] = n;
-    }
-    for (const [tag, n] of Object.entries(data?.weekly ?? {})) {
-      if (n != null) out[`${tag}.newThisWeek`] = n;
-    }
     return out;
   },
   docker(data) {
