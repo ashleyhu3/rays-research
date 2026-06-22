@@ -5,6 +5,13 @@ import { baseOpts, mkDs, dualAxisOpts, GRID, TICK, BORD } from '../../utils/char
 import ChartCard from '../../components/chart/ChartCard';
 import EditableGrid from '../../components/chart/EditableGrid';
 import { useData } from '../../context/DataContext';
+import { TickerPanel } from '../options/Options';
+
+const SECTION_HDR = {
+  fontSize: 13, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase',
+  color: '#8a8f99', padding: '6px 2px', margin: '4px 0 10px',
+  borderBottom: '1px solid rgba(255,255,255,.1)',
+};
 
 /* StockTwits posting-volume & sentiment vs stock price (methodology §10).
    Default view = aggregate charts (bull/bear, category rolling correlations for
@@ -195,7 +202,7 @@ export default function Sentiment() {
           className="opts-input"
           value={input}
           onChange={e => setInput(e.target.value.toUpperCase())}
-          placeholder="Enter a ticker to isolate — MU, SNDK, AAOI…"
+          placeholder="Search a ticker — options for any (NVDA, AAPL); sentiment for tracked names (MU, SNDK)…"
           spellCheck={false}
           autoComplete="off"
           autoCapitalize="characters"
@@ -259,18 +266,23 @@ export default function Sentiment() {
             </ChartCard>
           )}
         </EditableGrid>
-      ) : !v ? (
-        /* ── Invalid ticker ──────────────────────────────────────────── */
-        <div className="opts-empty">
-          <h2>No StockTwits data for {ticker}</h2>
-          <p>Tracked tickers (semiconductor / optics supply chain):</p>
-          <div className="opts-samples">
-            {available.map(t => <button key={t} className="opts-sample" onClick={() => search(t)}>{t}</button>)}
-          </div>
-        </div>
       ) : (
-        /* ── Per-ticker isolated view ─────────────────────────────────── */
-        <EditableGrid viewId="sentiment-ticker" key={ticker}>
+        /* ── Per-ticker view: Options flow first, then StockTwits sentiment ── */
+        <>
+          <div style={SECTION_HDR}>Options Flow — {ticker}</div>
+          <TickerPanel key={`opt-${ticker}`} ticker={ticker} />
+
+          <div style={{ ...SECTION_HDR, marginTop: 30 }}>StockTwits Sentiment — {ticker}</div>
+          {!v ? (
+            <div className="opts-empty" style={{ paddingTop: 6 }}>
+              <h2>No StockTwits sentiment tracked for {ticker}</h2>
+              <p>Options flow is shown above. Sentiment coverage is the semiconductor / optics supply-chain universe:</p>
+              <div className="opts-samples">
+                {available.map(t => <button key={t} className="opts-sample" onClick={() => search(t)}>{t}</button>)}
+              </div>
+            </div>
+          ) : (
+          <EditableGrid viewId="sentiment-ticker" key={ticker}>
           {tkWeeklyVP && (
             <ChartCard chartId="sent-tk-weekly-vp" title={`Weekly Posting Volume vs Price — ${ticker}`}
               subtitle={`Weekly post count (left) against the week's closing price (right). ${v.category} · ${v.totalPosts.toLocaleString()} total posts.`}
@@ -299,7 +311,9 @@ export default function Sentiment() {
               <Line data={tkRolling} options={baseOpts(v2 => v2.toFixed(2))} />
             </ChartCard>
           )}
-        </EditableGrid>
+          </EditableGrid>
+          )}
+        </>
       )}
     </div>
   );

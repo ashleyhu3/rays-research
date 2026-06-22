@@ -41,6 +41,8 @@ const SUPPLY_VIEWS  = new Set(['ai-supply', 'ai-supply-optics', 'ai-supply-fiber
 const TOOL_VIEWS    = new Set(['options']);
 const PRICING_VIEWS = new Set(['pricing']);
 const SENTIMENT_VIEWS = new Set(['sentiment']);
+const SOURCES_VIEWS   = new Set(['sources']);
+const TRANSCRIPT_VIEWS = new Set(['transcripts']);
 
 export default function Navbar({ onNavigate, currentView }) {
   const { tableMode, setTableMode } = useUI();
@@ -51,7 +53,9 @@ export default function Navbar({ onNavigate, currentView }) {
   const isOptions   = TOOL_VIEWS.has(currentView);
   const isPricing   = PRICING_VIEWS.has(currentView);
   const isSentiment = SENTIMENT_VIEWS.has(currentView);
-  const isDemand    = !isChat && !isSupply && !isOptions && !isPricing && !isSentiment;
+  const isSources   = SOURCES_VIEWS.has(currentView);
+  const isTranscripts = TRANSCRIPT_VIEWS.has(currentView);
+  const isDemand    = !isChat && !isSupply && !isOptions && !isPricing && !isSentiment && !isSources && !isTranscripts;
 
   const title = loading
     ? 'Updating live data…'
@@ -84,16 +88,22 @@ export default function Navbar({ onNavigate, currentView }) {
           Pricing
         </button>
         <button
-          className={`nlink nlink-options${isOptions ? ' active' : ''}`}
-          onClick={() => onNavigate('options')}
-        >
-          Options
-        </button>
-        <button
-          className={`nlink${isSentiment ? ' active' : ''}`}
+          className={`nlink${isSentiment || isOptions ? ' active' : ''}`}
           onClick={() => onNavigate('sentiment')}
         >
-          Sentiment
+          Markets
+        </button>
+        <button
+          className={`nlink${isTranscripts ? ' active' : ''}`}
+          onClick={() => onNavigate('transcripts')}
+        >
+          Transcripts
+        </button>
+        <button
+          className={`nlink${isSources ? ' active' : ''}`}
+          onClick={() => onNavigate('sources')}
+        >
+          Sources
         </button>
         <button
           className={`nlink nlink-ask${isChat ? ' active' : ''}`}

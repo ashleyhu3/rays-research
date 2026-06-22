@@ -31,4 +31,41 @@ function keys() {
 
 function clear() { store.clear(); }
 
-module.exports = { get, set, meta, keys, clear };
+// ── Telemetry (powers the Data Validity Terminal) ──────────────────────────
+// Operational health per source, updated by the scheduler/route on every
+// scrape attempt. Kept separate from the data cache so a feed going DOWN never
+// affects served data — the page reads strictly from these in-memory objects.
+const telemetry = new Map(); // sourceId -> { status, lastSuccess, lastAttempt, payloadBytes, error, successCount, failCount }
+
+function updateTelemetry(id, patch) {
+  const cur = telemetry.get(id) || { successCount: 0, failCount: 0 };
+  telemetry.set(id, { ...cur, ...patch });
+}
+
+function recordSuccess(id, payloadBytes) {
+  const cur = telemetry.get(id) || { successCount: 0, failCount: 0 };
+  telemetry.set(id, {
+    ...cur,
+    status: 'OPERATIONAL',
+    lastSuccess: Date.now(),
+    lastAttempt: Date.now(),
+    payloadBytes,
+    error: null,
+    successCount: (cur.successCount || 0) + 1,
+  });
+}
+
+function recordFailure(id, status, error) {
+  const cur = telemetry.get(id) || { successCount: 0, failCount: 0 };
+  telemetry.set(id, {
+    ...cur,
+    status,            // 'RATE-LIMITED' | 'DOWN'
+    lastAttempt: Date.now(),
+    error,
+    failCount: (cur.failCount || 0) + 1,
+  });
+}
+
+function getTelemetry(id) { return telemetry.get(id) || null; }
+
+module.exports = { get, set, meta, keys, clear, updateTelemetry, recordSuccess, recordFailure, getTelemetry };

@@ -124,8 +124,9 @@ function WaveIcon() {
 }
 
 /* One ticker's results — owns its own chain data, expiry/side/chart state, so
-   each panel in a multi-ticker search behaves independently. */
-function TickerPanel({ ticker }) {
+   each panel in a multi-ticker search behaves independently. Exported so the
+   combined Markets tab can embed the options panel above the sentiment charts. */
+export function TickerPanel({ ticker }) {
   const [data, setData]                 = useState(null);
   const [loading, setLoading]           = useState(false);
   const [error, setError]               = useState(null);

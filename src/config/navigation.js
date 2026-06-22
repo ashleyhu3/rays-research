@@ -39,14 +39,22 @@ export const NAV_SECTIONS = [
     label: 'Markets',
     mode: 'tool',
     items: [
-      { id: 'options', label: 'Options flow' },
+      { id: 'sentiment', label: 'Sentiment & options' },
+      { id: 'options',   label: 'Options flow' },
     ],
   },
   {
-    label: 'Sentiment',
+    label: 'Transcripts',
     mode: 'tool',
     items: [
-      { id: 'sentiment', label: 'StockTwits sentiment' },
+      { id: 'transcripts', label: 'Earnings transcript agent' },
+    ],
+  },
+  {
+    label: 'Sources',
+    mode: 'tool',
+    items: [
+      { id: 'sources', label: 'Data validity' },
     ],
   },
   {
@@ -89,7 +97,9 @@ export const VIEW_META = {
   docker:             { title: 'DOCKER HUB DEPLOYS' },
   community:          { title: 'HN & WIKIPEDIA PULSE' },
   options:            { title: 'OPTIONS FLOW' },
-  sentiment:          { title: 'STOCKTWITS SENTIMENT' },
+  sentiment:          { title: 'MARKETS — SENTIMENT & OPTIONS' },
+  transcripts:        { title: 'EARNINGS TRANSCRIPT AGENT' },
+  sources:            { title: 'DATA VALIDITY TERMINAL' },
 };
 
 /** Map sector overview view id → sectorId */

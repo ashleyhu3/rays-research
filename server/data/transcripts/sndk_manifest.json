@@ -1,0 +1,63 @@
+{
+  "entity": "Sandisk Corp",
+  "cik": "2023554",
+  "pulledAt": "2026-06-22T06:31:50.441Z",
+  "documents": [
+    {
+      "date": "2026-04-30",
+      "type": "8-K EX-99.1 (press release)",
+      "doc": "sndkq3-26ex991xpressrelease.htm",
+      "chars": 18213,
+      "file": "sndk_2026-04-30_8k_press-release.txt"
+    },
+    {
+      "date": "2026-05-01",
+      "type": "10-Q MD&A (Item 2)",
+      "doc": "sndk-20260403.htm",
+      "chars": 34561,
+      "file": "sndk_2026-05-01_10-Q_mdna.txt"
+    },
+    {
+      "date": "2026-01-29",
+      "type": "8-K EX-99.1 (press release)",
+      "doc": "sndkq2fy26ex991-pressrelea.htm",
+      "chars": 17130,
+      "file": "sndk_2026-01-29_8k_press-release.txt"
+    },
+    {
+      "date": "2026-01-30",
+      "type": "10-Q MD&A (Item 2)",
+      "doc": "sndk-20260102.htm",
+      "chars": 35547,
+      "file": "sndk_2026-01-30_10-Q_mdna.txt"
+    },
+    {
+      "date": "2025-11-06",
+      "type": "8-K EX-99.1 (press release)",
+      "doc": "sndkq1fy26ex991-pressrelea.htm",
+      "chars": 16737,
+      "file": "sndk_2025-11-06_8k_press-release.txt"
+    },
+    {
+      "date": "2025-11-07",
+      "type": "10-Q MD&A (Item 2)",
+      "doc": "sndk-20251003.htm",
+      "chars": 31331,
+      "file": "sndk_2025-11-07_10-Q_mdna.txt"
+    },
+    {
+      "date": "2025-08-14",
+      "type": "8-K EX-99.1 (press release)",
+      "doc": "d926236dex991.htm",
+      "chars": 15540,
+      "file": "sndk_2025-08-14_8k_press-release.txt"
+    },
+    {
+      "date": "2025-08-21",
+      "type": "10-K MD&A (Item 2)",
+      "doc": "sndk-20250627.htm",
+      "chars": 211222,
+      "file": "sndk_2025-08-21_10-K_mdna.txt"
+    }
+  ]
+}

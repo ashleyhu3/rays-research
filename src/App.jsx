@@ -34,6 +34,8 @@ import AISupply, { AISupplyOptics, AISupplyPCB, AISupplyMLCC, AISupplyFiber } fr
 import Options from './pages/options/Options';
 import Pricing from './pages/pricing/Pricing';
 import Sentiment from './pages/sentiment/Sentiment';
+import DataValidity from './pages/data-validity/DataValidity';
+import Transcripts from './pages/transcripts/Transcripts';
 // Source-specific signal pages
 import PyPI          from './pages/sources/PyPI';
 import GitHub        from './pages/sources/GitHub';
@@ -74,6 +76,8 @@ const VIEW_COMPONENTS = {
   'community':        Community,
   'options':          Options,
   'sentiment':        Sentiment,
+  'sources':          DataValidity,
+  'transcripts':      Transcripts,
   'demand-openai':    DemandOpenAI,
   'demand-anthropic': DemandAnthropic,
   'demand-google':    DemandGoogle,
@@ -107,7 +111,7 @@ export default function App() {
   // Check if this is a sector overview page
   const sectorId = SECTOR_OVERVIEW_IDS[currentView] ?? null;
   const ViewComponent = sectorId ? null : VIEW_COMPONENTS[currentView];
-  const showSidebar = currentView !== 'pricing' && currentView !== 'options' && currentView !== 'chat' && currentView !== 'sentiment';
+  const showSidebar = currentView !== 'pricing' && currentView !== 'options' && currentView !== 'chat' && currentView !== 'sentiment' && currentView !== 'sources' && currentView !== 'transcripts';
 
   return (
     <DashboardProvider>

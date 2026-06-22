@@ -72,19 +72,35 @@ async function refreshAll(keys = Object.keys(scrapers)) {
       cache.set(k, results[i].value, TTL[k]);
       history.snapshot(k, results[i].value);
       snapshotStore.put(k, results[i].value);
+      try { cache.recordSuccess(k, Buffer.byteLength(JSON.stringify(results[i].value))); } catch { cache.recordSuccess(k, 0); }
       console.log(`[refresh] ✓ ${k}`);
     } else {
-      console.warn(`[refresh] ✗ ${k}:`, results[i].reason?.message ?? 'null result');
+      const msg = results[i].reason?.message ?? 'null result';
+      const status = /\b429\b|rate.?limit|too many requests/i.test(msg) ? 'RATE-LIMITED' : 'DOWN';
+      cache.recordFailure(k, status, msg);
+      console.warn(`[refresh] ✗ ${k}:`, msg);
     }
   });
 }
 
-// Options chains are otherwise fetched only on-demand by the Options tab and
+// Options chains are otherwise fetched only on-demand by the Markets tab and
 // cached under `options:<ticker>:nearest`. The RAG's buildOptions() reads those
 // keys, so on a cold server it has zero options data until a user happens to
 // open that tab. Proactively warm a default AI-relevant basket so the Ask tab
 // can always answer options-flow questions.
-const OPTIONS_BASKET = ['NVDA', 'AMD', 'TSM', 'AVGO', 'MSFT', 'AAPL', 'AMZN', 'META'];
+//
+// The basket also drives the daily open-interest sweep (captureOptionsOI) that
+// seeds optionsStore — so only basket tickers have a last-known-nonzero OI to
+// fall back to when Yahoo serves a blank (intraday/pre-market) chain. The
+// Markets tab pairs options with StockTwits sentiment for the supply-chain
+// universe, so include those names here too; otherwise their OI shows 0 when
+// viewed outside the post-settlement window (no stored value to backfill).
+const AI_MEGACAPS = ['NVDA', 'AMD', 'TSM', 'AVGO', 'MSFT', 'AAPL', 'AMZN', 'META'];
+const SENTIMENT_TICKERS = (() => {
+  try { return Object.values(require('./scrapers/sentiment').CATEGORIES).flat(); }
+  catch { return []; }
+})();
+const OPTIONS_BASKET = [...new Set([...AI_MEGACAPS, ...SENTIMENT_TICKERS])];
 const OPTIONS_TTL    = 6 * 3600000;
 
 async function warmOptions(tickers = OPTIONS_BASKET) {
@@ -141,8 +157,10 @@ function setup() {
   cron.schedule('30 */6 * * *', () => warmOptions());
   setTimeout(() => warmOptions().catch(e => console.warn('[warmOptions] startup warm failed:', e.message)), 20000);
 
-  // Daily: sweep near expirations to capture open interest into the options store
-  cron.schedule('20 3 * * *', () => captureOptionsOI());
+  // Daily, post-US-close (21:20 UTC ≈ 5:20pm EDT / 4:20pm EST): sweep near
+  // expirations to capture settled open interest into the options store while
+  // Yahoo is serving the day's nonzero OI.
+  cron.schedule('20 21 * * *', () => captureOptionsOI());
 }
 
 module.exports = { setup, refreshAll, scrapers, TTL, warmOptions, captureOptionsOI };

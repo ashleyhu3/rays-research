@@ -39,9 +39,12 @@ function cachedRoute(key, scraper) {
         cache.set(key, data, scheduler.TTL[key] ?? 3600000);
         history.snapshot(key, data);
         snapshotStore.put(key, data);
+        try { cache.recordSuccess(key, Buffer.byteLength(JSON.stringify(data))); } catch { cache.recordSuccess(key, 0); }
       }
       res.json(data ?? {});
     } catch (e) {
+      const status = /\b429\b|rate.?limit|too many requests/i.test(e.message ?? '') ? 'RATE-LIMITED' : 'DOWN';
+      cache.recordFailure(key, status, e.message);
       console.error(`[${key}]`, e.message);
       res.status(500).json({ error: e.message });
     }
@@ -75,6 +78,48 @@ app.get('/api/sec',               cachedRoute('sec',              s.sec));
 
 // Accumulated daily snapshots of point-in-time metrics (for trend charts)
 app.get('/api/metrics-history', (_req, res) => res.json(history.all()));
+
+// Data Validity Terminal — registry + live telemetry, served from memory.
+const { buildValidityState } = require('./validity');
+app.get('/api/validity/status', (_req, res) => res.json(buildValidityState()));
+
+// Earnings-transcript sentiment agent. Accepts a pasted/structured transcript,
+// or {symbol, quarter} to fetch a real speaker-segmented transcript from Alpha
+// Vantage (free) before analyzing.
+const { runTranscriptAgent, parseTranscript, fetchTranscript, analyzeSeries } = require('./transcriptAgent');
+
+// Four-quarter cross-analysis (SNDK): AV newest quarter + EDGAR for the older three.
+app.post('/api/transcript/series', async (req, res) => {
+  try {
+    res.json(await analyzeSeries(req.body?.symbol ?? 'SNDK'));
+  } catch (e) {
+    console.error('[transcript:series]', e.message);
+    res.status(502).json({ error: e.message });
+  }
+});
+app.post('/api/transcript/analyze', async (req, res) => {
+  const body = req.body ?? {};
+  const threshold = Number.isFinite(body.anomalyThreshold) ? body.anomalyThreshold : 0.4;
+  try {
+    let blocks = Array.isArray(body.transcript) ? body.transcript : null;
+    let source = null;
+    if (!blocks && body.symbol && body.quarter) {
+      const t = await fetchTranscript(body.symbol, body.quarter);
+      blocks = t.blocks;
+      source = { provider: 'Alpha Vantage', symbol: t.symbol, quarter: t.quarter, usingKey: t.usingKey };
+    }
+    if (!blocks && typeof body.text === 'string') blocks = parseTranscript(body.text);
+    if (!blocks || blocks.length === 0) {
+      return res.status(400).json({ error: 'Provide `transcript`, `text`, or `{symbol, quarter}`.' });
+    }
+    const result = await runTranscriptAgent(blocks, { anomalyThreshold: threshold });
+    if (source) result.source = source;
+    res.json(result);
+  } catch (e) {
+    console.error('[transcript]', e.message);
+    res.status(502).json({ error: e.message });
+  }
+});
 
 app.post('/api/refresh', async (req, res) => {
   const keys = req.body?.keys ?? Object.keys(scheduler.scrapers);
