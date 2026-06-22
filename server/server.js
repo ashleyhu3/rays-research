@@ -66,6 +66,8 @@ app.get('/api/openrouter-ranks',  cachedRoute('openrouterRanks',  s.openrouterRa
 app.get('/api/dram',              cachedRoute('dram',             s.dram));
 app.get('/api/aws',               cachedRoute('aws',              s.aws));
 app.get('/api/cloud-gpu',         cachedRoute('cloudGpu',         s.cloudGpu));
+app.get('/api/litellm',           cachedRoute('litellm',          s.litellm));
+app.get('/api/sentiment',         cachedRoute('sentiment',        s.sentiment));
 app.get('/api/npm',               cachedRoute('npm',              s.npm));
 app.get('/api/huggingface',       cachedRoute('huggingface',      s.huggingface));
 app.get('/api/mcp',               cachedRoute('mcp',              s.mcp));

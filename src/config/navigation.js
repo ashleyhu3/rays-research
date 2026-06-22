@@ -31,6 +31,7 @@ export const NAV_SECTIONS = [
       { id: 'ai-supply',        label: 'Overview'            },
       { id: 'ai-supply-optics', label: 'Optics supply chain' },
       { id: 'ai-supply-pcb',    label: 'PCB supply chain'    },
+      { id: 'ai-supply-mlcc',   label: 'MLCC supply chain'   },
     ],
   },
   {
@@ -38,6 +39,13 @@ export const NAV_SECTIONS = [
     mode: 'tool',
     items: [
       { id: 'options', label: 'Options flow' },
+    ],
+  },
+  {
+    label: 'Sentiment',
+    mode: 'tool',
+    items: [
+      { id: 'sentiment', label: 'StockTwits sentiment' },
     ],
   },
   {
@@ -74,10 +82,12 @@ export const VIEW_META = {
   'ai-supply':        { title: 'AI SUPPLY — OVERVIEW' },
   'ai-supply-optics': { title: 'AI SUPPLY — OPTICS' },
   'ai-supply-pcb':    { title: 'AI SUPPLY — PCB' },
+  'ai-supply-mlcc':   { title: 'AI SUPPLY — MLCC' },
   'github-commits':   { title: 'GITHUB COMMIT VELOCITY' },
   docker:             { title: 'DOCKER HUB DEPLOYS' },
   community:          { title: 'HN & WIKIPEDIA PULSE' },
   options:            { title: 'OPTIONS FLOW' },
+  sentiment:          { title: 'STOCKTWITS SENTIMENT' },
 };
 
 /** Map sector overview view id → sectorId */

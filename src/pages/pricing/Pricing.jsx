@@ -60,6 +60,13 @@ const GPU_LABELS = {
   RTX_4090: 'RTX 4090',
 };
 
+/* ── LLM API token pricing (LiteLLM cost map) ──────────────────────── */
+// brand token → line colour (keys map to the C.* tokens in colors.js).
+const LLM_COLOR = {
+  openai: C.openai, anthropic: C.anthropic, google: C.google, xai: C.xai,
+  deepseek: C.deepseek, zhipu: C.zhipu, kimi: C.kimi, minimax: C.minimax, qwen: C.qwen,
+};
+
 function windowHistory(history, weeks) {
   if (!history?.dates?.length) return null;
   const cutoff = Date.now() - weeks * 7 * 86400000;
@@ -70,6 +77,39 @@ function windowHistory(history, weeks) {
 
 export default function Pricing({ weeks: W = 52 }) {
   const { liveData } = useData();
+
+  /* ── LLM API token pricing (LiteLLM) — official $/1M list prices ──── */
+  // US models first, then Chinese, so the two blocks read left-to-right.
+  const llmModels = useMemo(() => {
+    const m = liveData?.litellm?.models ?? [];
+    const rank = { US: 0, CN: 1 };
+    return [...m].sort((a, b) => (rank[a.region] ?? 9) - (rank[b.region] ?? 9));
+  }, [liveData]);
+  // Price-over-time from the accumulated daily snapshots (history.litellm),
+  // one line per model, for the given field ('input' | 'output').
+  const llmTrend = (field) => {
+    const hist = liveData?.metricsHistory?.litellm;
+    if (!hist || llmModels.length === 0) return null;
+    const dateSet = new Set();
+    for (const m of llmModels) {
+      const s = hist[`${m.label}.${field}`];
+      if (s) Object.keys(s).forEach(d => dateSet.add(d));
+    }
+    const cutoff = Date.now() - W * 7 * 86400000;
+    const dates = [...dateSet].sort().filter(d => new Date(d + 'T00:00:00Z').getTime() >= cutoff);
+    if (dates.length === 0) return null;
+    const datasets = llmModels.map(m => {
+      const s = hist[`${m.label}.${field}`] ?? {};
+      const data = dates.map(d => (d in s ? s[d] : null));
+      if (!data.some(v => v != null)) return null;
+      return { ...mkDs(m.label, LLM_COLOR[m.brand] ?? C.slate, data), spanGaps: true, pointRadius: dates.length === 1 ? 3 : 0 };
+    }).filter(Boolean);
+    if (datasets.length === 0) return null;
+    return { labels: dates.map(d => historyLabel(d, W)), datasets };
+  };
+
+  const llmInputData  = useMemo(() => llmTrend('input'),  [liveData, llmModels, W]); // eslint-disable-line react-hooks/exhaustive-deps
+  const llmOutputData = useMemo(() => llmTrend('output'), [liveData, llmModels, W]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── GPU spot pricing (moved from the GPU view) ──────────────────── */
   const gpu = liveData?.gpu;
@@ -331,6 +371,26 @@ export default function Pricing({ weeks: W = 52 }) {
 
   return (
     <EditableGrid viewId="pricing">
+      {llmInputData && (
+        <ChartCard
+          chartId="llm-api-input"
+          legend={llmInputData.datasets.map(d => [d.label, d.borderColor])}
+          height={260} span2
+        >
+          <Line data={llmInputData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
+        </ChartCard>
+      )}
+
+      {llmOutputData && (
+        <ChartCard
+          chartId="llm-api-output"
+          legend={llmOutputData.datasets.map(d => [d.label, d.borderColor])}
+          height={260} span2
+        >
+          <Line data={llmOutputData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
+        </ChartCard>
+      )}
+
       {dramIndexData && (
         <ChartCard
           chartId="dram-index"

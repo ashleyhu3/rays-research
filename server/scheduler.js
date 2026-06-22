@@ -23,6 +23,8 @@ const scrapers = {
   sec:              () => require('./scrapers/sec').getSecData(),
   aws:              () => require('./scrapers/aws').getAwsData(),
   cloudGpu:         () => require('./scrapers/cloudGpu').getCloudGpuPrices(),
+  litellm:          () => require('./scrapers/litellm').getLitellmPricing(),
+  sentiment:        () => require('./scrapers/sentiment').getSentimentData(),
 };
 
 // TTLs match each source's natural update frequency.
@@ -49,6 +51,8 @@ const TTL = {
   sec:           24 * 3600000,  // daily   — EDGAR full-text index updates daily
   aws:            6 * 3600000,  // 6-hourly — AWS Spot Advisor refreshes a few times per day
   cloudGpu:      24 * 3600000,  // daily   — curated list-price table, one snapshot per UTC day
+  litellm:       24 * 3600000,  // daily   — official list prices; LiteLLM cost map updates on model launches
+  sentiment:     24 * 3600000,  // daily   — StockTwits posting/sentiment vs price; recomputed once per day
 };
 
 // Hard cap per scraper so one hung source can never wedge a refresh
@@ -131,7 +135,7 @@ function setup() {
   cron.schedule('0 */6 * * *', () => refreshAll(['docker', 'openrouterRanks', 'dram', 'aws']));
 
   // Daily at 03:00 UTC: aggregate stats whose sources only publish once per day
-  cron.schedule('0 3 * * *', () => refreshAll(['gpu', 'cloudGpu', 'pypi', 'trends', 'github', 'eia', 'mops', 'githubCommits', 'wikipedia', 'npm', 'huggingface', 'mcp', 'sec']));
+  cron.schedule('0 3 * * *', () => refreshAll(['gpu', 'cloudGpu', 'litellm', 'sentiment', 'pypi', 'trends', 'github', 'eia', 'mops', 'githubCommits', 'wikipedia', 'npm', 'huggingface', 'mcp', 'sec']));
 
   // Options: warm every 6h, plus once shortly after boot so the RAG has data fast
   cron.schedule('30 */6 * * *', () => warmOptions());

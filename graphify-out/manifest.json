@@ -1,0 +1,597 @@
+{
+  "/workspaces/rays-research/.claude/settings.local.json": {
+    "mtime": 1781678552.1688101,
+    "ast_hash": "559de5bc0ab29ad01f5d420c4bf53aa6",
+    "semantic_hash": "559de5bc0ab29ad01f5d420c4bf53aa6"
+  },
+  "/workspaces/rays-research/api/options.js": {
+    "mtime": 1781507962.6985252,
+    "ast_hash": "6d97b37e255fdf4c57a314ce8f4735b6",
+    "semantic_hash": "6d97b37e255fdf4c57a314ce8f4735b6"
+  },
+  "/workspaces/rays-research/package.json": {
+    "mtime": 1781594256.8779378,
+    "ast_hash": "49632875691edb9754c27c8bef51f24f",
+    "semantic_hash": "49632875691edb9754c27c8bef51f24f"
+  },
+  "/workspaces/rays-research/server/cache.js": {
+    "mtime": 1781659599.567328,
+    "ast_hash": "2f613473d22b39fef79f3d1cbbb0f341",
+    "semantic_hash": "2f613473d22b39fef79f3d1cbbb0f341"
+  },
+  "/workspaces/rays-research/server/chat.js": {
+    "mtime": 1781683371.6680336,
+    "ast_hash": "2f3d7deb4e558cb8735d9ea37abdcece",
+    "semantic_hash": "2f3d7deb4e558cb8735d9ea37abdcece"
+  },
+  "/workspaces/rays-research/server/data/awsHistory.json": {
+    "mtime": 1781677521.4057624,
+    "ast_hash": "1db2b01898c37ac8c68c77e170f8d5ef",
+    "semantic_hash": "1db2b01898c37ac8c68c77e170f8d5ef"
+  },
+  "/workspaces/rays-research/server/data/cloudGpuHistory.json": {
+    "mtime": 1781677521.9687624,
+    "ast_hash": "69fe838536e4f5d2dcf9e8f7b55d42cb",
+    "semantic_hash": "69fe838536e4f5d2dcf9e8f7b55d42cb"
+  },
+  "/workspaces/rays-research/server/data/dramHistory.json": {
+    "mtime": 1781677521.3127625,
+    "ast_hash": "7fcc0e8405e9d16346f6a25c69d0896c",
+    "semantic_hash": "7fcc0e8405e9d16346f6a25c69d0896c"
+  },
+  "/workspaces/rays-research/server/data/gpuHistory.json": {
+    "mtime": 1781677520.9607623,
+    "ast_hash": "d146a9af568922cb76274601f316a242",
+    "semantic_hash": "d146a9af568922cb76274601f316a242"
+  },
+  "/workspaces/rays-research/server/data/metricsHistory.json": {
+    "mtime": 1781677543.4587634,
+    "ast_hash": "5c7b0aafe1c34dc1304a71112c428d0b",
+    "semantic_hash": "5c7b0aafe1c34dc1304a71112c428d0b"
+  },
+  "/workspaces/rays-research/server/data/optionsOI.json": {
+    "mtime": 1781685201.9481184,
+    "ast_hash": "99914b932bd37a50b983c5e7c90ae93b",
+    "semantic_hash": "99914b932bd37a50b983c5e7c90ae93b"
+  },
+  "/workspaces/rays-research/server/history.js": {
+    "mtime": 1781665420.5462677,
+    "ast_hash": "de278e9260205645b1d5f376aa97a225",
+    "semantic_hash": "de278e9260205645b1d5f376aa97a225"
+  },
+  "/workspaces/rays-research/server/htmlTemplate.js": {
+    "mtime": 1780991617.05131,
+    "ast_hash": "a48bb508652fb625cc2a4a33e9a9d684",
+    "semantic_hash": "a48bb508652fb625cc2a4a33e9a9d684"
+  },
+  "/workspaces/rays-research/server/optionsStore.js": {
+    "mtime": 1781685010.8781097,
+    "ast_hash": "0124e4a1e5aa51873c4a5d532f247f9c",
+    "semantic_hash": "0124e4a1e5aa51873c4a5d532f247f9c"
+  },
+  "/workspaces/rays-research/server/package.json": {
+    "mtime": 1780908660.2130797,
+    "ast_hash": "8a80554c91d9fca8acb82f023de02f11",
+    "semantic_hash": "8a80554c91d9fca8acb82f023de02f11"
+  },
+  "/workspaces/rays-research/server/scheduler.js": {
+    "mtime": 1781685074.1091125,
+    "ast_hash": "ea3475907f17a36a6493ab5969b8343e",
+    "semantic_hash": "ea3475907f17a36a6493ab5969b8343e"
+  },
+  "/workspaces/rays-research/server/scrapers/aws.js": {
+    "mtime": 1781511739.6282568,
+    "ast_hash": "80951ad514b06846d7e52c10ba590c25",
+    "semantic_hash": "80951ad514b06846d7e52c10ba590c25"
+  },
+  "/workspaces/rays-research/server/scrapers/cloudGpu.js": {
+    "mtime": 1781594475.3679478,
+    "ast_hash": "3bad87698a5d71bcd100888ee3be3952",
+    "semantic_hash": "3bad87698a5d71bcd100888ee3be3952"
+  },
+  "/workspaces/rays-research/server/scrapers/docker.js": {
+    "mtime": 1781070482.9438033,
+    "ast_hash": "afd759eae78364f6bb9b68610bf4f209",
+    "semantic_hash": "afd759eae78364f6bb9b68610bf4f209"
+  },
+  "/workspaces/rays-research/server/scrapers/dram.js": {
+    "mtime": 1781496208.5723608,
+    "ast_hash": "86c9ac1225dd0f8c2ef9d76a6f234789",
+    "semantic_hash": "86c9ac1225dd0f8c2ef9d76a6f234789"
+  },
+  "/workspaces/rays-research/server/scrapers/eia.js": {
+    "mtime": 1780976168.0166276,
+    "ast_hash": "9a7f9efb727769d6b274c92f23435720",
+    "semantic_hash": "9a7f9efb727769d6b274c92f23435720"
+  },
+  "/workspaces/rays-research/server/scrapers/github.js": {
+    "mtime": 1781675915.765688,
+    "ast_hash": "fa4dcf1d0731e78e1b554a117eaf00ce",
+    "semantic_hash": "fa4dcf1d0731e78e1b554a117eaf00ce"
+  },
+  "/workspaces/rays-research/server/scrapers/githubActivity.js": {
+    "mtime": 1781231034.9437637,
+    "ast_hash": "7e5390b4cd51163c995a3ee5da50bd6f",
+    "semantic_hash": "7e5390b4cd51163c995a3ee5da50bd6f"
+  },
+  "/workspaces/rays-research/server/scrapers/gpu.js": {
+    "mtime": 1781511808.566252,
+    "ast_hash": "0e335ca4f9cdbe7683358cf213c8f703",
+    "semantic_hash": "0e335ca4f9cdbe7683358cf213c8f703"
+  },
+  "/workspaces/rays-research/server/scrapers/hn.js": {
+    "mtime": 1781487044.691899,
+    "ast_hash": "d3e339742f9ba4dbd46cc71d213f27e8",
+    "semantic_hash": "d3e339742f9ba4dbd46cc71d213f27e8"
+  },
+  "/workspaces/rays-research/server/scrapers/huggingface.js": {
+    "mtime": 1781232681.2308066,
+    "ast_hash": "66aec43918ad75ffa013f6206ac08d8c",
+    "semantic_hash": "66aec43918ad75ffa013f6206ac08d8c"
+  },
+  "/workspaces/rays-research/server/scrapers/mcp.js": {
+    "mtime": 1781230034.8357377,
+    "ast_hash": "53b4c6cb7511dbafba5a46460086c7da",
+    "semantic_hash": "53b4c6cb7511dbafba5a46460086c7da"
+  },
+  "/workspaces/rays-research/server/scrapers/mops.js": {
+    "mtime": 1780992108.1182911,
+    "ast_hash": "8dc2ef158d86dce6a9aedb836d5c7a0f",
+    "semantic_hash": "8dc2ef158d86dce6a9aedb836d5c7a0f"
+  },
+  "/workspaces/rays-research/server/scrapers/npm.js": {
+    "mtime": 1781487561.1169252,
+    "ast_hash": "b6fd099bcbc0bce649a8fb49ad32eb2a",
+    "semantic_hash": "b6fd099bcbc0bce649a8fb49ad32eb2a"
+  },
+  "/workspaces/rays-research/server/scrapers/openrouter.js": {
+    "mtime": 1780908736.0160835,
+    "ast_hash": "9b1fe964322381bb52383f9b61f46b11",
+    "semantic_hash": "9b1fe964322381bb52383f9b61f46b11"
+  },
+  "/workspaces/rays-research/server/scrapers/openrouterRankings.js": {
+    "mtime": 1781598429.5491312,
+    "ast_hash": "7d5a9f4da4427aa7197e82547431cba2",
+    "semantic_hash": "7d5a9f4da4427aa7197e82547431cba2"
+  },
+  "/workspaces/rays-research/server/scrapers/options.js": {
+    "mtime": 1781685028.8191104,
+    "ast_hash": "834edaf8b5578f5a86491bc87eb18e63",
+    "semantic_hash": "834edaf8b5578f5a86491bc87eb18e63"
+  },
+  "/workspaces/rays-research/server/scrapers/pypi.js": {
+    "mtime": 1781487523.2609234,
+    "ast_hash": "8de4306e0a5b69279c8fb57d062d5883",
+    "semantic_hash": "8de4306e0a5b69279c8fb57d062d5883"
+  },
+  "/workspaces/rays-research/server/scrapers/sec.js": {
+    "mtime": 1781231553.0247774,
+    "ast_hash": "a64394c8b1bb4687c852b994f1ca70dd",
+    "semantic_hash": "a64394c8b1bb4687c852b994f1ca70dd"
+  },
+  "/workspaces/rays-research/server/scrapers/trends.js": {
+    "mtime": 1780908683.0030808,
+    "ast_hash": "8e640b8596d194b79204c5bfc6c73855",
+    "semantic_hash": "8e640b8596d194b79204c5bfc6c73855"
+  },
+  "/workspaces/rays-research/server/scrapers/wikipedia.js": {
+    "mtime": 1781070505.999803,
+    "ast_hash": "1367657948986bd4ec247b5221d225a6",
+    "semantic_hash": "1367657948986bd4ec247b5221d225a6"
+  },
+  "/workspaces/rays-research/server/scripts/backfillAwsSpot.js": {
+    "mtime": 1781511778.492254,
+    "ast_hash": "c9f4d152af18daeccec93e3571b2a7fd",
+    "semantic_hash": "c9f4d152af18daeccec93e3571b2a7fd"
+  },
+  "/workspaces/rays-research/server/scripts/backfillDram.js": {
+    "mtime": 1781143482.2147746,
+    "ast_hash": "f50ac3d9ea21b784c2830166c3ee5d66",
+    "semantic_hash": "f50ac3d9ea21b784c2830166c3ee5d66"
+  },
+  "/workspaces/rays-research/server/scripts/backfillGithubStars.js": {
+    "mtime": 1781487730.2119336,
+    "ast_hash": "a721f1c227a1696b014473668be75805",
+    "semantic_hash": "a721f1c227a1696b014473668be75805"
+  },
+  "/workspaces/rays-research/server/scripts/backfillGpuHistory.js": {
+    "mtime": 1781493113.8952048,
+    "ast_hash": "7313b848d80f6531e358ecbedaa37667",
+    "semantic_hash": "7313b848d80f6531e358ecbedaa37667"
+  },
+  "/workspaces/rays-research/server/scripts/backfillMcp.js": {
+    "mtime": 1781484843.8487883,
+    "ast_hash": "48ff78b606f440813cda95cdb34b23cf",
+    "semantic_hash": "48ff78b606f440813cda95cdb34b23cf"
+  },
+  "/workspaces/rays-research/server/scripts/backfillSec.js": {
+    "mtime": 1781484825.4597874,
+    "ast_hash": "af841af2af65640cb6578c25fdce212f",
+    "semantic_hash": "af841af2af65640cb6578c25fdce212f"
+  },
+  "/workspaces/rays-research/server/scripts/collect.js": {
+    "mtime": 1781592433.2678533,
+    "ast_hash": "ce77f84a229934b6532675ffaecf8880",
+    "semantic_hash": "ce77f84a229934b6532675ffaecf8880"
+  },
+  "/workspaces/rays-research/server/scripts/dbPing.js": {
+    "mtime": 1781496258.5983632,
+    "ast_hash": "d89084718d3ed0d1edebf073afdd5665",
+    "semantic_hash": "d89084718d3ed0d1edebf073afdd5665"
+  },
+  "/workspaces/rays-research/server/scripts/seedMongo.js": {
+    "mtime": 1781511863.136248,
+    "ast_hash": "304dbec2dd637e176f4dd03fcac1a089",
+    "semantic_hash": "304dbec2dd637e176f4dd03fcac1a089"
+  },
+  "/workspaces/rays-research/server/server.js": {
+    "mtime": 1781684995.8411088,
+    "ast_hash": "6f69ee25bba8971284671f1df6d624a4",
+    "semantic_hash": "6f69ee25bba8971284671f1df6d624a4"
+  },
+  "/workspaces/rays-research/server/snapshotStore.js": {
+    "mtime": 1781659609.3983278,
+    "ast_hash": "3a456ced22ff7e169f894d76b4f040c5",
+    "semantic_hash": "3a456ced22ff7e169f894d76b4f040c5"
+  },
+  "/workspaces/rays-research/server/storage.js": {
+    "mtime": 1781496924.1513968,
+    "ast_hash": "ee6d1d820a0bed272434047e4a4c65d9",
+    "semantic_hash": "ee6d1d820a0bed272434047e4a4c65d9"
+  },
+  "/workspaces/rays-research/src/App.jsx": {
+    "mtime": 1781596875.389059,
+    "ast_hash": "a317b55c31fab9667ead6e6a9a462ad2",
+    "semantic_hash": "a317b55c31fab9667ead6e6a9a462ad2"
+  },
+  "/workspaces/rays-research/src/components/chart/ChartCard.jsx": {
+    "mtime": 1781661707.4713063,
+    "ast_hash": "1b0cb7c3a16e9023d882eb6f199856e9",
+    "semantic_hash": "1b0cb7c3a16e9023d882eb6f199856e9"
+  },
+  "/workspaces/rays-research/src/components/chart/ChartExpand.jsx": {
+    "mtime": 1781661634.910307,
+    "ast_hash": "24c0a1799d50a4554a19d14f1bce383e",
+    "semantic_hash": "24c0a1799d50a4554a19d14f1bce383e"
+  },
+  "/workspaces/rays-research/src/components/chart/EditableGrid.jsx": {
+    "mtime": 1781596557.0700443,
+    "ast_hash": "91a1e13dbac10b18d7e7cd3aac5c82bd",
+    "semantic_hash": "91a1e13dbac10b18d7e7cd3aac5c82bd"
+  },
+  "/workspaces/rays-research/src/components/chart/InlineLegend.jsx": {
+    "mtime": 1781590434.7867606,
+    "ast_hash": "6275fa28b23836da0928df6a5a47954c",
+    "semantic_hash": "6275fa28b23836da0928df6a5a47954c"
+  },
+  "/workspaces/rays-research/src/components/chart/InsightBox.jsx": {
+    "mtime": 1781590434.7867606,
+    "ast_hash": "7b2c575a462d0b54067c51bcb5b21814",
+    "semantic_hash": "7b2c575a462d0b54067c51bcb5b21814"
+  },
+  "/workspaces/rays-research/src/components/chart/KpiCard.jsx": {
+    "mtime": 1781590434.7867606,
+    "ast_hash": "6562d8ff9eacec7a850f20470eed6421",
+    "semantic_hash": "6562d8ff9eacec7a850f20470eed6421"
+  },
+  "/workspaces/rays-research/src/components/chart/MetricTrendCard.jsx": {
+    "mtime": 1781590434.7867606,
+    "ast_hash": "6dd27c40e2ef68aa2f8975ec423e62d8",
+    "semantic_hash": "6dd27c40e2ef68aa2f8975ec423e62d8"
+  },
+  "/workspaces/rays-research/src/components/chart/OrGrowthCards.jsx": {
+    "mtime": 1781590434.7897606,
+    "ast_hash": "a0ce7f6d8c2d9865de2d64ceedd6e43e",
+    "semantic_hash": "a0ce7f6d8c2d9865de2d64ceedd6e43e"
+  },
+  "/workspaces/rays-research/src/components/chat/ChatCharts.jsx": {
+    "mtime": 1781682620.3699987,
+    "ast_hash": "efbb266b2520c4a4aa14a8fa598cdc77",
+    "semantic_hash": "efbb266b2520c4a4aa14a8fa598cdc77"
+  },
+  "/workspaces/rays-research/src/components/layout/Navbar.jsx": {
+    "mtime": 1781590434.7897606,
+    "ast_hash": "007ec399fbf9a9eb628153c76cab921f",
+    "semantic_hash": "007ec399fbf9a9eb628153c76cab921f"
+  },
+  "/workspaces/rays-research/src/components/layout/Sidebar.jsx": {
+    "mtime": 1781590434.7907605,
+    "ast_hash": "0b96e445a2786521e63b89d7847c7706",
+    "semantic_hash": "0b96e445a2786521e63b89d7847c7706"
+  },
+  "/workspaces/rays-research/src/components/layout/Topbar.jsx": {
+    "mtime": 1781664713.7192752,
+    "ast_hash": "4dca3917c24ac3d6a5dd30836278d82e",
+    "semantic_hash": "4dca3917c24ac3d6a5dd30836278d82e"
+  },
+  "/workspaces/rays-research/src/config/chartInsights.js": {
+    "mtime": 1781589588.4597213,
+    "ast_hash": "a337b0ded82016caa13d5f0ec02391bb",
+    "semantic_hash": "a337b0ded82016caa13d5f0ec02391bb"
+  },
+  "/workspaces/rays-research/src/config/chartMeta.js": {
+    "mtime": 1781589023.5546951,
+    "ast_hash": "641563bd53fe2aa205fb478bde0a070c",
+    "semantic_hash": "641563bd53fe2aa205fb478bde0a070c"
+  },
+  "/workspaces/rays-research/src/config/chartSources.js": {
+    "mtime": 1781675958.49869,
+    "ast_hash": "260ad171cb8f52224b50e98b3c7f221e",
+    "semantic_hash": "260ad171cb8f52224b50e98b3c7f221e"
+  },
+  "/workspaces/rays-research/src/config/chartText.js": {
+    "mtime": 1781675945.3226893,
+    "ast_hash": "44d83862a557a8fbb882966fd8695fc2",
+    "semantic_hash": "44d83862a557a8fbb882966fd8695fc2"
+  },
+  "/workspaces/rays-research/src/config/charts.js": {
+    "mtime": 1781664635.1382759,
+    "ast_hash": "b18f4b7b5726f5779900f9c929f02e90",
+    "semantic_hash": "b18f4b7b5726f5779900f9c929f02e90"
+  },
+  "/workspaces/rays-research/src/config/colors.js": {
+    "mtime": 1781664213.1002803,
+    "ast_hash": "8b0ee5e6d924f998169246f84b49affe",
+    "semantic_hash": "8b0ee5e6d924f998169246f84b49affe"
+  },
+  "/workspaces/rays-research/src/config/navigation.js": {
+    "mtime": 1781664703.1972752,
+    "ast_hash": "2fda2e07a0188bcc61f256670ea535c5",
+    "semantic_hash": "2fda2e07a0188bcc61f256670ea535c5"
+  },
+  "/workspaces/rays-research/src/context/DashboardContext.jsx": {
+    "mtime": 1781579840.5755885,
+    "ast_hash": "039c3393008c2761f726fbf05a8963b1",
+    "semantic_hash": "039c3393008c2761f726fbf05a8963b1"
+  },
+  "/workspaces/rays-research/src/context/DataContext.jsx": {
+    "mtime": 1781491874.1221423,
+    "ast_hash": "2a8fe7bf10e988423c820dbb0bf18e5d",
+    "semantic_hash": "2a8fe7bf10e988423c820dbb0bf18e5d"
+  },
+  "/workspaces/rays-research/src/context/LayoutContext.jsx": {
+    "mtime": 1781596586.6840458,
+    "ast_hash": "7e1ed1f62e4ab51a90ca74f152c25565",
+    "semantic_hash": "7e1ed1f62e4ab51a90ca74f152c25565"
+  },
+  "/workspaces/rays-research/src/context/UIContext.jsx": {
+    "mtime": 1781055536.6010365,
+    "ast_hash": "d98239fb5576dc3a39d4729c18244895",
+    "semantic_hash": "d98239fb5576dc3a39d4729c18244895"
+  },
+  "/workspaces/rays-research/src/main.jsx": {
+    "mtime": 1780907441.3310182,
+    "ast_hash": "e3faa1f61e71a906be021e879c496715",
+    "semantic_hash": "e3faa1f61e71a906be021e879c496715"
+  },
+  "/workspaces/rays-research/src/pages/chat/Chat.jsx": {
+    "mtime": 1781683536.3680413,
+    "ast_hash": "8147677f82179ad0191c3820f8c4d855",
+    "semantic_hash": "8147677f82179ad0191c3820f8c4d855"
+  },
+  "/workspaces/rays-research/src/pages/companies/Anthropic.jsx": {
+    "mtime": 1781665497.164267,
+    "ast_hash": "28c673e3d2f3168a083b58fac94427f2",
+    "semantic_hash": "28c673e3d2f3168a083b58fac94427f2"
+  },
+  "/workspaces/rays-research/src/pages/companies/Google.jsx": {
+    "mtime": 1781665516.3782668,
+    "ast_hash": "e659d1243d62b63e09a1832ddd58fd9f",
+    "semantic_hash": "e659d1243d62b63e09a1832ddd58fd9f"
+  },
+  "/workspaces/rays-research/src/pages/companies/MiniMax.jsx": {
+    "mtime": 1781665555.8962665,
+    "ast_hash": "8bfae4b4957bf288ca8d652748d2a2b1",
+    "semantic_hash": "8bfae4b4957bf288ca8d652748d2a2b1"
+  },
+  "/workspaces/rays-research/src/pages/companies/OpenAI.jsx": {
+    "mtime": 1781675933.5176888,
+    "ast_hash": "3380ce65e31702a2b58788bb5bb8d2e5",
+    "semantic_hash": "3380ce65e31702a2b58788bb5bb8d2e5"
+  },
+  "/workspaces/rays-research/src/pages/companies/Zhipu.jsx": {
+    "mtime": 1781665537.3812666,
+    "ast_hash": "3d056c107143f0f9349554cd0192abea",
+    "semantic_hash": "3d056c107143f0f9349554cd0192abea"
+  },
+  "/workspaces/rays-research/src/pages/market-signals/InfrastructureOss.jsx": {
+    "mtime": 1781590434.8147604,
+    "ast_hash": "74165051b22441025aac5149816f119c",
+    "semantic_hash": "74165051b22441025aac5149816f119c"
+  },
+  "/workspaces/rays-research/src/pages/market-signals/MarketSignals.jsx": {
+    "mtime": 1781590332.7997558,
+    "ast_hash": "748507054203727dd1d4f750b8943bac",
+    "semantic_hash": "748507054203727dd1d4f750b8943bac"
+  },
+  "/workspaces/rays-research/src/pages/market-signals/OpenRouter.jsx": {
+    "mtime": 1781590434.8057606,
+    "ast_hash": "b6759f2662dc4ee0a2d37ceef14e6313",
+    "semantic_hash": "b6759f2662dc4ee0a2d37ceef14e6313"
+  },
+  "/workspaces/rays-research/src/pages/options/Options.jsx": {
+    "mtime": 1781685131.6091151,
+    "ast_hash": "607a9a4b54256e80f427ed6c58a277ac",
+    "semantic_hash": "607a9a4b54256e80f427ed6c58a277ac"
+  },
+  "/workspaces/rays-research/src/pages/overview/SectorOverview.jsx": {
+    "mtime": 1781662750.2472954,
+    "ast_hash": "8a8ef2f1cbffc24b9e826e0eb56cc12b",
+    "semantic_hash": "8a8ef2f1cbffc24b9e826e0eb56cc12b"
+  },
+  "/workspaces/rays-research/src/pages/pricing/Pricing.jsx": {
+    "mtime": 1781597087.921069,
+    "ast_hash": "7bfa50046b4d0279ad3aa81f19b088d5",
+    "semantic_hash": "7bfa50046b4d0279ad3aa81f19b088d5"
+  },
+  "/workspaces/rays-research/src/pages/sources/Chinese.jsx": {
+    "mtime": 1781664278.7592797,
+    "ast_hash": "9e78ddf56e8a3127331b6a93a3dddcb9",
+    "semantic_hash": "9e78ddf56e8a3127331b6a93a3dddcb9"
+  },
+  "/workspaces/rays-research/src/pages/sources/Community.jsx": {
+    "mtime": 1781590434.8217604,
+    "ast_hash": "415d5535cc5c283ecaa409ca6b75a97b",
+    "semantic_hash": "415d5535cc5c283ecaa409ca6b75a97b"
+  },
+  "/workspaces/rays-research/src/pages/sources/Datacenter.jsx": {
+    "mtime": 1781590434.8207605,
+    "ast_hash": "7966b38fb8cc691d424e491f7554e2fa",
+    "semantic_hash": "7966b38fb8cc691d424e491f7554e2fa"
+  },
+  "/workspaces/rays-research/src/pages/sources/Docker.jsx": {
+    "mtime": 1781590434.8187606,
+    "ast_hash": "8cc882a6d39dbef8d10f74931b168788",
+    "semantic_hash": "8cc882a6d39dbef8d10f74931b168788"
+  },
+  "/workspaces/rays-research/src/pages/sources/Electricity.jsx": {
+    "mtime": 1781590434.8127606,
+    "ast_hash": "bf41e4f220635658d69add338011888c",
+    "semantic_hash": "bf41e4f220635658d69add338011888c"
+  },
+  "/workspaces/rays-research/src/pages/sources/GitHub.jsx": {
+    "mtime": 1781590434.8177605,
+    "ast_hash": "1b4a234b11ec9a2b22248a757f6763c6",
+    "semantic_hash": "1b4a234b11ec9a2b22248a757f6763c6"
+  },
+  "/workspaces/rays-research/src/pages/sources/GitHubActivity.jsx": {
+    "mtime": 1781590434.8137605,
+    "ast_hash": "ef0f27205e11e5f8b78c1553f3f04b2f",
+    "semantic_hash": "ef0f27205e11e5f8b78c1553f3f04b2f"
+  },
+  "/workspaces/rays-research/src/pages/sources/HuggingFace.jsx": {
+    "mtime": 1781663583.074287,
+    "ast_hash": "5d5381d8a599368e633c5fb984b9338a",
+    "semantic_hash": "5d5381d8a599368e633c5fb984b9338a"
+  },
+  "/workspaces/rays-research/src/pages/sources/PyPI.jsx": {
+    "mtime": 1781664628.009276,
+    "ast_hash": "32d51fb4f20e114c422b98ea56c61539",
+    "semantic_hash": "32d51fb4f20e114c422b98ea56c61539"
+  },
+  "/workspaces/rays-research/src/pages/sources/Trends.jsx": {
+    "mtime": 1781590434.8207605,
+    "ast_hash": "46e49be716622ed4504c38dfc70b46b6",
+    "semantic_hash": "46e49be716622ed4504c38dfc70b46b6"
+  },
+  "/workspaces/rays-research/src/pages/sources/Web.jsx": {
+    "mtime": 1781488567.749976,
+    "ast_hash": "aa4dad5b8a944d3b136f364dd6e943e4",
+    "semantic_hash": "aa4dad5b8a944d3b136f364dd6e943e4"
+  },
+  "/workspaces/rays-research/src/pages/supply-chain/SupplyChain.jsx": {
+    "mtime": 1781590434.8067605,
+    "ast_hash": "43938ad28399a32e8133616bde59fd03",
+    "semantic_hash": "43938ad28399a32e8133616bde59fd03"
+  },
+  "/workspaces/rays-research/src/services/cache.js": {
+    "mtime": 1781146404.6946614,
+    "ast_hash": "3d63d136b52e2e8892035e8bf7d2e398",
+    "semantic_hash": "3d63d136b52e2e8892035e8bf7d2e398"
+  },
+  "/workspaces/rays-research/src/services/fetchers.js": {
+    "mtime": 1781664596.3342764,
+    "ast_hash": "b3a22afb36b22fe2113d9be85e3dee7b",
+    "semantic_hash": "b3a22afb36b22fe2113d9be85e3dee7b"
+  },
+  "/workspaces/rays-research/src/utils/chartHelpers.js": {
+    "mtime": 1781663079.343292,
+    "ast_hash": "8369f2eba7fcf8477b248524c025590c",
+    "semantic_hash": "8369f2eba7fcf8477b248524c025590c"
+  },
+  "/workspaces/rays-research/src/utils/chartSetup.js": {
+    "mtime": 1780897176.055148,
+    "ast_hash": "0c4e7cf981504d6747cad5a6faa9cd4b",
+    "semantic_hash": "0c4e7cf981504d6747cad5a6faa9cd4b"
+  },
+  "/workspaces/rays-research/src/utils/dataGenerators.js": {
+    "mtime": 1780897176.055148,
+    "ast_hash": "f3919457e1a4510b3d0e64766f848ea9",
+    "semantic_hash": "f3919457e1a4510b3d0e64766f848ea9"
+  },
+  "/workspaces/rays-research/src/utils/labels.js": {
+    "mtime": 1780907444.3380184,
+    "ast_hash": "fdb5f32b478f0c6cb8d662881d943f18",
+    "semantic_hash": "fdb5f32b478f0c6cb8d662881d943f18"
+  },
+  "/workspaces/rays-research/src/utils/modelPricing.js": {
+    "mtime": 1781665403.068268,
+    "ast_hash": "299ec4f14eb5ce15437e93e17c610e44",
+    "semantic_hash": "299ec4f14eb5ce15437e93e17c610e44"
+  },
+  "/workspaces/rays-research/src/utils/openrouterProvider.js": {
+    "mtime": 1781160783.6620686,
+    "ast_hash": "e29c24886eb2ebbcc817d03427d7cabe",
+    "semantic_hash": "e29c24886eb2ebbcc817d03427d7cabe"
+  },
+  "/workspaces/rays-research/stocktwits/Stocktwits-Scraper-main/scrape.py": {
+    "mtime": 1781570234.8046494,
+    "ast_hash": "54bbdebc100d035eb80e1b0e46b387e6",
+    "semantic_hash": "54bbdebc100d035eb80e1b0e46b387e6"
+  },
+  "/workspaces/rays-research/stocktwits/Stocktwits-Scraper-main/stocktwits_api_scraper.py": {
+    "mtime": 1781570234.8046494,
+    "ast_hash": "d07aa98fc9f84ee4eda8327a920803ee",
+    "semantic_hash": "d07aa98fc9f84ee4eda8327a920803ee"
+  },
+  "/workspaces/rays-research/stocktwits/Stocktwits-Scraper-main/stocktwits_selenium_scraper.py": {
+    "mtime": 1781570234.8076494,
+    "ast_hash": "a305485d153e94f408175f00ca5fb8a9",
+    "semantic_hash": "a305485d153e94f408175f00ca5fb8a9"
+  },
+  "/workspaces/rays-research/stocktwits/Stocktwits-Scraper-main/update.py": {
+    "mtime": 1781570234.8056493,
+    "ast_hash": "3c1d6c1a0c4f18466aa297e73b26fbc3",
+    "semantic_hash": "3c1d6c1a0c4f18466aa297e73b26fbc3"
+  },
+  "/workspaces/rays-research/stocktwits/Stocktwits-Scraper-main/update_all.py": {
+    "mtime": 1781570767.778646,
+    "ast_hash": "35edac6a07037b17cbf98e14260a7839",
+    "semantic_hash": "35edac6a07037b17cbf98e14260a7839"
+  },
+  "/workspaces/rays-research/vercel.json": {
+    "mtime": 1781507989.2485232,
+    "ast_hash": "6d5ea9257df5bb649c0105135518a0c4",
+    "semantic_hash": "6d5ea9257df5bb649c0105135518a0c4"
+  },
+  "/workspaces/rays-research/vite.config.js": {
+    "mtime": 1781164678.3670125,
+    "ast_hash": "4fcdbbab5a9453d057e9f67fc6e8eae3",
+    "semantic_hash": "4fcdbbab5a9453d057e9f67fc6e8eae3"
+  },
+  "/workspaces/rays-research/.github/workflows/collect-data.yml": {
+    "mtime": 1781594358.7159424,
+    "ast_hash": "c1be59613a10e36a2670565e9dd32829",
+    "semantic_hash": "c1be59613a10e36a2670565e9dd32829"
+  },
+  "/workspaces/rays-research/.github/workflows/stocktwits-collect.yml": {
+    "mtime": 1781570638.1246467,
+    "ast_hash": "2b39f33858a6839f08aea8a500d0391d",
+    "semantic_hash": "2b39f33858a6839f08aea8a500d0391d"
+  },
+  "/workspaces/rays-research/README.md": {
+    "mtime": 1780897176.053148,
+    "ast_hash": "60a0e73ff1af464e6ea162a9c3edd135",
+    "semantic_hash": "60a0e73ff1af464e6ea162a9c3edd135"
+  },
+  "/workspaces/rays-research/stocktwits/Stocktwits-Scraper-main/README.md": {
+    "mtime": 1781570234.8036492,
+    "ast_hash": "5b9e4ac9547bcd8105e0132c0a3d53ad",
+    "semantic_hash": "5b9e4ac9547bcd8105e0132c0a3d53ad"
+  },
+  "/workspaces/rays-research/stocktwits/Stocktwits-Scraper-main/methodology.md": {
+    "mtime": 1781570234.7906492,
+    "ast_hash": "60feb92d9fcce667afa7994e40dea6b5",
+    "semantic_hash": "60feb92d9fcce667afa7994e40dea6b5"
+  },
+  "/workspaces/rays-research/stocktwits/Stocktwits-Scraper-main/requirements.txt": {
+    "mtime": 1781570234.8046494,
+    "ast_hash": "43ed5296e12d199100dd4aa164db0c58",
+    "semantic_hash": "43ed5296e12d199100dd4aa164db0c58"
+  },
+  "/workspaces/rays-research/stocktwits/Stocktwits-Scraper-main/tickers.txt": {
+    "mtime": 1781667347.167248,
+    "ast_hash": "23191673b572fee719a2fe28e073d408",
+    "semantic_hash": "23191673b572fee719a2fe28e073d408"
+  }
+}

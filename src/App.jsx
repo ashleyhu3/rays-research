@@ -29,10 +29,11 @@ import MarketSignals    from './pages/market-signals/MarketSignals';
 import DemandGeneral    from './pages/market-signals/InfrastructureOss';
 import DemandOpenRouter from './pages/market-signals/OpenRouter';
 // Supply chain
-import AISupply, { AISupplyOptics, AISupplyPCB } from './pages/supply-chain/SupplyChain';
+import AISupply, { AISupplyOptics, AISupplyPCB, AISupplyMLCC } from './pages/supply-chain/SupplyChain';
 // Tools
 import Options from './pages/options/Options';
 import Pricing from './pages/pricing/Pricing';
+import Sentiment from './pages/sentiment/Sentiment';
 // Source-specific signal pages
 import PyPI          from './pages/sources/PyPI';
 import GitHub        from './pages/sources/GitHub';
@@ -66,10 +67,12 @@ const VIEW_COMPONENTS = {
   'ai-supply':        AISupply,
   'ai-supply-optics': AISupplyOptics,
   'ai-supply-pcb':    AISupplyPCB,
+  'ai-supply-mlcc':   AISupplyMLCC,
   'github-commits':   GitHubActivity,
   'docker':           Docker,
   'community':        Community,
   'options':          Options,
+  'sentiment':        Sentiment,
   'demand-openai':    DemandOpenAI,
   'demand-anthropic': DemandAnthropic,
   'demand-google':    DemandGoogle,
@@ -103,7 +106,7 @@ export default function App() {
   // Check if this is a sector overview page
   const sectorId = SECTOR_OVERVIEW_IDS[currentView] ?? null;
   const ViewComponent = sectorId ? null : VIEW_COMPONENTS[currentView];
-  const showSidebar = currentView !== 'pricing' && currentView !== 'options' && currentView !== 'chat';
+  const showSidebar = currentView !== 'pricing' && currentView !== 'options' && currentView !== 'chat' && currentView !== 'sentiment';
 
   return (
     <DashboardProvider>

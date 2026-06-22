@@ -132,6 +132,16 @@ const EXTRACTORS = {
     }
     return out;
   },
+  // Official $/1M token list prices per tracked model, so the price trend chart
+  // accumulates forward from the day collection began (like the GPU index).
+  litellm(data) {
+    const out = {};
+    for (const m of data?.models ?? []) {
+      if (Number.isFinite(m.input))  out[`${m.label}.input`]  = m.input;
+      if (Number.isFinite(m.output)) out[`${m.label}.output`] = m.output;
+    }
+    return out;
+  },
 };
 
 // Called by the scheduler after every successful scrape

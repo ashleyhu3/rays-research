@@ -37,19 +37,21 @@ function TableIcon() {
   );
 }
 
-const SUPPLY_VIEWS  = new Set(['ai-supply', 'ai-supply-optics', 'ai-supply-pcb']);
+const SUPPLY_VIEWS  = new Set(['ai-supply', 'ai-supply-optics', 'ai-supply-pcb', 'ai-supply-mlcc']);
 const TOOL_VIEWS    = new Set(['options']);
 const PRICING_VIEWS = new Set(['pricing']);
+const SENTIMENT_VIEWS = new Set(['sentiment']);
 
 export default function Navbar({ onNavigate, currentView }) {
   const { tableMode, setTableMode } = useUI();
   const { loading, lastUpdated, error, forceRefresh } = useData();
 
-  const isChat    = currentView === 'chat';
-  const isSupply  = SUPPLY_VIEWS.has(currentView);
-  const isOptions = TOOL_VIEWS.has(currentView);
-  const isPricing = PRICING_VIEWS.has(currentView);
-  const isDemand  = !isChat && !isSupply && !isOptions && !isPricing;
+  const isChat      = currentView === 'chat';
+  const isSupply    = SUPPLY_VIEWS.has(currentView);
+  const isOptions   = TOOL_VIEWS.has(currentView);
+  const isPricing   = PRICING_VIEWS.has(currentView);
+  const isSentiment = SENTIMENT_VIEWS.has(currentView);
+  const isDemand    = !isChat && !isSupply && !isOptions && !isPricing && !isSentiment;
 
   const title = loading
     ? 'Updating live data…'
@@ -86,6 +88,12 @@ export default function Navbar({ onNavigate, currentView }) {
           onClick={() => onNavigate('options')}
         >
           Options
+        </button>
+        <button
+          className={`nlink${isSentiment ? ' active' : ''}`}
+          onClick={() => onNavigate('sentiment')}
+        >
+          Sentiment
         </button>
         <button
           className={`nlink nlink-ask${isChat ? ' active' : ''}`}

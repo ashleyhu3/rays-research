@@ -229,6 +229,30 @@ export const CHART_TEXT = {
     // subtitle is computed (as-of date) in the view
   },
 
+  // ── Pricing · LLM API token prices (view: pricing) ────────────────────
+  'llm-api-input': {
+    title: 'LLM API Input Price Over Time ($/1M tokens)',
+    subtitle: 'Official provider list price to send tokens, flagship US vs Chinese models. One line per model.',
+  },
+  'llm-api-output': {
+    title: 'LLM API Output Price Over Time ($/1M tokens)',
+    subtitle: 'Official provider list price for generated tokens, flagship US vs Chinese models. One line per model.',
+  },
+
+  // ── Sentiment (view: sentiment) — StockTwits posting volume & sentiment ─
+  // Aggregate (default view)
+  'sent-aggregate':    { title: 'StockTwits Sentiment — Bullish vs Bearish (weekly)' },
+  'sent-cat-volprice': { title: 'Volume vs Price Level — Rolling Correlation by Category' },
+  'sent-cat-volnext':  { title: 'Volume → Next-Day Return — Rolling Correlation by Category' },
+  'sent-cat-sentnext': { title: 'Net Sentiment → Next-Day Return — Rolling Correlation by Category' },
+  'sent-level-returns':{ title: 'Volume Correlation — Price Level vs Weekly Return' },
+  'sent-significance': { title: 'Volume → Next-Day Return — Statistical Significance' },
+  // Per-ticker (search view)
+  'sent-tk-weekly-vp': { title: 'Weekly Posting Volume vs Price' },
+  'sent-tk-sentiment': { title: 'Bullish vs Bearish (weekly)' },
+  'sent-tk-leadlag':   { title: 'Daily Post Count vs Next-Day Return' },
+  'sent-tk-rolling':   { title: 'Rolling 20-Day Correlations' },
+
   // ── Supply chain (views: ai-supply / ai-supply-optics / ai-supply-pcb) ─
   'supply-all-rev':    { title: 'Monthly Revenue — All Companies (NT$M)' },
   'supply-all-yoy':    { title: 'YoY Growth — All Companies (%)' },
@@ -240,6 +264,9 @@ export const CHART_TEXT = {
   'supply-pcb-rev':    { title: 'Monthly Revenue — PCB (NT$M)' },
   'supply-pcb-yoy':    { title: 'YoY Growth — PCB (%)' },
   'supply-pcb-mom':    { title: 'MoM Growth — PCB (%)' },
+  'supply-mlcc-rev':   { title: 'Monthly Revenue — MLCC (NT$M)' },
+  'supply-mlcc-yoy':   { title: 'YoY Growth — MLCC (%)' },
+  'supply-mlcc-mom':   { title: 'MoM Growth — MLCC (%)' },
 
   // ── Company · OpenAI / ChatGPT (view: demand-openai) ──────────────────
   'oa-sdk': {

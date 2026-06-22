@@ -75,10 +75,26 @@ export const CHART_SOURCES = {
   'gpu-spot-combined': { src: 'vast.ai + AWS EC2',    srcUrl: 'https://aws.amazon.com/ec2/spot/instance-advisor/', freq: 'daily' },
   'aws-chip-spot':     { src: 'AWS EC2 + Spot Advisor', srcUrl: 'https://aws.amazon.com/ec2/spot/instance-advisor/', freq: 'daily' },
   'gpu-cloud-avg':     { src: 'AWS · Azure · GCP · CoreWeave · Nebius · Oracle', srcUrl: 'https://cloud-gpus.com/', freq: 'daily' },
+
+  // ── Pricing · LLM API token prices (LiteLLM cost map) ─────────────────
+  'llm-api-input':  { src: 'LiteLLM cost map', srcUrl: 'https://github.com/BerriAI/litellm/blob/main/model_prices_and_context_window.json', freq: 'daily' },
+  'llm-api-output': { src: 'LiteLLM cost map', srcUrl: 'https://github.com/BerriAI/litellm/blob/main/model_prices_and_context_window.json', freq: 'daily' },
   'dram-index':        { src: 'datatrack.trendforce.com', srcUrl: 'https://datatrack.trendforce.com/Chart/content/4694/mainstream-dram-spot-price', freq: 'monthly' },
   'dram-chips':        { src: 'trendforce.com/price/dram/dram_spot', srcUrl: 'https://www.trendforce.com/price/dram/dram_spot', freq: 'daily' },
   'dram-modules':      { src: 'trendforce.com/price/dram/dram_spot', srcUrl: 'https://www.trendforce.com/price/dram/dram_spot', freq: 'daily' },
   'dram-change':       { src: 'trendforce.com/price/dram/dram_spot', srcUrl: 'https://www.trendforce.com/price/dram/dram_spot', freq: 'daily' },
+
+  // ── Sentiment · StockTwits + Yahoo Finance ────────────────────────────
+  'sent-aggregate':    { src: 'stocktwits.com', srcUrl: 'https://stocktwits.com/', freq: 'daily' },
+  'sent-cat-volprice': { src: 'StockTwits + Yahoo Finance', srcUrl: 'https://stocktwits.com/', freq: 'daily' },
+  'sent-cat-volnext':  { src: 'StockTwits + Yahoo Finance', srcUrl: 'https://stocktwits.com/', freq: 'daily' },
+  'sent-cat-sentnext': { src: 'StockTwits + Yahoo Finance', srcUrl: 'https://stocktwits.com/', freq: 'daily' },
+  'sent-level-returns':{ src: 'StockTwits + Yahoo Finance', srcUrl: 'https://stocktwits.com/', freq: 'daily' },
+  'sent-significance': { src: 'StockTwits + Yahoo Finance', srcUrl: 'https://stocktwits.com/', freq: 'daily' },
+  'sent-tk-weekly-vp': { src: 'StockTwits + Yahoo Finance', srcUrl: 'https://stocktwits.com/', freq: 'daily' },
+  'sent-tk-sentiment': { src: 'stocktwits.com', srcUrl: 'https://stocktwits.com/', freq: 'daily' },
+  'sent-tk-leadlag':   { src: 'StockTwits + Yahoo Finance', srcUrl: 'https://stocktwits.com/', freq: 'daily' },
+  'sent-tk-rolling':   { src: 'StockTwits + Yahoo Finance', srcUrl: 'https://stocktwits.com/', freq: 'daily' },
 
   // ── Company · OpenAI / ChatGPT ────────────────────────────────────────
   'oa-sdk':       { src: 'pypistats.org · npmjs.com', srcUrl: 'https://pypistats.org/packages/openai', freq: 'weekly' },

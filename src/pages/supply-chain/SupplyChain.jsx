@@ -20,14 +20,21 @@ const ALL_COMPANIES = [
   { id: '4958', ticker: '4958TT', group: 'pcb',    exchange: 'twse', name: '臻鼎-KY'  },
   { id: '6274', ticker: '6274TT', group: 'pcb',    exchange: 'tpex', name: '台燿科技' },
   { id: '8358', ticker: '8358TT', group: 'pcb',    exchange: 'tpex', name: '金像電子' },
+  { id: '2327', ticker: '2327TT', group: 'mlcc',   exchange: 'twse', name: '國巨'    },
+  { id: '2492', ticker: '2492TT', group: 'mlcc',   exchange: 'twse', name: '華新科'   },
+  { id: '3026', ticker: '3026TT', group: 'mlcc',   exchange: 'twse', name: '禾伸堂'   },
 ];
 
 const OPTICS = ALL_COMPANIES.filter(c => c.group === 'optics');
 const PCB    = ALL_COMPANIES.filter(c => c.group === 'pcb');
+const MLCC   = ALL_COMPANIES.filter(c => c.group === 'mlcc');
 
 const OPTICS_COLORS = [C.teal, C.anthropic, C.red, C.orange];
 const PCB_COLORS    = [C.openai, C.deepseek, C.google, C.mistral, C.zhipu, C.perplexity, C.kimi];
-const ALL_COLORS    = [...OPTICS_COLORS, ...PCB_COLORS];
+const MLCC_COLORS   = [C.minimax, C.baidu, C.qwen];
+const ALL_COLORS    = [...OPTICS_COLORS, ...PCB_COLORS, ...MLCC_COLORS];
+
+const GROUP_LABEL = { optics: 'Optics', pcb: 'PCB', mlcc: 'MLCC' };
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 function mopsUrl(coId, exchange) {
@@ -112,8 +119,9 @@ function useSupplyData(months) {
   const liveCompanies = liveData?.mops?.companies ?? null;
   const optics = useMemo(() => mergeCompanyData(OPTICS, liveCompanies), [liveCompanies]);
   const pcb    = useMemo(() => mergeCompanyData(PCB,    liveCompanies), [liveCompanies]);
-  const hasLive = optics.some(c => c.monthly.length > 0) || pcb.some(c => c.monthly.length > 0);
-  return { optics, pcb, hasLive, tableMode, n: months };
+  const mlcc   = useMemo(() => mergeCompanyData(MLCC,   liveCompanies), [liveCompanies]);
+  const hasLive = optics.some(c => c.monthly.length > 0) || pcb.some(c => c.monthly.length > 0) || mlcc.some(c => c.monthly.length > 0);
+  return { optics, pcb, mlcc, hasLive, tableMode, n: months };
 }
 
 function NoData() {
@@ -125,8 +133,8 @@ function NoData() {
 }
 
 // ── Company directory (used on Overview page) ────────────────────────────
-function CompanyDirectory({ optics, pcb }) {
-  const all = [...optics, ...pcb];
+function CompanyDirectory({ optics, pcb, mlcc }) {
+  const all = [...optics, ...pcb, ...mlcc];
 
   return (
     <div className="cbox span2">
@@ -158,7 +166,7 @@ function CompanyDirectory({ optics, pcb }) {
                     </a>
                   </td>
                   <td style={{ color: 'var(--ter)', textTransform: 'uppercase', fontSize: 11, letterSpacing: '.06em' }}>
-                    {c.group === 'optics' ? 'Optics' : 'PCB'}
+                    {GROUP_LABEL[c.group] ?? c.group}
                   </td>
                   <td>{last ? last.revenue.toLocaleString(undefined, { maximumFractionDigits: 1 }) : '—'}</td>
                   <td style={{ color: last?.yoy > 0 ? '#4ade80' : last?.yoy < 0 ? '#f87171' : 'inherit' }}>
@@ -179,9 +187,9 @@ function CompanyDirectory({ optics, pcb }) {
 
 // ── Page 1: Overview ─────────────────────────────────────────────────────
 export default function AISupplyOverview({ months = 12 }) {
-  const { optics, pcb, hasLive, tableMode, n } = useSupplyData(months);
+  const { optics, pcb, mlcc, hasLive, tableMode, n } = useSupplyData(months);
 
-  const allCompanies = useMemo(() => [...optics, ...pcb], [optics, pcb]);
+  const allCompanies = useMemo(() => [...optics, ...pcb, ...mlcc], [optics, pcb, mlcc]);
   const allPeriods   = useMemo(() => buildPeriods(allCompanies, n), [allCompanies, n]);
 
   const allRevData = useMemo(() => ({
@@ -234,7 +242,7 @@ export default function AISupplyOverview({ months = 12 }) {
       </EditableGrid>
 
       <div className="cgrid">
-        <CompanyDirectory optics={optics} pcb={pcb} />
+        <CompanyDirectory optics={optics} pcb={pcb} mlcc={mlcc} />
       </div>
     </>
   );
@@ -299,6 +307,39 @@ export function AISupplyPCB({ months = 12 }) {
       </ChartCard>
 
       <ChartCard chartId="supply-pcb-rev"
+        legend={legend} colLinks={colLinks} height={360} span2 isNew clean>
+        {hasLive && revData.datasets.length > 0 ? <Line data={revData} options={revOpts} /> : <NoData />}
+      </ChartCard>
+    </EditableGrid>
+  );
+}
+
+// ── Page 4: MLCC supply chain ────────────────────────────────────────────
+export function AISupplyMLCC({ months = 12 }) {
+  const { mlcc, hasLive, tableMode, n } = useSupplyData(months);
+
+  const periods = useMemo(() => buildPeriods(mlcc, n), [mlcc, n]);
+
+  const revData = useMemo(() => ({ labels: periods, datasets: buildRevenueDatasets(mlcc, MLCC_COLORS, periods) }), [mlcc, periods]);
+  const yoyData = useMemo(() => ({ labels: periods, datasets: buildYoyDatasets(mlcc, MLCC_COLORS, periods) }), [mlcc, periods]);
+  const momData = useMemo(() => ({ labels: periods, datasets: buildMomDatasets(mlcc, MLCC_COLORS, periods) }), [mlcc, periods]);
+
+  const legend   = MLCC.map((c, i) => [`${c.ticker} ${c.name}`, MLCC_COLORS[i], goodInfoUrl(c.id)]);
+  const colLinks = MLCC.map(c => goodInfoUrl(c.id));
+
+  return (
+    <EditableGrid viewId="ai-supply-mlcc">
+      <ChartCard chartId="supply-mlcc-yoy"
+        legend={legend} colLinks={colLinks} height={360} isNew span2={tableMode} colorPct clean>
+        {hasLive && yoyData.datasets.length > 0 ? <Line data={yoyData} options={pctOpts} /> : <NoData />}
+      </ChartCard>
+
+      <ChartCard chartId="supply-mlcc-mom"
+        legend={legend} colLinks={colLinks} height={360} isNew span2={tableMode} colorPct clean>
+        {hasLive && momData.datasets.length > 0 ? <Line data={momData} options={pctOpts} /> : <NoData />}
+      </ChartCard>
+
+      <ChartCard chartId="supply-mlcc-rev"
         legend={legend} colLinks={colLinks} height={360} span2 isNew clean>
         {hasLive && revData.datasets.length > 0 ? <Line data={revData} options={revOpts} /> : <NoData />}
       </ChartCard>

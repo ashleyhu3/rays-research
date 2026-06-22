@@ -24,6 +24,10 @@ const ALL_COMPANIES = [
   { id: '4958', ticker: '4958TT', group: 'pcb', exchange: 'twse', name: '臻鼎-KY'  },
   { id: '6274', ticker: '6274TT', group: 'pcb', exchange: 'tpex', name: '台燿科技' },
   { id: '8358', ticker: '8358TT', group: 'pcb', exchange: 'tpex', name: '金像電子' },
+  // MLCC supply chain — multilayer ceramic capacitors for AI servers / boards
+  { id: '2327', ticker: '2327TT', group: 'mlcc', exchange: 'twse', name: '國巨'   },
+  { id: '2492', ticker: '2492TT', group: 'mlcc', exchange: 'twse', name: '華新科'  },
+  { id: '3026', ticker: '3026TT', group: 'mlcc', exchange: 'twse', name: '禾伸堂'  },
 ];
 
 function mopsUrl(coId, exchange) {

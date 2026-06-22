@@ -49,6 +49,8 @@ const REGISTRY = [
   { id: 'dram-chips',      sectorId: 'infra', subView: 'pricing',     defaultPinned: false },
   { id: 'dram-modules',    sectorId: 'infra', subView: 'pricing',     defaultPinned: false },
   { id: 'dram-change',     sectorId: 'infra', subView: 'pricing',     defaultPinned: false },
+  { id: 'llm-api-input',   sectorId: 'infra', subView: 'pricing',     defaultPinned: false },
+  { id: 'llm-api-output',  sectorId: 'infra', subView: 'pricing',     defaultPinned: false },
   { id: 'dc-capex',        sectorId: 'infra', subView: 'datacenter',  defaultPinned: true  },
   { id: 'dc-capacity',     sectorId: 'infra', subView: 'datacenter',  defaultPinned: false },
   { id: 'dc-state',        sectorId: 'infra', subView: 'datacenter',  defaultPinned: false },
@@ -80,6 +82,9 @@ const REGISTRY = [
   { id: 'supply-pcb-rev',    sectorId: 'supply', subView: 'ai-supply-pcb',    defaultPinned: true  },
   { id: 'supply-pcb-yoy',    sectorId: 'supply', subView: 'ai-supply-pcb',    defaultPinned: false },
   { id: 'supply-pcb-mom',    sectorId: 'supply', subView: 'ai-supply-pcb',    defaultPinned: false },
+  { id: 'supply-mlcc-rev',   sectorId: 'supply', subView: 'ai-supply-mlcc',   defaultPinned: true  },
+  { id: 'supply-mlcc-yoy',   sectorId: 'supply', subView: 'ai-supply-mlcc',   defaultPinned: false },
+  { id: 'supply-mlcc-mom',   sectorId: 'supply', subView: 'ai-supply-mlcc',   defaultPinned: false },
 ];
 
 /** Registry with the display title attached from chartText.js. */
