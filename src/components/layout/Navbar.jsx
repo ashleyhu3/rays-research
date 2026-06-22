@@ -37,7 +37,7 @@ function TableIcon() {
   );
 }
 
-const SUPPLY_VIEWS  = new Set(['ai-supply', 'ai-supply-optics', 'ai-supply-pcb', 'ai-supply-mlcc']);
+const SUPPLY_VIEWS  = new Set(['ai-supply', 'ai-supply-optics', 'ai-supply-fiber', 'ai-supply-pcb', 'ai-supply-mlcc']);
 const TOOL_VIEWS    = new Set(['options']);
 const PRICING_VIEWS = new Set(['pricing']);
 const SENTIMENT_VIEWS = new Set(['sentiment']);

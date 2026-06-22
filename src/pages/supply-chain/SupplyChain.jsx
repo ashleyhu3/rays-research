@@ -9,7 +9,7 @@ import { useUI } from '../../context/UIContext';
 
 // ── Static company list (mirrors server/scrapers/mops.js) ────────────────
 const ALL_COMPANIES = [
-  { id: '6442', ticker: '6442TT', group: 'optics', exchange: 'twse', name: '光聖'    },
+  { id: '6442', ticker: '6442TT', group: 'fiber',  exchange: 'twse', name: '光聖'    },
   { id: '3081', ticker: '3081TT', group: 'optics', exchange: 'tpex', name: '聯亞光電' },
   { id: '3363', ticker: '3363TT', group: 'optics', exchange: 'tpex', name: '品興'    },
   { id: '3163', ticker: '3163TT', group: 'optics', exchange: 'tpex', name: '波若威'  },
@@ -26,15 +26,28 @@ const ALL_COMPANIES = [
 ];
 
 const OPTICS = ALL_COMPANIES.filter(c => c.group === 'optics');
+const FIBER  = ALL_COMPANIES.filter(c => c.group === 'fiber');
 const PCB    = ALL_COMPANIES.filter(c => c.group === 'pcb');
 const MLCC   = ALL_COMPANIES.filter(c => c.group === 'mlcc');
 
 const OPTICS_COLORS = [C.teal, C.anthropic, C.red, C.orange];
+const FIBER_COLORS  = [C.xiaomi];
 const PCB_COLORS    = [C.openai, C.deepseek, C.google, C.mistral, C.zhipu, C.perplexity, C.kimi];
 const MLCC_COLORS   = [C.minimax, C.baidu, C.qwen];
-const ALL_COLORS    = [...OPTICS_COLORS, ...PCB_COLORS, ...MLCC_COLORS];
 
-const GROUP_LABEL = { optics: 'Optics', pcb: 'PCB', mlcc: 'MLCC' };
+const GROUP_COLORS = { optics: OPTICS_COLORS, fiber: FIBER_COLORS, pcb: PCB_COLORS, mlcc: MLCC_COLORS };
+const GROUP_LABEL  = { optics: 'Optics', fiber: 'Fiber', pcb: 'PCB', mlcc: 'MLCC' };
+
+// Per-company colour = its position within its own group's palette. Derived
+// from ALL_COMPANIES so the overview legend/datasets stay aligned regardless of
+// how many companies each group has.
+const _groupIdx = {};
+const ALL_COLORS = ALL_COMPANIES.map(c => {
+  const pal = GROUP_COLORS[c.group] ?? [C.slate];
+  const i = (_groupIdx[c.group] = (_groupIdx[c.group] ?? 0));
+  _groupIdx[c.group]++;
+  return pal[i % pal.length];
+});
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 function mopsUrl(coId, exchange) {
@@ -117,11 +130,13 @@ function useSupplyData(months) {
   const { liveData } = useData();
   const { tableMode } = useUI();
   const liveCompanies = liveData?.mops?.companies ?? null;
+  const all    = useMemo(() => mergeCompanyData(ALL_COMPANIES, liveCompanies), [liveCompanies]);
   const optics = useMemo(() => mergeCompanyData(OPTICS, liveCompanies), [liveCompanies]);
+  const fiber  = useMemo(() => mergeCompanyData(FIBER,  liveCompanies), [liveCompanies]);
   const pcb    = useMemo(() => mergeCompanyData(PCB,    liveCompanies), [liveCompanies]);
   const mlcc   = useMemo(() => mergeCompanyData(MLCC,   liveCompanies), [liveCompanies]);
-  const hasLive = optics.some(c => c.monthly.length > 0) || pcb.some(c => c.monthly.length > 0) || mlcc.some(c => c.monthly.length > 0);
-  return { optics, pcb, mlcc, hasLive, tableMode, n: months };
+  const hasLive = all.some(c => c.monthly.length > 0);
+  return { all, optics, fiber, pcb, mlcc, hasLive, tableMode, n: months };
 }
 
 function NoData() {
@@ -133,8 +148,8 @@ function NoData() {
 }
 
 // ── Company directory (used on Overview page) ────────────────────────────
-function CompanyDirectory({ optics, pcb, mlcc }) {
-  const all = [...optics, ...pcb, ...mlcc];
+function CompanyDirectory({ companies }) {
+  const all = companies;
 
   return (
     <div className="cbox span2">
@@ -187,9 +202,9 @@ function CompanyDirectory({ optics, pcb, mlcc }) {
 
 // ── Page 1: Overview ─────────────────────────────────────────────────────
 export default function AISupplyOverview({ months = 12 }) {
-  const { optics, pcb, mlcc, hasLive, tableMode, n } = useSupplyData(months);
+  const { all, hasLive, tableMode, n } = useSupplyData(months);
 
-  const allCompanies = useMemo(() => [...optics, ...pcb, ...mlcc], [optics, pcb, mlcc]);
+  const allCompanies = all;
   const allPeriods   = useMemo(() => buildPeriods(allCompanies, n), [allCompanies, n]);
 
   const allRevData = useMemo(() => ({
@@ -242,7 +257,7 @@ export default function AISupplyOverview({ months = 12 }) {
       </EditableGrid>
 
       <div className="cgrid">
-        <CompanyDirectory optics={optics} pcb={pcb} mlcc={mlcc} />
+        <CompanyDirectory companies={all} />
       </div>
     </>
   );
@@ -340,6 +355,39 @@ export function AISupplyMLCC({ months = 12 }) {
       </ChartCard>
 
       <ChartCard chartId="supply-mlcc-rev"
+        legend={legend} colLinks={colLinks} height={360} span2 isNew clean>
+        {hasLive && revData.datasets.length > 0 ? <Line data={revData} options={revOpts} /> : <NoData />}
+      </ChartCard>
+    </EditableGrid>
+  );
+}
+
+// ── Page 5: Fiber supply chain ───────────────────────────────────────────
+export function AISupplyFiber({ months = 12 }) {
+  const { fiber, hasLive, tableMode, n } = useSupplyData(months);
+
+  const periods = useMemo(() => buildPeriods(fiber, n), [fiber, n]);
+
+  const revData = useMemo(() => ({ labels: periods, datasets: buildRevenueDatasets(fiber, FIBER_COLORS, periods) }), [fiber, periods]);
+  const yoyData = useMemo(() => ({ labels: periods, datasets: buildYoyDatasets(fiber, FIBER_COLORS, periods) }), [fiber, periods]);
+  const momData = useMemo(() => ({ labels: periods, datasets: buildMomDatasets(fiber, FIBER_COLORS, periods) }), [fiber, periods]);
+
+  const legend   = FIBER.map((c, i) => [`${c.ticker} ${c.name}`, FIBER_COLORS[i], goodInfoUrl(c.id)]);
+  const colLinks = FIBER.map(c => goodInfoUrl(c.id));
+
+  return (
+    <EditableGrid viewId="ai-supply-fiber">
+      <ChartCard chartId="supply-fiber-yoy"
+        legend={legend} colLinks={colLinks} height={360} isNew span2={tableMode} colorPct clean>
+        {hasLive && yoyData.datasets.length > 0 ? <Line data={yoyData} options={pctOpts} /> : <NoData />}
+      </ChartCard>
+
+      <ChartCard chartId="supply-fiber-mom"
+        legend={legend} colLinks={colLinks} height={360} isNew span2={tableMode} colorPct clean>
+        {hasLive && momData.datasets.length > 0 ? <Line data={momData} options={pctOpts} /> : <NoData />}
+      </ChartCard>
+
+      <ChartCard chartId="supply-fiber-rev"
         legend={legend} colLinks={colLinks} height={360} span2 isNew clean>
         {hasLive && revData.datasets.length > 0 ? <Line data={revData} options={revOpts} /> : <NoData />}
       </ChartCard>

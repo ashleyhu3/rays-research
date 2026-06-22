@@ -29,7 +29,7 @@ import MarketSignals    from './pages/market-signals/MarketSignals';
 import DemandGeneral    from './pages/market-signals/InfrastructureOss';
 import DemandOpenRouter from './pages/market-signals/OpenRouter';
 // Supply chain
-import AISupply, { AISupplyOptics, AISupplyPCB, AISupplyMLCC } from './pages/supply-chain/SupplyChain';
+import AISupply, { AISupplyOptics, AISupplyPCB, AISupplyMLCC, AISupplyFiber } from './pages/supply-chain/SupplyChain';
 // Tools
 import Options from './pages/options/Options';
 import Pricing from './pages/pricing/Pricing';
@@ -66,6 +66,7 @@ const VIEW_COMPONENTS = {
   chinese:     Chinese,
   'ai-supply':        AISupply,
   'ai-supply-optics': AISupplyOptics,
+  'ai-supply-fiber':  AISupplyFiber,
   'ai-supply-pcb':    AISupplyPCB,
   'ai-supply-mlcc':   AISupplyMLCC,
   'github-commits':   GitHubActivity,

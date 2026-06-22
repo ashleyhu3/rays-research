@@ -11,8 +11,9 @@
 const TOKEN = process.env.FINMIND_TOKEN || '';
 
 const ALL_COMPANIES = [
+  // Fiber supply chain — fiber-optic components for AI networking
+  { id: '6442', ticker: '6442TT', group: 'fiber', exchange: 'twse', name: '光聖'    },
   // Optics supply chain — optical components for AI networking (800G+ transceivers)
-  { id: '6442', ticker: '6442TT', group: 'optics', exchange: 'twse', name: '光聖'    },
   { id: '3081', ticker: '3081TT', group: 'optics', exchange: 'tpex', name: '聯亞光電' },
   { id: '3363', ticker: '3363TT', group: 'optics', exchange: 'tpex', name: '品興'    },
   { id: '3163', ticker: '3163TT', group: 'optics', exchange: 'tpex', name: '波若威'  },

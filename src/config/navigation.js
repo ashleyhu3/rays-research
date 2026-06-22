@@ -30,6 +30,7 @@ export const NAV_SECTIONS = [
     items: [
       { id: 'ai-supply',        label: 'Overview'            },
       { id: 'ai-supply-optics', label: 'Optics supply chain' },
+      { id: 'ai-supply-fiber',  label: 'Fiber supply chain'  },
       { id: 'ai-supply-pcb',    label: 'PCB supply chain'    },
       { id: 'ai-supply-mlcc',   label: 'MLCC supply chain'   },
     ],
@@ -81,6 +82,7 @@ export const VIEW_META = {
   chinese:           { title: 'CHINESE LLM USAGE' },
   'ai-supply':        { title: 'AI SUPPLY — OVERVIEW' },
   'ai-supply-optics': { title: 'AI SUPPLY — OPTICS' },
+  'ai-supply-fiber':  { title: 'AI SUPPLY — FIBER' },
   'ai-supply-pcb':    { title: 'AI SUPPLY — PCB' },
   'ai-supply-mlcc':   { title: 'AI SUPPLY — MLCC' },
   'github-commits':   { title: 'GITHUB COMMIT VELOCITY' },
