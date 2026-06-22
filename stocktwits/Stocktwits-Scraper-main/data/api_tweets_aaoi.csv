@@ -1,4 +1,997 @@
 symbol,username,user_followers,text,timestamp,sentiment,reshared_count,link,message_id,scraped_at
+AAOI,graph,142,"$AAOI Instead, they intend to capture the full margin of this bottleneck by hoarding these high-power InP lasers exclusively for their own finished module production. Murry made this strategy perfectly clear regarding their future 400,000-unit-per-month ELSFP capacity targets:
+“...our anticipation is that we’re going to be shipping mostly those ELSFP models. We’re going to be making the high power lasers for those modules in house. But we don’t anticipate selling that. We’re going to use it pretty much for the in house production...”
+If AAOI can execute the integration of this new equipment and successfully upgrade their wafer sizes, their ultimate ambition is quite clear. By utilizing their secure substrate supply to feed their internal fabrication plant, Lin projects that AAOI should become a “top 3 laser supplier worldwide” by the end of 2027.",2026-06-21T02:50:52Z,Bullish,0,https://stocktwits.com/message/656985473,656985473,2026-06-21T09:36:54.519860
+AAOI,graph,142,"$AAOI $ALAB $AVGO $CRDO 
+https://x.com/crux_capital_/status/2065302436068389017",2026-06-21T02:04:47Z,Bullish,7,https://stocktwits.com/message/656984833,656984833,2026-06-21T09:36:54.519883
+AAOI,graph,142,"$AAOI $ALAB $AVGO $CRDO A common market misconception is that Silicon Photonics (SiPho) will replace InP. In reality, silicon cannot lase on its own. Next-generation chips use heterogeneous integration, physically bonding InP laser dies directly onto silicon photonic chips. As architectures migrate toward Co-Packaged Optics (CPO) to eliminate copper-based data movement bottlenecks, the volume of integrated InP lasers per server rack is scaling exponentially.",2026-06-21T01:12:17Z,Bullish,7,https://stocktwits.com/message/656984005,656984005,2026-06-21T09:36:54.519888
+AAOI,graph,142,"$AAOI $ALAB $AVGO $CRDO The AI 1.6T Optical Transceiver TransitionThe primary catalyst for the massive spike in InP demand is the rapid shift from 800G to 1.6T optical modules within AI data centers. Every time data cluster speeds double, the required amount of InP laser dies per optical module nearly doubles.Severe Supply Gap: Industry forecasts estimate global 2026 demand at 2.6 to 3.0 million wafers, while effective production capacity sits at only 600,000 to 750,000 wafers—representing a supply deficit exceeding 70%.The Laser Chokepoint: Industry models show Electro-absorption Modulated Laser (EML) capacity falling short of demand well into 2029. Hyperscalers like Nvidia are pre-allocating and securing long-term EML capacity beyond 2027 to protect their optical interconnect roadmaps.",2026-06-21T01:10:26Z,Bullish,5,https://stocktwits.com/message/656983977,656983977,2026-06-21T09:36:54.519892
+AAOI,graph,142,"$AAOI $ALAB $AVGO $CRDO Indium Phosphide (InP) wafer materials are experiencing an unprecedented demand explosion that will bottleneck the semiconductor industry over the next five years. This massive growth is driven by the physical reality that silicon cannot emit laser light, making InP the foundational building block for the optical components needed to move data through Artificial Intelligence (AI) clusters and hyper-scale data centers.Between 2026 and 2031, the InP substrate market is transitioning from a specialized niche into a critical, high-volume hardware bottleneck.",2026-06-21T01:08:01Z,Bullish,4,https://stocktwits.com/message/656983929,656983929,2026-06-21T09:36:54.519895
+AAOI,RonBarkly,100,$AAOI The market priced in perfection on Thursday. The straits are closed again.,2026-06-20T23:37:38Z,Neutral,0,https://stocktwits.com/message/656982353,656982353,2026-06-21T09:36:54.519899
+AAOI,graph,142,"$AAOI $ALAB $AVGO $CRDO 
+$AXTI A 6.4T optical engine uses more Indium Phosphide (InP) materials than a 3.2T optical engine.Why 6.4T Consumes More InP MaterialsThe primary driver behind InP material consumption is the total lane count and light source volume required to double the bandwidth from 3.2 Terabits per second  to 6.4 Tbps:Lane Count Multiplication: To scale up to multi-terabit architectures, optical engines rely on multiplying physical lanes or laser wavelengths. A 6.4T engine requires twice the data-carrying capacity of a 3.2T engine. Even when transitioning to next-generation individual 400G-per-lane speeds, a 6.4T engine requires 16 channels, whereas a 3.2T engine requires only 8 channels.Laser Component Volume: Whether the architecture uses discrete InP Electro (EMLs) or continuous-wave (CW) InP lasers arrayed to feed a Silicon Photonics (SiPho) engine, the physical number of laser chips or array sizes must scale up to deliver the necessary optical power and channels.",2026-06-20T20:04:32Z,Bullish,3,https://stocktwits.com/message/656978385,656978385,2026-06-21T09:36:54.519902
+AAOI,DailyWatcher_,407,"$SIVE vs $AAOI 1 month performance $SIVE +99.6% $AAOI -6.6% This despite constant inorganic shilling for $AAOI which seems paid for to me. So while I doubled my $SIVE bag in a month, you lost 6%. Congratulations geniuses.",2026-06-20T19:17:43Z,Neutral,0,https://stocktwits.com/message/656977500,656977500,2026-06-21T09:36:54.519906
+AAOI,graph,142,"$AAOI $ALAB $AVGO $CRDO There&amp;amp;#39;s only two companies (AXTI and Sumitomo) that produce the substrate at scale right now (with JX at like 10%).
+
+InP is like EXTREMELY hard. Laser-grade feedstock must be at least 6N (99.9999%) pure. Even trace amounts of impurities (Silicon, Sulfur, Zinc), cannot be used like they do in other segments like LED.
+
+It takes years to set up this supply chain and everyone started to pivot to photonics in 2025. So yeah, there&amp;amp;#39;s no way around AXTI for the next 2 years.",2026-06-20T18:39:13Z,Bullish,2,https://stocktwits.com/message/656976610,656976610,2026-06-21T09:36:54.519910
+AAOI,ChipDistribution7,756,"Modern AI scaling is no longer just about compute, but about how efficiently thousands of GPUs communicate. A meaningful portion of AI capex flows into networking, switching, and optical interconnects. 
+ 
+$AVGO sits at the top of the stack with AI switching and custom silicon exposure, combining both infrastructure and accelerator design. 
+$ALAB focuses on rack-scale data movement across chips, memory, and switches, effectively acting as the system-level traffic layer. 
+$CRDO leads in high-speed copper interconnects and is gradually expanding into optical networking as speeds increase. 
+$AAOI is positioned on the optical side, supplying fiber-based components for longer-distance data transfer in large AI clusters. 
+ 
+The investment case across all four is tied to one theme: AI compute scaling requires exponentially more bandwidth between systems, not just faster chips.",2026-06-20T15:44:48Z,Neutral,0,https://stocktwits.com/message/656972491,656972491,2026-06-21T09:36:54.519913
+AAOI,graph,142,"$AAOI $AMD AND AAOI!
+Don’t miss boat",2026-06-20T15:44:08Z,Bullish,1,https://stocktwits.com/message/656972471,656972471,2026-06-21T09:36:54.519916
+AAOI,micheln1,86,$AAOI 125 should be the target,2026-06-20T15:10:51Z,Bearish,0,https://stocktwits.com/message/656971527,656971527,2026-06-21T09:36:54.519920
+AAOI,graph,142,"$AAOI $DGXX $LPTH $ONDS $OUST There i s only two companies (AXTI and Sumitomo) that produce the substrate at scale right now (with JX at like 10%).
+
+InP is like EXTREMELY hard. Laser-grade feedstock must be at least 6N (99.9999%) pure. Even trace amounts of impurities (Silicon, Sulfur, Zinc), cannot be used like they do in other segments like LED.
+
+It takes years to set up this supply chain and everyone started to pivot to photonics in 2025. So yeah, there&amp;amp;#39;s no way around AXTI for the next 2 years.",2026-06-20T14:50:57Z,Bullish,4,https://stocktwits.com/message/656970902,656970902,2026-06-21T09:36:54.519923
+AAOI,graph,142,"$AAOI $DGXX $LPTH $ONDS $OUST 
+
+Everything inevitably leads back to AXTI.",2026-06-20T14:48:55Z,Bullish,4,https://stocktwits.com/message/656970848,656970848,2026-06-21T09:36:54.519926
+AAOI,Zamboni250,68,$AAOI $DGXX $LPTH $SIVE $OUST $ONDS,2026-06-20T14:40:13Z,Neutral,0,https://stocktwits.com/message/656970576,656970576,2026-06-21T09:36:54.519929
+AAOI,QuietTrader,245,"Updated portfolio (June 20, 2026).   
+  
+Top 10 stocks that I currently own categorized by weight in my portfolio:   
+   
+1) $ASTS (had some old shares at lower prices, but heavily reloaded on 6/18/26)
+2) $PLTR     
+3) $AAOI  (New - bought a lot more on 6/18/26)
+4) GE / GEV / GEHC   
+5) $AIRJ (New)
+6) FCX 
+7) DKNG
+8) ONDS
+9) BABA
+10) NOK
+
+Last week I took significant profits and traded out all positions in FIG, MAT, ALKS and SMTC. Huge week last week!
+I also hold notable positions of MFIC, various index funds, ETFs and smaller positions in other companies and lots of cash at this time.   
+   
+***New = Position started in the past 60 days  
+ 
+*****Follow me for real-time trading updates!*****",2026-06-20T14:16:37Z,Bullish,0,https://stocktwits.com/message/656969952,656969952,2026-06-21T09:36:54.519932
+AAOI,NBRF,75,$AAOI Just DCA you’ll be ok pal.,2026-06-20T13:40:23Z,Neutral,1,https://stocktwits.com/message/656968910,656968910,2026-06-21T09:36:54.519935
+AAOI,Baxter5,15,$AAOI trim the highs buy the lows,2026-06-20T13:37:58Z,Neutral,0,https://stocktwits.com/message/656968846,656968846,2026-06-21T09:36:54.519938
+AAOI,tradepulsealerts,62,$AAOI pain coming monday,2026-06-20T13:28:39Z,Neutral,0,https://stocktwits.com/message/656968654,656968654,2026-06-21T09:36:54.519941
+AAOI,Deliver1,22,"$AAOI  
+Interesting read: 
+ 
+https://cruxcapitalgroup.substack.com/p/does-amd-have-its-eyes-on-aaoi",2026-06-20T12:34:34Z,Neutral,0,https://stocktwits.com/message/656967645,656967645,2026-06-21T09:36:54.519945
+AAOI,RosannaInvests,2981,@lifeonthewater we want controversy! $AAOI bears add fuel to the fire. 🔥,2026-06-20T03:40:58Z,Bullish,0,https://stocktwits.com/message/656963116,656963116,2026-06-20T08:42:24.939526
+AAOI,graph,142,$AAOI $COHR $LITE $POET,2026-06-20T02:10:21Z,Bullish,1,https://stocktwits.com/message/656961757,656961757,2026-06-20T08:42:24.939545
+AAOI,graph,142,"$AAOI $COHR $LITE $POET Hyperscaler Dependence: The rapid expansion of AI servers and Co-Packaged Optics (CPO) by major tech firms relies directly on lasers built using AXT&#39;s wafers.High Production Barriers: Growing InP crystals and scaling clean-room capacity requires specialized equipment and technical know-how, meaning large downstream companies (like Coherent or Lumentum) rely heavily on AXT&#39;s supply",2026-06-20T01:10:54Z,Bullish,1,https://stocktwits.com/message/656960742,656960742,2026-06-20T08:42:24.939550
+AAOI,HericuleParrot,122,$AAOI 40 $ vashied in 2 days. 80$ will come by in a month. It is like that. Some time shorts wins but long term patience wins,2026-06-20T00:51:40Z,Neutral,0,https://stocktwits.com/message/656960423,656960423,2026-06-20T08:42:24.939554
+AAOI,graph,142,"$AAOI $COHR $LITE $POET 
+The Products: They manufacture foundational substrate wafers including Indium Phosphide (InP), Gallium Arsenide (GaAs), and Germanium (Ge).Vertical Integration: Through its Chinese subsidiary Beijing Tongmei, AXTI owns the entire supply chain. They extract the raw materials, refine them to extreme purities, and synthesize them into single crystals.Extreme Purity: They process standard 4N (99.99%) gallium into ultra-high purity 5N, 6N (99.9999%), up to 8N purity.Market Position: They control roughly 30% to 40% of the global supply for Indium Phosphide substrates, which is the critical material used to generate lasers for modern AI infrastructure and optical interconnects.",2026-06-20T00:30:37Z,Bullish,1,https://stocktwits.com/message/656960047,656960047,2026-06-20T08:42:24.939559
+AAOI,graph,142,"$AAOI $LITE $COHR $POET Yes, AXT, Inc. (NASDAQ: AXTI) specializes in producing ultra-high purity semiconductor materials and compound substrates. They take standard raw materials and refine them to the extreme purity levels (up to 7N or 8N, meaning 99.999999% pure) required for advanced AI data center lasers and optical networks.",2026-06-20T00:29:50Z,Bullish,0,https://stocktwits.com/message/656960028,656960028,2026-06-20T08:42:24.939562
+AAOI,MorganHoratio,1475,"HERE ARE THE TOP 15 PERFORMERS OF 2026 
+ 
+1. $SNDK +820% 
+ 
+2. $AEHR +471% 
+ 
+3. $AXTI +417% 
+ 
+4. $AAOI +364% 
+ 
+5. $WDC +333% 
+ 
+The absolute elite top-5 performers of 2026 reveal the ultimate structural macro rotation: the AI super-cycle has violently expanded beyond mere logic chips into the unassailable flash storage layer and critical wafer-fab tooling. 
+ 
+Spun-off memory monopoly $SNDK leads the entire tape with an insane +820% run, which, alongside legacy giant $WDC tripling in value, proves that severe enterprise SSD and NAND capacity constraints are generating multi-year hyper-margins. 
+ 
+Semiconductor test system vanguard $AEHR, substrate wafer play $AXTI, and optical-backbone titan $AAOI recorded explosive 3x to 4x breakout runs, perfectly monetizing the hardware infrastructure refresh cycle. 
+ 
+Are you chasing the ferocious right-side main wave of independent storage king $SNDK, or accumulating the high-conviction connectivity breakout inside $AAOI?",2026-06-19T23:02:34Z,Neutral,0,https://stocktwits.com/message/656958296,656958296,2026-06-20T08:42:24.939566
+AAOI,MarketMaestro1,347,"You can only pick ONE stock from this list to go all-in for the next 5 years. 
+ 
+$AAOI 
+  
+$META 
+  
+$HIMS 
+  
+$IREN 
+  
+$SNDK 
+  
+Which one are you choosing, and why?",2026-06-19T22:57:06Z,Neutral,0,https://stocktwits.com/message/656958192,656958192,2026-06-20T08:42:24.939569
+AAOI,MarketMaestro1,347,"If I had to start a portfolio over with $25,000 today, these are the names I&#39;d build around: 
+ 
+$CRDO 
+ 
+$AAOI 
+ 
+$MRVL 
+ 
+$AMD 
+ 
+AI infrastructure. 
+Power. 
+Networking. 
+Compute. 
+Space. 
+ 
+Some of the biggest trends of the next decade are sitting right in front of us.",2026-06-19T22:14:16Z,Neutral,0,https://stocktwits.com/message/656957303,656957303,2026-06-20T08:42:24.939572
+AAOI,MorganHoratio,1475,"What $10,000 became over the last two years: 
+ 
+• $QBTS $224,130 
+ 
+• $AAOI $188,820 
+ 
+• $PL $158,090 
+ 
+• $ONDS $156,280 
+ 
+A $10,000 conviction bet two years ago into frontier tech has mutated into breathtaking wealth, with early positioning capturing phenomenal 15x to 22x structural multi-bagger returns. 
+ 
+Commercial quantum pioneer $QBTS (D-Wave Quantum) leads the entire tape with an astounding 22x return as enterprise deployment scales. Concurrently, data-center optical backbone vanguard $AAOI (Applied Optoelectronics) locked in a massive 18x multi-bagger run, capturing relentless hardware-refresh demand. 
+ 
+Earth-imaging data giant $PL (Planet Labs) and tactical drone automated wireless network provider $ONDS printed explosive 15x+ gains, powered by high-margin government and critical infrastructure backlog expansion. 
+ 
+As disruptive tech transitions from speculative concepts into rigid multi-milestone revenue streams, where are you chasing the next alpha?",2026-06-19T21:30:51Z,Neutral,0,https://stocktwits.com/message/656956249,656956249,2026-06-20T08:42:24.939576
+AAOI,lifeonthewater,81,"$AAOI  Do Me a favor 
+IM gonna send a few tickers your way and please let me know what their outcome WILL BE ….. since you have the ABILITY of prophecy …. Do me a SOLiD 
+
+Genius",2026-06-19T20:58:12Z,Bullish,1,https://stocktwits.com/message/656955515,656955515,2026-06-20T08:42:24.939579
+AAOI,RocketQueen,929,$AAOI this is likely headed closer to 100 USD. The fair value is only at 78 USD. Bubble mania is overpricing this sector.,2026-06-19T20:06:38Z,Neutral,0,https://stocktwits.com/message/656954047,656954047,2026-06-20T08:42:24.939582
+AAOI,lifeonthewater,81,"$AAOI  A lot of haters here 
+I love it 
+
+That’s a good sign 🫣😊",2026-06-19T19:33:55Z,Bullish,0,https://stocktwits.com/message/656953043,656953043,2026-06-20T08:42:24.939585
+AAOI,graph,142,"$AAOI $AXTI $LITE $SMH 
+$AXTI There&amp;#39;s only two companies (AXTI and Sumitomo) that produce the substrate at scale right now (with JX at like 10%).
+
+InP is like EXTREMELY hard. Laser-grade feedstock must be at least 6N (99.9999%) pure. Even trace amounts of impurities (Silicon, Sulfur, Zinc), cannot be used like they do in other segments like LED.
+
+It takes years to set up this supply chain and everyone started to pivot to photonics in 2025. So yeah, there&amp;#39;s no way around AXTI for the next 2 years.",2026-06-19T19:09:10Z,Bullish,1,https://stocktwits.com/message/656952240,656952240,2026-06-20T08:42:24.939589
+AAOI,Rossiest,236,"$AAOI block out the bear turds 💩. They can’t comprehend monster growth and guidance. This is a buy and hold at least through 2028. Yes it ran a lot this year, it’s going to run a lot more in the coming year. Watch",2026-06-19T18:38:30Z,Bullish,0,https://stocktwits.com/message/656951191,656951191,2026-06-20T08:42:24.939592
+AAOI,im_ichiban,75,"$PTRN highest weekly volume since IPO…. read my full thesis here 
+
+https://open.substack.com/pub/beforetheconsensus/p/applovin-rose-33x-with-axon-and-pattern?r=88uekb&amp;utm_medium=ios
+
+$SNDK $SPCX $AAOI $INTC",2026-06-19T17:23:29Z,Bullish,0,https://stocktwits.com/message/656948803,656948803,2026-06-20T08:42:24.939595
+AAOI,hedgefundoptionsmaster,29,$AAOI new ticker will be SCAM.,2026-06-19T17:23:10Z,Neutral,0,https://stocktwits.com/message/656948786,656948786,2026-06-20T08:42:24.939598
+AAOI,hedgefundoptionsmaster,29,"$AAOI will
+Cover my half $222 short at $115 and rest at $65 end of month to get off my books.",2026-06-19T17:22:18Z,Neutral,0,https://stocktwits.com/message/656948747,656948747,2026-06-20T08:42:24.939601
+AAOI,hedgefundoptionsmaster,29,"$AAOI like I said. Scam
+Company out of $$$ and time for another huge dilutive secondary to pick ur pocket. Again. While executives sell hundreds of millions in stock. And don’t even give u a fortune cookie. Or egg roll. Scam.",2026-06-19T17:00:47Z,Neutral,1,https://stocktwits.com/message/656948022,656948022,2026-06-20T08:42:24.939605
+AAOI,hedgefundoptionsmaster,29,$AAOI company basically sells Chinese flashlights. Scameroooo,2026-06-19T16:59:33Z,Neutral,0,https://stocktwits.com/message/656947974,656947974,2026-06-20T08:42:24.939607
+AAOI,hedgefundoptionsmaster,29,$AAOI insiders sold over $100 million in stock in past 45 days on u baggies. Let that sink in.,2026-06-19T16:59:10Z,Neutral,0,https://stocktwits.com/message/656947966,656947966,2026-06-20T08:42:24.939610
+AAOI,hedgefundoptionsmaster,29,$AAOI PUMP and scam is over. Time for another secondary and dilution. $118  tgt next week.,2026-06-19T16:58:10Z,Neutral,0,https://stocktwits.com/message/656947939,656947939,2026-06-20T08:42:24.939613
+AAOI,Deliver1,21,"$AAOI  
+Good article regarding recent line of credit with Shanghai Pudong Development Bank (SPD Bank) in China 
+ 
+Applied Optoelectronics Doubles Its China Credit Line to RMB 500M — A Working-Capital Signal for AI Optics 
+ 
+https://chipdocket.com/articles/aaoi-china-credit-line-doubles-ai-optics-supply-aaoi-2026-06-16",2026-06-19T16:02:15Z,Neutral,0,https://stocktwits.com/message/656945970,656945970,2026-06-20T08:42:24.939616
+AAOI,Doozio,47532,$AAOI so NXT MNDY or Thursday do they go double bahhhhtom 🐑 low?,2026-06-19T14:46:31Z,Neutral,1,https://stocktwits.com/message/656942974,656942974,2026-06-20T08:42:24.939619
+AAOI,NYBomba,119,"$AAOI - it was a good ride but had to sell yesterday with the closing price below the 50 DMA ...  EPS growth is still very high, but the charts OBV and MACD keeps dropping ... still bullish but need those red flags to disappear ... GLTA",2026-06-19T14:12:35Z,Neutral,0,https://stocktwits.com/message/656941464,656941464,2026-06-20T08:42:24.939622
+AAOI,RansomCanyon,225,"@Adnansao Lumilens is NOT FIT… they are a small startup that yes has placed an order of size and yes could be scaled to a sizable hyperscaler but once an order drops from FIT, Luxshare, Lessengers the credibility factor will be undeniably strong. That’s when we are rerated like $AAOI",2026-06-19T13:41:40Z,Bullish,0,https://stocktwits.com/message/656940070,656940070,2026-06-20T08:42:24.939626
+AAOI,Mountainbiker168,509,$AAOI All insiders also sold in 100 to 115  So not an issue.,2026-06-19T12:42:57Z,Bullish,0,https://stocktwits.com/message/656938070,656938070,2026-06-20T08:42:24.939629
+AAOI,StockPretimingReport,5768,"$AAOI AAOI Stock Is Down 4% This Week — Is Applied Optoelectronics a Buy Right Now? The near-term turning point: next week matters 
+A turning point is flagged at approximately one week out — meaning the week of June 22 is the most immediately actionable structural inflection in the current framework. Whether that resolves as a genuine directional shift or a brief pause within the continuing Downtrend determines whether the buy window takes shape next week as expected, or gets pushed further out. https://www.pretiming.report/2026/06/sprapplied-optoelectronics-aaoi-stock.html",2026-06-19T09:14:50Z,Bullish,0,https://stocktwits.com/message/656934253,656934253,2026-06-19T10:15:22.615331
+AAOI,bubsomatic,298,$AAOI I think dives to high 130s before bouncing.,2026-06-19T06:18:35Z,Bullish,0,https://stocktwits.com/message/656932505,656932505,2026-06-19T10:15:22.615347
+AAOI,BreakoutsHappen,53,"Weekend Stock Outlook: $INTC , $AAOI  and $MSFT  Stocks in Focus 
+ 
+https://breakoutshappen.com/stock-news/weekend-stock-outlook-intc-aaoi-and-msft-stocks-in-focus-briefing",2026-06-19T05:15:25Z,Neutral,0,https://stocktwits.com/message/656931797,656931797,2026-06-19T10:15:22.615352
+AAOI,callmedrew,26,$AAOI we’re just getting started,2026-06-19T03:23:49Z,Bullish,0,https://stocktwits.com/message/656929790,656929790,2026-06-19T10:15:22.615357
+AAOI,BaconEggs322,3,$AAOI Everyone and their grandmother is short on this thing now. We all know how this ends,2026-06-19T03:15:15Z,Neutral,0,https://stocktwits.com/message/656929556,656929556,2026-06-19T10:15:22.615360
+AAOI,BlackFlag1984,257,$AAOI nobodys talking about the mutiple huge sales from insiders last week. Certainty not a vote of confidence.  Why would they sell if there was some partnerships in the pipeline. Hence the price is tanking. Just know its not done yet.,2026-06-19T03:00:36Z,Bearish,0,https://stocktwits.com/message/656929140,656929140,2026-06-19T10:15:22.615364
+AAOI,graph,143,"$AAOI $LITE $COHN 
+
+A 6.4T optical engine uses more Indium Phosphide (InP)than a 3.2T optical engine.Why 6.4T Consumes More InP MaterialsThe primary driver behind InP material consumption is the total lane count and light source volume required to double the bandwidth from 3.2 Terabits per second  to 6.4 Tbps:Lane Count Multiplication: To scale upmulti-terabit architectures, optical engines rely on multiplying physical lanes or laser wavelengths. A 6.4T engine requires twice the data-carrying capacity of a 3.2T engine. Even when transitioning to next-generation individual 400G-per-lane speeds, a 6.4T engine requires 16 channels, whereas a 3.2T engine requires only 8 channels.Laser Component Volume: Whether the architecture uses discrete InP Electro-absorption Modulated Lasers (EMLs) or continuous-wave (CW) InP lasers arrayed to feed a Silicon Photonics (SiPho) engine, the physical number of laser chips or array sizes must scale up to deliver the necessary optical power and channels.",2026-06-19T02:32:34Z,Bullish,0,https://stocktwits.com/message/656928400,656928400,2026-06-19T10:15:22.615368
+AAOI,NickyGeee,52,$AAOI Last time we consolidated similarly we ran from 80 -&gt; 220. Looking for a 160 -&gt; 280-300 move,2026-06-18T23:49:41Z,Neutral,0,https://stocktwits.com/message/656921953,656921953,2026-06-19T10:15:22.615371
+AAOI,BlackFlag1984,257,$AAOI short here for the 10am huge dump. 140 next week,2026-06-18T23:31:03Z,Bearish,0,https://stocktwits.com/message/656921007,656921007,2026-06-19T10:15:22.615375
+AAOI,Mountainbiker168,509,$AAOI 200+ closing in July,2026-06-18T23:30:38Z,Bullish,0,https://stocktwits.com/message/656920978,656920978,2026-06-19T10:15:22.615422
+AAOI,KITOVLI,173,$AAOI Monday $130 in pre-market.....,2026-06-18T23:13:24Z,Bearish,0,https://stocktwits.com/message/656920059,656920059,2026-06-19T10:15:22.615427
+AAOI,micheln1,86,"$AAOI this one is completely finished, sell all you can",2026-06-18T23:04:17Z,Bearish,0,https://stocktwits.com/message/656919602,656919602,2026-06-19T10:15:22.615430
+AAOI,Stockfreshman,15,$AAOI big bulls pushing down to $120?,2026-06-18T22:38:54Z,Neutral,0,https://stocktwits.com/message/656918098,656918098,2026-06-19T10:15:22.615433
+AAOI,Akihiko,190,$AAOI I didn’t buy the dip at $175 or $170. Where is the bottom haha. $150?,2026-06-18T22:16:21Z,Neutral,0,https://stocktwits.com/message/656916544,656916544,2026-06-19T10:15:22.615436
+AAOI,SwingTraderPro1,329,"Weekly recap - disciplined week, selective positioning, and letting the winners do the heavy lifting. 
+ 
+$HOOD - +500% 
+$CRWV - +400%+ 
+$SPY - +150%+ 
+$APLD - +50%+ 
+$AAOI - +40% 
+ 
+Not a high-frequency week, but that wasn’t the point. The outsized moves carried performance while capital preservation stayed priority into OPEX + FOMC + shortened liquidity window. 
+ 
+Ended the week light on purpose - cash ready for Monday, where new setups are already forming and volatility reset tends to create better risk/reward entry points.",2026-06-18T21:27:40Z,Neutral,0,https://stocktwits.com/message/656912334,656912334,2026-06-19T10:15:22.615440
+AAOI,legend_217,108,$AAOI rumor: AMD will be their next customer,2026-06-18T21:09:41Z,Neutral,0,https://stocktwits.com/message/656910585,656910585,2026-06-19T10:15:22.615443
+AAOI,tampaiteT1,17,$AAOI  This is up $133 points( 18 to 233) in 6 months. Warrants a correction back to 30s,2026-06-18T20:55:11Z,Neutral,0,https://stocktwits.com/message/656909183,656909183,2026-06-19T10:15:22.615446
+AAOI,bgf,17,$AAOI low float so guess that&#39;s why the violent moves. Insiders own a lot so they have plenty of skin in game,2026-06-18T20:31:53Z,Neutral,0,https://stocktwits.com/message/656906622,656906622,2026-06-19T10:15:22.615449
+AAOI,graph,143,"$AAOI $AXTI $COHR $GLW $LITE AXT, Inc. does not produce 100% of the world&#39;s Indium Phosphide (InP) material. The company produces approximately 40% of the entire global supply chain for InP substrates.The InP market is an oligopoly. While AXT is a major player, the competitive landscape is divided among a few key entities:AXT Inc.: Controls approximately 40% of the global InP supply chain.",2026-06-18T20:27:56Z,Bullish,1,https://stocktwits.com/message/656906143,656906143,2026-06-19T10:15:22.615452
+AAOI,Lukey63,10,$AXTI $AAOI look like they may finally be rolling over. A close lower tomorrow is needed to confirm it but it looks like the hot money has moved on.,2026-06-18T20:20:00Z,Bearish,0,https://stocktwits.com/message/656905001,656905001,2026-06-19T10:15:22.615456
+AAOI,Mountainbiker168,509,$AAOI BE has had a few ferocious drawdowns and ATH today. Buy into July ERs,2026-06-18T20:18:36Z,Bullish,0,https://stocktwits.com/message/656904771,656904771,2026-06-19T10:15:22.615459
+AAOI,Lukey63,10,$AAOI And AXTI look like they may finally be rolling over. A close lower tomorrow is needed to confirm it but it looks like the hot money has moved on.,2026-06-18T20:18:12Z,Bearish,0,https://stocktwits.com/message/656904710,656904710,2026-06-19T10:15:22.615462
+AAOI,KITOVLI,173,$AAOI Insiders are selling every day now. Wow,2026-06-18T20:14:13Z,Bearish,0,https://stocktwits.com/message/656904070,656904070,2026-06-19T10:15:22.615466
+AAOI,HodlMaBeer,152,$AAOI long today ~159. trade into next week,2026-06-18T20:14:09Z,Neutral,0,https://stocktwits.com/message/656904060,656904060,2026-06-19T10:15:22.615469
+AAOI,george4it,209,$AAOI You let me down today but I remain long for now.,2026-06-18T20:11:48Z,Neutral,0,https://stocktwits.com/message/656903654,656903654,2026-06-19T10:15:22.615472
+AAOI,MEN1S,2,$AAOI I believe this price on a long term perspective should be seen as a gift,2026-06-18T20:08:37Z,Bullish,0,https://stocktwits.com/message/656903041,656903041,2026-06-19T10:15:22.615475
+AAOI,DevelopingDifferent,24,$AAOI whats more interesting is LITE has some insitutional bullish $2M bet. Could be money is rotating into more established and diversified optics companies. Regardless if optics sector picks up AAOI should benefit:,2026-06-18T19:59:25Z,Neutral,1,https://stocktwits.com/message/656900817,656900817,2026-06-19T10:15:22.615479
+AAOI,Nasdaq_Frontier,27,"For years, AI infrastructure has been the leading theme.  
+And there is no reason to think that has changed.  
+It has only accelerated. 
+ 
+Photonics: $AAOI $SIVE $AXTI $LITE $COHR $GLW  
+ 
+The AI infrastructure story is far from over, and photonics is becoming an increasingly important piece of the puzzle. As AI training and inference workloads continue to grow, data movement—not compute itself—is emerging as the next major bottleneck. 
+ 
+AAOI, LITE, and COHR benefit from rising demand for optical modules, lasers, and high-speed interconnects. SIVE is positioned around silicon photonics, a technology that could reshape next-generation data centers. AXTI supplies critical semiconductor materials, while GLW remains a key player in fiber optics and specialty glass. 
+ 
+Investors spent years focusing on GPUs. The next phase may be about moving data faster and more efficiently. If AI spending continues to expand, the photonics ecosystem could become one of the most important growth themes of the next decade. 
+ 
+Which name do you think has the biggest upside from here: AAOI, LITE, or SIVE?",2026-06-18T19:58:11Z,Neutral,0,https://stocktwits.com/message/656900521,656900521,2026-06-19T10:15:22.615482
+AAOI,Prophetus1,75,$AAOI Didn&#39;t expect Nasdaq going up 100 pts. in the last 30 mins. 🙄,2026-06-18T19:49:09Z,Neutral,0,https://stocktwits.com/message/656898323,656898323,2026-06-19T10:15:22.615485
+AAOI,RocketQueen,929,"$AAOI oh, i have not been following this, but just noticed CEO Lin sold a huge load on June 12 with over 60,000 shares! Not a good sign",2026-06-18T19:43:25Z,Neutral,0,https://stocktwits.com/message/656897255,656897255,2026-06-19T10:15:22.615489
+AAOI,RonaldReagan80,75,$AAOI $AXTI $LITE this clown’s timeline is full of bearish posts on AI but only bullish one is on pharma company down like 80%. 😂😂,2026-06-18T19:40:26Z,Neutral,2,https://stocktwits.com/message/656896745,656896745,2026-06-19T10:15:23.313331
+AAOI,1marcussss,54,$AAOI $AXTI $LITE you haven’t seen anything yet bud. Refer SNDK 😝,2026-06-18T19:38:32Z,Neutral,1,https://stocktwits.com/message/656896425,656896425,2026-06-19T10:15:23.313350
+AAOI,Mountainbiker168,509,$AAOI AMD deal coming ???,2026-06-18T19:37:34Z,Bullish,0,https://stocktwits.com/message/656896240,656896240,2026-06-19T10:15:23.313356
+AAOI,bbsmth,191,$AAOI  160 pin; feel bad if you traded this long today and got fooked by the filthy wh0re c(nt market makers !,2026-06-18T19:36:51Z,Neutral,0,https://stocktwits.com/message/656896120,656896120,2026-06-19T10:15:23.313360
+AAOI,1marcussss,54,$AAOI forever grateful to let me hop on this with this price point,2026-06-18T19:35:34Z,Bullish,0,https://stocktwits.com/message/656895899,656895899,2026-06-19T10:15:23.313364
+AAOI,Mountainbiker168,509,$AAOI Shake n fill,2026-06-18T19:34:40Z,Bullish,0,https://stocktwits.com/message/656895719,656895719,2026-06-19T10:15:23.313367
+AAOI,TeaMartinez4,80,"$AAOI The Law Of Trading:
+BUY= Stock goes down 
+SELL= Stock goes up",2026-06-18T19:29:21Z,Neutral,0,https://stocktwits.com/message/656894877,656894877,2026-06-19T10:15:23.313371
+AAOI,free2dream,389,"$AAOI $AXTI $LITE  wake the he&#39;ll up bulls! look at all the insider sales!  The hype and ridiculous price targets are total Bullshit. These all will gap down big, could be as soon as on Monday. The valuations on all are unrealistic and totally EUPHORIC. LOOK HOW PARABOLIC ARE ALL THESE CHARTS.",2026-06-18T19:28:50Z,Bearish,0,https://stocktwits.com/message/656894788,656894788,2026-06-19T10:15:23.313375
+AAOI,MongolTrader,52,"$AAOI $INOD,$AXTI killing me on a totally bullish day......My 3 Musketeers ---Good luck if you are holding these with me!",2026-06-18T19:22:52Z,Bullish,0,https://stocktwits.com/message/656893842,656893842,2026-06-19T10:15:23.313378
+AAOI,DevelopingDifferent,24,$AAOI  True,2026-06-18T19:21:25Z,Bearish,1,https://stocktwits.com/message/656893639,656893639,2026-06-19T10:15:23.313381
+AAOI,Unsuccessful,61,$AAOI Wrong in just one half hour.,2026-06-18T19:20:27Z,Neutral,1,https://stocktwits.com/message/656893495,656893495,2026-06-19T10:15:23.313384
+AAOI,1marcussss,54,$AAOI I believe,2026-06-18T19:17:37Z,Bullish,0,https://stocktwits.com/message/656893063,656893063,2026-06-19T10:15:23.313388
+AAOI,tampaiteT1,17,"$AAOI Someone spent ~$760K–$950K buying deep OTM puts expiring in 8 days on a stock already down nearly 5% today. This is either aggressive speculation on a near-term collapse, or a hedge against a known risk event. Worth watching for any upcoming catalysts (earnings, news) for AAOI this week.",2026-06-18T19:15:22Z,Neutral,0,https://stocktwits.com/message/656892736,656892736,2026-06-19T10:15:23.313391
+AAOI,randallb,39,$AAOI take what you can,2026-06-18T18:59:27Z,Neutral,0,https://stocktwits.com/message/656890347,656890347,2026-06-19T10:15:23.313394
+AAOI,DevelopingDifferent,24,"$AAOI if you believe this stock is recoiling to bounce back to 190+ then selling deep in the money puts is the way to go. 
+ 
+late july or early august 200 strike puts are giving really good premiums",2026-06-18T18:55:09Z,Neutral,0,https://stocktwits.com/message/656889576,656889576,2026-06-19T10:15:23.313397
+AAOI,SuccessExpress99,54,$AAOI it hit 158 earlier today and bounced back.. it’ll be ok long term,2026-06-18T18:53:19Z,Bullish,0,https://stocktwits.com/message/656889277,656889277,2026-06-19T10:15:23.313400
+AAOI,63VBtoAixStrass,6,$AAOI@bashers  nothing to be excited with drop. Just a rotation. AOI will surely shine again. Catalyst still strong,2026-06-18T18:52:13Z,Neutral,0,https://stocktwits.com/message/656889113,656889113,2026-06-19T10:15:23.313403
+AAOI,Mountainbiker168,509,$AAOI Ni way. Asded 158.80 for a swing,2026-06-18T18:50:00Z,Bullish,0,https://stocktwits.com/message/656888739,656888739,2026-06-19T10:15:23.313406
+AAOI,Mountainbiker168,509,$AAOI Algos driven.,2026-06-18T18:43:01Z,Bullish,0,https://stocktwits.com/message/656887601,656887601,2026-06-19T10:15:23.313409
+AAOI,Kame_house,4,$AAOI BOOM and just like that it&#39;ll never go over 160 again.,2026-06-18T18:41:54Z,Neutral,0,https://stocktwits.com/message/656887421,656887421,2026-06-19T10:15:23.313412
+AAOI,LennySmall2,25,$AAOI Bye bye Another America Online,2026-06-18T18:40:38Z,Neutral,0,https://stocktwits.com/message/656887207,656887207,2026-06-19T10:15:23.313415
+AAOI,shawnv069,13,$AAOI sell sell sell,2026-06-18T18:36:10Z,Bearish,0,https://stocktwits.com/message/656886520,656886520,2026-06-19T10:15:23.313418
+AAOI,legend_217,108,$AAOI $160 needs to hold,2026-06-18T18:35:55Z,Neutral,0,https://stocktwits.com/message/656886484,656886484,2026-06-19T10:15:23.313421
+AAOI,tampaiteT1,17,"$AAOI  Massive 80P sold for next week, someone is betting this is going to crash to 80",2026-06-18T18:35:31Z,Neutral,0,https://stocktwits.com/message/656886413,656886413,2026-06-19T10:15:23.313423
+AAOI,shawnv069,13,$AAOI 150 puts next week,2026-06-18T18:34:37Z,Bearish,0,https://stocktwits.com/message/656886267,656886267,2026-06-19T10:15:23.313427
+AAOI,Prophetus1,75,$AAOI Might dip another 7 points towards day end and bounce back a little.,2026-06-18T18:27:29Z,Neutral,0,https://stocktwits.com/message/656885211,656885211,2026-06-19T10:15:23.313430
+AAOI,MarketBull93,48,"@MrStocks785 I rolled 2 of my $MU calls for $1200 and $1300 strike price for Dec 17 &#39;27. I am going hold them till Micron hits $2000  or more. I like $COHR, even better $COHX . $AAOI, $AAOX  could be high risk-high reward too.",2026-06-18T18:26:04Z,Bullish,0,https://stocktwits.com/message/656884984,656884984,2026-06-19T10:15:23.313433
+AAOI,george4it,209,$AAOI Added a few hundred more at 160.40.,2026-06-18T18:24:50Z,Neutral,0,https://stocktwits.com/message/656884783,656884783,2026-06-19T10:15:23.313436
+AAOI,legend_217,108,$AAOI 😂,2026-06-18T18:23:33Z,Neutral,1,https://stocktwits.com/message/656884563,656884563,2026-06-19T10:15:23.313439
+AAOI,Unsuccessful,61,$AAOI If you start eating you will gain weight. If you stop selling it will stop losing weight.,2026-06-18T18:17:10Z,Neutral,0,https://stocktwits.com/message/656883607,656883607,2026-06-19T10:15:23.313442
+AAOI,tradepulsealerts,61,$AAOI wow. Short it 💩,2026-06-18T18:13:19Z,Neutral,0,https://stocktwits.com/message/656882999,656882999,2026-06-19T10:15:23.997483
+AAOI,iwannababillionaire,4,$AAOI usually pops 10%+ when it reaches below 50 MA ...,2026-06-18T18:03:07Z,Bullish,0,https://stocktwits.com/message/656881370,656881370,2026-06-19T10:15:23.997504
+AAOI,HericuleParrot,122,$AAOI feels like a bag holder.,2026-06-18T18:01:37Z,Neutral,0,https://stocktwits.com/message/656881141,656881141,2026-06-19T10:15:23.997509
+AAOI,goodiebag_yee,85,$AAOI $AAOX i guess I got in at the wrong time on Tuesday,2026-06-18T17:56:03Z,Neutral,0,https://stocktwits.com/message/656880258,656880258,2026-06-19T10:15:23.997512
+AAOI,LEV3LUP,123,$AAOI there&#39;s no way I&#39;m holding over a long weekend so this better push up now bc this flat lining is lame,2026-06-18T17:52:05Z,Neutral,0,https://stocktwits.com/message/656879603,656879603,2026-06-19T10:15:23.997515
+AAOI,YJR,7,"$AAOI If broader market stays intact and we stay above the 50, I think next week is when this pushes for 200+. There’s also a 80P buy which is bearish but I have a feeling that’s a hedge or just to disrupt the sentiment on the flow charts. Let’s see, might load up more if we close above 50. (161.9)",2026-06-18T17:46:55Z,Bullish,0,https://stocktwits.com/message/656878800,656878800,2026-06-19T10:15:23.997519
+AAOI,Hollywood_1,598,$AAOI selling some puts - pray for me,2026-06-18T17:42:40Z,Neutral,0,https://stocktwits.com/message/656878128,656878128,2026-06-19T10:15:23.997522
+AAOI,nebius,15,"$AAOI FOR THE PANICANS 
+ 
+Weakness in photonics sector today because $AXTI had a pipe unlock, its down 11% as a result 
+ 
+This is nothing to do with AAOI. 
+ 
+Thank you for your attention to this matter.",2026-06-18T17:41:58Z,Neutral,0,https://stocktwits.com/message/656878014,656878014,2026-06-19T10:15:23.997525
+AAOI,randallb,39,$AAOI PLX next up ?,2026-06-18T17:31:53Z,Neutral,0,https://stocktwits.com/message/656876343,656876343,2026-06-19T10:15:23.997528
+AAOI,sepinvesting,17,"$AAOI The system currently shows a 66% probability that price will break below the $160 area, as selling pressure continues to build. Price is not near a meaningful support zone, which keeps the structure weak. 
+If support holds and price breaks above $180: the trend may begin to shift to the upside. 
+Otherwise: the structure remains decisively bearish.",2026-06-18T17:28:46Z,Neutral,0,https://stocktwits.com/message/656875747,656875747,2026-06-19T10:15:23.997532
+AAOI,OffHisGame88,33,$AAOI low quality company. This is temporary pump,2026-06-18T17:22:55Z,Bearish,0,https://stocktwits.com/message/656874660,656874660,2026-06-19T10:15:23.997535
+AAOI,george4it,209,$AAOI Added to my position a couple of hundred shares at 161.,2026-06-18T17:22:08Z,Neutral,0,https://stocktwits.com/message/656874512,656874512,2026-06-19T10:15:23.997538
+AAOI,randallb,39,$AAOI Take what you can get,2026-06-18T17:22:05Z,Neutral,0,https://stocktwits.com/message/656874505,656874505,2026-06-19T10:15:23.997541
+AAOI,WOLFSTREET,4041,"$AAOI 5000% at present but we did hit $233 up there at nosebleed level and CC kicked that party off at $3 , very much like the $CIFR setup I just posted and my $BFLY friends would not mind even a fraction of that action. 
+ 
+VIVA CC!",2026-06-18T17:21:26Z,Neutral,18,https://stocktwits.com/message/656874364,656874364,2026-06-19T10:15:23.997544
+AAOI,Good2go,1765,"$AAOI Relax, it is still in a pattern but support below. see blue line special Kmart shoppers.  Only boomers know. $AAOG  
+https://finviz.com/stock?t=AAOI&amp;ty=c&amp;ta=1&amp;p=d",2026-06-18T17:19:30Z,Neutral,0,https://stocktwits.com/message/656874047,656874047,2026-06-19T10:15:23.997547
+AAOI,Prophetus1,75,"$AAOI When it reverses, it explodes.",2026-06-18T17:18:29Z,Neutral,1,https://stocktwits.com/message/656873840,656873840,2026-06-19T10:15:23.997550
+AAOI,sellhighmoney,183,$AAOI 📉📈 like always,2026-06-18T17:18:20Z,Bullish,0,https://stocktwits.com/message/656873819,656873819,2026-06-19T10:15:23.997554
+AAOI,LEV3LUP,123,$AAOI Bouncing? Need to reclaim 165 w speed or this probably needs another day or two to charge up,2026-06-18T17:17:18Z,Neutral,0,https://stocktwits.com/message/656873646,656873646,2026-06-19T10:15:23.997557
+AAOI,Shlobby,388,$AAOI hammer time,2026-06-18T17:16:17Z,Neutral,0,https://stocktwits.com/message/656873469,656873469,2026-06-19T10:15:23.997560
+AAOI,Justin_Moz,47,"$AAOI With $10+ daily moves, no reason to trade snything else. IMO",2026-06-18T17:12:42Z,Neutral,0,https://stocktwits.com/message/656872797,656872797,2026-06-19T10:15:23.997563
+AAOI,Prophetus1,75,$AAOI Looking at 152-153 if NasQuack dips around day&#39;s lowest.,2026-06-18T17:09:20Z,Neutral,0,https://stocktwits.com/message/656872235,656872235,2026-06-19T10:15:23.997566
+AAOI,Stonkmaster69,132,$AAOI broke below 50ma,2026-06-18T17:03:35Z,Bearish,0,https://stocktwits.com/message/656871227,656871227,2026-06-19T10:15:23.997569
+AAOI,tampaiteT1,17,$AAOI  Probably test 135 and 107 short term,2026-06-18T17:03:10Z,Neutral,0,https://stocktwits.com/message/656871142,656871142,2026-06-19T10:15:23.997571
+AAOI,tradepulsealerts,61,$AAOI,2026-06-18T17:02:31Z,Neutral,0,https://stocktwits.com/message/656871007,656871007,2026-06-19T10:15:23.997574
+AAOI,tradepulsealerts,61,$AAOI  nothing about this stock is bullish,2026-06-18T16:59:34Z,Neutral,0,https://stocktwits.com/message/656870481,656870481,2026-06-19T10:15:23.997577
+AAOI,LEV3LUP,123,$AAOI Interestingly this is the most sustained slide over the last month or two.  Either needs to bounce soon around this level or its toast.,2026-06-18T16:59:23Z,Neutral,0,https://stocktwits.com/message/656870442,656870442,2026-06-19T10:15:23.997580
+AAOI,xpro123,1,$AAOI damnnn I’m freeing up way more for these dips,2026-06-18T16:55:34Z,Bullish,0,https://stocktwits.com/message/656869780,656869780,2026-06-19T10:15:23.997583
+AAOI,shawnv069,13,$AAOI keep adding lol,2026-06-18T16:54:58Z,Bearish,0,https://stocktwits.com/message/656869686,656869686,2026-06-19T10:15:23.997586
+AAOI,GainingGreen,78,"$AAOI This stock traps both longs and shorts. However, for patient traders, the volatile swings offer massive profit potential on both sides.",2026-06-18T16:53:13Z,Neutral,0,https://stocktwits.com/message/656869356,656869356,2026-06-19T10:15:23.997589
+AAOI,Foreverbagholding,43,$AAOI chart is still GOLD! Bears are hilarious here. I wouldn’t hold short over the weekend. Last couple of huge green candle candles came after OPEX on the following Monday.,2026-06-18T16:52:20Z,Bullish,0,https://stocktwits.com/message/656869180,656869180,2026-06-19T10:15:23.997592
+AAOI,MarketMaestro1,342,"High confidence in these names going up 2-3x in the next 6 months: 
+ 
+1. $SNDK / Kioxia 
+2. $NBIS 
+3. $AAOI 
+4. $AEHR 
+  
+Just from the top of my head. 
+ 
+Others like $IQE + ? + ?  have potential still as European small caps that I hold.  
+ 
+But are all well past their discovery phases - so it&#39;s about good execution now. 
+ 
+Are you going to miss out again?",2026-06-18T16:49:33Z,Neutral,0,https://stocktwits.com/message/656868663,656868663,2026-06-19T10:15:24.676014
+AAOI,mollielatham,99,"$AAOI alot of these stocks are dropping like flies --BUT--whats interesting, the Jensen Stocks are up like AMD, COHR, INTC, MRVL--they are all being propped up via NVDA&#39;s open market purchases and upgrades--another interesting point NVDA point--NVDA raising 20 BIIL--but he has 100 bil in investments on Balnce Sheet--he could have invested in his own company",2026-06-18T16:49:18Z,Neutral,0,https://stocktwits.com/message/656868602,656868602,2026-06-19T10:15:24.676028
+AAOI,NickyGeee,52,$AAOI added 161.5,2026-06-18T16:48:33Z,Neutral,0,https://stocktwits.com/message/656868455,656868455,2026-06-19T10:15:24.676033
+AAOI,Mountainbiker168,509,$AAOI MMs are shaking and filling.  BUY,2026-06-18T16:46:36Z,Bullish,0,https://stocktwits.com/message/656868120,656868120,2026-06-19T10:15:24.676044
+AAOI,tradepulsealerts,61,$AAOI wow. Getting crushed on my long.  😳🤦🏻💩,2026-06-18T16:44:35Z,Neutral,0,https://stocktwits.com/message/656867750,656867750,2026-06-19T10:15:24.676052
+AAOI,undefeatedchamp,674,"$AAOI  
+ 
+Last remaining level of suport is $149 before that.",2026-06-18T16:44:25Z,Neutral,1,https://stocktwits.com/message/656867707,656867707,2026-06-19T10:15:24.676059
+AAOI,NWMoneymaker,56,$AAOI if this breaks $160.. straight to $120-$140,2026-06-18T16:44:12Z,Neutral,0,https://stocktwits.com/message/656867670,656867670,2026-06-19T10:15:24.676065
+AAOI,undefeatedchamp,674,"$AAOI  
+ 
+Weekly chart and fib levels are saying that $135 level is opening up.",2026-06-18T16:43:53Z,Neutral,0,https://stocktwits.com/message/656867609,656867609,2026-06-19T10:15:24.676072
+AAOI,Rossiest,236,$AAOI this will all of a sudden pump 20% in one day when you don’t even expect. Long term huge upside too. Maybe 800 next year serious 🧐,2026-06-18T16:40:43Z,Bullish,0,https://stocktwits.com/message/656867049,656867049,2026-06-19T10:15:24.676079
+AAOI,UncleRicoQB1,111,$AAOI is the $600 million ATM killing this stock?  Looking doubtful the $160 support will hold once again.,2026-06-18T16:39:28Z,Neutral,0,https://stocktwits.com/message/656866824,656866824,2026-06-19T10:15:24.676086
+AAOI,shawnv069,13,$AAOI 160 out lotto,2026-06-18T16:38:30Z,Bearish,0,https://stocktwits.com/message/656866646,656866646,2026-06-19T10:15:24.676091
+AAOI,shawnv069,13,$AAOI short it,2026-06-18T16:34:26Z,Bearish,0,https://stocktwits.com/message/656865906,656865906,2026-06-19T10:15:24.676094
+AAOI,NickyGeee,52,$AAOI Do I had to add again,2026-06-18T16:33:40Z,Neutral,0,https://stocktwits.com/message/656865777,656865777,2026-06-19T10:15:24.676097
+AAOI,PS_trader,6,"$AAOI This will drop today. 
+
+But AMD announcement coming soon. And then 205 will be new bottom",2026-06-18T16:31:31Z,Bullish,0,https://stocktwits.com/message/656865390,656865390,2026-06-19T10:15:24.676100
+AAOI,dukeofhb,163,$AAOI looked very promising this morning but being held down today likely due to opex. Same w LITE. GLW and COHR and have nice gains…,2026-06-18T16:30:45Z,Bullish,0,https://stocktwits.com/message/656865269,656865269,2026-06-19T10:15:24.676104
+AAOI,BuyLongHoldStrong,170,$AAOI Why is this falling today?,2026-06-18T16:27:44Z,Neutral,0,https://stocktwits.com/message/656864698,656864698,2026-06-19T10:15:24.676107
+AAOI,GainingGreen,78,"$AAOI and $LITE red, $COHR green, very interesting..",2026-06-18T16:24:49Z,Neutral,0,https://stocktwits.com/message/656864210,656864210,2026-06-19T10:15:24.676109
+AAOI,BelieveableTruthsVideos,107,$AAOI is it a buy?,2026-06-18T16:10:50Z,Neutral,0,https://stocktwits.com/message/656861666,656861666,2026-06-19T10:15:24.676112
+AAOI,QuietTrader,238,"$AAOI Just bought a few more shares. Rumors swirling and getting stronger. 
+$AMD",2026-06-18T15:59:06Z,Bullish,0,https://stocktwits.com/message/656859479,656859479,2026-06-19T10:15:24.676116
+AAOI,Keepinitreal11,65,"$QQQ $NVDA$AVGO$SPY
+$CRWV$IREN$XLK$SOXX$SMH $AAOI
+
+FERC/regulators green-lighting faster grid connections for AI data centers (those bringing their own power).
+This is structural bullish for the AI theme. Interconnection queues have been a real choke point. Removing friction here compounds into more Megawatts online, more training clusters, and sustained demand across the stack.",2026-06-18T15:42:30Z,Bullish,0,https://stocktwits.com/message/656856221,656856221,2026-06-19T10:15:24.676120
+AAOI,MARKETCAP_TRADERS,3,$AAOI getting me tight with this Red and Green light signals  😒,2026-06-18T15:42:16Z,Bullish,0,https://stocktwits.com/message/656856171,656856171,2026-06-19T10:15:24.676123
+AAOI,RocketQueen,929,"$AAOI underweight:  
+ 
+https://simplywall.st/stocks/us/tech/nasdaq-aaoi/applied-optoelectronics/news/applied-optoelectronics-aaoi-stock-could-be-119-overvalued-a",2026-06-18T15:35:58Z,Neutral,0,https://stocktwits.com/message/656855001,656855001,2026-06-19T10:15:24.676126
+AAOI,undefeatedchamp,674,"$AAOI  
+ 
+Smoked...lol",2026-06-18T15:32:29Z,Neutral,1,https://stocktwits.com/message/656854300,656854300,2026-06-19T10:15:24.676129
+AAOI,SurgeRadar,0,"$AAOI popped aligned green mid-morning while the day tag&#39;s still bearish. messy, small size only",2026-06-18T15:29:17Z,Neutral,0,https://stocktwits.com/message/656853639,656853639,2026-06-19T10:15:24.676132
+AAOI,NeverFadeTheOracle,631,"$AAOI 
+
+25% trim under 168.5 
+
+Don’t like the action now",2026-06-18T15:25:24Z,Neutral,0,https://stocktwits.com/message/656852852,656852852,2026-06-19T10:15:24.676135
+AAOI,Marceltrade,43,"$AAOI sem, memories pumping on price hike on hardware… 🙈🤡🤡🤡 we get again pump on Monday and then dump rest of week",2026-06-18T15:19:15Z,Neutral,0,https://stocktwits.com/message/656851651,656851651,2026-06-19T10:15:24.676138
+AAOI,tampaiteT1,17,"$AAOI  600M offering on-going, it hasn&#39;t completed.",2026-06-18T14:58:37Z,Neutral,0,https://stocktwits.com/message/656847293,656847293,2026-06-19T10:15:24.676141
+AAOI,JFDI,107196,$AAOI 50d shake n bake ?,2026-06-18T14:54:00Z,Bullish,0,https://stocktwits.com/message/656846209,656846209,2026-06-19T10:15:24.676144
+AAOI,ChipDistribution7,726,"The biggest returns usually come from buying quality when everyone else is looking away. 
+ 
+My high-conviction buy zones: 
+ 
+• $NOW &lt; $100 
+• $ONDS &lt; $10 
+• $AAOI &lt; $165 
+• $HIMS &lt; $30 
+• ZETA  &lt; $20 
+• OSCR  &lt; $20 
+• LMND&lt; $50 
+• IREN &lt; $50 
+ 
+These aren&#39;t predictions, they&#39;re price levels where the risk/reward starts getting attractive. 
+ 
+Which one is already on your watchlist?",2026-06-18T14:49:48Z,Neutral,0,https://stocktwits.com/message/656845311,656845311,2026-06-19T10:15:24.676147
+AAOI,Unsuccessful,61,$AAOI AAOI bulls are the strongest hodlers!,2026-06-18T14:46:53Z,Bullish,0,https://stocktwits.com/message/656844717,656844717,2026-06-19T10:15:24.676150
+AAOI,HericuleParrot,122,$AAOI added 161. Conviction pays,2026-06-18T14:44:42Z,Neutral,0,https://stocktwits.com/message/656844254,656844254,2026-06-19T10:15:25.392959
+AAOI,Mountainbiker168,509,$AAOI Shook out most with STOPs. Fast n furious but fundamentals support the share price,2026-06-18T14:39:39Z,Bullish,0,https://stocktwits.com/message/656843218,656843218,2026-06-19T10:15:25.392979
+AAOI,undefeatedchamp,674,"$AAOI  
+ 
+Added 175c&#39;s....can she make it there????",2026-06-18T14:38:44Z,Neutral,1,https://stocktwits.com/message/656843011,656843011,2026-06-19T10:15:25.392984
+AAOI,LEV3LUP,123,$AAOI Looking for this to really start running around 175s,2026-06-18T14:38:12Z,Neutral,0,https://stocktwits.com/message/656842886,656842886,2026-06-19T10:15:25.392988
+AAOI,joezuke,107,$AAOI got to $158 needs to work through the resistance lvls again at $171. This thing loves to go red to green.,2026-06-18T14:38:11Z,Neutral,1,https://stocktwits.com/message/656842883,656842883,2026-06-19T10:15:25.392991
+AAOI,FibonacciTrader_,1389,"High-conviction long-term book - focused on names tied to structural growth in AI infra, photonics, defense tech, and next-gen compute. Not trading these, accumulating through cycles. 
+ 
+$NOW - Strong Buy 
+$AAOI - Strong Buy 
+$NBIS - Strong Buy 
+$RCAT - Strong Buy 
+$ONDS - Strong Buy 
+ 
+Volatility continues to mask the underlying trend, but positioning matters more than timing. These are asymmetric setups where execution + sector tailwinds can drive multi-year outperformance if the narrative stays intact. Watching for dips to add, not exits. 
+ 
+Next alert is coming soon.  
+  
+If you’re not following with notifications on, you’re likely seeing the move after it already happened.",2026-06-18T14:36:03Z,Neutral,0,https://stocktwits.com/message/656842381,656842381,2026-06-19T10:15:25.392994
+AAOI,Foreverbagholding,43,$AAOI gotta shake the plebes,2026-06-18T14:35:19Z,Bullish,0,https://stocktwits.com/message/656842225,656842225,2026-06-19T10:15:25.392998
+AAOI,xpro123,1,$AAOI thanks for the dips,2026-06-18T14:24:15Z,Bullish,0,https://stocktwits.com/message/656839712,656839712,2026-06-19T10:15:25.393001
+AAOI,LEV3LUP,123,$AAOI Green to red to green. Above 170 and they will take this to 200+,2026-06-18T14:23:30Z,Neutral,0,https://stocktwits.com/message/656839530,656839530,2026-06-19T10:15:25.393004
+AAOI,Mountainbiker168,509,$AAOI U turning,2026-06-18T14:21:43Z,Bullish,0,https://stocktwits.com/message/656839103,656839103,2026-06-19T10:15:25.393008
+AAOI,TeaMartinez4,80,$AAOI back in at $164,2026-06-18T14:12:51Z,Neutral,0,https://stocktwits.com/message/656836975,656836975,2026-06-19T10:15:25.393011
+AAOI,sogenerous,32076,$AAOI added some back at 162   that I sold 192,2026-06-18T14:10:53Z,Neutral,0,https://stocktwits.com/message/656836505,656836505,2026-06-19T10:15:25.393014
+AAOI,QuietTrader,238,"Stocks to buy and watch today:
+$ASTS $AIRJ $AAOI 
+
+I guess I’m an “A” guy today!",2026-06-18T14:10:45Z,Bullish,0,https://stocktwits.com/message/656836469,656836469,2026-06-19T10:15:25.393018
+AAOI,SteveTim,87,$AAOI added 160s,2026-06-18T14:07:01Z,Neutral,0,https://stocktwits.com/message/656835468,656835468,2026-06-19T10:15:25.393021
+AAOI,legend_217,108,$AAOI right at $160 support,2026-06-18T14:04:39Z,Neutral,0,https://stocktwits.com/message/656834854,656834854,2026-06-19T10:15:25.393024
+AAOI,Mountainbiker168,509,$AAOI Retail STOPs being hunted,2026-06-18T14:03:54Z,Bullish,0,https://stocktwits.com/message/656834647,656834647,2026-06-19T10:15:25.393027
+AAOI,legend_217,108,$AAOI 2nd shoulder formed. It will probably go lower,2026-06-18T14:02:00Z,Neutral,0,https://stocktwits.com/message/656834157,656834157,2026-06-19T10:15:25.393033
+AAOI,Prophetus1,75,$AAOI Rebound time? Shorts swooping in.,2026-06-18T14:02:00Z,Neutral,0,https://stocktwits.com/message/656834158,656834158,2026-06-19T10:15:25.393030
+AAOI,KITOVLI,173,$AAOI Completely dead,2026-06-18T14:01:57Z,Bearish,0,https://stocktwits.com/message/656834144,656834144,2026-06-19T10:15:25.393036
+AAOI,bskewl3,1,$AAOI adding this to my list of banned stocks,2026-06-18T14:00:11Z,Neutral,0,https://stocktwits.com/message/656833605,656833605,2026-06-19T10:15:25.393039
+AAOI,free2dream,389,$LITE $AAOI $AXTI  $SMH https://fortune.com/2026/06/16/data-center-opposition-construction-delays-blocks-report/,2026-06-18T13:51:59Z,Bearish,0,https://stocktwits.com/message/656831298,656831298,2026-06-19T10:15:25.393042
+AAOI,thegreekishere,79,$AAOI bruh just let it breakout,2026-06-18T13:51:44Z,Neutral,0,https://stocktwits.com/message/656831225,656831225,2026-06-19T10:15:25.393045
+AAOI,kk123ss,1,$AAOI it is in the consolidation phase. This reset timing is so unfortunate as smh keep ripping nonstop. What if smh starts to make an overdue pullback/correction? It would certainly be spilled over aaoi and it would get worse. Sign... better coming out a catalyst soon.,2026-06-18T13:51:23Z,Neutral,0,https://stocktwits.com/message/656831120,656831120,2026-06-19T10:15:25.393048
+AAOI,tradepulsealerts,61,$AAOI ouch.,2026-06-18T13:50:18Z,Neutral,0,https://stocktwits.com/message/656830784,656830784,2026-06-19T10:15:25.393051
+AAOI,Foreverbagholding,43,$AAOI final stop loss candle before rocket,2026-06-18T13:49:11Z,Bullish,0,https://stocktwits.com/message/656830447,656830447,2026-06-19T10:15:25.393054
+AAOI,KITOVLI,173,$AAOI Garbage!,2026-06-18T13:48:16Z,Bearish,0,https://stocktwits.com/message/656830154,656830154,2026-06-19T10:15:25.393057
+AAOI,bearstewmaxxing,96,$AAOI this needs to see lower before the breakout. So many sellers now,2026-06-18T13:47:31Z,Neutral,0,https://stocktwits.com/message/656829927,656829927,2026-06-19T10:15:25.393060
+AAOI,tradepulsealerts,61,$AAOI long 167s,2026-06-18T13:45:20Z,Neutral,0,https://stocktwits.com/message/656829235,656829235,2026-06-19T10:15:25.393062
+AAOI,Mountainbiker168,509,$AAOI Man another weekly Friday 170 📌,2026-06-18T13:41:40Z,Bullish,0,https://stocktwits.com/message/656828094,656828094,2026-06-19T10:15:25.393066
+AAOI,ibbie133,25,$AAOI added here again for a swing. Let’s see,2026-06-18T13:41:10Z,Bullish,0,https://stocktwits.com/message/656827940,656827940,2026-06-19T10:15:25.393070
+AAOI,Marceltrade,43,"$AAOI this need go under $150 again quickly, so delulu bagholders finnaly realize take loses and move on… pumped random company… and insider selling like no tommorow",2026-06-18T13:38:55Z,Bearish,0,https://stocktwits.com/message/656827193,656827193,2026-06-19T10:15:26.281508
+AAOI,SwingTraderPro1,329,"Positioning for aggressive beta rotation in AI memory, photonics and next-gen infra. Names showing asymmetric setups after heavy consolidation, not early discovery anymore but execution phase now. 
+ 
+$SNDK / KIOXIA - memory cycle leverage 
+$NBIS - AI infra re-rating story 
+$AAOI - photonics momentum proxy 
+$AEHR - semiconductor equipment volatility squeeze 
+ 
+Smaller EU small caps still on radar: 
+$IQE $SIVE $LPK - higher risk, lower liquidity, but can move fast on catalysts. 
+ 
+Not chasing, just stalking breakout structure.",2026-06-18T13:36:59Z,Neutral,0,https://stocktwits.com/message/656826629,656826629,2026-06-19T10:15:26.281526
+AAOI,tradepulsealerts,61,$AAOI closed long from 168s to 174.99.  Going short 175.50.,2026-06-18T13:01:25Z,Neutral,0,https://stocktwits.com/message/656819958,656819958,2026-06-19T10:15:26.281531
+AAOI,Kylor,161,"$AAOI The longer consolidation, the bigger move. Easy 250-300 in 2H🚀",2026-06-18T13:00:54Z,Bullish,0,https://stocktwits.com/message/656819890,656819890,2026-06-19T10:15:26.281535
+AAOI,LEV3LUP,123,$AAOI Over 200 soon,2026-06-18T13:00:42Z,Neutral,0,https://stocktwits.com/message/656819864,656819864,2026-06-19T10:15:26.281538
+AAOI,undefeatedchamp,674,"$AAOI  
+ 
+If $172 holds at open, today just might be a day for a nice lotto play here. Looking at $180 c&#39;s.",2026-06-18T12:57:02Z,Neutral,0,https://stocktwits.com/message/656819359,656819359,2026-06-19T10:15:26.281541
+AAOI,graph,143,$AAOI,2026-06-18T12:10:33Z,Bullish,1,https://stocktwits.com/message/656813236,656813236,2026-06-19T10:15:26.281545
+AAOI,tradepulsealerts,61,$AAOI hello dummies.  We are long since 168s yesterday.  Follow me to make 💵💵💵,2026-06-18T12:00:55Z,Neutral,0,https://stocktwits.com/message/656812167,656812167,2026-06-19T10:15:26.281548
+AAOI,YugiShugi,7,"$AAOI 
+https://www.quiverquant.com/news/AAOI+slides+9.6%25+as+$600M+at-the-market+program+fuels+dilution+worries
+
+Has anyone heard of a share issue/dilution?",2026-06-18T11:35:38Z,Neutral,0,https://stocktwits.com/message/656809810,656809810,2026-06-19T10:15:26.281551
+AAOI,tradepulsealerts,61,$AAOI long 168s.,2026-06-18T11:32:37Z,Neutral,0,https://stocktwits.com/message/656809553,656809553,2026-06-19T10:15:26.281554
+AAOI,NickyGeee,52,$AAOI Just a matter of time until we see 300 here,2026-06-18T10:54:56Z,Neutral,0,https://stocktwits.com/message/656806795,656806795,2026-06-19T10:15:26.281557
+AAOI,Mountainbiker168,509,$AAOI 180+ 🧲,2026-06-18T10:04:17Z,Bullish,0,https://stocktwits.com/message/656804801,656804801,2026-06-18T10:07:52.581184
+AAOI,tickerwulf,0,"$AAOI
+⚠️ $CHAI Reveals Launch of AI HomeGPT App, surprise userbase growth 600%, massive momentum!! 💥🚀",2026-06-18T06:54:09Z,Neutral,0,https://stocktwits.com/message/656800716,656800716,2026-06-18T10:07:52.581203
+AAOI,Rossiest,235,$AAOI time to rip well past 200,2026-06-18T03:53:32Z,Bullish,0,https://stocktwits.com/message/656796795,656796795,2026-06-18T10:07:52.581208
+AAOI,OctopusPrime_Official,204,$AAOI she’s about to explode either up or down. I’m hope up.,2026-06-18T03:30:33Z,Bullish,0,https://stocktwits.com/message/656796066,656796066,2026-06-18T10:07:52.581212
+AAOI,tradepulsealerts,59,$AAOI follow me,2026-06-18T00:14:07Z,Neutral,0,https://stocktwits.com/message/656785813,656785813,2026-06-18T10:07:52.581215
+AAOI,tradepulsealerts,59,$AAOI fake after hour close pump never hold,2026-06-18T00:05:03Z,Neutral,0,https://stocktwits.com/message/656785153,656785153,2026-06-18T10:07:52.581218
+AAOI,graph,140,"$AAOI Applied Optoelectronics (AAOI) management outlined a mid-2027 run-rate framework projecting over $471 million in monthly datacenter transceiver revenue. Coupled with over $325 million in annual CATV revenue, this points to an annualized framework approaching $6 billion",2026-06-17T23:59:28Z,Bullish,0,https://stocktwits.com/message/656784786,656784786,2026-06-18T10:07:52.581222
+AAOI,Jmartinez123,32,$AAOI should drip down until next ER.,2026-06-17T22:33:28Z,Neutral,0,https://stocktwits.com/message/656778647,656778647,2026-06-18T10:07:52.581225
+AAOI,BBraggHillBoys,30,"$SANA still risk on; the tier one flow is still AI/ Data Centers/data center power and infrastructure 
+$SOXX $MRVL $AAOI Dram related products.
+$XBI Heavy unusual flow 
+$SANA May have a bullish confirmation tomorrow morning.",2026-06-17T21:47:26Z,Neutral,0,https://stocktwits.com/message/656774784,656774784,2026-06-18T10:07:52.581228
+AAOI,NeverFadeTheOracle,630,"$AAOI
+
+Took it like a champ",2026-06-17T21:46:45Z,Bullish,0,https://stocktwits.com/message/656774711,656774711,2026-06-18T10:07:52.581232
+AAOI,tradepulsealerts,59,$AAOI long 168s,2026-06-17T21:06:43Z,Neutral,0,https://stocktwits.com/message/656770903,656770903,2026-06-18T10:07:52.581236
+AAOI,graph,140,$AAOI $AMD $COHR $LITE $NVDA,2026-06-17T20:55:49Z,Bullish,1,https://stocktwits.com/message/656769807,656769807,2026-06-18T10:07:52.581240
+AAOI,Hollywood_1,597,"$AAOI if ur daytrading this, I e been having success buying the close and selling the open - just fyi",2026-06-17T20:30:29Z,Neutral,0,https://stocktwits.com/message/656766978,656766978,2026-06-18T10:07:52.581243
+AAOI,SwingTraderPro1,318,"Interesting optical supply chain angle developing here around $AAOI. 
+ 
+We already know $NVDA has been actively aligning capacity with players like $LITE and $COHR to secure high-power CW laser supply for next-gen interconnect scaling. 
+ 
+The question now is whether $AMD is also working to diversify its optical ecosystem away from NVDA-linked supply clusters. If so, AAOI starts to screen as a logical alternative node in that chain. 
+ 
+Key building blocks supporting the thesis: 
+ 
+400mW CW laser capability 
+25dBm ELSFP spec alignment 
+In-house laser development efforts 
+Texas capacity expansion underway 
+ELSFP ramp roadmap extending into 2027 
+ 
+From a trading lens, this is still speculative (TrendForce-driven interpretation), but the setup highlights a broader theme: optical interconnect supply chains are becoming strategic infrastructure, not just components. 
+ 
+Worth watching for confirmation flow.",2026-06-17T20:23:31Z,Neutral,0,https://stocktwits.com/message/656766026,656766026,2026-06-18T10:07:52.581247
+AAOI,Mountainbiker168,509,$AAOI Dot plots should  be abolished.  It is like u and I thinking how many rete hikes u think is needed based on past info. Once new info comes then I change my plot dots....childish,2026-06-17T20:19:16Z,Bullish,0,https://stocktwits.com/message/656765419,656765419,2026-06-18T10:07:52.581250
+AAOI,Prophetus1,75,"$AAOI This could hit 153 tomorrow if Nasdaq goes down. If it goes up however, easy 190&#39;s.",2026-06-17T20:15:15Z,Neutral,0,https://stocktwits.com/message/656764788,656764788,2026-06-18T10:07:52.581253
+AAOI,tradepulsealerts,59,$AAOI hey dummmies covering short.  Going long 168s,2026-06-17T19:59:57Z,Neutral,0,https://stocktwits.com/message/656761765,656761765,2026-06-18T10:07:52.581256
+AAOI,Martinomafia79,121,$AAOI this is where the dry powder needs to kick in. Buy the dip. ￼,2026-06-17T19:58:14Z,Neutral,0,https://stocktwits.com/message/656761381,656761381,2026-06-18T10:07:52.581259
+AAOI,AcceleratorModel,114,$AAOI added 166,2026-06-17T19:53:04Z,Neutral,0,https://stocktwits.com/message/656760299,656760299,2026-06-18T10:07:52.581263
+AAOI,BuyLongHoldStrong,170,$AAOI Just MAGAnificient smh,2026-06-17T19:52:54Z,Neutral,0,https://stocktwits.com/message/656760268,656760268,2026-06-18T10:07:52.581265
+AAOI,Mountainbiker168,509,$AAOI This bad boy is a BUY 166,2026-06-17T19:51:24Z,Bullish,0,https://stocktwits.com/message/656759926,656759926,2026-06-18T10:07:52.581269
+AAOI,KITOVLI,173,$AAOI Too early. Jumped back with half size :-),2026-06-17T19:51:08Z,Bearish,1,https://stocktwits.com/message/656759867,656759867,2026-06-18T10:07:52.581272
+AAOI,tradepulsealerts,59,$AAOI ouch,2026-06-17T19:50:29Z,Neutral,0,https://stocktwits.com/message/656759707,656759707,2026-06-18T10:07:52.581275
+AAOI,tradepulsealerts,59,$AAOI 💵,2026-06-17T19:46:12Z,Bearish,0,https://stocktwits.com/message/656758802,656758802,2026-06-18T10:07:52.581278
+AAOI,tradepulsealerts,59,$AAOI who took my short at 174s?,2026-06-17T19:44:35Z,Neutral,0,https://stocktwits.com/message/656758383,656758383,2026-06-18T10:07:52.581282
+AAOI,Foreverbagholding,43,$AAOI if spy dumping $10 can get this down then I think we’re good for a bounce ￼,2026-06-17T19:38:39Z,Bullish,0,https://stocktwits.com/message/656757006,656757006,2026-06-18T10:07:52.581285
+AAOI,bskewl3,1,$AAOI does someone know something or just a shot in the dark 🤔,2026-06-17T19:37:31Z,Neutral,0,https://stocktwits.com/message/656756761,656756761,2026-06-18T10:07:52.581288
+AAOI,tradepulsealerts,59,$AAOI follow me for alerts.  Short from 174s,2026-06-17T19:33:47Z,Neutral,0,https://stocktwits.com/message/656755928,656755928,2026-06-18T10:07:52.581291
+AAOI,MZ2X,12,$AAOI the twitter PnD not going so well 😢😢,2026-06-17T19:33:35Z,Neutral,0,https://stocktwits.com/message/656755884,656755884,2026-06-18T10:07:52.581294
+AAOI,KITOVLI,173,$AAOI Covered for now.... Might re-enter.... Still $117 🧲,2026-06-17T19:32:07Z,Bearish,0,https://stocktwits.com/message/656755581,656755581,2026-06-18T10:07:52.581297
+AAOI,bamo,132,$AAOI stop moving around so much,2026-06-17T19:22:25Z,Bullish,0,https://stocktwits.com/message/656753569,656753569,2026-06-18T10:07:53.215335
+AAOI,Mountainbiker168,509,$AAOI Fast n Furious,2026-06-17T19:21:46Z,Bullish,0,https://stocktwits.com/message/656753428,656753428,2026-06-18T10:07:53.215354
+AAOI,tradepulsealerts,59,$AAOI and $RKLB shorts paying me.  Follow for alerts 🚨 💵💵💵💵💵,2026-06-17T19:20:01Z,Neutral,0,https://stocktwits.com/message/656753066,656753066,2026-06-18T10:07:53.215359
+AAOI,tradepulsealerts,59,$AAOI short now 174s.  2000,2026-06-17T19:04:51Z,Neutral,0,https://stocktwits.com/message/656750090,656750090,2026-06-18T10:07:53.215363
+AAOI,TradeMonkeyLLC,99,$AAOI got paid. Lfggg,2026-06-17T18:59:42Z,Neutral,1,https://stocktwits.com/message/656749154,656749154,2026-06-18T10:07:53.215367
+AAOI,tampaiteT1,17,"$AAOI  CEO has upped the ante, now seeing 2x a week . 
+ 
+Sales from today ..",2026-06-17T18:57:05Z,Neutral,0,https://stocktwits.com/message/656748653,656748653,2026-06-18T10:07:53.215370
+AAOI,tradepulsealerts,59,$AAOI closed long from 170-175s,2026-06-17T18:56:53Z,Neutral,0,https://stocktwits.com/message/656748624,656748624,2026-06-18T10:07:53.215372
+AAOI,AlexSwiss77,26,"$AAOI from last quarter :
+“We anticipate sequential revenue growth through the rest of the year with significant larger growth starting from Q3”
+Super bullish on AAOI",2026-06-17T18:54:49Z,Bullish,0,https://stocktwits.com/message/656748252,656748252,2026-06-18T10:07:53.215376
+AAOI,Foreverbagholding,43,$AAOI can they just take stake in this company already? American made more with huge demand! What more could they want?,2026-06-17T18:52:06Z,Neutral,0,https://stocktwits.com/message/656747754,656747754,2026-06-18T10:07:53.215379
+AAOI,Mountainbiker168,509,$AAOI Walsh talking up the market,2026-06-17T18:46:42Z,Bullish,0,https://stocktwits.com/message/656746689,656746689,2026-06-18T10:07:53.215382
+AAOI,TrendEdgeLogan,18211,$AAOI 400 on deck,2026-06-17T18:41:33Z,Bullish,1,https://stocktwits.com/message/656745643,656745643,2026-06-18T10:07:53.215386
+AAOI,1OAK_SwypeR,9,$AAOI aaaanndd 170s still holding,2026-06-17T18:37:02Z,Bullish,0,https://stocktwits.com/message/656744821,656744821,2026-06-18T10:07:53.215389
+AAOI,cynicaloptimist,32,"$AAOI Thank you very much for the 170 dip, added",2026-06-17T18:18:14Z,Neutral,0,https://stocktwits.com/message/656741689,656741689,2026-06-18T10:07:53.215392
+AAOI,TrendEdgeLogan,18211,"With price teed up on the 10-week SMA, AI Consult says now is a &#39;good time to buy&#39; $AAOI",2026-06-17T17:59:13Z,Bullish,0,https://stocktwits.com/message/656738000,656738000,2026-06-18T10:07:53.215395
+AAOI,LennySmall2,25,$AAOI Why would anyone buy Another America Online dialed up company?,2026-06-17T17:48:33Z,Neutral,0,https://stocktwits.com/message/656736373,656736373,2026-06-18T10:07:53.215398
+AAOI,LennySmall2,25,"$AAOI Thats it, ZERO come on!!!",2026-06-17T17:47:52Z,Neutral,0,https://stocktwits.com/message/656736278,656736278,2026-06-18T10:07:53.215401
+AAOI,LennySmall2,25,$AAOI Need more selling volume!,2026-06-17T17:39:24Z,Neutral,0,https://stocktwits.com/message/656735024,656735024,2026-06-18T10:07:53.215403
+AAOI,Prettyboyhiro,20,$AAOI do we want a tax cut or not?,2026-06-17T17:34:10Z,Neutral,0,https://stocktwits.com/message/656734218,656734218,2026-06-18T10:07:53.215406
+AAOI,TradeMonkeyLLC,99,$AAOI  https://x.com/i/status/2067296762445140063,2026-06-17T17:23:23Z,Bullish,0,https://stocktwits.com/message/656732622,656732622,2026-06-18T10:07:53.215409
+AAOI,freedomtrader6,624,"$AMD $SIVE $AAOI 
+Trendforce saying AMD is actively locking in CW laser supply via multiple large procurement orders. 
+ 
+And honestly, this is starting to feel less like “normal sourcing” and more like early-stage bottleneck behavior. 
+ 
+The supply side already looks tight: 
+$SIVE / $AAOI / MACOM basically the last flexible Western capacity 
+Lumentum + Coherent already tied up in multi-year Nvidia agreements 
+CW laser capacity at Lumentum reportedly constrained, with spillover into Japanese suppliers like Sumitomo / Furukawa running near max 
+ 
+What stood out to me was the report line: 
+“to ensure future capacity will not be constrained by NVIDIA and other CSPs.” 
+ 
+That’s not just AMD reacting  that’s everyone playing defensive supply game theory now. 
+ 
+Feels like Nvidia set the first anchor, and now everyone else is scrambling to avoid getting squeezed later. 
+ 
+Not chasing the narrative here, just watching how fast this bottleneck is becoming real.",2026-06-17T17:22:05Z,Neutral,0,https://stocktwits.com/message/656732440,656732440,2026-06-18T10:07:53.215412
+AAOI,KingBrutus,11,$AAOI gearing up for a big move,2026-06-17T17:11:46Z,Bullish,0,https://stocktwits.com/message/656730877,656730877,2026-06-18T10:07:53.215415
+AAOI,RocketQueen,929,$AAOI Corning over AAO? lol,2026-06-17T17:06:56Z,Neutral,0,https://stocktwits.com/message/656730110,656730110,2026-06-18T10:07:53.215418
+AAOI,MorganHoratio,1450,"The following is our adjusted investment strategy: 
+ 
+I&#39;d like to hear everyone&#39;s opinions. 
+ 
+6. $TTD - Long Term Hold 
+ 
+7. $RCAT - Long Term Hold 
+ 
+8. $MU - Long Term Hold 
+ 
+9. $AAOI - Long Term Hold 
+ 
+10. $ONDS - Long Term Hold 
+ 
+High-bandwidth memory sovereign $MU (Micron) is experiencing massive institutional accumulation ahead of its highly anticipated June 24 earnings print, with 2026 capacity fully backlogged. Concurrently, optical breakout $AAOI (Applied Optoelectronics) is sustaining a rampant 51% YoY revenue acceleration, stabilizing into a textbook long-term Fibonacci technical base. 
+ 
+Defense disruptor $ONDS (Ondas) just delivered an epic milestone at Eurosatory 2026, officially launching its full-stack autonomous system-of-systems. This structural catalyst, alongside severe under-valuation in drone pioneer $RCAT and pristine cash-flow visibility from SaaS royalty $TTD, secures high asymmetric alpha. 
+ 
+Drop your entries below! 👇",2026-06-17T17:03:28Z,Neutral,0,https://stocktwits.com/message/656729605,656729605,2026-06-18T10:07:53.215421
+AAOI,Foreverbagholding,43,$AAOI it wants up,2026-06-17T17:03:09Z,Bullish,0,https://stocktwits.com/message/656729561,656729561,2026-06-18T10:07:53.215424
+AAOI,InvestWhatUCanLose,43,$ONDS extremely bullish on this one.. ATH very soon.. $SPCX $RCAT $AAOI,2026-06-17T16:51:56Z,Neutral,0,https://stocktwits.com/message/656727902,656727902,2026-06-18T10:07:53.215427
+AAOI,StockBraker,1110,"$AAOI Looking at the bid/ask on Jul 2 expiration covered calls. Nice way to make some money while you wait for the stock to reach your desired selling price. Lets say you own 500 shares of AAOI you want to sell for $250. You sell 5 contracts, $250 strike, at $2 per contract. You collect $1,000 today and $125K if it reaches $250+. Doesn&#39;t get there? Keep the $1,000 and buy more shares.",2026-06-17T16:45:02Z,Bullish,0,https://stocktwits.com/message/656726877,656726877,2026-06-18T10:07:53.215430
+AAOI,Nasdaq_Frontier,21,"Stocks I am Watching Today: I might add if Dip Further. 
+ 
+ $AAOI $DRAM $MU $ONDS $IREN  
+ 
+his list is a classic example of an “AI + semiconductor expansion basket” rather than core leadership names, but these stocks often deliver higher beta during late-cycle rotations. 
+ 
+AAOI is tied to optical modules and high-speed interconnects for AI data centers. MU represents the core memory cycle driven by HBM demand. DRAM reflects broader memory sector momentum. ONDS is more exposed to drone and communication networks, while IREN is transitioning from a crypto miner into an AI infrastructure play. 
+ 
+The underlying theme is clear: AI is expanding beyond GPUs into three secondary legs—memory, connectivity, and compute infrastructure. 
+ 
+However, these names share common traits: cyclical exposure, high volatility, and heavy reliance on industry momentum rather than stable cash flows. 
+ 
+The key question is: would you prefer a more stable cycle exposure like MU, or higher-beta opportunities like IREN and AAOI for potential excess returns?",2026-06-17T16:31:07Z,Neutral,0,https://stocktwits.com/message/656724731,656724731,2026-06-18T10:07:53.215433
+AAOI,FibonacciTrader_,1296,"Over $1M made in the last 2 months.  
+ 
+The real edge? Sector watchlists - catching rotations EARLY before the crowd moves in. 
+ 
+Here is the sector rotation watchlist - organized to track where capital is shifting across different parts of the market and identify emerging strength early. 
+ 
+Photonics:  
+$AAOI 
+  
+$LITE 
+  
+$COHR 
+  
+$NVTS 
+  
+$GLW 
+ 
+I often get asked why I don’t turn this into paid content, but for me, sharing stock information is just a hobby. I’m not financially struggling, so I choose to share it for free.",2026-06-17T16:15:53Z,Neutral,0,https://stocktwits.com/message/656722233,656722233,2026-06-18T10:07:53.215436
+AAOI,LennySmall2,25,"$AAOI im adding a bunch of zeros to my gains every $1.X its down, go to ZERO please 🙏",2026-06-17T16:14:08Z,Neutral,0,https://stocktwits.com/message/656721939,656721939,2026-06-18T10:07:53.215439
+AAOI,LennySmall2,25,$AAOI Zero soon!!,2026-06-17T16:12:29Z,Neutral,0,https://stocktwits.com/message/656721672,656721672,2026-06-18T10:07:53.215441
+AAOI,Rossiest,235,$AAOI should be at $210+ but it’s ok we’ll wait,2026-06-17T16:04:54Z,Bullish,0,https://stocktwits.com/message/656720379,656720379,2026-06-18T10:07:53.830989
+AAOI,FibonacciTrader_,1296,"My core AI-infrastructure portfolio — focused on the physical bottlenecks that actually determine how fast AI can scale. 
+ 
+$VRT — thermal management + onsite power systems for data centers; critical as rack density and heat loads accelerate 
+$BE — fuel cell systems tied to grid stabilization; plays directly into peak electricity demand constraints from AI workloads 
+$AAOI — optical transceivers enabling high-speed data movement across servers and distributed compute clusters; key photonics link in the stack 
+$IREN — integrated data center + energy operator; strong positioning around secured power capacity, the real bottleneck in large-scale AI buildouts 
+ 
+This isn’t just “AI exposure” - it’s a bet on the physical infrastructure layer (power, cooling, and photonics) that determines how far the entire AI cycle can extend. 
+ 
+Sharing framework and levels - no paywall, just structured positioning thinking",2026-06-17T15:54:26Z,Neutral,0,https://stocktwits.com/message/656719043,656719043,2026-06-18T10:07:53.831007
+AAOI,MonkeyBananaGenius,6261,$AAOI $SIVEF I&#39;m now up over 200% on SIVEF in less than 2 months. Sold AAOI in the interim since that post but then reentered with cost avg currently 160ish.,2026-06-17T15:53:28Z,Neutral,5,https://stocktwits.com/message/656718874,656718874,2026-06-20T08:42:30.142394
+AAOI,LennySmall2,25,$AAOI Why isnt this this down to 0.000?,2026-06-17T15:41:03Z,Neutral,0,https://stocktwits.com/message/656717459,656717459,2026-06-18T10:07:53.831012
+AAOI,xpro123,1,$AAOI I’ll be back for more if it dips again,2026-06-17T15:32:56Z,Bullish,0,https://stocktwits.com/message/656715971,656715971,2026-06-18T10:07:53.831016
+AAOI,joezuke,106,$AAOI so coiled that it feels like it will pull a nasty stop run candle before next leg up. Maybe into $150 range.,2026-06-17T15:28:14Z,Neutral,0,https://stocktwits.com/message/656715134,656715134,2026-06-18T10:07:53.831019
+AAOI,KryptonResearch,6053,"So let’s get things straight.
+
+Dell, Cisco, HP blow out earnings.
+
+Broadcomm comes in and pees in the punch bowl and Nvidia as we highlighted couple weeks ago also missed on compute revenues… buoyed by what? 
+
+Networking.
+
+The theme has never been clearer. 
+
+AI infrastructure buildout is shifting to the next phase,  connecting compute and inference to endpoints. 
+
+Rack scale networking saw its boom with $AAOI $COHR and $LITE.
+
+But with HPE seeing a 600% surge in WiFi-7 sales… we are going beyond the rack and to a commercial and industrial scale in networking. 
+
+We have a name with 100%+ upside as a leader in both WiFi-7, industrial networking and a critical name for the automation and eventual robotics wave. 
+
+Partnership with market darling $NOK  (another networking name surprise surprise) 
+
+And the market has no idea.  
+
+Full read here: 
+
+https://kryptonresearch.substack.com/p/connecting-the-future",2026-06-17T15:22:19Z,Neutral,0,https://stocktwits.com/message/656713941,656713941,2026-06-18T10:07:53.831023
+AAOI,BuyNowUnlimited,181,$CRDO  $ALAB  outperforming    $LITE $AAOI,2026-06-17T15:19:56Z,Neutral,0,https://stocktwits.com/message/656713453,656713453,2026-06-18T10:07:53.831026
+AAOI,Prophetus1,75,$AAOI 167 -&gt; 163 -&gt; 161?,2026-06-17T15:17:51Z,Neutral,1,https://stocktwits.com/message/656713038,656713038,2026-06-18T10:07:53.831029
+AAOI,tradepulsealerts,59,$AAOI i will lead the way.  Follow me. $RKLB,2026-06-17T15:16:15Z,Neutral,0,https://stocktwits.com/message/656712727,656712727,2026-06-18T10:07:53.831032
+AAOI,beestMod516,376,$AAOI understandable 🫡,2026-06-17T15:10:11Z,Neutral,0,https://stocktwits.com/message/656711512,656711512,2026-06-18T10:07:53.831035
+AAOI,tradepulsealerts,59,$AAOI looks like we are going much lower,2026-06-17T15:01:03Z,Neutral,0,https://stocktwits.com/message/656709785,656709785,2026-06-18T10:07:53.831038
+AAOI,Mountainbiker168,509,$AAOI Trucking time below 170,2026-06-17T14:59:16Z,Bullish,0,https://stocktwits.com/message/656709450,656709450,2026-06-18T10:07:53.831041
+AAOI,tradepulsealerts,59,$AAOI needs to really bounce in the next hour or we are in for a little bit of turbulence if you are long,2026-06-17T14:56:15Z,Neutral,0,https://stocktwits.com/message/656708844,656708844,2026-06-18T10:07:53.831044
+AAOI,DontBadgerMe,104,"$AAOI fresh 933 share purchase, let’s roll",2026-06-17T14:46:38Z,Bullish,0,https://stocktwits.com/message/656706848,656706848,2026-06-18T10:07:53.831047
+AAOI,Mountainbiker168,509,$AAOI Recharging like LITE COHR.,2026-06-17T14:44:44Z,Bullish,0,https://stocktwits.com/message/656706505,656706505,2026-06-18T10:07:53.831051
+AAOI,DontBadgerMe,104,$IREN done holding such a large position here (relative measure) sold 2650 shares $IREN and bought 930 shares $AAOI. Still holding 700 shares of $IREN in my brokerage account w/ avg cost of 35ish,2026-06-17T14:41:03Z,Bullish,0,https://stocktwits.com/message/656705794,656705794,2026-06-18T10:07:53.831054
+AAOI,tradepulsealerts,59,"$AAOI significant resistance here. If we get a pop to the upside, I may have to go short.",2026-06-17T14:40:54Z,Neutral,0,https://stocktwits.com/message/656705769,656705769,2026-06-18T10:07:53.831057
+AAOI,LennySmall2,25,$AAOI Biggest garbage ever!,2026-06-17T14:18:35Z,Neutral,0,https://stocktwits.com/message/656701154,656701154,2026-06-18T10:07:53.831060
+AAOI,LennySmall2,25,$AAOI Keep shorting it 🙏,2026-06-17T14:15:41Z,Neutral,0,https://stocktwits.com/message/656700545,656700545,2026-06-18T10:07:53.831063
+AAOI,LennySmall2,25,$AAOI ZERO!!,2026-06-17T14:11:09Z,Neutral,0,https://stocktwits.com/message/656699515,656699515,2026-06-18T10:07:53.831066
+AAOI,legend_217,108,$AAOI H&amp;S forming,2026-06-17T14:03:36Z,Neutral,0,https://stocktwits.com/message/656697690,656697690,2026-06-18T10:07:53.831068
+AAOI,tradepulsealerts,59,$AAOI long 2000 170s.   Follow me dummies,2026-06-17T14:01:50Z,Neutral,0,https://stocktwits.com/message/656697260,656697260,2026-06-18T10:07:53.831071
+AAOI,LennySmall2,25,$AAOI ZERO INCOMING,2026-06-17T14:01:25Z,Neutral,0,https://stocktwits.com/message/656697156,656697156,2026-06-18T10:07:53.831074
+AAOI,bskewl3,1,$AAOI biggest loser on my watchlist,2026-06-17T14:00:27Z,Neutral,0,https://stocktwits.com/message/656696934,656696934,2026-06-18T10:07:53.831077
+AAOI,tradepulsealerts,59,$AAOI long dummies at 170s. May have been early.  Thought we would bounce but may be headed lower.  Holding,2026-06-17T13:58:22Z,Neutral,0,https://stocktwits.com/message/656696400,656696400,2026-06-18T10:07:53.831080
+AAOI,DeVries007,108,$AAOI You had your dip!,2026-06-17T13:45:47Z,Neutral,0,https://stocktwits.com/message/656693445,656693445,2026-06-18T10:07:53.831083
+AAOI,Foreverbagholding,43,$AAOI bro is really bragging about making 3K on a 338K bet lol,2026-06-17T13:42:44Z,Bullish,1,https://stocktwits.com/message/656692672,656692672,2026-06-18T10:07:53.831086
+AAOI,tradepulsealerts,59,$AAOI long  170s,2026-06-17T13:38:03Z,Neutral,0,https://stocktwits.com/message/656691483,656691483,2026-06-18T10:07:53.831089
+AAOI,tradepulsealerts,59,$AAOI,2026-06-17T13:37:02Z,Neutral,0,https://stocktwits.com/message/656691248,656691248,2026-06-18T10:07:53.831091
+AAOI,tradepulsealerts,59,$AAOI covered this short now going long dummys 169s 2000,2026-06-17T13:36:47Z,Neutral,0,https://stocktwits.com/message/656691193,656691193,2026-06-18T10:07:54.466703
+AAOI,KITOVLI,173,$AAOI $117🧲 - target!!! You will never see $200 :-),2026-06-17T13:34:51Z,Bearish,0,https://stocktwits.com/message/656690785,656690785,2026-06-18T10:07:54.466724
+AAOI,Grindhouse_Gains,152,$AAOI I buy. Biggest red candle of the year proceeds. Cool,2026-06-17T13:34:26Z,Neutral,0,https://stocktwits.com/message/656690698,656690698,2026-06-18T10:07:54.466729
+AAOI,tradepulsealerts,59,$AAOI told u dummies,2026-06-17T13:32:07Z,Neutral,0,https://stocktwits.com/message/656690206,656690206,2026-06-18T10:07:54.466733
+AAOI,beestMod516,376,"$AAOI 
+It decides to stay between $170 to $190",2026-06-17T13:25:11Z,Neutral,0,https://stocktwits.com/message/656689128,656689128,2026-06-18T10:07:54.466737
+AAOI,Mountainbiker168,509,$AAOI U turning day,2026-06-17T12:08:36Z,Bullish,0,https://stocktwits.com/message/656680773,656680773,2026-06-18T10:07:54.466740
+AAOI,1OAK_SwypeR,9,$AAOI bears didn’t sleep last night 🤣,2026-06-17T12:05:30Z,Neutral,0,https://stocktwits.com/message/656680522,656680522,2026-06-18T10:07:54.466743
+AAOI,StockBraker,1110,$AAOI https://www.marketbeat.com/instant-alerts/applied-optoelectronics-nasdaqaaoi-shares-up-112-time-to-buy-2026-06-15/,2026-06-17T11:45:39Z,Bullish,0,https://stocktwits.com/message/656678984,656678984,2026-06-18T10:07:54.466746
+AAOI,HericuleParrot,121,$AAOI again why did we go down yesterday,2026-06-17T11:44:45Z,Neutral,0,https://stocktwits.com/message/656678920,656678920,2026-06-18T10:07:54.466750
+AAOI,StockBraker,1110,$AAOI https://stockstotrade.com/news/applied-optoelectronics-inc-aaoi-news-2026_06_15/,2026-06-17T11:44:04Z,Bullish,0,https://stocktwits.com/message/656678866,656678866,2026-06-18T10:07:54.466753
+AAOI,tradepulsealerts,59,$AAOI heading much lower after open 150s,2026-06-17T11:02:08Z,Neutral,0,https://stocktwits.com/message/656676282,656676282,2026-06-18T10:07:54.466756
+AAOI,QuietTrader,236,Stocks to watch this morning: $FIG $AAOI $ASTS,2026-06-17T10:51:01Z,Bullish,0,https://stocktwits.com/message/656675798,656675798,2026-06-18T10:07:54.466759
+AAOI,tradepulsealerts,59,$AAOI lol tol u guys wasnnt going to gap up short 2000 174s,2026-06-17T10:31:58Z,Bearish,0,https://stocktwits.com/message/656674969,656674969,2026-06-18T10:07:54.466762
+AAOI,Johnnyf22,0,$AAOI triple witching hour is Thursday. Expect more volatility….,2026-06-17T10:20:12Z,Bullish,0,https://stocktwits.com/message/656674562,656674562,2026-06-17T10:27:50.984497
+AAOI,FALCON765,27,$AAOI,2026-06-17T09:33:00Z,Bullish,0,https://stocktwits.com/message/656673195,656673195,2026-06-17T10:27:50.984521
+AAOI,SmartFlowTrading,14,$AAOI Market positioning is still postiive and market maker flows supportive. Not a lot of exposure below $150 which is the workst case sceanrio. $200 trully turned out a strong resistance,2026-06-17T09:29:46Z,Bullish,0,https://stocktwits.com/message/656673122,656673122,2026-06-17T10:27:50.984526
+AAOI,graph,139,$AAOI https://x.com/aleabitoreddit/status/2060068635159478351,2026-06-17T06:55:55Z,Bullish,0,https://stocktwits.com/message/656670170,656670170,2026-06-17T10:27:50.984529
+AAOI,Kylor,160,"$AAOI The news about expanded credit facility is a positive signal because it gives AAOI greater financial flexibility to support its rapid capacity expansion. The lending bank suggests it is comfortable increasing its exposure to AAOI which aligns with management&#39;s comments that demand continues to exceed supply.
+
+This supports the bullish thesis that the company is preparing for sustained demand growth 🚀🚀🚀",2026-06-17T06:52:29Z,Bullish,0,https://stocktwits.com/message/656670103,656670103,2026-06-17T10:27:50.984534
+AAOI,graph,139,$AAOI https://www.odaily.news/en/newsflash/491431,2026-06-17T06:52:06Z,Bullish,0,https://stocktwits.com/message/656670095,656670095,2026-06-17T10:27:50.984537
+AAOI,graph,139,$AAOI https://www.investing.com/news/analyst-ratings/raymond-james-reiterates-applied-optoelectronics-stock-rating-on-capacity-expansion-93CH-4735576,2026-06-17T06:45:36Z,Bullish,0,https://stocktwits.com/message/656669960,656669960,2026-06-17T10:27:50.984540
+AAOI,DeVries007,108,"$AAOI Serenity is EXTREMELY bullish on this one, so what can go wrong!",2026-06-17T06:11:32Z,Neutral,0,https://stocktwits.com/message/656669363,656669363,2026-06-17T10:27:50.984543
+AAOI,graph,139,"@Prophetus1 @HericuleParrot $AAOI The scale behind that is concrete. AAOI exited Q1 at roughly 100,000 transceivers a month and guided to over 930,000 a month of 800G and 1.6T by the end of 2027, more than half of it from Texas, while expanding laser fabrication capacity by about 350% over the same window,” a trader wrote. 
+
+“Since each of the harder 800G and 1.6T modules carries four or more lasers, that unit ramp is really a laser ramp, which is the precise reason owning the fab is the part that matters,” they said.",2026-06-17T04:18:58Z,Bullish,0,https://stocktwits.com/message/656667553,656667553,2026-06-17T10:27:50.984548
+AAOI,graph,139,"@tradepulsealerts $AAOI The scale behind that is concrete. AAOI exited Q1 at roughly 100,000 transceivers a month and guided to over 930,000 a month of 800G and 1.6T by the end of 2027, more than half of it from Texas, while expanding laser fabrication capacity by about 350% over the same window,” a trader wrote. 
+
+“Since each of the harder 800G and 1.6T modules carries four or more lasers, that unit ramp is really a laser ramp, which is the precise reason owning the fab is the part that matters,” they said.",2026-06-17T04:18:23Z,Bullish,0,https://stocktwits.com/message/656667545,656667545,2026-06-17T10:27:50.984551
+AAOI,graph,139,"$AAOI very bullish:
+$AAOI The scale behind that is concrete. AAOI exited Q1 at roughly 100,000 transceivers a month and guided to over 930,000 a month of 800G and 1.6T by the end of 2027, more than half of it from Texas, while expanding laser fabrication capacity by about 350% over the same window,” a trader wrote. 
+
+“Since each of the harder 800G and 1.6T modules carries four or more lasers, that unit ramp is really a laser ramp, which is the precise reason owning the fab is the part that matters,” they said.",2026-06-17T04:17:44Z,Bullish,0,https://stocktwits.com/message/656667532,656667532,2026-06-17T10:27:50.984554
+AAOI,graph,139,"@tradepulsealerts $AAOI The scale behind that is concrete. AAOI exited Q1 at roughly 100,000 transceivers a month and guided to over 930,000 a month of 800G and 1.6T by the end of 2027, more than half of it from Texas, while expanding laser fabrication capacity by about 350% over the same window,” a trader wrote. 
+
+“Since each of the harder 800G and 1.6T modules carries four or more lasers, that unit ramp is really a laser ramp, which is the precise reason owning the fab is the part that matters,” they said.",2026-06-17T04:17:09Z,Bullish,0,https://stocktwits.com/message/656667525,656667525,2026-06-17T10:27:50.984558
+AAOI,StocktwitsNews,107739,"AAOI, LITE, COHR, MRVL Stocks Bounce Back Overnight: Why AI Photonics Stocks Drew Attention Today
+
+$AAOI $POET $LITE $COHR $MRVL
+
+https://stocktwits.com/news/equity/markets/aaoi-lite-cohr-mrvl-stocks-bounce-back-overnight-why-ai-photonics-stocks-drew-attention-today/cZK0jLIR7IR",2026-06-17T03:58:48Z,Neutral,0,https://stocktwits.com/message/656667153,656667153,2026-06-17T10:27:50.984561
+AAOI,tradepulsealerts,55,$AAOI trying to squeeze my short 174s.  Im going to wake up very happy this under 170!!,2026-06-17T03:53:14Z,Neutral,0,https://stocktwits.com/message/656666998,656666998,2026-06-17T10:27:50.984565
+AAOI,HericuleParrot,121,"$AAOI northland securities say 58, has he lost his mind. Maybe he meant 580",2026-06-17T03:05:30Z,Neutral,0,https://stocktwits.com/message/656665630,656665630,2026-06-17T10:27:50.984568
+AAOI,Gator14,110,$AAOI,2026-06-17T02:42:51Z,Bearish,0,https://stocktwits.com/message/656664872,656664872,2026-06-17T10:27:50.984571
+AAOI,FALCON765,27,$AAOI        get ready....the next move up soon...,2026-06-17T02:16:24Z,Bullish,0,https://stocktwits.com/message/656663888,656663888,2026-06-17T10:27:50.984574
+AAOI,graph,139,$AAOI very bullish,2026-06-17T02:08:04Z,Bullish,0,https://stocktwits.com/message/656663564,656663564,2026-06-17T10:27:50.984578
+AAOI,Stockfreshman,15,$AAOI bears are in trouble now. Tomorrow will be a big day for stock market and aaoi.,2026-06-17T02:01:03Z,Bullish,0,https://stocktwits.com/message/656663279,656663279,2026-06-17T10:27:50.984581
+AAOI,graph,139,$AAOI very bullish,2026-06-17T01:54:42Z,Bullish,1,https://stocktwits.com/message/656663005,656663005,2026-06-17T10:27:50.984585
+AAOI,LennySmall2,24,$AAOI Another America Online?,2026-06-17T01:06:41Z,Neutral,0,https://stocktwits.com/message/656660707,656660707,2026-06-17T10:27:50.984588
+AAOI,tampaiteT1,17,"$AAOI  
+ 
+Money Laundering? do multiple offerings here in the US and then borrow 500M from Shanghai Pudong Development Bank in China",2026-06-17T00:49:11Z,Neutral,0,https://stocktwits.com/message/656659790,656659790,2026-06-17T10:27:50.984591
+AAOI,tradepulsealerts,55,$AAOI short 2000 174s.,2026-06-17T00:30:57Z,Neutral,0,https://stocktwits.com/message/656658801,656658801,2026-06-17T10:27:50.984594
+AAOI,tradepulsealerts,55,$AAOI oh trying to squueze me at 174s. Nice try. See you at 150s at open,2026-06-17T00:29:13Z,Neutral,0,https://stocktwits.com/message/656658696,656658696,2026-06-17T10:27:50.984597
+AAOI,willywaller,30,"$AAOI knowing this stock, $200 tomorrow 🤣",2026-06-17T00:14:00Z,Bullish,0,https://stocktwits.com/message/656657787,656657787,2026-06-17T10:27:50.984601
+AAOI,1OAK_SwypeR,9,$AAOI,2026-06-16T23:28:37Z,Bullish,0,https://stocktwits.com/message/656654913,656654913,2026-06-17T10:27:50.984605
+AAOI,tradepulsealerts,55,$AAOI 158 tomorrow,2026-06-16T23:23:56Z,Neutral,0,https://stocktwits.com/message/656654648,656654648,2026-06-17T10:27:50.984608
+AAOI,lifeonthewater,81,"$AAOI Sound like every DICtator 
+Out there 🥸🤓😊🤣😂",2026-06-16T23:23:21Z,Bullish,2,https://stocktwits.com/message/656654624,656654624,2026-06-17T10:27:50.984611
+AAOI,tradepulsealerts,55,$AAOI sort 174s paying,2026-06-16T23:22:06Z,Neutral,0,https://stocktwits.com/message/656654550,656654550,2026-06-17T10:27:50.984614
+AAOI,tradepulsealerts,55,$AAOI i will lead the way. U follow. Short 174s. 2000,2026-06-16T22:30:42Z,Neutral,0,https://stocktwits.com/message/656651162,656651162,2026-06-17T10:27:50.984617
+AAOI,1OAK_SwypeR,9,$AAOI back to $200. As long as 170 holds,2026-06-16T22:29:52Z,Bullish,0,https://stocktwits.com/message/656651107,656651107,2026-06-17T10:27:51.619188
+AAOI,KITOVLI,173,$AAOI what is the point of credit now?,2026-06-16T22:25:33Z,Neutral,0,https://stocktwits.com/message/656650768,656650768,2026-06-17T10:27:51.619211
+AAOI,MB6288,31,"$WYFI OK, after raiding $MYSE and $AAOI today this bitch is next on my radar. 100% unviable. Let the short begin!!!!",2026-06-16T22:06:05Z,Bearish,0,https://stocktwits.com/message/656649285,656649285,2026-06-17T10:27:51.619217
+AAOI,manny17,15,$AAOI need to break 173.92,2026-06-16T21:56:39Z,Neutral,0,https://stocktwits.com/message/656648581,656648581,2026-06-17T10:27:51.619220
+AAOI,QuietTrader,236,"Updated portfolio (June 16, 2026).   
+  
+Top 10 stocks that I currently own categorized by weight in my portfolio:   
+   
+1) $PLTR     
+2) ALKS (New)
+3) $FIG (New)
+4) GE / GEV / GEHC   
+5) $DKNG 
+6) AIRJ (New)
+7) ASTS
+8) BABA
+9) FCX
+10) $AAOI (New)
+
+  
+I also hold notable positions of MFIC, ONDS, NOK various index funds, ETFs and smaller positions in other companies and lots of cash at this time.   
+   
+***New = Position started in the past 60 days  
+ 
+*****Follow me for real-time trading updates!*****",2026-06-16T21:15:24Z,Bullish,0,https://stocktwits.com/message/656645018,656645018,2026-06-17T10:27:51.619224
+AAOI,KITOVLI,173,$AAOI Insider sold!!!!,2026-06-16T21:12:29Z,Bearish,0,https://stocktwits.com/message/656644756,656644756,2026-06-17T10:27:51.619227
+AAOI,Foreverbagholding,43,$AAOI bro is going to be underwater by morning,2026-06-16T21:07:53Z,Bullish,2,https://stocktwits.com/message/656644327,656644327,2026-06-17T10:27:51.619231
+AAOI,TwoToesTrading,3710,"$AAOI 
+
+This stock 😂😂 
+
+Like clockwork",2026-06-16T21:01:21Z,Neutral,0,https://stocktwits.com/message/656643692,656643692,2026-06-17T10:27:51.619234
+AAOI,fnpony,49,$AAOI Why a huge green candle after hour?,2026-06-16T20:56:14Z,Bullish,0,https://stocktwits.com/message/656643200,656643200,2026-06-17T10:27:51.619238
+AAOI,Jmartinez123,32,$AAOI looks like another rug pull is coming soon...,2026-06-16T20:55:05Z,Neutral,0,https://stocktwits.com/message/656643085,656643085,2026-06-17T10:27:51.619241
+AAOI,FibonacciTrader_,1168,"Optics / photonics tape is starting to look structurally broken. 
+ 
+$AAOI, $CIEN, $LITE- all showing wide, sloppy price action with no real follow-through. 
+ 
+During the prior trend, these names consistently rode rising EMAs with clean momentum and controlled pullbacks. That structure is gone. 
+ 
+Now we’re seeing failed breakouts, loss of key levels, and rallies that immediately fade. 
+ 
+$CIEN, which was the most orderly leader from March–May in my view, has already rolled over and lost structure. 
+ 
+This is no longer a “buy dips in trend” environment for the group - it’s transition phase behavior.",2026-06-16T20:35:22Z,Neutral,0,https://stocktwits.com/message/656640990,656640990,2026-06-17T10:27:51.619244
+AAOI,tradepulsealerts,55,$AAOI lot more pain tomorrow. Will cover my short around 162 and go long,2026-06-16T20:33:14Z,Neutral,0,https://stocktwits.com/message/656640717,656640717,2026-06-17T10:27:51.619247
+AAOI,bruffy92,7,"$AAOI what i am confident in, is within the next 10 trading days, we&#39;re either well over 200 or sub 145",2026-06-16T20:25:30Z,Neutral,0,https://stocktwits.com/message/656639676,656639676,2026-06-17T10:27:51.619250
+AAOI,bamo,131,$AAOI this is only for day trading between 170 and 190,2026-06-16T20:05:36Z,Bullish,0,https://stocktwits.com/message/656636816,656636816,2026-06-17T10:27:51.619254
+AAOI,Lookin410baggers,0,$AAOI This is one frustrating stock to ride with🤦‍♂️,2026-06-16T20:05:30Z,Neutral,0,https://stocktwits.com/message/656636789,656636789,2026-06-17T10:27:51.619257
+AAOI,IrenGlazer69,9,$AAOI down for no reason,2026-06-16T20:00:13Z,Bullish,0,https://stocktwits.com/message/656635701,656635701,2026-06-17T10:27:51.619260
+AAOI,RoofCat,173,$AAOI,2026-06-16T19:58:32Z,Neutral,0,https://stocktwits.com/message/656635330,656635330,2026-06-17T10:27:51.619263
+AAOI,BuyLongHoldStrong,170,$AAOI I’d like to see a nice recovery here.,2026-06-16T19:55:50Z,Neutral,0,https://stocktwits.com/message/656634740,656634740,2026-06-17T10:27:51.619266
+AAOI,SkinnyDipping,157,$AAOI,2026-06-16T19:54:10Z,Neutral,2,https://stocktwits.com/message/656634387,656634387,2026-06-17T10:27:51.619269
+AAOI,free2dream,386,$AAOI $LITE $AXTI $SNDK PREPARE FOR CORRECTION &lt; ALL THESE ARE 200% PLUS EXTENDED ABOVE 200DMA,2026-06-16T19:54:06Z,Bearish,0,https://stocktwits.com/message/656634373,656634373,2026-06-17T10:27:51.619272
+AAOI,tradepulsealerts,55,$AAOI we will see $155 tomorrow,2026-06-16T19:52:15Z,Neutral,0,https://stocktwits.com/message/656633986,656633986,2026-06-17T10:27:51.619275
+AAOI,george4it,209,$COHR $ALAB $AAOI  and …… back in for a swing trade.,2026-06-16T19:52:08Z,Neutral,0,https://stocktwits.com/message/656633960,656633960,2026-06-17T10:27:51.619278
+AAOI,Kylor,160,$AAOI Channel floor hello! 👋 Added even more at 171. Now AAOI is my biggest position again 🚀,2026-06-16T19:51:15Z,Bullish,0,https://stocktwits.com/message/656633783,656633783,2026-06-17T10:27:51.619281
+AAOI,Marktraderly,56,$AAOI nokia got 30M deal on news! keep up fam!,2026-06-16T19:46:54Z,Bullish,0,https://stocktwits.com/message/656632970,656632970,2026-06-17T10:27:51.619285
+AAOI,SkinnyDipping,157,"Y’all ready to bounce? $AAOI  and $COHR are best most reliable swing stocks right now. 
+
+Prove me wrong. Find another one. $SPY $IWM",2026-06-16T19:46:43Z,Bullish,0,https://stocktwits.com/message/656632941,656632941,2026-06-17T10:27:51.619288
+AAOI,Stocktwits,920348,$AAOI has traded erratically but @Dr_Stoxx sees a breakout coming,2026-06-16T19:44:34Z,Neutral,2,https://stocktwits.com/message/656632575,656632575,2026-06-17T10:27:51.619291
+AAOI,free2dream,386,$AAOI $SRPT MAKES 4X the sales and valued at $1.6B and this shit is at $16B ?  ABSOLUTE JOKE,2026-06-16T19:42:21Z,Bearish,0,https://stocktwits.com/message/656632167,656632167,2026-06-17T10:27:51.619294
+AAOI,free2dream,386,$AAOI what the fxck is this still in triple digits ? THIS IS THE BIGGEST SCAM COMPANY EVER ! SAME SHIT AS. $SMCI  JUST WAIT FOR the $100 DOWN GAP OPEN,2026-06-16T19:41:27Z,Bearish,0,https://stocktwits.com/message/656632016,656632016,2026-06-17T10:27:51.619297
+AAOI,Dr_Stoxx,126446,$AAOI case in point: messy up and down price action.  But breakout soon,2026-06-16T19:40:09Z,Neutral,0,https://stocktwits.com/message/656631787,656631787,2026-06-17T10:27:51.619300
+AAOI,McReethie,18,"$AAOI 
+
+https://www.tradeapes.com/stocks/AAOI",2026-06-16T19:39:28Z,Neutral,0,https://stocktwits.com/message/656631655,656631655,2026-06-17T10:27:51.619303
+AAOI,BravesBull,117,$AAOI starter 171.55,2026-06-16T19:37:31Z,Bullish,0,https://stocktwits.com/message/656631355,656631355,2026-06-17T10:27:52.254200
+AAOI,tradepulsealerts,55,$AAOI i will lead the way.  Follow me,2026-06-16T19:29:53Z,Neutral,0,https://stocktwits.com/message/656630229,656630229,2026-06-17T10:27:52.254223
+AAOI,ItSaulGoodMaan,186,$AAOI gotta love these bullshit AI trending explanations so much explained yet nothing explained,2026-06-16T19:29:46Z,Neutral,0,https://stocktwits.com/message/656630202,656630202,2026-06-17T10:27:52.254228
+AAOI,Ninernation009,8,$AAOI Added 100 for swing 👀,2026-06-16T19:29:27Z,Bullish,0,https://stocktwits.com/message/656630150,656630150,2026-06-17T10:27:52.254232
+AAOI,Marktraderly,56,"$AAOI the swings are insane, looks like we swinging on weekly! 
+ 
+Nok got news 30M deal, buy and hold this is something worth watching!",2026-06-16T19:28:12Z,Bullish,0,https://stocktwits.com/message/656629977,656629977,2026-06-17T10:27:52.254236
+AAOI,beestMod516,375,$AAOI don’t break $170 or many big rats will buy now.,2026-06-16T19:24:16Z,Neutral,0,https://stocktwits.com/message/656629376,656629376,2026-06-17T10:27:52.254239
+AAOI,Olivia_Strickland,661,"$AAOI giving back Monday&#39;s climb hard, -10.6% at $171.22. watching where it tries to find a floor. not touching a falling knife. anyone seeing a level here, or is this just ugly for the day?
+
+on my fade list: https://tapeboard.com/scanner?utm_source=stocktwits&amp;utm_medium=post&amp;utm_campaign=olivia&amp;utm_content=aaoi-bk-dn-watch&amp;utm_term=scanner&amp;s=AAOI",2026-06-16T19:23:32Z,Neutral,0,https://stocktwits.com/message/656629256,656629256,2026-06-17T10:27:52.254243
+AAOI,TaoistTrader,130,$AAOI,2026-06-16T19:18:19Z,Neutral,0,https://stocktwits.com/message/656628375,656628375,2026-06-17T10:27:52.254246
+AAOI,LennySmall2,24,$AAOI Whos using America Online still?,2026-06-16T19:18:17Z,Neutral,0,https://stocktwits.com/message/656628369,656628369,2026-06-17T10:27:52.254249
+AAOI,WAJeff,773,$AAOI add 169.94,2026-06-16T19:17:35Z,Neutral,0,https://stocktwits.com/message/656628267,656628267,2026-06-17T10:27:52.254252
+AAOI,bskewl3,1,$AAOI going for the 50D MA,2026-06-16T19:16:58Z,Neutral,0,https://stocktwits.com/message/656628183,656628183,2026-06-17T10:27:52.254255
+AAOI,tradepulsealerts,55,$AAOI hopefully u took my short alert,2026-06-16T19:15:04Z,Neutral,0,https://stocktwits.com/message/656627892,656627892,2026-06-17T10:27:52.254258
+AAOI,Buyorsell4321,32,$AAOI No this is perfectly normal. There is no algo manipulation here. Up one day 20 down one day 20 this is completely normal. 👌,2026-06-16T19:08:24Z,Neutral,0,https://stocktwits.com/message/656626891,656626891,2026-06-17T10:27:52.254261
+AAOI,dukeofhb,163,$AAOI lol. These algos are funny. They just hit them all at the same time. $LITE $COHR,2026-06-16T19:07:07Z,Neutral,0,https://stocktwits.com/message/656626717,656626717,2026-06-17T10:27:52.254264
+AAOI,tradepulsealerts,55,$AAOI you will learn to follow me,2026-06-16T19:01:42Z,Neutral,0,https://stocktwits.com/message/656625983,656625983,2026-06-17T10:27:52.254266
+AAOI,LennySmall2,24,$AAOI Is this America Online from the early 2000s?,2026-06-16T18:59:10Z,Neutral,0,https://stocktwits.com/message/656625602,656625602,2026-06-17T10:27:52.254269
+AAOI,tradepulsealerts,55,$AAOI short 174.64.  2000,2026-06-16T18:58:41Z,Neutral,0,https://stocktwits.com/message/656625527,656625527,2026-06-17T10:27:52.254272
+AAOI,tradepulsealerts,55,$AAOI short 174.32.  2000.,2026-06-16T18:57:40Z,Bearish,0,https://stocktwits.com/message/656625375,656625375,2026-06-17T10:27:52.254276
+AAOI,Justhere12345,0,$AAOI added 2000.,2026-06-16T18:57:36Z,Neutral,0,https://stocktwits.com/message/656625366,656625366,2026-06-17T10:27:52.254280
+AAOI,beestMod516,375,"$AAOI few of you setting buy orders at $165 
+Dark pool rats over working today.",2026-06-16T18:57:04Z,Neutral,0,https://stocktwits.com/message/656625275,656625275,2026-06-17T10:27:52.254283
+AAOI,NickyGeee,52,$AAOI Added some here,2026-06-16T18:54:56Z,Neutral,0,https://stocktwits.com/message/656624956,656624956,2026-06-17T10:27:52.254286
+AAOI,PS_trader,6,"$AAOI CSP, quick gains. This will rally to 195",2026-06-16T18:54:04Z,Neutral,0,https://stocktwits.com/message/656624823,656624823,2026-06-17T10:27:52.254289
+AAOI,PS_trader,6,$AAOI added.,2026-06-16T18:53:45Z,Neutral,0,https://stocktwits.com/message/656624779,656624779,2026-06-17T10:27:52.254291
+AAOI,NickyGeee,52,$AAOI Disgusting bloodbath,2026-06-16T18:52:15Z,Neutral,0,https://stocktwits.com/message/656624581,656624581,2026-06-17T10:27:52.254294
+AAOI,abman54,216,$AAOI wtf is going on??,2026-06-16T18:51:44Z,Neutral,0,https://stocktwits.com/message/656624509,656624509,2026-06-17T10:27:52.254297
+AAOI,tradepulsealerts,55,$AAOI ouch,2026-06-16T18:51:18Z,Neutral,0,https://stocktwits.com/message/656624450,656624450,2026-06-17T10:27:52.254300
+AAOI,theoptionsplug,3495,"$AAOI WILL be seeing a breakout soon! 
+ 
+The stock is consolidating into the apex of its wedge, expect a massive move!",2026-06-16T18:43:05Z,Neutral,0,https://stocktwits.com/message/656623255,656623255,2026-06-17T10:27:52.254303
+AAOI,Guavastocks,19,$AAOI BUYING FOR CHEAP NOW 🚀🚀🚀,2026-06-16T18:40:06Z,Bullish,0,https://stocktwits.com/message/656622859,656622859,2026-06-17T10:27:52.254306
+AAOI,tradepulsealerts,55,$AAOI added,2026-06-16T18:21:35Z,Neutral,0,https://stocktwits.com/message/656620186,656620186,2026-06-17T10:27:52.254310
+AAOI,Akihiko,191,$AAOI Loading zone or wait for more dip?,2026-06-16T18:18:02Z,Bullish,0,https://stocktwits.com/message/656619641,656619641,2026-06-17T10:27:52.254313
+AAOI,Nasdaq_Frontier,11,"The market rewards those who identify important themes early; these are the themes we spend the most time researching:  
+ 
+Photonics → $AAOI $MRVL $AEHR $LITE  
+ 
+The photonics theme is becoming increasingly clear: as AI scales, the bottleneck is shifting from compute power to interconnect and data movement efficiency. 
+ 
+AAOI, MRVL, AEHR, and LITE represent different layers of the photonics value chain—from high-speed optical modules and networking chips to testing infrastructure and core optical communication systems. The market is expanding from an “AI compute (GPU) narrative” to a broader re-rating of AI data flow efficiency. 
+ 
+However, photonics is now entering a phase of accelerated expectation pricing, meaning volatility will be significantly higher than core leaders like NVDA and AVGO. Near-term performance will depend more on order flow and earnings execution than narrative expansion. 
+ 
+The key question is: will photonics become the second major AI growth leg, or just a mid-cycle thematic extension? Do you prefer platform players like MRVL or high-beta names like AAOI?",2026-06-16T18:02:05Z,Neutral,0,https://stocktwits.com/message/656617271,656617271,2026-06-17T10:27:52.887528
+AAOI,FibonacciTrader_,1168,"2027 Projections: a new bull cycle may be taking shape. 
+ 
+$AAOI  - $70B 
+$SNDK - $800B 
+$SIVE  - $20B 
+$NBIS - $250B 
+$MRVL  - $600B  
+ 
+Want me to break down what levels to watch for a clean entry? 
+ 
+Are you going to miss out again?",2026-06-16T16:24:27Z,Neutral,0,https://stocktwits.com/message/656602420,656602420,2026-06-17T10:27:52.887552
+AAOI,tonyctl,159,"@EBE_day @Jeremymartin007 @ribbey @jenbunn @cubie @Cubie @simon58 @judgeyoung2 @TraderRapp @Godreal1 @zuby34 
+$AAOI big mover, 150p safer",2026-06-16T16:15:29Z,Neutral,0,https://stocktwits.com/message/656601032,656601032,2026-06-17T10:27:52.887556
+AAOI,Nasdaq_Frontier,11,"These are the things we are focusing on most closely as we enter the second half of June. 
+ 
+🔥 Bullish $CIFR $RKLB $IONQ $IREN $AAOI  
+ 
+CIFR and IREN are evolving from traditional Bitcoin miners into AI compute infrastructure plays. RKLB represents the long-term commercial space opportunity. IONQ remains one of the key names in quantum computing, while AAOI continues to benefit from rising demand for high-speed optical networking driven by AI data centers. 
+ 
+What stands out is that capital is increasingly looking beyond AI chips and searching for the next platform-level technology opportunities. Compute, networking, power, and space infrastructure could all be major beneficiaries over the next decade. 
+ 
+Of course, higher growth comes with higher volatility, and execution will ultimately determine the winners. 
+ 
+If you could only pick one of these five stocks to outperform over the next three years, which would it be? I&#39;m particularly interested in the long-term potential of RKLB and AAOI.",2026-06-16T15:59:30Z,Neutral,0,https://stocktwits.com/message/656598467,656598467,2026-06-17T10:27:52.887561
+AAOI,AcceleratorModel,113,$AAOI added 175s,2026-06-16T15:58:02Z,Neutral,0,https://stocktwits.com/message/656598201,656598201,2026-06-17T10:27:52.887564
+AAOI,yahya_remontada,0,$AAOI looks like spaceX is sucking all the liquidity,2026-06-16T15:38:47Z,Neutral,0,https://stocktwits.com/message/656594899,656594899,2026-06-17T10:27:52.887566
+AAOI,Foreverbagholding,43,$AAOI PSYCH! Bounce coming,2026-06-16T15:35:23Z,Bullish,0,https://stocktwits.com/message/656594376,656594376,2026-06-17T10:27:52.887572
+AAOI,Kylor,160,$AAOI Doubled heavy position at 175. Now let&#39;s  go!! 🚀,2026-06-16T15:35:18Z,Bullish,0,https://stocktwits.com/message/656594353,656594353,2026-06-17T10:27:52.887575
+AAOI,dukeofhb,163,@MadStockAlerts are you being sarcastic? $AAOI chart is fine. If anything it’s bull flagging consolidation over last month. Next big move will be to upside imo. But the swing trades on this are great as well.,2026-06-16T15:31:23Z,Bullish,0,https://stocktwits.com/message/656593627,656593627,2026-06-17T10:27:52.887578
+AAOI,Deimos09,4,$AAOI what happened?,2026-06-16T15:31:19Z,Neutral,0,https://stocktwits.com/message/656593611,656593611,2026-06-17T10:27:52.887581
+AAOI,LennySmall2,24,$AAOI Who bought this earlier at $199?,2026-06-16T15:29:33Z,Neutral,0,https://stocktwits.com/message/656593288,656593288,2026-06-17T10:27:52.887584
+AAOI,LennySmall2,24,$AAOI Can it go to ZERO now,2026-06-16T15:23:07Z,Neutral,0,https://stocktwits.com/message/656592103,656592103,2026-06-17T10:27:52.887586
+AAOI,LennySmall2,24,$AAOI $199 to $173 is normal now,2026-06-16T15:22:32Z,Neutral,0,https://stocktwits.com/message/656592007,656592007,2026-06-17T10:27:52.887589
+AAOI,capitalthinktank,439,"$AAOI coiling and eyeing the $250–275 zone.  
+ 
+MACD cross forming, RSI at 54, and a clean bounce off the 9 EMA with the bullish SMA uptrend intact.  
+ 
+Price bands are holding as dynamic support.  
+ 
+Looking for a sustained move through $200+ to trigger the next leg higher.  
+ 
+Risk defined below the bands and recent lows.",2026-06-16T15:22:31Z,Neutral,0,https://stocktwits.com/message/656592006,656592006,2026-06-17T10:27:52.887592
+AAOI,Justin_Moz,47,$AAOI Didn&#39;t even make 200 this time..,2026-06-16T15:21:35Z,Neutral,0,https://stocktwits.com/message/656591832,656591832,2026-06-17T10:27:52.887595
+AAOI,LennySmall2,24,$AAOI Cancer,2026-06-16T15:20:10Z,Neutral,0,https://stocktwits.com/message/656591564,656591564,2026-06-17T10:27:52.887598
+AAOI,RonaldReagan80,75,$AAOI buy idiots,2026-06-16T15:20:09Z,Bullish,0,https://stocktwits.com/message/656591563,656591563,2026-06-17T10:27:52.887601
+AAOI,Olivia_Strickland,661,"$AAOI giving back yesterday&#39;s 13% AI-euphoria pop, down 8.5% and fading through the session. these sympathy runs can unwind just as fast as they spike. calling it now, no follow-through unless it finds a floor before close.
+
+where this breaks down: https://tapeboard.com/research/AAOI?utm_source=stocktwits&amp;utm_medium=post&amp;utm_campaign=olivia&amp;utm_content=aaoi-bk-dn-level&amp;utm_term=research",2026-06-16T15:16:45Z,Neutral,0,https://stocktwits.com/message/656590931,656590931,2026-06-17T10:27:52.887604
+AAOI,NeverFadeTheOracle,630,"$AAOI 
+
+Still fine 
+
+A little range bounce
+
+That’s why you use dips",2026-06-16T15:14:28Z,Bullish,0,https://stocktwits.com/message/656590544,656590544,2026-06-17T10:27:52.887607
+AAOI,capitalthinktank,439,"$AAOI $LITE $COHR $FN 
+ 
+Optical / photonics names are basically doing what strong trend sectors usually do after a big move-cool off and digest gains instead of reversing the whole structure. 
+ 
+What stands out here is that the broader AI infrastructure buildout story hasn’t changed, even if short-term momentum has paused. These are still core beneficiaries of rising data center bandwidth demand, just in a consolidation phase rather than expansion mode. 
+ 
+Historically, when a sector like this pauses after a strong run, it’s often less about “end of trend” and more about resetting positioning before the next leg-assuming demand trends stay intact. 
+ 
+Worth keeping on radar rather than writing off. Trends don’t end quickly when the underlying capex cycle is still active.",2026-06-16T15:12:38Z,Neutral,0,https://stocktwits.com/message/656590205,656590205,2026-06-17T10:27:52.887611
+AAOI,FibonacciTrader_,1168,"Portfolio Update - AI / Infra Rotation Setup  
+ 
+Current positioning breakdown  
+ 
+$NBIS | 42% - Core conviction position 
+$OUST | 21% - lidar / sensing infrastructure 
+$PNG.X | 13% - growth + volatility component 
+$AAOI | 6% - optical interconnect leverage 
+$FCEL | 5% - speculative energy transition 
+ 
+ Cash: 13% - optionality preserved 
+ 
+I often get asked why I don’t turn this into paid content, but for me, sharing stock information is just a hobby. I’m not financially struggling, so I choose to share it for free.",2026-06-16T15:07:12Z,Neutral,0,https://stocktwits.com/message/656589249,656589249,2026-06-17T10:27:52.887614
+AAOI,sogenerous,32060,$AAOI added back 1/4 of what I sold yesterday 192 back at 175,2026-06-16T15:06:13Z,Neutral,0,https://stocktwits.com/message/656589087,656589087,2026-06-17T10:27:52.887617
+AAOI,Chromaticity,96,$AAOI covered😑.  i did not expect this thing drop to 174 in one day.,2026-06-16T15:06:04Z,Neutral,1,https://stocktwits.com/message/656589074,656589074,2026-06-17T10:27:52.887620
+AAOI,Mountainbiker168,510,$AAOI Recharging,2026-06-16T15:05:24Z,Bullish,0,https://stocktwits.com/message/656588959,656588959,2026-06-17T10:27:52.887623
+AAOI,quickdraw00,439,$AAOI Bought some. Nice dip.,2026-06-16T15:04:28Z,Bullish,0,https://stocktwits.com/message/656588786,656588786,2026-06-17T10:27:52.887626
+AAOI,SwingTraderPro1,300,"10 STOCKS BUILT FOR THE LONG GAME -1 
+ 
+Not hype. Not momentum. Structural positioning across the AI + compute stack. 
+ 
+$MU | Memory is the new oil. HBM + DRAM demand tied directly to AI accelerators = multi-year supercycle setup. 
+ 
+$NBIS | NeoCloud infrastructure at hyperscaler scale. Compute-as-a-service demand rises as AI workloads explode globally. 
+ 
+$SPCX | Space economy repricing catalyst. If/when SpaceX liquidity expands, it forces a full sector re-rating. 
+ 
+$AAOI | Optical transceivers sit inside the AI data bottleneck. Bandwidth demand growth is structural, not cyclical. 
+ 
+$MRVL | Custom silicon + networking backbone for hyperscalers. Quiet compounding through ASIC wins and AI infra buildout.",2026-06-16T15:03:28Z,Neutral,0,https://stocktwits.com/message/656588594,656588594,2026-06-17T10:27:52.887629
+AAOI,LennySmall2,24,$AAOI Come on take it to ZERO,2026-06-16T14:51:39Z,Neutral,0,https://stocktwits.com/message/656586388,656586388,2026-06-17T10:27:52.887632
+AAOI,freedomtrader6,617,"$AAOI / $LITE / $COHR / $FN 
+I’ve been watching names like $AAOI, $LITE, $COHR, and $FN after that strong run, and honestly this looks more like a pause than anything else. 
+ 
+After big vertical moves, I’ve learned these don’t usually just roll over immediately  they tend to go quiet first, kind of shake out attention, then decide on the next leg later. 
+ 
+Right now it just feels like: 
+momentum cooled off a bit 
+price is chopping sideways instead of trending 
+volume normalizing after the spike phase 
+no real breakdown, just digestion 
+ 
+And that’s usually where people get bored and move on…  
+which is often the part I don’t want to ignore. 
+ 
+Not chasing anything here, just keeping them on the radar. Trends like this in optics / photonics tied to AI infra don’t usually end clean  they pause, reset, then reprice when no one is looking.",2026-06-16T14:45:47Z,Neutral,0,https://stocktwits.com/message/656585330,656585330,2026-06-17T10:27:52.887635
+AAOI,TaoistTrader,130,$AAOI shake and bake ?,2026-06-16T14:45:42Z,Bullish,0,https://stocktwits.com/message/656585314,656585314,2026-06-17T10:27:52.887638
+AAOI,aegoceps,1,$AAOI i love this stock. zigzag like clockwork. and i catch like most of them. 8/10,2026-06-16T14:44:40Z,Neutral,0,https://stocktwits.com/message/656585097,656585097,2026-06-17T10:27:52.887642
+AAOI,abman54,216,$AAOI I see $185 by EOD!,2026-06-16T14:43:34Z,Neutral,0,https://stocktwits.com/message/656584874,656584874,2026-06-17T10:27:53.623812
+AAOI,wtfitsj,80,@sogenerous adding $AAOI ?,2026-06-16T14:42:10Z,Neutral,0,https://stocktwits.com/message/656584577,656584577,2026-06-17T10:27:53.623836
+AAOI,capitalthinktank,439,"10 long-term names built for the real game - no hype, no momentum chase, just structural positioning.(1) 
+ 
+$MU – Memory demand tied to AI accelerators is still in early innings. HBM and DRAM cycles tend to stretch longer than most expect once supply tightens. 
+ 
+$NBIS – NeoCloud angle is simple: compute demand keeps scaling faster than hyperscaler capacity. Early infrastructure play in that gap. 
+ 
+$SPCX – If and when it fully prices in, this becomes a liquidity-driven rerating story more than anything else. Space economy exposure is still under-owned at scale. 
+ 
+$AAOI – Optical bandwidth is one of the most direct beneficiaries of AI data center expansion. It’s a “pipes and highways” type of trade. 
+ 
+$MRVL – Quiet compounder in AI networking + custom silicon. Not flashy, but deeply embedded in hyperscaler buildouts. 
+ 
+Different tickers, same theme: AI isn’t a stock story anymore-it’s an infrastructure buildout cycle.",2026-06-16T14:36:13Z,Neutral,0,https://stocktwits.com/message/656583279,656583279,2026-06-17T10:27:53.623841
+AAOI,StockmamaG,118,$AAOI So predictable🙄,2026-06-16T14:34:30Z,Neutral,0,https://stocktwits.com/message/656582821,656582821,2026-06-17T10:27:53.623845
+AAOI,kk123ss,1,"$AAOI as a I noted before, until they come out with a new catalyst like a deal or good earning, this stock is in no man&#39;s land. One day it spikes, the other day it dumps. Rinse and repeat.",2026-06-16T14:33:33Z,Neutral,0,https://stocktwits.com/message/656582593,656582593,2026-06-17T10:27:53.623848
+AAOI,Hollywood_1,597,$AAOI flag getting tight.,2026-06-16T14:33:28Z,Neutral,0,https://stocktwits.com/message/656582569,656582569,2026-06-17T10:27:53.623851
+AAOI,Dr_Stoxx,126446,$AAOI such a heartbreaker!  It&#39;s becoming a toy for daytraders with these moves.,2026-06-16T14:29:46Z,Neutral,0,https://stocktwits.com/message/656581679,656581679,2026-06-17T10:27:53.623854
+AAOI,RoofCat,173,$AAOI space X effects here too,2026-06-16T14:24:25Z,Neutral,0,https://stocktwits.com/message/656580366,656580366,2026-06-17T10:27:53.623857
+AAOI,IrenGlazer69,9,$AAOI what happened?,2026-06-16T14:24:18Z,Neutral,0,https://stocktwits.com/message/656580333,656580333,2026-06-17T10:27:53.623860
+AAOI,NickyGeee,52,$AAOI Comical a 700 dollar stock for 175,2026-06-16T14:24:01Z,Neutral,0,https://stocktwits.com/message/656580268,656580268,2026-06-17T10:27:53.623865
+AAOI,KITOVLI,173,$AAOI Dead,2026-06-16T14:14:41Z,Neutral,0,https://stocktwits.com/message/656577914,656577914,2026-06-17T10:27:53.623868
+AAOI,SSBasis,13,$AAOI Buying range again,2026-06-16T14:14:29Z,Neutral,0,https://stocktwits.com/message/656577864,656577864,2026-06-17T10:27:53.623870
+AAOI,bskewl3,1,"$AAOI murked, my god",2026-06-16T14:13:25Z,Neutral,0,https://stocktwits.com/message/656577594,656577594,2026-06-17T10:27:53.623874
+AAOI,undefeatedchamp,672,"$AAOI  
+ 
+Stopped out of all my positions.  
+ 
+Needs to hold $173 or we can see a deeper cut down.",2026-06-16T14:13:10Z,Neutral,1,https://stocktwits.com/message/656577545,656577545,2026-06-17T10:27:53.623877
+AAOI,NickyGeee,52,"$AAOI Clockwork with this name, time to add more",2026-06-16T14:10:31Z,Neutral,0,https://stocktwits.com/message/656576911,656576911,2026-06-17T10:27:53.623880
 AAOI,HericuleParrot,121,"$AAOI 2x etf causing this volatility. Or is it the other way around, because it is volatile 2x leveraged funds exists",2026-06-16T14:06:05Z,Neutral,0,https://stocktwits.com/message/656575812,656575812,2026-06-16T14:07:04.065809
 AAOI,KITOVLI,173,$AAOI $117 🧲 - what a flush!,2026-06-16T14:04:01Z,Bearish,0,https://stocktwits.com/message/656575297,656575297,2026-06-16T14:07:04.065836
 AAOI,FibonacciTrader_,1100,"2 years ago I called ASTS at $2 - it ran ~6,500% to $130+ 
@@ -5147,9 +6140,9 @@ AAOI,Mystery_,15,"✅ Long $GOOGL Jun 10 2026 $392.50 Call @ $4.30  |
 ✅ Long $AAOI Jun 12 2026 $200.00 Call @ $4.50  |",2026-05-29T14:41:18Z,Neutral,0,https://stocktwits.com/message/654778313,654778313,2026-06-16T14:07:55.169710
 AAOI,Jmartinez123,32,$AAOI ouch lol 😆,2026-05-29T14:35:09Z,Neutral,0,https://stocktwits.com/message/654776778,654776778,2026-06-16T14:07:55.169713
 AAOI,Johnnyf22,0,$AAOI all love seems to be gone from optics currently. Now we’re the ugly stepsister.  Hope this changes soon. Hate holding through these violent sustained pullbacks. Here’s hoping for some relief next week. It has been a brutal couple of weeks.,2026-05-29T14:35:08Z,Bullish,0,https://stocktwits.com/message/654776777,654776777,2026-06-16T14:07:55.169718
+AAOI,TeaMartinez4,77,$AAOI jumping back in at these levels. Will add if it continues to drop.,2026-05-29T14:33:47Z,Neutral,0,https://stocktwits.com/message/654776460,654776460,2026-06-16T14:07:55.169725
 AAOI,tonyctl,159,"@ribbey @cubie @Jeremymartin007 @simon58 @judgeyoung2 @jenbunn @EBE_day @Godreal1 @TraderRapp @zuby34 
 $AAOI getting wrecked",2026-05-29T14:33:47Z,Neutral,0,https://stocktwits.com/message/654776462,654776462,2026-06-16T14:07:55.169722
-AAOI,TeaMartinez4,77,$AAOI jumping back in at these levels. Will add if it continues to drop.,2026-05-29T14:33:47Z,Neutral,0,https://stocktwits.com/message/654776460,654776460,2026-06-16T14:07:55.169725
 AAOI,Unsuccessful,61,"$AAOI What are you weakling bulls doing, fight!",2026-05-29T14:32:51Z,Neutral,0,https://stocktwits.com/message/654776226,654776226,2026-06-16T14:07:55.169728
 AAOI,Planet07,57,$AAOI 250$,2026-05-29T14:31:03Z,Bullish,0,https://stocktwits.com/message/654775763,654775763,2026-06-16T14:07:55.169731
 AAOI,tradepulsealerts,54,$AAOI was at 194 3 days ago. Lol,2026-05-29T14:29:58Z,Bearish,0,https://stocktwits.com/message/654775463,654775463,2026-06-16T14:07:55.169734
@@ -8379,8 +9372,8 @@ AAOI,Jaymay91,12,$AAOI absolutely rediculous. just a squeeze because everyone kn
 AAOI,RoofCat,173,"$AAOI nonstop… cool down a little, so fking strong",2026-05-13T18:22:30Z,Neutral,0,https://stocktwits.com/message/653262510,653262510,2026-06-16T14:09:00.699808
 AAOI,Prophetus1,75,$AAOI Think shorters swooped in at 220-225. This will be more fun soon.,2026-05-13T18:22:29Z,Neutral,0,https://stocktwits.com/message/653262507,653262507,2026-06-16T14:09:00.699811
 AAOI,cubie,10577,$AAOI 😅,2026-05-13T18:20:30Z,Neutral,0,https://stocktwits.com/message/653262159,653262159,2026-06-16T14:09:00.699814
-AAOI,YJR,7,$AAOI Sold at 220 and it just keeps going up 😂😂,2026-05-13T18:19:50Z,Neutral,0,https://stocktwits.com/message/653262047,653262047,2026-06-16T14:09:00.699817
 AAOI,RoofCat,173,"$AAOI $2 more expensive that $NVDA , how did you do it?",2026-05-13T18:19:50Z,Bullish,0,https://stocktwits.com/message/653262045,653262045,2026-06-16T14:09:00.699820
+AAOI,YJR,7,$AAOI Sold at 220 and it just keeps going up 😂😂,2026-05-13T18:19:50Z,Neutral,0,https://stocktwits.com/message/653262047,653262047,2026-06-16T14:09:00.699817
 AAOI,ChesterMulberry,100,"$AAOI unreal lol 
 
 I pussed out and sold my calls on COHR….should had bought them on AAOI fuck me",2026-05-13T18:19:47Z,Neutral,0,https://stocktwits.com/message/653262034,653262034,2026-06-16T14:09:00.699823
@@ -8434,8 +9427,8 @@ AAOI,Skidmtejjdmdm,35,$AAOI there were too many bears a week ago. Now they’re 
 AAOI,solar1,53,$AAOI 500 mil rev unprofitable. At 15bil valuation and climbing. Smci. 40 bil rev. Profitable at 18bil and declining  lol,2026-05-13T18:04:59Z,Neutral,0,https://stocktwits.com/message/653259371,653259371,2026-06-16T14:09:09.393342
 AAOI,Tkobreakout123,0,$AAOI let’s go 300,2026-05-13T18:04:41Z,Bullish,0,https://stocktwits.com/message/653259321,653259321,2026-06-16T14:09:09.393346
 AAOI,triniblockchain,848,$AAOI letsgooo🤓,2026-05-13T18:04:25Z,Bullish,0,https://stocktwits.com/message/653259285,653259285,2026-06-16T14:09:09.393350
-AAOI,Mountainbiker168,508,$AAOI IMO China will broker an Iran US deal as China has a good relationship with Iran. It will be a win win for all. $230 on the news....,2026-05-13T18:02:30Z,Bullish,0,https://stocktwits.com/message/653258954,653258954,2026-06-16T14:09:09.393354
 AAOI,Pinnacle_capital1,107,$AAOI safe to start selling!,2026-05-13T18:02:30Z,Neutral,0,https://stocktwits.com/message/653258953,653258953,2026-06-16T14:09:09.393357
+AAOI,Mountainbiker168,508,$AAOI IMO China will broker an Iran US deal as China has a good relationship with Iran. It will be a win win for all. $230 on the news....,2026-05-13T18:02:30Z,Bullish,0,https://stocktwits.com/message/653258954,653258954,2026-06-16T14:09:09.393354
 AAOI,MrMonopolyMan,371,$AAOI not holding onto my shares here at $111 is my biggest regret,2026-05-13T18:02:15Z,Neutral,0,https://stocktwits.com/message/653258913,653258913,2026-06-16T14:09:09.393361
 AAOI,solar1,53,$AAOI let make this a tril company folks  lol,2026-05-13T18:01:46Z,Neutral,0,https://stocktwits.com/message/653258835,653258835,2026-06-16T14:09:09.393364
 AAOI,Cryptojoe9,153,$AAOI 🍌🍌🦍🦍,2026-05-13T18:01:08Z,Neutral,0,https://stocktwits.com/message/653258740,653258740,2026-06-16T14:09:09.393367
@@ -8463,8 +9456,8 @@ AAOI,dixiebull,10945,$AAOI if we could only go back,2026-05-13T17:49:03Z,Neutral
 AAOI,nirok,5,"$AAOI RIGL As of May 13, 2026, Citi raised its price target on Rigel Pharmaceuticals (RIGL) to $81 from $69, maintaining a Buy rating. This upgrade reflects a bullish outlook on the company&#39;s growth strategy, specifically noting the in-licensing of Veppanu as a major expansion beyond its core hematology business 5X COMING",2026-05-13T17:48:19Z,Neutral,0,https://stocktwits.com/message/653256383,653256383,2026-06-16T14:09:10.830628
 AAOI,FinnessaurusFlex,1136,$POET $ASTS $TMC $RKLB $AAOI I highly recommend everyone taking a moment to digest this analysis.. something ludicrous is happening behind the scenes at POET rn 👀,2026-05-13T17:48:18Z,Bullish,2,https://stocktwits.com/message/653256375,653256375,2026-06-16T14:09:10.830636
 AAOI,dixiebull,10945,$AAOI I love this stock!,2026-05-13T17:47:10Z,Neutral,0,https://stocktwits.com/message/653256138,653256138,2026-06-16T14:09:10.830639
-AAOI,Prophetus1,75,$AAOI This normally shoots a little over the highest analyst assessment. 225 incoming maybe but eventually...,2026-05-13T17:45:52Z,Neutral,0,https://stocktwits.com/message/653255877,653255877,2026-06-16T14:09:10.830642
 AAOI,Bazzzigar,938,$AAOI UI APH,2026-05-13T17:45:52Z,Bullish,0,https://stocktwits.com/message/653255876,653255876,2026-06-16T14:09:10.830658
+AAOI,Prophetus1,75,$AAOI This normally shoots a little over the highest analyst assessment. 225 incoming maybe but eventually...,2026-05-13T17:45:52Z,Neutral,0,https://stocktwits.com/message/653255877,653255877,2026-06-16T14:09:10.830642
 AAOI,Tkobreakout123,0,$AAOI up 40 tonight,2026-05-13T17:44:50Z,Bullish,0,https://stocktwits.com/message/653255696,653255696,2026-06-16T14:09:10.830662
 AAOI,ProspectTrends,58,$AAOI bears got cooked once again 🪦⚰️,2026-05-13T17:44:20Z,Bullish,0,https://stocktwits.com/message/653255592,653255592,2026-06-16T14:09:10.830665
 AAOI,Mountainbiker168,508,"$AAOI Many nuggets in this mornings Fireside Chat...DYODD. ERs call analyst said AAOI could  be bigger thab COHR with 80 BIL MC, so 4X here will be $800s in 2027....",2026-05-13T17:44:03Z,Bullish,0,https://stocktwits.com/message/653255550,653255550,2026-06-16T14:09:10.830669
@@ -8647,8 +9640,8 @@ One of Top investment names with $AAOI $BE
 This is called relative strength
 
 Breakfast paid for @TENETTRADEGROUP",2026-05-13T13:57:17Z,Neutral,0,https://stocktwits.com/message/653208387,653208387,2026-06-16T14:09:16.570376
-AAOI,Mountainbiker168,508,$AAOI Wow,2026-05-13T13:53:03Z,Bullish,1,https://stocktwits.com/message/653207187,653207187,2026-06-16T14:09:16.570379
 AAOI,Pinnacle_capital1,107,$AAOI shorts are fucked!! 212 within minutes!!,2026-05-13T13:53:03Z,Bullish,0,https://stocktwits.com/message/653207179,653207179,2026-06-16T14:09:16.570382
+AAOI,Mountainbiker168,508,$AAOI Wow,2026-05-13T13:53:03Z,Bullish,1,https://stocktwits.com/message/653207187,653207187,2026-06-16T14:09:16.570379
 AAOI,arribaStocktrading,80,$PSNL  I watched $AAOI go up $50 between Monday and the first 10 minutes of Tuesday for NO FUCKING REASON.   This market is an insult to the intelligence of anyone with a brain that works.,2026-05-13T13:51:56Z,Bullish,0,https://stocktwits.com/message/653206854,653206854,2026-06-16T14:09:16.570385
 AAOI,flashdash,41,"$AAOI ---i first mentioned $AAOI on April 24, 2024, when it was obscure. and basically unknown to most investors-----now check out another DATACENTER play with a TINY FLOAT----$CDTI---$CDTI has technology to help the DATACENTERS meet the EPA guidelines for the datacenter power emissions-----$CDTI market cap is presently below revenues.",2026-05-13T13:44:43Z,Neutral,0,https://stocktwits.com/message/653204693,653204693,2026-06-16T14:09:16.570388
 AAOI,Bootsy_Collins,106,$AAOI Losing steam daily 🤣🤣   29 years in business! 🤣,2026-05-13T13:42:46Z,Bearish,0,https://stocktwits.com/message/653204132,653204132,2026-06-16T14:09:16.570391
@@ -10213,8 +11206,8 @@ AAOI,donthaveone,50,$AAOI oh my they truly missed on everything that was absolut
 AAOI,randallb,38,$AAOI AMS hod,2026-05-07T20:39:43Z,Neutral,0,https://stocktwits.com/message/652658775,652658775,2026-06-16T14:10:19.345040
 AAOI,Mountainbiker168,508,$AAOI 2026 full year guidance is 1.1 bil vs 974 MI...BACK UP THE TRUCK,2026-05-07T20:39:18Z,Bullish,0,https://stocktwits.com/message/652658699,652658699,2026-06-16T14:10:19.345043
 AAOI,BuyNowUnlimited,181,$AAOI wow it recovered so quick,2026-05-07T20:39:16Z,Neutral,0,https://stocktwits.com/message/652658690,652658690,2026-06-16T14:10:19.345046
-AAOI,john_rubias,239,$AAOI go fuck yourself are you fucking kidding me,2026-05-07T20:39:11Z,Neutral,0,https://stocktwits.com/message/652658678,652658678,2026-06-16T14:10:19.345049
 AAOI,grackychan,7,$AAOI wow it felt nice to pick up some more shares at $135,2026-05-07T20:39:11Z,Neutral,0,https://stocktwits.com/message/652658677,652658677,2026-06-16T14:10:19.345052
+AAOI,john_rubias,239,$AAOI go fuck yourself are you fucking kidding me,2026-05-07T20:39:11Z,Neutral,0,https://stocktwits.com/message/652658678,652658678,2026-06-16T14:10:19.345049
 AAOI,sellhighmoney,183,$AAOI woooooo 📈,2026-05-07T20:38:53Z,Bullish,2,https://stocktwits.com/message/652658620,652658620,2026-06-16T14:10:19.345055
 AAOI,kvaer123,27,"$AAOI TL;DR we will never be profitable, they will add a little bit of laugh and then end the call lmao this is great",2026-05-07T20:38:52Z,Neutral,0,https://stocktwits.com/message/652658615,652658615,2026-06-16T14:10:19.345058
 AAOI,Mountainbiker168,508,$AAOI Demand through the.roof,2026-05-07T20:38:37Z,Neutral,0,https://stocktwits.com/message/652658553,652658553,2026-06-16T14:10:19.345061
@@ -10380,8 +11373,8 @@ AAOI,PrivateBrowsingMode,158,$AAOI lmao thank god i Held off $AAOX,2026-05-07T19
 AAOI,PrivateBrowsingMode,158,$AAOI good luck soldiers $IREN,2026-05-07T19:44:59Z,Neutral,0,https://stocktwits.com/message/652646690,652646690,2026-06-16T14:10:26.876948
 AAOI,TradeMentor,24,$NBIS Which way will this move after hours with $CRWV and $AAOI reporting earnings after the bell.,2026-05-07T19:41:11Z,Neutral,0,https://stocktwits.com/message/652646094,652646094,2026-06-16T14:10:26.876951
 AAOI,ItSaulGoodMaan,186,$AAOI what a shit day they basically set this up for disaster. If bad results dumps further and with good results i dought this stock would go green on the day,2026-05-07T19:40:49Z,Neutral,0,https://stocktwits.com/message/652646041,652646041,2026-06-16T14:10:26.876955
-AAOI,oex2500,13,$AAOI Every Fiber Optic company this quarter has beaten estimates and gave strong forward guidance.  Every one of them has been pummeled after the fact.  This one has the loftiest expectations so seeing a beat down afterwards should be the expectation.,2026-05-07T19:33:15Z,Neutral,0,https://stocktwits.com/message/652644717,652644717,2026-06-16T14:10:26.876958
 AAOI,MrMonopolyMan,371,$AAOI earnings leak?,2026-05-07T19:33:15Z,Neutral,0,https://stocktwits.com/message/652644716,652644716,2026-06-16T14:10:26.876961
+AAOI,oex2500,13,$AAOI Every Fiber Optic company this quarter has beaten estimates and gave strong forward guidance.  Every one of them has been pummeled after the fact.  This one has the loftiest expectations so seeing a beat down afterwards should be the expectation.,2026-05-07T19:33:15Z,Neutral,0,https://stocktwits.com/message/652644717,652644717,2026-06-16T14:10:26.876958
 AAOI,free2dream,382,$AAOI at this valuation we should expect $1B quarter. Will we ?,2026-05-07T19:29:56Z,Bearish,0,https://stocktwits.com/message/652644179,652644179,2026-06-16T14:10:26.876964
 AAOI,BullseyeGains,10769,"$AAOI 🎯🎯 BULLSEYE STRONG BUY ALERT 🎯🎯  
 $AAOI is primed for a massive beat and raise when they report after the bell today. They&#39;ve announced huge 800G and 1.6T orders since their last earnings call. Most importanly, volume 1.6T shipments are running months ahead of $COHR and $LITE, and capacity is scaling toward 500K units/month by year-end. Pair that with a vertically integrated laser stack, a &quot;Made in USA&quot; edge for sovereign AI deals, and analysts modeling 100%+ revenue growth for both 2026 *and* 2027 —you have an inflection moment, not an earnings report. Think $AEHR and $AXTI. The icing on the cake is that management has significantly slowed down their selling as the stock started to break above $100. They know the trajectory their business is on, and it&#39;s too early to sell now. We&#39;ve been nailing most of our picks lately, so follow and subscribe so you don&#39;t miss the next one! 🚀💰🎯",2026-05-07T19:28:18Z,Bullish,0,https://stocktwits.com/message/652643935,652643935,2026-06-16T14:10:26.876968
@@ -11719,12 +12712,12 @@ AAOI,ProspectTrends,58,$AAOI congrats to the longs holding this winner 💰 💰
 AAOI,Mountainbiker168,508,$AAOI 180 today?,2026-05-01T14:28:00Z,Bullish,0,https://stocktwits.com/message/652008646,652008646,2026-06-16T14:11:12.307694
 AAOI,mollielatham,99,$AAOI can it break 180 ??--dicey--might be a seller here,2026-05-01T14:27:57Z,Neutral,0,https://stocktwits.com/message/652008634,652008634,2026-06-16T14:11:12.307697
 AAOI,Bull935,26,$AAOI Holy shit,2026-05-01T14:27:17Z,Neutral,0,https://stocktwits.com/message/652008490,652008490,2026-06-16T14:11:12.307700
+AAOI,sogenerous,32058,$AAOI new ATHs,2026-05-01T14:26:56Z,Neutral,0,https://stocktwits.com/message/652008415,652008415,2026-06-16T14:11:12.307706
 AAOI,NeverFadeTheOracle,628,"$AAOI 
 
 Baby $SNDK 🐐
 
 Setting up for greatness",2026-05-01T14:26:56Z,Bullish,1,https://stocktwits.com/message/652008416,652008416,2026-06-16T14:11:12.307703
-AAOI,sogenerous,32058,$AAOI new ATHs,2026-05-01T14:26:56Z,Neutral,0,https://stocktwits.com/message/652008415,652008415,2026-06-16T14:11:12.307706
 AAOI,Lukey63,10,"$AAOI Dumb money pumping this POS company to the sky lucky to be in a good segment right now. It will
 Not end well. This is a trade, not an investment.",2026-05-01T14:25:05Z,Bearish,0,https://stocktwits.com/message/652008021,652008021,2026-06-16T14:11:12.307709
 AAOI,Thrasher5699,23,$AAOI  The amount of money being put into this shit stock is pretty mindboggling.  It&#39;s literally billions of dollars keeping this stock up.  Pretty neat to watch,2026-05-01T14:22:38Z,Neutral,0,https://stocktwits.com/message/652007539,652007539,2026-06-16T14:11:12.307712
@@ -14012,8 +15005,8 @@ AAOI,StocktwitsNews,107665,"AAOI Stock Eyes Ninth Straight Gain Amid Data Center
 $AAOI $XLK $XLC
 
 https://stocktwits.com/news/equity/markets/aaoi-stock-ai-rally-texas-expansion-hyperscaler-demand/cZJq5sqRIHk",2026-04-14T12:40:17Z,Neutral,0,https://stocktwits.com/message/650207385,650207385,2026-06-16T14:12:21.087119
-AAOI,Perillo1984,50,$AAOI 👏👏👏👏https://youtu.be/tY_LtZe6xUs?si=O6WsQFzcVcMmSG6J,2026-04-14T12:28:19Z,Bullish,0,https://stocktwits.com/message/650206170,650206170,2026-06-16T14:12:21.087122
 AAOI,Prophetus1,75,$AAOI https://www.marketbeat.com/instant-alerts/applied-optoelectronics-nasdaqaaoi-hits-new-12-month-high-heres-why-2026-04-14/,2026-04-14T12:28:19Z,Neutral,0,https://stocktwits.com/message/650206167,650206167,2026-06-16T14:12:21.087125
+AAOI,Perillo1984,50,$AAOI 👏👏👏👏https://youtu.be/tY_LtZe6xUs?si=O6WsQFzcVcMmSG6J,2026-04-14T12:28:19Z,Bullish,0,https://stocktwits.com/message/650206170,650206170,2026-06-16T14:12:21.087122
 AAOI,ihuntbiggame,49,"@tasermac I try to forget them all. $AAOI was one of 5 of my last FAILURES.
 
 I keep a photo to remind you cant win unless you do homework. 
@@ -14254,8 +15247,8 @@ AAOI,free2dream,382,$SMH $LITE $AAOI $AXTI https://www.techradar.com/pro/if-one-
 AAOI,free2dream,382,$LITE $AAOI $AXTI $SMH https://www.techradar.com/pro/if-one-piece-of-your-supply-chain-is-delayed-then-your-whole-project-cant-deliver-nearly-half-of-us-data-centers-planned-for-2026-canceled-or-delayed-and-things-could-soon-get-much-worse,2026-04-13T12:03:02Z,Bearish,0,https://stocktwits.com/message/650096693,650096693,2026-06-16T14:12:29.054089
 AAOI,free2dream,382,$LITE $AAOI $AXTI $SOX https://the-decoder.com/microsoft-cancels-planned-billion-dollar-data-centers-in-ohio/,2026-04-13T12:00:42Z,Bearish,0,https://stocktwits.com/message/650096557,650096557,2026-06-16T14:12:29.054093
 AAOI,SelfMafia,557,$AAOI $AXTI $LITE $SMH FEB 24TH?  😂,2026-04-13T11:59:09Z,Neutral,1,https://stocktwits.com/message/650096482,650096482,2026-06-16T14:12:29.054096
-AAOI,free2dream,382,$LITE $AAOI $AXTI $SMH https://worldsynergy.com/blog/microsoft-cancels-ai-data-centers-amid-strategic-shift/,2026-04-13T11:56:59Z,Bearish,0,https://stocktwits.com/message/650096333,650096333,2026-06-16T14:12:29.054099
 AAOI,Ramen_Investor,50,$AAOI A short-term surge in volume along with acceleration often signals a pullback is likely — don’t get carried away chasing highs.,2026-04-13T11:56:59Z,Neutral,0,https://stocktwits.com/message/650096332,650096332,2026-06-16T14:12:29.054103
+AAOI,free2dream,382,$LITE $AAOI $AXTI $SMH https://worldsynergy.com/blog/microsoft-cancels-ai-data-centers-amid-strategic-shift/,2026-04-13T11:56:59Z,Bearish,0,https://stocktwits.com/message/650096333,650096333,2026-06-16T14:12:29.054099
 AAOI,free2dream,382,$LITE $AAOI $AXTI $SMH https://broadbandbreakfast.com/microsoft-scraps-multiple-data-center-leases-td-cowen/,2026-04-13T11:56:03Z,Bearish,0,https://stocktwits.com/message/650096269,650096269,2026-06-16T14:12:29.054106
 AAOI,free2dream,382,$LITE $AAOI $AXTI $SMH https://www.silicon.co.uk/cloud/ai/microsoft-data-centre-2-601008,2026-04-13T11:55:02Z,Neutral,0,https://stocktwits.com/message/650096217,650096217,2026-06-16T14:12:29.054110
 AAOI,free2dream,382,$LITE $AAOI $AXTI $SMH https://www.brandiconimage.com/2025/03/microsoft-cancels-major-data-center.html,2026-04-13T11:52:59Z,Bearish,0,https://stocktwits.com/message/650096093,650096093,2026-06-16T14:12:29.054113
@@ -14270,8 +15263,8 @@ AAOI,free2dream,382,$LITE $AAOI $AXTI $SOX https://virginiaindependentnews.com/i
 AAOI,free2dream,382,$LITE $AAOI $AXTI $SMH https://www.axios.com/2026/02/24/ai-data-center-boom-projects-numbers,2026-04-13T11:37:15Z,Bearish,0,https://stocktwits.com/message/650095115,650095115,2026-06-16T14:12:29.054140
 AAOI,free2dream,382,$LITE $AAOI $AXTI $SOX https://gizmodo.com/data-center-project-cancellations-quadrupled-in-2025-as-locals-fight-back-2000709669,2026-04-13T11:36:15Z,Bearish,0,https://stocktwits.com/message/650095056,650095056,2026-06-16T14:12:29.054143
 AAOI,free2dream,382,$LITE $AAOI $AXTI $SMH https://www.techspot.com/news/111947-nearly-half-us-data-centers-planned-2026-facing.html,2026-04-13T11:35:16Z,Bearish,0,https://stocktwits.com/message/650095006,650095006,2026-06-16T14:12:29.054146
-AAOI,free2dream,382,$LITE $AAOI $AXTI $SOX https://www.techradar.com/pro/if-one-piece-of-your-supply-chain-is-delayed-then-your-whole-project-cant-deliver-nearly-half-of-us-data-centers-planned-for-2026-canceled-or-delayed-and-things-could-soon-get-much-worse,2026-04-13T11:34:16Z,Bearish,0,https://stocktwits.com/message/650094962,650094962,2026-06-16T14:12:29.054149
 AAOI,OMillionaires,62691,$ALMU going to get the baby optic FOMO ... $AAOI $LITE ect...,2026-04-13T11:34:16Z,Neutral,0,https://stocktwits.com/message/650094961,650094961,2026-06-16T14:12:29.054152
+AAOI,free2dream,382,$LITE $AAOI $AXTI $SOX https://www.techradar.com/pro/if-one-piece-of-your-supply-chain-is-delayed-then-your-whole-project-cant-deliver-nearly-half-of-us-data-centers-planned-for-2026-canceled-or-delayed-and-things-could-soon-get-much-worse,2026-04-13T11:34:16Z,Bearish,0,https://stocktwits.com/message/650094962,650094962,2026-06-16T14:12:29.054149
 AAOI,free2dream,382,$LITE $AAOI $AXTI $SMH https://www.datacenterwatch.org/report,2026-04-13T11:30:42Z,Bearish,0,https://stocktwits.com/message/650094795,650094795,2026-06-16T14:12:29.054155
 AAOI,free2dream,382,$LITE $AAOI $AXTI $SOX https://www.gadgetreview.com/half-of-planned-us-data-center-builds-face-delays-or-cancellations,2026-04-13T11:29:19Z,Bearish,0,https://stocktwits.com/message/650094716,650094716,2026-06-16T14:12:29.054158
 AAOI,free2dream,382,$LITE $AAOI $AXTI $SMH https://www.tomshardware.com/tech-industry/artificial-intelligence/half-of-planned-us-data-center-builds-have-been-delayed-or-canceled-growth-limited-by-shortages-of-power-infrastructure-and-parts-from-china-the-ai-build-out-flips-the-breakers,2026-04-13T11:27:36Z,Bearish,0,https://stocktwits.com/message/650094637,650094637,2026-06-16T14:12:29.054161
@@ -15127,8 +16120,8 @@ Missed $AAOI rug $10 from hod",2026-04-09T14:37:30Z,Neutral,0,https://stocktwits
 AAOI,InvestingCat,183,"$AAOI everyone knows here that AAOI is higher cap pump and dump stock and will go back to $100, which is already happening",2026-04-09T14:33:04Z,Bearish,0,https://stocktwits.com/message/649825550,649825550,2026-06-16T14:12:56.753604
 AAOI,UPandtotheright1,27,"$AAOI LOL, holy casino!",2026-04-09T14:29:13Z,Bullish,0,https://stocktwits.com/message/649824832,649824832,2026-06-16T14:12:56.753607
 AAOI,mostafa2040,24,$AAOI why crash slowly 😣😣 wanaa see 100 in 5 min candle 😁😁,2026-04-09T14:26:22Z,Bearish,0,https://stocktwits.com/message/649824292,649824292,2026-06-16T14:12:56.753610
-AAOI,Prophetus1,75,$AAOI &quot;AAOI Stock On Track To Hit All-Time Highs After 40% Rally This Month – What’s Driving This Momentum? &quot;How many think this will end red today?,2026-04-09T14:25:30Z,Neutral,0,https://stocktwits.com/message/649824120,649824120,2026-06-16T14:12:58.648142
 AAOI,BuyHighSellLowGER,64,"$AAOI A bit sad when all alpha is gone from the portfolio and there&#39;s nothing to watch than your ancient $AAPL position that makes 4% personal dividend yield per year but is dead money otherwise and some other boring stuff giving you -0.2% for the day. But $TEAM taught me nothing will last forever. Used to be a 500$ stock at its highs, so enjoy the party while it lasts at $AAOI.",2026-04-09T14:25:30Z,Neutral,0,https://stocktwits.com/message/649824116,649824116,2026-06-16T14:12:58.648165
+AAOI,Prophetus1,75,$AAOI &quot;AAOI Stock On Track To Hit All-Time Highs After 40% Rally This Month – What’s Driving This Momentum? &quot;How many think this will end red today?,2026-04-09T14:25:30Z,Neutral,0,https://stocktwits.com/message/649824120,649824120,2026-06-16T14:12:58.648142
 AAOI,YouAndUs,54,$AAOI Buyers keep stepping in.,2026-04-09T14:18:33Z,Neutral,0,https://stocktwits.com/message/649822674,649822674,2026-06-16T14:12:58.648169
 AAOI,Omidaz,28,$AAOI i think they taking profits and exiting,2026-04-09T14:13:40Z,Bearish,0,https://stocktwits.com/message/649821667,649821667,2026-06-16T14:12:58.648175
 AAOI,InvestingCat,183,$AAOI or collect $3000 AND lose $50000 after it gets dumped back to $90 lmao,2026-04-09T14:10:17Z,Bearish,1,https://stocktwits.com/message/649820954,649820954,2026-06-16T14:12:58.648179
@@ -16438,8 +17431,8 @@ When FUNDS add, you pay attention
 Tenet Research HOT FUND Tracker @tenet_research",2026-04-01T14:48:57Z,Neutral,0,https://stocktwits.com/message/649175478,649175478,2026-06-16T14:13:30.615815
 AAOI,BuyHighSellLowGER,64,$AAOI Might be a good idea to buy some 85$ puts expiring Friday. 0.6$ looks dirt cheap. Potentially the tenth bad Thursday in a row tomorrow and we know what kind of mess this can be on Fridays.,2026-04-01T14:47:59Z,Neutral,0,https://stocktwits.com/message/649175328,649175328,2026-06-16T14:13:30.615818
 AAOI,lozzamozza,101,$AAOI 110  lets go again,2026-04-01T14:43:45Z,Neutral,0,https://stocktwits.com/message/649174602,649174602,2026-06-16T14:13:30.615821
-AAOI,YoungMoney7,30,$AAOI cocking here for the 100 break,2026-04-01T14:41:41Z,Neutral,0,https://stocktwits.com/message/649174306,649174306,2026-06-16T14:13:30.615824
 AAOI,Ravi_999,34,$AAOI BUY TO OPEN 90P at 1.63🚩,2026-04-01T14:41:41Z,Neutral,0,https://stocktwits.com/message/649174305,649174305,2026-06-16T14:13:30.615827
+AAOI,YoungMoney7,30,$AAOI cocking here for the 100 break,2026-04-01T14:41:41Z,Neutral,0,https://stocktwits.com/message/649174306,649174306,2026-06-16T14:13:30.615824
 AAOI,JasonCO,1730,$AAOI yaaaassss,2026-04-01T14:40:22Z,Neutral,0,https://stocktwits.com/message/649174048,649174048,2026-06-16T14:13:31.505494
 AAOI,AlgorhythmBC,1,$AAOI Samsung,2026-04-01T14:37:59Z,Neutral,0,https://stocktwits.com/message/649173656,649173656,2026-06-16T14:13:31.505516
 AAOI,Mountainbiker168,508,$AAOI Thank you for the shares,2026-04-01T14:34:44Z,Bullish,2,https://stocktwits.com/message/649173060,649173060,2026-06-16T14:13:31.505523
@@ -17160,8 +18153,8 @@ AAOI,th66,777,$AAOI if get 119 then  126,2026-03-25T14:12:07Z,Bullish,0,https://
 AAOI,Mountainbiker168,508,$AAOI Only if market drops ie no Iran resolution by Friday,2026-03-25T14:10:55Z,Bullish,2,https://stocktwits.com/message/648505549,648505549,2026-06-16T14:13:42.595497
 AAOI,Rod92,1341,$AAOI once they start calling it a scam you know they have no real argument 😂,2026-03-25T14:10:51Z,Bullish,0,https://stocktwits.com/message/648505533,648505533,2026-06-16T14:13:42.595500
 AAOI,KITOVLI,173,$AAOI You might see $92-$93 soon.,2026-03-25T14:08:58Z,Bearish,1,https://stocktwits.com/message/648505115,648505115,2026-06-16T14:13:42.595503
-AAOI,JFDI,107097,$AAOI we got a sender,2026-03-25T14:08:02Z,Neutral,0,https://stocktwits.com/message/648504916,648504916,2026-06-16T14:13:42.595506
 AAOI,Mountainbiker168,508,$AAOI $120  🧲,2026-03-25T14:08:02Z,Bullish,0,https://stocktwits.com/message/648504915,648504915,2026-06-16T14:13:42.595509
+AAOI,JFDI,107097,$AAOI we got a sender,2026-03-25T14:08:02Z,Neutral,0,https://stocktwits.com/message/648504916,648504916,2026-06-16T14:13:42.595506
 AAOI,danshep55,56046,$AAOI needs strong 115 base to wake up . Not position just passing along,2026-03-25T14:08:00Z,Neutral,0,https://stocktwits.com/message/648504907,648504907,2026-06-16T14:13:42.595512
 AAOI,Mountainbiker168,508,$AAOI 🚀,2026-03-25T14:07:29Z,Bullish,0,https://stocktwits.com/message/648504806,648504806,2026-06-16T14:13:42.595515
 AAOI,Mountainbiker168,508,$AAOI Bear TRAPS in motion.,2026-03-25T13:56:57Z,Bullish,0,https://stocktwits.com/message/648502324,648502324,2026-06-16T14:13:42.595518
@@ -17315,8 +18308,8 @@ AAOI,RocketQueen,929,"$AAOI been parked here long enough to have seen this tradi
 AAOI,manojaggarwal,2436,$AAOI all I wish is I had more 😭,2026-03-25T00:09:49Z,Bullish,0,https://stocktwits.com/message/648461673,648461673,2026-06-16T14:13:47.025787
 AAOI,Jewstock,83,$AAOI hell yeah,2026-03-25T00:08:27Z,Bullish,0,https://stocktwits.com/message/648461576,648461576,2026-06-16T14:13:47.025790
 AAOI,Rod92,1341,"$AAOI dare i say, $1,000 ?",2026-03-25T00:05:53Z,Bullish,0,https://stocktwits.com/message/648461381,648461381,2026-06-16T14:13:47.025793
-AAOI,Prophetus1,75,$AAOI 119.5 😎,2026-03-25T00:05:51Z,Neutral,2,https://stocktwits.com/message/648461376,648461376,2026-06-16T14:13:47.025796
 AAOI,TJknows,95,$AAOI 🔥🔥🔥,2026-03-25T00:05:51Z,Bullish,0,https://stocktwits.com/message/648461375,648461375,2026-06-16T14:13:47.025799
+AAOI,Prophetus1,75,$AAOI 119.5 😎,2026-03-25T00:05:51Z,Neutral,2,https://stocktwits.com/message/648461376,648461376,2026-06-16T14:13:47.025796
 AAOI,Bootsy_Collins,106,$AAOI Short this pig to a dollar!,2026-03-25T00:05:14Z,Bearish,0,https://stocktwits.com/message/648461336,648461336,2026-06-16T14:13:47.025802
 AAOI,Rod92,1341,"$AAOI well they have the tech, manufacture and the working relationships. They are set for success.",2026-03-25T00:04:17Z,Bullish,0,https://stocktwits.com/message/648461262,648461262,2026-06-16T14:13:47.025805
 AAOI,Mountainbiker168,508,$AAOI Good luck fighting the hedge fund Jane Street the 3rd largest shareholder.,2026-03-24T23:57:13Z,Bullish,1,https://stocktwits.com/message/648460781,648460781,2026-06-16T14:13:50.205814
@@ -17755,10 +18748,10 @@ AAOI,StocktwitsNews,107665,"Why Did AAOI Stock Jump After-Hours Today?
 $AAOI $IWO $VXF
 
 https://stocktwits.com/news/equity/markets/why-did-aaoi-stock-jump-after-hours-today/cZ3mn8RRIKP",2026-03-23T20:52:53Z,Neutral,0,https://stocktwits.com/message/648330849,648330849,2026-06-16T14:14:12.661711
+AAOI,howardlindzon,387656,$AAOI the vol up here Is wild...next move will be big out of this range,2026-03-23T20:49:19Z,Neutral,0,https://stocktwits.com/message/648330549,648330549,2026-06-16T14:14:12.661719
 AAOI,RocketQueen,929,"$AAOI another massive transceiver order. Shorts are going to get destroyed here.  
  
 https://www.stocktitan.net/news/AAOI/aoi-receives-new-order-for-800g-data-center-transceivers-from-major-9c6gs9rgoz4c.html",2026-03-23T20:49:19Z,Bullish,0,https://stocktwits.com/message/648330551,648330551,2026-06-16T14:14:12.661716
-AAOI,howardlindzon,387656,$AAOI the vol up here Is wild...next move will be big out of this range,2026-03-23T20:49:19Z,Neutral,0,https://stocktwits.com/message/648330549,648330549,2026-06-16T14:14:12.661719
 AAOI,AStrokeOfLuck,616,$AAOI,2026-03-23T20:47:35Z,Neutral,0,https://stocktwits.com/message/648330387,648330387,2026-06-16T14:14:12.661722
 AAOI,notreload_ai,285,$AAOI  lands a new $53 million order for 800G data center transceivers from a major hyperscale client to boost AI infrastructure. https://notreload.xyz/aoi-secures-53m-800g-order-from-major-hyperscale-customer/,2026-03-23T20:45:59Z,Neutral,0,https://stocktwits.com/message/648330275,648330275,2026-06-16T14:14:12.661725
 AAOI,tradepulsealerts,54,"$SPY if you know you know $AAOI  
@@ -19306,9 +20299,9 @@ $NOW $QQQ $AAOI $CCJ $spy
 
 Shhh, u yapp entire golden zone!! Now &quot;easy&quot; money  over. 🙄",2026-03-13T16:24:25Z,Neutral,0,https://stocktwits.com/message/647481188,647481188,2026-06-16T14:15:26.616315
 AAOI,aoab,224,"$AAOI nibble nibble if you can, cheapies",2026-03-13T16:22:07Z,Neutral,0,https://stocktwits.com/message/647480845,647480845,2026-06-16T14:15:26.616318
-AAOI,value777,144,"$AAOI if this breaks $88 today, the probability of hitting the 60&#39;s jumps a lot higher.",2026-03-13T16:18:33Z,Neutral,0,https://stocktwits.com/message/647480257,647480257,2026-06-16T14:15:26.616321
 AAOI,SpringThomas,159,"$AAOI got an alert at 53 
 I’ll wait",2026-03-13T16:18:33Z,Neutral,0,https://stocktwits.com/message/647480256,647480256,2026-06-16T14:15:26.616324
+AAOI,value777,144,"$AAOI if this breaks $88 today, the probability of hitting the 60&#39;s jumps a lot higher.",2026-03-13T16:18:33Z,Neutral,0,https://stocktwits.com/message/647480257,647480257,2026-06-16T14:15:26.616321
 AAOI,Goodfellaz,3,"$AAOI where&#39;s this heading? Back to 75, 50 or maybe 25?",2026-03-13T16:11:44Z,Neutral,0,https://stocktwits.com/message/647479233,647479233,2026-06-16T14:15:26.616327
 AAOI,tampaiteT1,17,$AAOI  BUY BUY BUY if you missed buying at 127,2026-03-13T16:03:43Z,Neutral,0,https://stocktwits.com/message/647478040,647478040,2026-06-16T14:15:26.616330
 AAOI,Ryokene,21,@free2dream I did $AAOI and $AXTI are big buys for me. Thanks for the heads up.,2026-03-13T16:01:41Z,Neutral,0,https://stocktwits.com/message/647477740,647477740,2026-06-16T14:15:26.616333
@@ -21543,8 +22536,8 @@ AAOI,AceBeck,102,"$AAOI
  
 Who bought at 110?",2026-03-02T14:45:13Z,Neutral,0,https://stocktwits.com/message/646305115,646305115,2026-06-16T14:17:35.396583
 AAOI,Ryuk,1085,$AAOI That was nasty.,2026-03-02T14:45:08Z,Bearish,0,https://stocktwits.com/message/646305091,646305091,2026-06-16T14:17:35.396586
-AAOI,cubie,10577,$AAOI congrats those who did cubie was busy selling me $HE strangle and $NFLX calls outta gate 🙈😅,2026-03-02T14:44:50Z,Neutral,1,https://stocktwits.com/message/646305012,646305012,2026-06-16T14:17:35.396589
 AAOI,Hottehueh,113,$AAOI from 108 to 97 closed my short pos.,2026-03-02T14:44:50Z,Neutral,0,https://stocktwits.com/message/646305009,646305009,2026-06-16T14:17:35.396592
+AAOI,cubie,10577,$AAOI congrats those who did cubie was busy selling me $HE strangle and $NFLX calls outta gate 🙈😅,2026-03-02T14:44:50Z,Neutral,1,https://stocktwits.com/message/646305012,646305012,2026-06-16T14:17:35.396589
 AAOI,Prophetus1,75,"$AAOI NVDA has thrown money into LITE, COHR. This beggar is going down now 😑",2026-03-02T14:43:59Z,Neutral,0,https://stocktwits.com/message/646304811,646304811,2026-06-16T14:17:35.396595
 AAOI,IjustTradeiT,532,$AAOI Manipulation manipulation,2026-03-02T14:42:07Z,Neutral,0,https://stocktwits.com/message/646304369,646304369,2026-06-16T14:17:35.396598
 AAOI,JoeB07,223,"Ai Trade Basket Update March 2, 2026  
@@ -22204,8 +23197,8 @@ AAOI,StockBraker,1110,$AAOI $3 to go kiddo until 🦞🍽️ - $13 until you hit
 AAOI,MB6288,29,$AAOI Come on you dumb fucks buy the dip…. Rosenblatt are idiots!,2026-02-27T23:04:30Z,Neutral,0,https://stocktwits.com/message/646171191,646171191,2026-06-16T14:18:04.342765
 AAOI,pow7904,64,$AAOI Nice spike on no volume!,2026-02-27T23:04:12Z,Bearish,0,https://stocktwits.com/message/646171175,646171175,2026-06-16T14:18:04.342769
 AAOI,AI5300,150,$AAOI damn 12.4k bid after hours,2026-02-27T23:03:08Z,Neutral,0,https://stocktwits.com/message/646171101,646171101,2026-06-16T14:18:04.342772
-AAOI,Mountainbiker168,508,$AAOI Glad Jane Street only has 1.68 MIL shares,2026-02-27T23:02:33Z,Bullish,0,https://stocktwits.com/message/646171060,646171060,2026-06-16T14:18:04.342776
 AAOI,ACKtrader,19,"$AAOI I’m staying patient and waiting for a pullback. The AI sector feels overheated at the moment, so a dip could come anytime. Fingers crossed.",2026-02-27T23:02:33Z,Neutral,0,https://stocktwits.com/message/646171059,646171059,2026-06-16T14:18:04.342779
+AAOI,Mountainbiker168,508,$AAOI Glad Jane Street only has 1.68 MIL shares,2026-02-27T23:02:33Z,Bullish,0,https://stocktwits.com/message/646171060,646171060,2026-06-16T14:18:04.342776
 AAOI,AI5300,150,$AAOI why do they need to raise 250m if they will go from 1b to 5b revenue from this year to next year. Why not just do notes. Oh yeah that&#39;s right. They are full of crap.,2026-02-27T23:02:10Z,Neutral,0,https://stocktwits.com/message/646171035,646171035,2026-06-16T14:18:06.649085
 AAOI,sneakymrsnake,58,$AAOI went long today,2026-02-27T23:00:34Z,Bullish,0,https://stocktwits.com/message/646170928,646170928,2026-06-16T14:18:06.649110
 AAOI,Mountainbiker168,508,$AAOI 70 MIL shares OS and 51 MIL owned by institutions. Top 10% owns 36 MIL shares,2026-02-27T23:00:09Z,Bullish,0,https://stocktwits.com/message/646170910,646170910,2026-06-16T14:18:06.649115
@@ -22681,8 +23674,8 @@ AAOI,Jblack500,554,"@MaverikIT @cynicaloptimist @IsabellaDC @TheLongVol @WAJeff 
 AAOI,cubie,10577,"@Jeremymartin007 @simon58 @marciosutter @judgeyoung2 @Monkeyy @jenbunn @EBE_day @ribbey @TraderRapp @tonyctl 
 
 $AAOI ripped more wowee ribbey",2026-02-27T14:37:44Z,Neutral,0,https://stocktwits.com/message/646096228,646096228,2026-06-16T14:18:28.796011
-AAOI,D0ug_Dimmadome,2,$AAOI Bang!,2026-02-27T14:36:53Z,Bullish,0,https://stocktwits.com/message/646096030,646096030,2026-06-16T14:18:28.796014
 AAOI,Prophetus1,75,"$AAOI Today is not a good day for shorts, at least not early am. Later, this may pull back.",2026-02-27T14:36:53Z,Neutral,1,https://stocktwits.com/message/646096028,646096028,2026-06-16T14:18:28.796017
+AAOI,D0ug_Dimmadome,2,$AAOI Bang!,2026-02-27T14:36:53Z,Bullish,0,https://stocktwits.com/message/646096030,646096030,2026-06-16T14:18:28.796014
 AAOI,Mountainbiker168,508,$AAOI 💥,2026-02-27T14:36:04Z,Bullish,0,https://stocktwits.com/message/646095833,646095833,2026-06-16T14:18:28.796020
 AAOI,Sunnytrading90,1468,$AAOI SENDDDDDDD,2026-02-27T14:35:37Z,Bullish,5,https://stocktwits.com/message/646095732,646095732,2026-06-16T14:18:28.796023
 AAOI,IN0V8,522,"$AAOI Opportunity 
