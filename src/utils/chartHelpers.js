@@ -44,14 +44,28 @@ export const baseOpts = (yFmt) => ({
 });
 
 /* ─── Horizontal bar overrides ──────────────────────────────────────── */
-export const hBarOpts = (xFmt) => ({
-  ...baseOpts(xFmt),
-  indexAxis: 'y',
-  scales: {
-    x: { grid: GRID, ticks: { ...TICK, callback: v => xFmt(v) }, border: BORD, beginAtZero: true },
-    y: { grid: GRID, ticks: { ...TICK }, border: BORD },
-  },
-});
+export const hBarOpts = (xFmt) => {
+  const base = baseOpts(xFmt);
+  return {
+    ...base,
+    indexAxis: 'y',
+    plugins: {
+      ...base.plugins,
+      tooltip: {
+        ...base.plugins.tooltip,
+        callbacks: {
+          // Value lives on the x-axis for horizontal bars (not y). Drop the
+          // "label:" prefix when a dataset has no label.
+          label: c => `${c.dataset.label ? ` ${c.dataset.label}: ` : ' '}${xFmt(c.parsed.x)}`,
+        },
+      },
+    },
+    scales: {
+      x: { grid: GRID, ticks: { ...TICK, callback: v => xFmt(v) }, border: BORD, beginAtZero: true },
+      y: { grid: GRID, ticks: { ...TICK }, border: BORD },
+    },
+  };
+};
 
 /* ─── Doughnut chart options ────────────────────────────────────────── */
 export const doughnutOpts = (cutout = '55%') => ({
@@ -79,6 +93,39 @@ export const doughnutOpts = (cutout = '55%') => ({
     },
   },
 });
+
+/* ─── Dual-axis options (volume on left, secondary series on right) ──
+   Datasets with yAxisID 'y1' are formatted with y1Fmt in the tooltip. */
+export const dualAxisOpts = (yFmt, y1Fmt) => {
+  const base = baseOpts(yFmt);
+  return {
+    ...base,
+    plugins: {
+      ...base.plugins,
+      legend: {
+        display: true,
+        position: 'bottom',
+        labels: {
+          color: '#c8c8c0',
+          font: { size: 10, family: "'Inter',sans-serif" },
+          padding: 10,
+          boxWidth: 10,
+        },
+      },
+      tooltip: {
+        ...base.plugins.tooltip,
+        callbacks: {
+          label: c => ` ${c.dataset.label}: ${(c.dataset.yAxisID === 'y1' ? y1Fmt : yFmt)(c.parsed.y)}`,
+        },
+      },
+    },
+    scales: {
+      x: base.scales.x,
+      y:  { position: 'left',  grid: GRID, ticks: { ...TICK, callback: v => yFmt(v) }, border: BORD, beginAtZero: true },
+      y1: { position: 'right', grid: { drawOnChartArea: false }, ticks: { ...TICK, callback: v => y1Fmt(v) }, border: BORD },
+    },
+  };
+};
 
 /* ─── Stacked bar options ───────────────────────────────────────────── */
 export const stackedOpts = (yFmt) => ({

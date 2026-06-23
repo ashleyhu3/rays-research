@@ -1,0 +1,55 @@
+name: Collect StockTwits data
+
+# Refreshes the StockTwits sentiment CSVs on GitHub's always-on scheduler.
+# The collector is incremental: it reads the latest message already committed
+# for each ticker and scrapes only the new window, so the committed CSVs ARE
+# the state store — they must be checked out (and committed back) each run.
+#
+# The public StockTwits API needs no auth, so this workflow requires no secrets.
+# Tickers are read from stocktwits/Stocktwits-Scraper-main/tickers.txt.
+
+on:
+  schedule:
+    # Once daily at 06:00 UTC. High-volume tickers can take a while, so the
+    # job allows a long timeout below.
+    - cron: '0 6 * * *'
+  workflow_dispatch: {}   # allow manual runs from the Actions tab
+
+concurrency:
+  group: stocktwits-collect
+  cancel-in-progress: false
+
+permissions:
+  contents: write   # needed to commit refreshed CSVs back to the repo
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300   # MU/SNDK etc. can take 45-60 min each, serially
+    defaults:
+      run:
+        working-directory: stocktwits/Stocktwits-Scraper-main
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install pandas
+
+      - name: Run collector
+        run: python update_all.py --data-dir data
+
+      - name: Commit refreshed data
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/
+          if git diff --cached --quiet; then
+            echo "No data changes to commit."
+          else
+            git commit -m "chore(stocktwits): scheduled data refresh"
+            git push
+          fi

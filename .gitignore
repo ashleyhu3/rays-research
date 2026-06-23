@@ -1,3 +1,7 @@
 node_modules/
 dist/
 .env
+
+# Volatile latest-scrape cache (seeded into the request cache on boot; in prod
+# this lives in Mongo, in dev it's a throwaway local file)
+server/data/latestSnapshots.json

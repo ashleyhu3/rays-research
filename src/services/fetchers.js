@@ -8,10 +8,14 @@ function fetchT(url, ms = 12000) {
 const NPM_PKGS = [
   'openai',
   'anthropic',
-  'google-generativeai',
   'mistralai',
   '@anthropic-ai/sdk',
-  '@google/generative-ai',
+  '@google/genai',
+  'langchain',
+  '@langchain/core',
+  'llamaindex',
+  'ai',
+  '@huggingface/inference',
 ];
 
 async function fetchNpmPkg(pkg) {
@@ -37,7 +41,7 @@ async function fetchNpm() {
 }
 
 /* ── PyPI last-week snapshot ──────────────────────────────────────── */
-const PYPI_PKGS = ['openai', 'anthropic', 'google-generativeai', 'mistralai'];
+const PYPI_PKGS = ['openai', 'anthropic', 'google-genai', 'mistralai', 'langchain', 'langchain-community', 'llama-index-core', 'vllm'];
 
 async function fetchPypiPkg(pkg) {
   const url = `https://pypistats.org/api/packages/${pkg}/recent?period=week`;
@@ -52,27 +56,6 @@ async function fetchPypi() {
   return Object.fromEntries(
     PYPI_PKGS.map((p, i) => [p, results[i].status === 'fulfilled' ? results[i].value : null])
   );
-}
-
-/* ── Stack Overflow tag totals + last-week count ──────────────────── */
-const SO_TAGS = ['openai-api', 'anthropic-claude', 'google-gemini-api', 'langchain', 'mistral-ai'];
-
-async function fetchSoTotals() {
-  const url = `https://api.stackexchange.com/2.3/tags/${SO_TAGS.join(';')}/info?site=stackoverflow`;
-  const res = await fetchT(url);
-  if (!res.ok) return {};
-  const { items = [] } = await res.json();
-  return Object.fromEntries(items.map(t => [t.tag_name, t.count]));
-}
-
-async function fetchSoWeekly(tag) {
-  const now = Math.floor(Date.now() / 1000);
-  const week = now - 7 * 86400;
-  const url = `https://api.stackexchange.com/2.3/questions?tagged=${tag}&site=stackoverflow&fromdate=${week}&todate=${now}&pagesize=1`;
-  const res = await fetchT(url);
-  if (!res.ok) return null;
-  const json = await res.json();
-  return json.total ?? null;
 }
 
 /* ── HuggingFace top models ───────────────────────────────────────── */
@@ -99,9 +82,12 @@ async function fetchJsonSafe(url, ms = 30000) {
   }
 }
 
+// github-commits crawls many repos and can be slow on a cold start
+const SLOW_KEYS = new Set(['github-commits']);
+
 async function fetchBackendAll() {
-  const keys = ['pypi', 'trends', 'reddit', 'appstore', 'jobs', 'gpu', 'github', 'openrouter', 'eia', 'mops'];
-  const results = await Promise.allSettled(keys.map(k => fetchJsonSafe(`/api/${k}`)));
+  const keys = ['pypi', 'trends', 'gpu', 'github', 'openrouter', 'eia', 'mops', 'github-commits', 'docker', 'hn', 'wikipedia', 'openrouter-ranks', 'dram', 'aws', 'cloud-gpu', 'litellm', 'sentiment', 'mcp', 'sec', 'huggingface', 'metrics-history'];
+  const results = await Promise.allSettled(keys.map(k => fetchJsonSafe(`/api/${k}`, SLOW_KEYS.has(k) ? 90000 : 30000)));
   return Object.fromEntries(keys.map((k, i) => [
     k, results[i].status === 'fulfilled' ? results[i].value : null,
   ]));
@@ -109,11 +95,9 @@ async function fetchBackendAll() {
 
 /* ── Aggregate ────────────────────────────────────────────────────── */
 export async function fetchAll() {
-  const [npm, pypi, soTotals, soWeekly, hf, backend] = await Promise.allSettled([
+  const [npm, pypi, hf, backend] = await Promise.allSettled([
     fetchNpm(),
     fetchPypi(),
-    fetchSoTotals(),
-    fetchSoWeekly('anthropic-claude'),
     fetchHF(),
     fetchBackendAll(),
   ]);
@@ -125,19 +109,28 @@ export async function fetchAll() {
     // Browser-direct fetches
     npm:         ok(npm)      ?? {},
     pypi:        ok(pypi)     ?? {},
-    soTotals:    ok(soTotals) ?? {},
-    soWeekly:    ok(soWeekly),
     hf:          ok(hf)       ?? [],
     // Backend-provided (may be null if server not running)
     pypiHistory: be.pypi       ?? null,
     trends:      be.trends     ?? null,
-    reddit:      be.reddit     ?? null,
-    appstore:    be.appstore   ?? null,
-    jobs:        be.jobs       ?? null,
     gpu:         be.gpu        ?? null,
     github:      be.github     ?? null,
     openrouter:  be.openrouter ?? null,
-    eia:         be.eia        ?? null,
-    mops:        be.mops       ?? null,
+    eia:          be.eia              ?? null,
+    mops:         be.mops             ?? null,
+    githubCommits: be['github-commits'] ?? null,
+    docker:        be.docker           ?? null,
+    hn:            be.hn               ?? null,
+    wikipedia:        be.wikipedia               ?? null,
+    openrouterRanks:  be['openrouter-ranks']      ?? null,
+    dram:             be.dram                     ?? null,
+    aws:              be.aws                      ?? null,
+    cloudGpu:         be['cloud-gpu']             ?? null,
+    litellm:          be.litellm                  ?? null,
+    sentiment:        be.sentiment                ?? null,
+    mcp:              be.mcp                      ?? null,
+    sec:              be.sec                      ?? null,
+    hfServer:         be.huggingface              ?? null,
+    metricsHistory:   be['metrics-history']       ?? null,
   };
 }

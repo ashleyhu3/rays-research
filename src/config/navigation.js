@@ -7,41 +7,20 @@ export const NAV_SECTIONS = [
     ],
   },
   {
-    label: 'Developer signals',
-    sectorId: 'dev',
+    label: 'AI companies',
+    sectorId: 'companies',
     items: [
-      { id: 'dev-overview', label: 'Developer overview', isOverview: true },
-      { id: 'pypi',         label: 'PyPI / npm / Stack Overflow' },
-      { id: 'github',       label: 'GitHub dependents'           },
-      { id: 'trends',       label: 'Google Trends & Jobs'        },
+      { id: 'demand-openai',     label: 'OpenAI / ChatGPT'   },
+      { id: 'demand-anthropic',  label: 'Anthropic / Claude' },
+      { id: 'demand-google',     label: 'Google / Gemini'    },
+      { id: 'demand-zhipu',      label: 'Zhipu AI / GLM'     },
+      { id: 'demand-minimax',    label: 'MiniMax'            },
     ],
   },
   {
-    label: 'Consumer signals',
-    sectorId: 'consumer',
+    label: 'Market signals',
     items: [
-      { id: 'consumer-overview', label: 'Consumer overview', isOverview: true },
-      { id: 'reddit',    label: 'App Store & Reddit'          },
-      { id: 'web',       label: 'Web traffic & stickiness'    },
-      { id: 'hf',        label: 'HuggingFace downloads'       },
-    ],
-  },
-  {
-    label: 'Infrastructure',
-    sectorId: 'infra',
-    items: [
-      { id: 'infra-overview', label: 'Infrastructure overview', isOverview: true },
-      { id: 'gpu',         label: 'GPU spot pricing'        },
-      { id: 'datacenter',  label: 'US datacenter build'     },
-      { id: 'electricity', label: 'AI electricity demand'   },
-    ],
-  },
-  {
-    label: 'Token consumption',
-    sectorId: 'tokens',
-    items: [
-      { id: 'tokens-overview', label: 'Token consumption overview', isOverview: true },
-      { id: 'chinese', label: 'Chinese LLM usage' },
+      { id: 'market-signals', label: 'Market signals' },
     ],
   },
   {
@@ -51,38 +30,79 @@ export const NAV_SECTIONS = [
     items: [
       { id: 'ai-supply',        label: 'Overview'            },
       { id: 'ai-supply-optics', label: 'Optics supply chain' },
+      { id: 'ai-supply-fiber',  label: 'Fiber supply chain'  },
       { id: 'ai-supply-pcb',    label: 'PCB supply chain'    },
+      { id: 'ai-supply-mlcc',   label: 'MLCC supply chain'   },
+    ],
+  },
+  {
+    label: 'Markets',
+    mode: 'tool',
+    items: [
+      { id: 'sentiment', label: 'Sentiment & options' },
+      { id: 'options',   label: 'Options flow' },
+    ],
+  },
+  {
+    label: 'Transcripts',
+    mode: 'tool',
+    items: [
+      { id: 'transcripts', label: 'Earnings transcript agent' },
+    ],
+  },
+  {
+    label: 'Sources',
+    mode: 'tool',
+    items: [
+      { id: 'sources', label: 'Data validity' },
+    ],
+  },
+  {
+    label: 'Pricing',
+    mode: 'pricing',
+    items: [
+      { id: 'pricing', label: 'GPU & memory spot' },
     ],
   },
 ];
 
-/** Flat view metadata — title & isNew flag */
+/** Page title shown in the top bar, keyed by view id. */
 export const VIEW_META = {
-  overview:          { title: 'OVERVIEW DASHBOARD',             isNew: false },
-  'dev-overview':      { title: 'DEVELOPER SIGNALS OVERVIEW',   isNew: false },
-  'consumer-overview': { title: 'CONSUMER SIGNALS OVERVIEW',    isNew: false },
-  'infra-overview':    { title: 'INFRASTRUCTURE OVERVIEW',      isNew: false },
-  'tokens-overview':   { title: 'TOKEN CONSUMPTION OVERVIEW',   isNew: false },
-  pypi:              { title: 'PYPI / NPM / STACK OVERFLOW',    isNew: false },
-  github:            { title: 'GITHUB DEPENDENTS',              isNew: false },
-  trends:            { title: 'GOOGLE TRENDS & JOBS',           isNew: false },
-  reddit:            { title: 'APP STORE & REDDIT',             isNew: false },
-  web:               { title: 'WEB TRAFFIC & STICKINESS',       isNew: false },
-  hf:                { title: 'HUGGINGFACE DOWNLOADS',          isNew: false },
-  gpu:               { title: 'GPU SPOT PRICING',               isNew: false },
-  datacenter:        { title: 'US DATACENTER BUILD',            isNew: true  },
-  electricity:       { title: 'AI ELECTRICITY DEMAND',          isNew: true  },
-  chinese:           { title: 'CHINESE LLM USAGE',              isNew: true  },
-  'ai-supply':        { title: 'AI SUPPLY — OVERVIEW',       isNew: true },
-  'ai-supply-optics': { title: 'AI SUPPLY — OPTICS',         isNew: true },
-  'ai-supply-pcb':    { title: 'AI SUPPLY — PCB',            isNew: true },
+  overview:           { title: 'OVERVIEW DASHBOARD' },
+  // Company demand pages
+  'demand-openai':    { title: 'OPENAI / CHATGPT' },
+  'demand-anthropic': { title: 'ANTHROPIC / CLAUDE' },
+  'demand-google':    { title: 'GOOGLE / GEMINI' },
+  'demand-zhipu':     { title: 'ZHIPU AI / GLM' },
+  'demand-minimax':   { title: 'MINIMAX' },
+  'market-signals':        { title: 'MARKET SIGNALS' },
+  'demand-general':        { title: 'INFRASTRUCTURE & OSS SIGNALS' },
+  'openrouter-rankings':   { title: 'OPENROUTER MODEL RANKINGS' },
+  // Source-specific signal pages — reachable via direct navigation or Ask tab
+  pypi:              { title: 'PYPI / NPM' },
+  github:            { title: 'GITHUB DEPENDENTS' },
+  trends:            { title: 'GOOGLE TRENDS' },
+  web:               { title: 'WEB TRAFFIC & STICKINESS' },
+  hf:                { title: 'HUGGINGFACE DOWNLOADS' },
+  pricing:           { title: 'PRICING — GPU & MEMORY SPOT' },
+  datacenter:        { title: 'US DATACENTER BUILD' },
+  electricity:       { title: 'AI ELECTRICITY DEMAND' },
+  chinese:           { title: 'CHINESE LLM USAGE' },
+  'ai-supply':        { title: 'AI SUPPLY — OVERVIEW' },
+  'ai-supply-optics': { title: 'AI SUPPLY — OPTICS' },
+  'ai-supply-fiber':  { title: 'AI SUPPLY — FIBER' },
+  'ai-supply-pcb':    { title: 'AI SUPPLY — PCB' },
+  'ai-supply-mlcc':   { title: 'AI SUPPLY — MLCC' },
+  'github-commits':   { title: 'GITHUB COMMIT VELOCITY' },
+  docker:             { title: 'DOCKER HUB DEPLOYS' },
+  community:          { title: 'HN & WIKIPEDIA PULSE' },
+  options:            { title: 'OPTIONS FLOW' },
+  sentiment:          { title: 'MARKETS — SENTIMENT & OPTIONS' },
+  transcripts:        { title: 'EARNINGS TRANSCRIPT AGENT' },
+  sources:            { title: 'DATA VALIDITY TERMINAL' },
 };
 
 /** Map sector overview view id → sectorId */
 export const SECTOR_OVERVIEW_IDS = {
-  'overview':          'overview',
-  'dev-overview':      'dev',
-  'consumer-overview': 'consumer',
-  'infra-overview':    'infra',
-  'tokens-overview':   'tokens',
+  'overview': 'overview',
 };

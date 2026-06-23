@@ -6,22 +6,37 @@
   "scripts": {
     "dev": "node --env-file=.env server/server.js",
     "build": "vite build",
-    "start": "NODE_ENV=production node --env-file=.env server/server.js"
+    "start": "NODE_ENV=production node server/server.js",
+    "backfill:sec": "node --env-file=.env server/scripts/backfillSec.js",
+    "backfill:mcp": "node --env-file=.env server/scripts/backfillMcp.js",
+    "backfill:github-stars": "node --env-file=.env server/scripts/backfillGithubStars.js",
+    "backfill:gpu-history": "node --env-file=.env server/scripts/backfillGpuHistory.js",
+    "backfill:dram": "node --env-file=.env server/scripts/backfillDram.js",
+    "backfill:aws-spot": "node --env-file=.env server/scripts/backfillAwsSpot.js",
+    "backfill:litellm": "node --env-file=.env server/scripts/backfillLitellm.js",
+    "backfill:all": "npm run backfill:sec && npm run backfill:mcp && npm run backfill:github-stars",
+    "db:ping": "node --env-file=.env server/scripts/dbPing.js",
+    "db:seed": "node --env-file=.env server/scripts/seedMongo.js",
+    "collect": "node --env-file=.env server/scripts/collect.js"
   },
   "dependencies": {
-    "app-store-scraper": "^0.18.0",
+    "@aws-sdk/client-pricing": "^3.1069.0",
     "axios": "^1.17.0",
     "chart.js": "^4.4.1",
     "cheerio": "^1.2.0",
     "cors": "^2.8.6",
     "express": "^5.2.1",
     "google-trends-api": "^4.9.2",
+    "groq-sdk": "^0.9.0",
+    "mongodb": "^7.3.0",
     "node-cron": "^4.2.1",
     "react": "^18.3.1",
     "react-chartjs-2": "^5.2.0",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "yahoo-finance2": "^3.15.2"
   },
   "devDependencies": {
+    "@aws-sdk/client-ec2": "^3.1068.0",
     "@vitejs/plugin-react": "^4.2.1",
     "vite": "^5.4.0"
   }

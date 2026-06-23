@@ -1,5 +1,7 @@
-const PREFIX = 'signal_';
-const TTL = 24 * 60 * 60 * 1000;
+// Bump the version whenever the fetchAll() data shape changes — cached
+// snapshots from an older shape would otherwise hide new charts until the TTL expires.
+const PREFIX = 'signal_v7_';
+const TTL = 2 * 60 * 60 * 1000; // 2 hours — short enough that stale shapes don't persist
 
 export function getCached(key) {
   try {

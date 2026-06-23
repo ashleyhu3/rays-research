@@ -1,0 +1,47 @@
+'use strict';
+const path    = require('path');
+const storage = require('./storage');
+
+// Persists the *latest* successful scrape for each source so the in-memory
+// request cache (./cache.js) can be seeded on boot. Without this, the cache
+// starts empty after every restart and the first visitor blocks on a live
+// re-scrape of ~20 rate-limited external sources. With it, the first paint
+// serves last-known values instantly while a background warmup refreshes.
+//
+// Shape: { [key]: { data: <payload>, fetchedAt: <ms> } }
+// One blob (Mongo doc in prod, JSON file in dev) via the storage layer.
+const FILE = path.join(__dirname, 'data', 'latestSnapshots.json');
+const BLOB = 'latestSnapshots';
+
+let store = null;
+
+function load() {
+  if (!store) store = storage.read(BLOB, FILE);
+  return store;
+}
+
+// Record the latest payload for a source. Called after every successful scrape.
+function put(key, data) {
+  if (data == null) return;
+  const s = load();
+  s[key] = { data, fetchedAt: Date.now() };
+  storage.write(BLOB, FILE, s);
+}
+
+// Seed the in-memory request cache from the persisted snapshots. Entries are
+// inserted with each source's normal TTL so routes serve them immediately, but
+// carry their ORIGINAL fetch time so the Ask tab's freshness passport reflects
+// when the data was really scraped, not boot time. Callers should still kick
+// off a background refresh to replace stale values. Returns the seeded keys.
+function seed(cache, ttlByKey = {}) {
+  const s = load();
+  const seeded = [];
+  for (const [key, entry] of Object.entries(s)) {
+    if (!entry || entry.data == null) continue;
+    cache.set(key, entry.data, ttlByKey[key] ?? 24 * 60 * 60 * 1000, entry.fetchedAt);
+    seeded.push(key);
+  }
+  return seeded;
+}
+
+module.exports = { put, seed };
