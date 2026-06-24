@@ -9,6 +9,8 @@ const scheduler    = require('./scheduler');
 const htmlTemplate = require('./htmlTemplate');
 const { chat } = require('./chat');
 const { getOptionsData }             = require('./scrapers/options');
+const { getStockHistory }            = require('./scrapers/stocks');
+const { searchKeyword }              = require('./scrapers/keywordSearch');
 
 const app   = express();
 const PORT  = process.env.PORT || 3001;
@@ -71,6 +73,27 @@ app.get('/api/aws',               cachedRoute('aws',              s.aws));
 app.get('/api/cloud-gpu',         cachedRoute('cloudGpu',         s.cloudGpu));
 app.get('/api/litellm',           cachedRoute('litellm',          s.litellm));
 app.get('/api/sentiment',         cachedRoute('sentiment',        s.sentiment));
+
+// Keyword frequency search — scans all StockTwits CSVs for whole-word matches,
+// grouped by month. Results cached 1 hour per (lowercased) keyword.
+app.get('/api/sentiment/keyword', async (req, res) => {
+  const q = (req.query.q ?? '').trim();
+  if (!q)        return res.status(400).json({ error: 'q is required' });
+  if (q.length > 60) return res.status(400).json({ error: 'keyword too long (max 60 chars)' });
+
+  const cacheKey = `keyword:${q.toLowerCase()}`;
+  const cached   = cache.get(cacheKey);
+  if (cached !== null) return res.json(cached);
+
+  try {
+    const data = await searchKeyword(q);
+    cache.set(cacheKey, data, 60 * 60 * 1000);
+    res.json(data);
+  } catch (e) {
+    console.error('[keyword]', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
 app.get('/api/npm',               cachedRoute('npm',              s.npm));
 app.get('/api/huggingface',       cachedRoute('huggingface',      s.huggingface));
 app.get('/api/mcp',               cachedRoute('mcp',              s.mcp));
@@ -121,6 +144,51 @@ app.post('/api/transcript/analyze', async (req, res) => {
   }
 });
 
+// ── LSEG stored transcripts (MongoDB → frontend) ────────────────────────────
+// Returns a list of all transcripts in the `transcripts` collection, or the
+// full document(s) for a specific ticker. Analysis is NOT re-run here; the
+// backfill script populates the collection offline.
+app.get('/api/transcripts/stored', async (req, res) => {
+  const { MongoClient } = require('mongodb');
+  if (!process.env.MONGODB_URI) return res.json([]);
+  let client;
+  try {
+    client = new MongoClient(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 8000 });
+    await client.connect();
+    const col = client.db(process.env.MONGODB_DB || undefined).collection('transcripts');
+    const docs = await col
+      .find({}, { projection: { rawText: 0, blocks: 0 } })
+      .sort({ date: -1 })
+      .toArray();
+    res.json(docs);
+  } catch (e) {
+    console.error('[transcripts/stored]', e.message);
+    res.status(500).json({ error: e.message });
+  } finally {
+    client?.close().catch(() => {});
+  }
+});
+
+app.get('/api/transcripts/stored/:ticker', async (req, res) => {
+  const ticker = (req.params.ticker ?? '').toUpperCase();
+  if (!ticker) return res.status(400).json({ error: 'ticker required' });
+  const { MongoClient } = require('mongodb');
+  if (!process.env.MONGODB_URI) return res.json([]);
+  let client;
+  try {
+    client = new MongoClient(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 8000 });
+    await client.connect();
+    const col = client.db(process.env.MONGODB_DB || undefined).collection('transcripts');
+    const docs = await col.find({ ticker }).sort({ date: -1 }).toArray();
+    res.json(docs);
+  } catch (e) {
+    console.error('[transcripts/stored/:ticker]', e.message);
+    res.status(500).json({ error: e.message });
+  } finally {
+    client?.close().catch(() => {});
+  }
+});
+
 app.post('/api/refresh', async (req, res) => {
   const keys = req.body?.keys ?? Object.keys(scheduler.scrapers);
   try {
@@ -132,7 +200,38 @@ app.post('/api/refresh', async (req, res) => {
   }
 });
 
+// Manual trigger for the post-settlement OI capture sweep — useful when
+// the nightly cron ran before Yahoo published OI, or a ticker was rate-limited.
+// Accepts optional { tickers: ['MU', 'SNDK'] } body; defaults to full basket.
+app.post('/api/capture-oi', async (req, res) => {
+  const tickers = Array.isArray(req.body?.tickers) ? req.body.tickers : undefined;
+  res.json({ ok: true, message: 'OI capture started in background', tickers: tickers ?? 'full basket' });
+  scheduler.captureOptionsOI(tickers).catch(e => console.error('[capture-oi]', e.message));
+});
+
 /* ── Options flow (per-ticker, 5-min cache) ──────────────────────── */
+app.get('/api/stocks/:ticker', async (req, res) => {
+  const ticker = (req.params.ticker ?? '').trim().toUpperCase();
+  if (!ticker || !/^[A-Z0-9.^=-]{1,10}$/i.test(ticker))
+    return res.status(400).json({ error: 'Invalid ticker symbol' });
+
+  const cacheKey = `stocks:${ticker}`;
+  const cached   = cache.get(cacheKey);
+  if (cached !== null) return res.json(cached);
+
+  try {
+    const data = await getStockHistory(ticker);
+    cache.set(cacheKey, data, 60 * 60 * 1000); // 1-hour TTL
+    res.json(data);
+  } catch (e) {
+    console.error('[stocks]', ticker, e.message);
+    const rateLimited = e.message?.includes('429') || /Too Many Requests|crumb/i.test(e.message ?? '');
+    if (rateLimited)
+      return res.status(503).json({ error: 'Yahoo Finance is rate-limiting. Please try again in a moment.' });
+    res.status(500).json({ error: `Could not load data for ${ticker}: ${e.message}` });
+  }
+});
+
 app.get('/api/options/:ticker', async (req, res) => {
   const ticker = (req.params.ticker ?? '').trim().toUpperCase();
   const date   = req.query.date ?? null;

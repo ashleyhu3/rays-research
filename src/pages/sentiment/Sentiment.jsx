@@ -1,11 +1,355 @@
-import { useMemo, useState, useRef } from 'react';
-import { Line } from 'react-chartjs-2';
+import { useMemo, useState, useRef, useEffect } from 'react';
+import { Line, Bar } from 'react-chartjs-2';
 import { C, fa } from '../../config/colors';
-import { baseOpts, mkDs, dualAxisOpts, GRID, TICK, BORD } from '../../utils/chartHelpers';
+import { baseOpts, mkDs, dualAxisOpts, fmtM, GRID, TICK, BORD } from '../../utils/chartHelpers';
 import ChartCard from '../../components/chart/ChartCard';
 import EditableGrid from '../../components/chart/EditableGrid';
 import { useData } from '../../context/DataContext';
 import { TickerPanel } from '../options/Options';
+
+/* ── Short Interest Panel ─────────────────────────────────────────────
+   Fetches price history + short-interest stats from /api/stocks/:ticker
+   (Yahoo Finance) and renders the dual-panel chart: short interest ratio
+   + closing price as two lines on shared X, with volume bars below.     */
+
+const SHORT_BLUE  = '#4fc3f7';
+const PRICE_GRAY  = '#90a4ae';
+const VOL_TEAL    = '#26c6da';
+
+function ShortInterestPanel({ ticker }) {
+  const [data, setData]     = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError]   = useState(null);
+
+  useEffect(() => {
+    if (!ticker) return;
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    setData(null);
+    fetch(`/api/stocks/${ticker}`)
+      .then(r => r.json())
+      .then(d => {
+        if (cancelled) return;
+        if (d.error) throw new Error(d.error);
+        setData(d);
+      })
+      .catch(e => { if (!cancelled) setError(e.message); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [ticker]);
+
+  if (loading) return <div className="opts-loading">Loading price &amp; short interest data…</div>;
+  if (error)   return <div className="opts-empty" style={{ paddingTop: 6 }}><h2>Could not load data for {ticker}</h2><p style={{ fontSize: 13 }}>{error}</p></div>;
+  if (!data)   return null;
+
+  const lineData = {
+    labels: data.labels,
+    datasets: [
+      {
+        label: 'Short Interest Ratio',
+        data: data.shortRatios,
+        borderColor: SHORT_BLUE,
+        backgroundColor: 'transparent',
+        yAxisID: 'yLeft',
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        borderWidth: 2,
+        tension: 0.4,
+        spanGaps: true,
+      },
+      {
+        label: 'Closing Price',
+        data: data.prices,
+        borderColor: PRICE_GRAY,
+        backgroundColor: 'transparent',
+        yAxisID: 'yRight',
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        borderWidth: 1.5,
+        tension: 0.3,
+        spanGaps: true,
+      },
+    ],
+  };
+
+  const barData = {
+    labels: data.labels,
+    datasets: [{
+      label: 'Volume',
+      data: data.volumes,
+      backgroundColor: fa(VOL_TEAL, 0.55),
+      borderColor: fa(VOL_TEAL, 0.8),
+      borderWidth: 1,
+      borderRadius: 2,
+    }],
+  };
+
+  const lineOpts = {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: { duration: 300 },
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#1a1f2a',
+        borderColor: 'rgba(255,255,255,.12)',
+        borderWidth: 1,
+        titleFont: { family: "'Inter',sans-serif", size: 11 },
+        bodyFont:  { family: "'Inter',sans-serif", size: 11 },
+        padding: 10,
+        callbacks: {
+          label: c => c.dataset.yAxisID === 'yLeft'
+            ? ` ${c.dataset.label}: ${c.parsed.y?.toFixed(2)}%`
+            : ` ${c.dataset.label}: $${c.parsed.y?.toFixed(2)}`,
+        },
+      },
+    },
+    scales: {
+      x: { display: false },
+      yLeft: {
+        position: 'left',
+        grid: GRID,
+        ticks: { ...TICK, callback: v => `${v.toFixed(2)}%` },
+        border: BORD,
+      },
+      yRight: {
+        position: 'right',
+        grid: { display: false },
+        ticks: { ...TICK, callback: v => `$${v.toFixed(0)}` },
+        border: BORD,
+      },
+    },
+  };
+
+  const barOpts = {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: { duration: 300 },
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#1a1f2a',
+        borderColor: 'rgba(255,255,255,.12)',
+        borderWidth: 1,
+        titleFont: { family: "'Inter',sans-serif", size: 11 },
+        bodyFont:  { family: "'Inter',sans-serif", size: 11 },
+        padding: 10,
+        callbacks: { label: c => ` Volume: ${fmtM(c.parsed.y)}` },
+      },
+    },
+    scales: {
+      x: {
+        grid: GRID,
+        ticks: { ...TICK, maxTicksLimit: 8, autoSkip: true },
+        border: BORD,
+      },
+      y: {
+        position: 'left',
+        grid: GRID,
+        ticks: { ...TICK, callback: v => fmtM(v) },
+        border: BORD,
+        beginAtZero: true,
+      },
+    },
+  };
+
+  const shortPct = data.shortPercentOfFloat != null
+    ? `${(data.shortPercentOfFloat * 100).toFixed(2)}% of float`
+    : null;
+
+  return (
+    <div className="cbox span2">
+      <div className="ch-head">
+        <div className="ch-title">Short Interest — {data.name || ticker}</div>
+        <div className="ch-meta">
+          <span className="freq-badge freq-weekly">bi-monthly est.</span>
+          <span className="ch-src">Yahoo Finance</span>
+        </div>
+      </div>
+
+      {/* Legend row */}
+      <div style={{ display: 'flex', gap: 18, marginBottom: 10, fontSize: 11, color: '#b0b0a8', fontFamily: "'Inter',sans-serif" }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          <span style={{ width: 16, height: 2, background: SHORT_BLUE, display: 'inline-block', borderRadius: 1 }} />
+          Short Interest Ratio
+        </span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          <span style={{ width: 16, height: 2, background: PRICE_GRAY, display: 'inline-block', borderRadius: 1 }} />
+          Closing Price
+        </span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          <span style={{ width: 10, height: 10, background: fa(VOL_TEAL, 0.55), border: `1px solid ${fa(VOL_TEAL, 0.8)}`, display: 'inline-block', borderRadius: 2 }} />
+          Volume
+        </span>
+      </div>
+
+      {/* Top panel: short interest ratio (left axis) + price (right axis) */}
+      <div style={{ position: 'relative', height: 200 }}>
+        <Line data={lineData} options={lineOpts} />
+      </div>
+
+      {/* Bottom panel: volume bars, shares the same X labels */}
+      <div style={{ position: 'relative', height: 80, marginTop: 2 }}>
+        <Bar data={barData} options={barOpts} />
+      </div>
+
+      {/* Summary row */}
+      {(shortPct || data.shortRatio != null || data.sharesShort != null) && (
+        <div style={{ fontSize: 11, color: '#b0b0a8', marginTop: 8, fontFamily: "'Inter',sans-serif", display: 'flex', gap: 18, flexWrap: 'wrap' }}>
+          {shortPct       && <span>Short % float: <strong style={{ color: '#e8e8e0' }}>{shortPct}</strong></span>}
+          {data.sharesShort != null && <span>Shares short: <strong style={{ color: '#e8e8e0' }}>{fmtM(data.sharesShort)}</strong></span>}
+          {data.shortRatio  != null && <span>Days to cover: <strong style={{ color: '#e8e8e0' }}>{data.shortRatio.toFixed(1)}</strong></span>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Keyword frequency chart ──────────────────────────────────────────────
+   Searches all StockTwits CSVs for a whole-word (case-insensitive) keyword
+   and plots monthly mention count as a bar chart.                          */
+const KW_COLOR = '#60a5fa'; // soft blue
+
+function KeywordSearch() {
+  const [kw, setKw]         = useState('');
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError]   = useState(null);
+  const [searched, setSearched] = useState('');
+
+  async function doSearch(e) {
+    e?.preventDefault();
+    const q = kw.trim();
+    if (!q || loading) return;
+    setLoading(true); setError(null); setResult(null);
+    try {
+      const r = await fetch(`/api/sentiment/keyword?q=${encodeURIComponent(q)}`);
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error ?? `HTTP ${r.status}`);
+      setResult(d);
+      setSearched(q);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const fmtMonth = iso => {
+    const [y, m] = iso.split('-');
+    return new Date(parseInt(y), parseInt(m) - 1)
+      .toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+  };
+
+  const MOM_COLOR = '#fbbf24'; // amber for MoM line
+
+  const chartData = result ? (() => {
+    const counts = result.counts;
+    const mom = counts.map((v, i) =>
+      i === 0 || counts[i - 1] === 0 ? null
+        : +((v - counts[i - 1]) / counts[i - 1] * 100).toFixed(1)
+    );
+    return {
+      labels: result.months.map(fmtMonth),
+      datasets: [
+        {
+          type: 'bar',
+          label: 'Monthly mentions',
+          data: counts,
+          backgroundColor: fa(KW_COLOR, 0.55),
+          borderColor: KW_COLOR,
+          borderWidth: 1,
+          borderRadius: 2,
+          yAxisID: 'y',
+        },
+        {
+          type: 'line',
+          label: 'MoM growth %',
+          data: mom,
+          borderColor: MOM_COLOR,
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          tension: 0.3,
+          spanGaps: false,
+          yAxisID: 'y1',
+        },
+      ],
+    };
+  })() : null;
+
+  const chartOpts = {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: { duration: 200 },
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: {
+        display: true,
+        position: 'bottom',
+        labels: { color: '#c8c8c0', font: { size: 10, family: "'Inter',sans-serif" }, padding: 10, boxWidth: 10 },
+      },
+      tooltip: {
+        backgroundColor: '#1a1f2a',
+        borderColor: 'rgba(255,255,255,.12)',
+        borderWidth: 1,
+        titleFont: { family: "'Inter',sans-serif", size: 11 },
+        bodyFont:  { family: "'Inter',sans-serif", size: 11 },
+        padding: 10,
+        callbacks: {
+          label: c => c.dataset.yAxisID === 'y1'
+            ? ` MoM: ${c.parsed.y == null ? '—' : `${c.parsed.y > 0 ? '+' : ''}${c.parsed.y}%`}`
+            : ` Mentions: ${c.parsed.y.toLocaleString()}`,
+        },
+      },
+    },
+    scales: {
+      x: { grid: GRID, ticks: TICK, border: BORD },
+      y:  { position: 'left',  grid: GRID, ticks: { ...TICK, callback: v => v.toLocaleString() }, border: BORD, beginAtZero: true },
+      y1: { position: 'right', grid: { drawOnChartArea: false }, ticks: { ...TICK, callback: v => `${v > 0 ? '+' : ''}${v}%` }, border: BORD },
+    },
+  };
+
+  return (
+    <div style={{ marginBottom: 24 }}>
+      <div style={{ fontSize: 11, color: '#8a8f99', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8 }}>
+        Keyword frequency — across all tracked tickers
+      </div>
+      <form onSubmit={doSearch} style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+        <input
+          className="opts-input"
+          value={kw}
+          onChange={e => setKw(e.target.value)}
+          placeholder='Enter a keyword to count monthly mentions across all twits (e.g. "tariff", "AI", "earnings")…'
+          spellCheck={false}
+          autoComplete="off"
+          style={{ textTransform: 'none' }}
+        />
+        <button className="opts-search-btn" type="submit" disabled={!kw.trim() || !!loading}>
+          {loading ? 'Searching…' : 'Search'}
+        </button>
+      </form>
+      {error && <div style={{ color: '#f87171', fontSize: 12.5, marginBottom: 10 }}>⚠ {error}</div>}
+      {chartData && (
+        <div style={{ background: 'rgba(14,17,22,.6)', border: '1px solid rgba(255,255,255,.08)', borderRadius: 8, padding: '14px 16px 8px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 8, marginBottom: 4 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: '#cbd5e1' }}>
+              "{searched}" mentions per month
+            </div>
+            <div style={{ fontSize: 12, color: '#6b7280' }}>
+              {result.total.toLocaleString()} total matches · full-word, case-insensitive
+            </div>
+          </div>
+          <div style={{ height: 240 }}><Bar data={chartData} options={chartOpts} /></div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 const SECTION_HDR = {
   fontSize: 13, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase',
@@ -147,6 +491,17 @@ export default function Sentiment() {
     };
   }, [v, tkColor]);
 
+  const tkDailyVP = useMemo(() => {
+    const d = v?.daily30; if (!d?.dates?.length) return null;
+    return {
+      labels: d.dates.map(monthLabel),
+      datasets: [
+        { ...mkDs('Daily posts', tkColor, d.volume, false), yAxisID: 'y',  spanGaps: true, pointRadius: 3, pointHoverRadius: 5 },
+        { ...mkDs('Close price', C.red,   d.price,  false), yAxisID: 'y1', spanGaps: true, pointRadius: 3, pointHoverRadius: 5 },
+      ],
+    };
+  }, [v, tkColor]);
+
   const tkSentiment = useMemo(() => {
     const w = v?.weekly; if (!w?.dates?.length) return null;
     return {
@@ -228,6 +583,8 @@ export default function Sentiment() {
         <div className="opts-loading">Loading StockTwits sentiment analysis…</div>
       ) : !ticker ? (
         /* ── Default: aggregate view ──────────────────────────────────── */
+        <>
+        <KeywordSearch />
         <EditableGrid viewId="sentiment">
           {aggData && (
             <ChartCard chartId="sent-aggregate" subtitle={`Share of messages tagged Bullish vs Bearish, weekly, pooled across all tracked tickers${asOf}.`}
@@ -266,11 +623,17 @@ export default function Sentiment() {
             </ChartCard>
           )}
         </EditableGrid>
+        </>
       ) : (
-        /* ── Per-ticker view: Options flow first, then StockTwits sentiment ── */
+        /* ── Per-ticker view: Short interest → Options flow → StockTwits sentiment ── */
         <>
           <div style={SECTION_HDR}>Options Flow — {ticker}</div>
           <TickerPanel key={`opt-${ticker}`} ticker={ticker} />
+
+          <div style={{ ...SECTION_HDR, marginTop: 24 }}>Short Interest — {ticker}</div>
+          <div className="cgrid">
+            <ShortInterestPanel key={`si-${ticker}`} ticker={ticker} />
+          </div>
 
           <div style={{ ...SECTION_HDR, marginTop: 30 }}>StockTwits Sentiment — {ticker}</div>
           {!v ? (
@@ -288,6 +651,13 @@ export default function Sentiment() {
               subtitle={`Weekly post count (left) against the week's closing price (right). ${v.category} · ${v.totalPosts.toLocaleString()} total posts.`}
               legend={[['Weekly posts', tkColor], ['Close price', C.red]]} height={260} span2>
               <Line data={tkWeeklyVP} options={dualAxisOpts(v2 => v2.toLocaleString(), v2 => `$${v2.toFixed(0)}`)} />
+            </ChartCard>
+          )}
+          {tkDailyVP && (
+            <ChartCard chartId="sent-tk-daily-vp" title={`Daily Posting Volume vs Price — ${ticker} (rolling 30 days)`}
+              subtitle="Daily post count (left) against closing price (right) for the most recent 30 trading days with both price and post data."
+              legend={[['Daily posts', tkColor], ['Close price', C.red]]} height={260} span2>
+              <Line data={tkDailyVP} options={dualAxisOpts(v2 => v2.toLocaleString(), v2 => `$${v2.toFixed(2)}`)} />
             </ChartCard>
           )}
           {tkSentiment && (

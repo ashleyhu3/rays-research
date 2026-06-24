@@ -329,6 +329,16 @@ function analyzeTicker(ticker, days, closes) {
       volNextR:  corr(counts, retsNext),
       sentNextR: corr(nets, retsNext),
     },
+    // Last 30 trading days that have both a price close and ≥1 post —
+    // used for the rolling 30-day daily volume vs price chart.
+    daily30: (() => {
+      const last = dRows.slice(-30);
+      return {
+        dates:  last.map(r => r.date),
+        price:  last.map(r => (r.close == null ? null : +r.close.toFixed(2))),
+        volume: last.map(r => r.count),
+      };
+    })(),
     summary,
   };
 }

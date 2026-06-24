@@ -124,21 +124,37 @@ async function warmOptions(tickers = OPTIONS_BASKET) {
 // chart later backfills from it whenever Yahoo returns a zero-OI chain.
 async function captureOptionsOI(tickers = OPTIONS_BASKET, maxExpiries = 4) {
   const { getOptionsData } = require('./scrapers/options');
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
   let captured = 0;
   for (const ticker of tickers) {
-    try {
-      const base = await getOptionsData(ticker);                 // nearest (records OI)
+    let base = null;
+    // Up to 3 attempts with exponential backoff — Yahoo rate-limits after ~8
+    // fast requests, so later tickers in a large basket need a retry window.
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        base = await getOptionsData(ticker);
+        break;
+      } catch (e) {
+        const isRateLimit = /429|rate.?limit|too many/i.test(e.message ?? '');
+        if (isRateLimit && attempt < 3) {
+          console.warn(`[captureOptionsOI] ${ticker} rate-limited (attempt ${attempt}) — waiting ${attempt * 8}s`);
+          await sleep(attempt * 8000);
+        } else {
+          console.warn(`[captureOptionsOI] ${ticker} failed:`, e.message);
+          break;
+        }
+      }
+    }
+    if (base) {
       cache.set(`options:${ticker}:nearest`, base, OPTIONS_TTL);
       captured++;
       for (const d of (base.expirations ?? []).slice(0, maxExpiries)) {
         if (d === base.selectedDate) continue;
         try { await getOptionsData(ticker, d); } catch { /* skip a bad expiry */ }
-        await new Promise(r => setTimeout(r, 400));
+        await sleep(1500);
       }
-    } catch (e) {
-      console.warn(`[captureOptionsOI] ${ticker} failed:`, e.message);
     }
-    await new Promise(r => setTimeout(r, 600));
+    await sleep(2000); // larger gap between tickers to avoid rate-limiting the tail
   }
   console.log(`[captureOptionsOI] swept OI for ${captured}/${tickers.length} tickers`);
 }

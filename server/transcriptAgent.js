@@ -125,7 +125,9 @@ async function geminiAnalyze(blocks) {
     contents: [{ parts: [{ text: buildUserPrompt(blocks) }] }],
     generationConfig: { temperature: 0, responseMimeType: 'application/json', responseSchema: GEMINI_SCHEMA },
   });
-  // Retry transient 429/500/503 ("high demand") with backoff before giving up.
+  // Retry transient 500/503 with backoff. Do NOT retry 429 here — let the
+  // caller (analyzeStoredTranscripts) handle the full rate-limit wait so it
+  // can pace across multiple transcripts without burning retry budget.
   let lastErr;
   for (let attempt = 1; attempt <= 3; attempt++) {
     const resp = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: AbortSignal.timeout(90000), body });
@@ -136,7 +138,9 @@ async function geminiAnalyze(blocks) {
     }
     const t = (await resp.text()).slice(0, 160);
     lastErr = new Error(`Gemini HTTP ${resp.status}: ${t}`);
-    if ([429, 500, 503].includes(resp.status) && attempt < 3) { await new Promise(r => setTimeout(r, 2000 * attempt)); continue; }
+    // Propagate 429 immediately so the outer loop can wait the full reset window.
+    if (resp.status === 429) throw lastErr;
+    if ([500, 503].includes(resp.status) && attempt < 3) { await new Promise(r => setTimeout(r, 2000 * attempt)); continue; }
     throw lastErr;
   }
   throw lastErr;

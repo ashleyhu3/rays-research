@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Line } from 'react-chartjs-2';
 import { C, fa } from '../../config/colors';
 import { GRID, TICK, BORD } from '../../utils/chartHelpers';
@@ -209,6 +209,68 @@ function SeriesResult({ series }) {
   );
 }
 
+// ── LSEG Stored Transcripts (pulled via backfillTranscripts.js → MongoDB) ────
+function StoredTranscripts({ onAnalyze }) {
+  const [docs, setDocs]       = useState(null); // null = loading, [] = none
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/transcripts/stored')
+      .then(r => r.json())
+      .then(d => setDocs(Array.isArray(d) ? d : []))
+      .catch(() => setDocs([]));
+  }, []);
+
+  if (!docs || docs.length === 0) return null;
+
+  // Group by ticker
+  const byTicker = {};
+  for (const d of docs) {
+    if (!byTicker[d.ticker]) byTicker[d.ticker] = [];
+    byTicker[d.ticker].push(d);
+  }
+  const tickers = Object.keys(byTicker).sort();
+
+  const badge = { fontSize: 11, padding: '1px 7px', borderRadius: 4, background: 'rgba(99,179,237,.12)', color: '#93c5fd', border: '1px solid rgba(99,179,237,.25)', fontFamily: 'var(--font-m, monospace)' };
+  const row = { display: 'flex', alignItems: 'baseline', gap: 8, padding: '7px 0', borderBottom: '1px solid rgba(255,255,255,.04)', flexWrap: 'wrap' };
+
+  return (
+    <div style={{ marginBottom: 20, background: 'rgba(14,17,22,.6)', border: '1px solid rgba(255,255,255,.08)', borderRadius: 8, overflow: 'hidden' }}>
+      <button
+        onClick={() => setExpanded(e => !e)}
+        style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '11px 16px', background: 'transparent', border: 'none', cursor: 'pointer', color: '#cbd5e1', fontSize: 13, fontWeight: 600 }}
+      >
+        <span>{expanded ? '▾' : '▸'}</span>
+        LSEG Stored Transcripts
+        <span style={{ ...badge, background: 'rgba(74,222,128,.1)', color: '#4ade80', border: '1px solid rgba(74,222,128,.2)' }}>{docs.length} docs · {tickers.length} tickers</span>
+        <span style={{ color: '#6b7280', fontWeight: 400, fontSize: 11 }}>fetched via backfillTranscripts.js</span>
+      </button>
+      {expanded && (
+        <div style={{ padding: '0 16px 14px' }}>
+          {tickers.map(ticker => (
+            <div key={ticker} style={{ marginBottom: 8 }}>
+              <div style={{ color: '#8a8f99', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 4, marginTop: 10 }}>{ticker}</div>
+              {byTicker[ticker].map(d => (
+                <div key={d._id} style={row}>
+                  <span style={badge}>{d.quarter ?? '?'}</span>
+                  <span style={{ color: 'var(--text)', fontSize: 12.5, flex: 1 }}>{d.headline?.slice(0, 80) ?? '—'}</span>
+                  <span style={{ color: '#6b7280', fontSize: 11 }}>{(d.date ?? '').slice(0, 10)} · {d.blockCount ?? '?'} blocks</span>
+                  <button
+                    onClick={() => onAnalyze(d)}
+                    style={{ background: 'rgba(59,130,246,.15)', color: '#93c5fd', border: '1px solid rgba(59,130,246,.3)', borderRadius: 5, padding: '3px 10px', fontSize: 11, cursor: 'pointer' }}
+                  >
+                    {d.analysis ? 'View analysis' : 'Analyze'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Transcripts() {
   const [text, setText] = useState('');
   const [symbol, setSymbol] = useState('');
@@ -234,6 +296,32 @@ export default function Transcripts() {
   const fetchTicker = async () => { if (symbol.trim() && quarter.trim()) setResult(await call('/api/transcript/analyze', { symbol, quarter }, `Fetching ${symbol.toUpperCase()} ${quarter.toUpperCase()}…`)); };
   const runSeries = async () => setSeries(await call('/api/transcript/series', { symbol: 'SNDK' }, 'Analyzing SNDK · 4 quarters (this takes a couple minutes)…'));
 
+  // Handle clicking "Analyze" or "View analysis" on a stored LSEG transcript
+  const handleStoredAnalyze = async (doc) => {
+    setSeries(null); setError(null); setResult(null);
+    if (doc.analysis?.summary) {
+      // Already analyzed — display directly without re-running
+      setResult(doc.analysis);
+      return;
+    }
+    // Re-analyze using the stored blocks (avoid fetching raw text again)
+    if (!doc.blocks?.length) { setError('No speaker blocks stored for this transcript.'); return; }
+    setLoading(`Analyzing ${doc.ticker} ${doc.quarter ?? ''}…`);
+    try {
+      const res = await fetch('/api/transcript/analyze', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transcript: doc.blocks, anomalyThreshold: 0.4 }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`);
+      if (json.summary) {
+        json.source = { provider: 'LSEG Workspace', symbol: doc.ticker, quarter: doc.quarter ?? doc.date?.slice(0, 10) ?? '', usingKey: true };
+      }
+      setResult(json);
+    } catch (e) { setError(e.message); }
+    finally { setLoading(false); }
+  };
+
   const inp = { background: '#11141a', color: 'var(--text)', border: '1px solid rgba(255,255,255,.14)', borderRadius: 6, padding: '8px 11px', fontSize: 13 };
   const btn = (primary) => ({ background: loading ? '#2a3038' : (primary ? 'var(--accent, #3b82f6)' : 'transparent'), color: primary ? '#fff' : '#8a8f99', border: primary ? 'none' : '1px solid rgba(255,255,255,.15)', borderRadius: 6, padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: loading ? 'default' : 'pointer' });
 
@@ -243,6 +331,8 @@ export default function Transcripts() {
         Fetch a real speaker-segmented transcript by ticker (Alpha Vantage, free), paste one, or run the SNDK four-quarter cross-analysis.
         The agent scores tone block-by-block, flags shifts, and names the catalyst — click any catalyst to see the exact transcript text that triggered it.
       </div>
+
+      <StoredTranscripts onAnalyze={handleStoredAnalyze} />
 
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap' }}>
         <input value={symbol} onChange={e => setSymbol(e.target.value.toUpperCase())} placeholder="Ticker (e.g. IBM)" spellCheck={false} style={{ ...inp, width: 130 }} />
