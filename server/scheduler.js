@@ -23,6 +23,9 @@ const scrapers = {
   sec:              () => require('./scrapers/sec').getSecData(),
   aws:              () => require('./scrapers/aws').getAwsData(),
   cloudGpu:         () => require('./scrapers/cloudGpu').getCloudGpuPrices(),
+  cpu:              () => require('./scrapers/cpu').getCpuData(),
+  tpu:              () => require('./scrapers/tpu').getTpuData(),
+  epochRevenue:     () => require('./scrapers/epochRevenue').getEpochRevenueData(),
   litellm:          () => require('./scrapers/litellm').getLitellmPricing(),
   sentiment:        () => require('./scrapers/sentiment').getSentimentData(),
 };
@@ -51,6 +54,9 @@ const TTL = {
   sec:           24 * 3600000,  // daily   — EDGAR full-text index updates daily
   aws:            6 * 3600000,  // 6-hourly — AWS Spot Advisor refreshes a few times per day
   cloudGpu:      24 * 3600000,  // daily   — curated list-price table, one snapshot per UTC day
+  cpu:            6 * 3600000,  // 6-hourly — same AWS Spot Advisor feed as aws; CPU savings shift through day
+  tpu:           24 * 3600000,  // daily   — GCP TPU preemptible rates; reference rates change rarely
+  epochRevenue:  24 * 3600000,  // daily   — Epoch AI CSV is updated as new disclosures appear
   litellm:       24 * 3600000,  // daily   — official list prices; LiteLLM cost map updates on model launches
   sentiment:     24 * 3600000,  // daily   — StockTwits posting/sentiment vs price; recomputed once per day
 };
@@ -164,10 +170,10 @@ function setup() {
   cron.schedule('0 * * * *', () => refreshAll(['openrouter', 'hn']));
 
   // Every 6 hours: social signals and business data updated throughout the day
-  cron.schedule('0 */6 * * *', () => refreshAll(['docker', 'openrouterRanks', 'dram', 'aws']));
+  cron.schedule('0 */6 * * *', () => refreshAll(['docker', 'openrouterRanks', 'dram', 'aws', 'cpu']));
 
   // Daily at 03:00 UTC: aggregate stats whose sources only publish once per day
-  cron.schedule('0 3 * * *', () => refreshAll(['gpu', 'cloudGpu', 'litellm', 'sentiment', 'pypi', 'trends', 'github', 'eia', 'mops', 'githubCommits', 'wikipedia', 'npm', 'huggingface', 'mcp', 'sec']));
+  cron.schedule('0 3 * * *', () => refreshAll(['gpu', 'cloudGpu', 'tpu', 'epochRevenue', 'litellm', 'sentiment', 'pypi', 'trends', 'github', 'eia', 'mops', 'githubCommits', 'wikipedia', 'npm', 'huggingface', 'mcp', 'sec']));
 
   // Options: warm every 6h, plus once shortly after boot so the RAG has data fast
   cron.schedule('30 */6 * * *', () => warmOptions());

@@ -75,6 +75,21 @@ function windowHistory(history, weeks) {
   return { start, dates: history.dates.slice(start) };
 }
 
+const CPU_PALETTE = {
+  'C5 (Xeon)':      C.openai,
+  'C6i (Ice Lake)': C.anthropic,
+  'C7i (Sapphire)': C.google,
+  'M6i (General)':  C.teal,
+  'C7g (Graviton)': C.minimax,
+};
+
+const TPU_PALETTE = {
+  v4:  C.google,
+  v5e: C.teal,
+  v5p: C.openai,
+  v6e: C.anthropic,
+};
+
 export default function Pricing({ weeks: W = 52 }) {
   const { liveData } = useData();
 
@@ -353,6 +368,145 @@ export default function Pricing({ weeks: W = 52 }) {
     };
   }, [aws, gpuHist, gpuWindow, awsWindow, W]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  /* ── CPU spot pricing (AWS Spot Advisor) ──────────────────────────── */
+  const cpuData = liveData?.cpu;
+  const cpuCurrent = cpuData?.current ?? {};
+  const cpuOnDemand = cpuData?.onDemand ?? {};
+
+  const cpuCurrentData = useMemo(() => {
+    const keys = Object.keys(cpuCurrent).filter(k => Number.isFinite(cpuCurrent[k]?.spot));
+    if (keys.length === 0) return null;
+    const sorted = [...keys].sort((a, b) => (cpuCurrent[b]?.spot ?? 0) - (cpuCurrent[a]?.spot ?? 0));
+    return {
+      labels: sorted,
+      datasets: [
+        {
+          label: 'On-demand',
+          data: sorted.map(k => cpuOnDemand[k] ?? null),
+          backgroundColor: sorted.map(k => fa(CPU_PALETTE[k] ?? C.slate, 0.85)),
+          borderColor: sorted.map(k => CPU_PALETTE[k] ?? C.slate),
+          borderWidth: 1, borderRadius: 4,
+        },
+        {
+          label: 'Spot',
+          data: sorted.map(k => cpuCurrent[k]?.spot ?? null),
+          backgroundColor: sorted.map(k => fa(CPU_PALETTE[k] ?? C.slate, 0.35)),
+          borderColor: sorted.map(k => CPU_PALETTE[k] ?? C.slate),
+          borderWidth: 1, borderRadius: 4,
+        },
+      ],
+    };
+  }, [cpuCurrent, cpuOnDemand]);
+
+  const cpuWindow = useMemo(() => windowHistory(cpuData?.history, W), [cpuData, W]);
+  const cpuHistData = useMemo(() => {
+    const hist = cpuData?.history;
+    if (!hist?.dates?.length || !cpuWindow) return null;
+    const keys = Object.keys(hist.spotSeries ?? {});
+    const present = keys.filter(k => hist.spotSeries[k].slice(cpuWindow.start).some(Number.isFinite));
+    if (present.length === 0) return null;
+    return {
+      labels: cpuWindow.dates.map(d => historyLabel(d, W)),
+      datasets: present.map(k => ({
+        ...mkDs(k, CPU_PALETTE[k] ?? C.slate, hist.spotSeries[k].slice(cpuWindow.start)),
+        spanGaps: true, pointRadius: 0,
+      })),
+    };
+  }, [cpuData, cpuWindow, W]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* ── TPU preemptible pricing (GCP) ────────────────────────────────── */
+  const tpuData = liveData?.tpu;
+  const tpuCurrent = tpuData?.current ?? {};
+  const tpuOnDemand = tpuData?.onDemand ?? {};
+
+  const tpuCurrentData = useMemo(() => {
+    const keys = Object.keys(tpuCurrent).filter(k => Number.isFinite(tpuCurrent[k]?.spot));
+    if (keys.length === 0) return null;
+    const sorted = [...keys].sort((a, b) => (tpuCurrent[b]?.spot ?? 0) - (tpuCurrent[a]?.spot ?? 0));
+    return {
+      labels: sorted.map(k => `TPU ${k}`),
+      datasets: [
+        {
+          label: 'On-demand',
+          data: sorted.map(k => tpuOnDemand[k] ?? null),
+          backgroundColor: sorted.map(k => fa(TPU_PALETTE[k] ?? C.slate, 0.85)),
+          borderColor: sorted.map(k => TPU_PALETTE[k] ?? C.slate),
+          borderWidth: 1, borderRadius: 4,
+        },
+        {
+          label: 'Preemptible (spot)',
+          data: sorted.map(k => tpuCurrent[k]?.spot ?? null),
+          backgroundColor: sorted.map(k => fa(TPU_PALETTE[k] ?? C.slate, 0.35)),
+          borderColor: sorted.map(k => TPU_PALETTE[k] ?? C.slate),
+          borderWidth: 1, borderRadius: 4,
+        },
+      ],
+    };
+  }, [tpuCurrent, tpuOnDemand]);
+
+  const tpuWindow = useMemo(() => windowHistory(tpuData?.history, W), [tpuData, W]);
+  const tpuHistData = useMemo(() => {
+    const hist = tpuData?.history;
+    if (!hist?.dates?.length || !tpuWindow) return null;
+    const keys = Object.keys(hist.spotSeries ?? {});
+    const present = keys.filter(k => hist.spotSeries[k].slice(tpuWindow.start).some(Number.isFinite));
+    if (present.length === 0) return null;
+    return {
+      labels: tpuWindow.dates.map(d => historyLabel(d, W)),
+      datasets: present.map(k => ({
+        ...mkDs(`TPU ${k}`, TPU_PALETTE[k] ?? C.slate, hist.spotSeries[k].slice(tpuWindow.start)),
+        spanGaps: true, pointRadius: 0,
+      })),
+    };
+  }, [tpuData, tpuWindow, W]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* ── AI company revenue (Epoch AI) ────────────────────────────────── */
+  const REVENUE_PALETTE = {
+    OpenAI:      C.openai,
+    Anthropic:   C.anthropic,
+    Google:      C.google,
+    xAI:         C.kimi,
+    'Mistral AI': C.mistral,
+    DeepSeek:    C.deepseek,
+    Meta:        C.minimax,
+  };
+
+  const epochRevData = useMemo(() => {
+    const epoch = liveData?.epochRevenue;
+    if (!epoch?.series) return null;
+    const companies = epoch.companies ?? Object.keys(epoch.series);
+    // Collect all dates across all companies and sort.
+    const dateSet = new Set();
+    for (const co of companies) (epoch.series[co] ?? []).forEach(p => dateSet.add(p.date));
+    const allDates = [...dateSet].sort();
+    if (allDates.length === 0) return null;
+    // For each company, align values to the shared date axis (null where no data).
+    const dateIdx = Object.fromEntries(allDates.map((d, i) => [d, i]));
+    const datasets = companies.map(co => {
+      const pts = epoch.series[co] ?? [];
+      const data = new Array(allDates.length).fill(null);
+      pts.forEach(p => { if (dateIdx[p.date] != null) data[dateIdx[p.date]] = p.value; });
+      const color = REVENUE_PALETTE[co] ?? C.slate;
+      return {
+        ...mkDs(co, color, data),
+        spanGaps: false,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        tension: 0.3,
+        borderWidth: 2,
+      };
+    }).filter(ds => ds.data.some(v => v != null));
+    if (datasets.length === 0) return null;
+    const cutoff = Date.now() - W * 7 * 86400000;
+    const visibleStart = allDates.findIndex(d => new Date(d + 'T00:00:00Z').getTime() >= cutoff);
+    const start = Math.max(0, visibleStart < 0 ? 0 : visibleStart);
+    const visibleDates = allDates.slice(start);
+    return {
+      labels: visibleDates.map(d => historyLabel(d, W)),
+      datasets: datasets.map(ds => ({ ...ds, data: ds.data.slice(start) })),
+    };
+  }, [liveData?.epochRevenue, W]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const changeData = useMemo(() => {
     if (models.length === 0) return null;
     const sorted = [...models].sort((a, b) => b.changePct - a.changePct);
@@ -488,6 +642,56 @@ export default function Pricing({ weeks: W = 52 }) {
           height={240} span2
         >
           <Line data={cloudAvgData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
+        </ChartCard>
+      )}
+
+      {cpuCurrentData && (
+        <ChartCard
+          chartId="cpu-spot-rates"
+          legend={[['On-demand', C.slate], ['Spot', fa(C.slate, 0.45)]]}
+          height={220} span2
+        >
+          <Bar data={cpuCurrentData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
+        </ChartCard>
+      )}
+
+      {cpuHistData && (
+        <ChartCard
+          chartId="cpu-spot-history"
+          legend={cpuHistData.datasets.map(d => [d.label, d.borderColor])}
+          height={220} span2
+        >
+          <Line data={cpuHistData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
+        </ChartCard>
+      )}
+
+      {tpuCurrentData && (
+        <ChartCard
+          chartId="tpu-spot-rates"
+          legend={[['On-demand', C.google], ['Preemptible (spot)', fa(C.google, 0.45)]]}
+          height={220} span2
+        >
+          <Bar data={tpuCurrentData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
+        </ChartCard>
+      )}
+
+      {tpuHistData && (
+        <ChartCard
+          chartId="tpu-spot-history"
+          legend={tpuHistData.datasets.map(d => [d.label, d.borderColor])}
+          height={220} span2
+        >
+          <Line data={tpuHistData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
+        </ChartCard>
+      )}
+
+      {epochRevData && (
+        <ChartCard
+          chartId="ai-company-revenue"
+          legend={epochRevData.datasets.map(d => [d.label, d.borderColor])}
+          height={280} span2
+        >
+          <Line data={epochRevData} options={baseOpts(v => `$${v.toFixed(0)}B`)} />
         </ChartCard>
       )}
     </EditableGrid>

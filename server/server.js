@@ -71,6 +71,9 @@ app.get('/api/openrouter-ranks',  cachedRoute('openrouterRanks',  s.openrouterRa
 app.get('/api/dram',              cachedRoute('dram',             s.dram));
 app.get('/api/aws',               cachedRoute('aws',              s.aws));
 app.get('/api/cloud-gpu',         cachedRoute('cloudGpu',         s.cloudGpu));
+app.get('/api/cpu',               cachedRoute('cpu',              s.cpu));
+app.get('/api/tpu',               cachedRoute('tpu',              s.tpu));
+app.get('/api/epoch-revenue',     cachedRoute('epochRevenue',     s.epochRevenue));
 app.get('/api/litellm',           cachedRoute('litellm',          s.litellm));
 app.get('/api/sentiment',         cachedRoute('sentiment',        s.sentiment));
 

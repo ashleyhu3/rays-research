@@ -210,6 +210,26 @@ export const CHART_TEXT = {
     title: 'Average GPU Price Across Major Clouds ($/GPU/hr)',
     subtitle: 'Mean on-demand list price per GPU across the major clouds; the H100 line pools H100 and H200.',
   },
+  'cpu-spot-rates': {
+    title: 'CPU Instance Spot Rates — On-Demand vs Spot ($/hr)',
+    subtitle: 'AWS CPU instance spot prices derived from Spot Advisor savings % × on-demand rate. All 4xlarge (16 vCPUs), us-east-1.',
+  },
+  'cpu-spot-history': {
+    title: 'CPU Instance Spot Price Over Time ($/hr)',
+    subtitle: 'Daily spot price per AWS CPU instance type. History accumulates from first scrape.',
+  },
+  'tpu-spot-rates': {
+    title: 'GCP TPU Preemptible Rates — On-Demand vs Spot ($/chip/hr)',
+    subtitle: 'GCP TPU preemptible (spot) price per chip per hour. Reference rates from cloud.google.com/tpu/docs/pricing; live with GCP_BILLING_API_KEY.',
+  },
+  'tpu-spot-history': {
+    title: 'GCP TPU Preemptible Price Over Time ($/chip/hr)',
+    subtitle: 'Daily preemptible price per TPU chip per generation. History accumulates from first scrape.',
+  },
+  'ai-company-revenue': {
+    title: 'AI Company Annualized Revenue (USD billions)',
+    subtitle: 'Annualized revenue run rates for leading AI labs, sourced from company disclosures and media reports. Each dot is a reported data point.',
+  },
   'dram-index': {
     // The card shows a live title (index name + unit); this static title is the
     // fallback used in the overview "Customise" chart picker.
