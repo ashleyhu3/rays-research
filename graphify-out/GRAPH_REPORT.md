@@ -1,308 +1,375 @@
-# Graph Report - .  (2026-06-23)
+# Graph Report - .  (2026-06-28)
 
 ## Corpus Check
-- 118 files · ~54,943 words
+- 144 files · ~148,937 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 859 nodes · 1574 edges · 75 communities (56 shown, 19 thin omitted)
-- Extraction: 89% EXTRACTED · 11% INFERRED · 0% AMBIGUOUS · INFERRED: 173 edges (avg confidence: 0.56)
+- 1105 nodes · 2199 edges · 70 communities (61 shown, 9 thin omitted)
+- Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 29 edges (avg confidence: 0.77)
 - Token cost: 0 input · 0 output
 
 ## Community Hubs (Navigation)
-- [[_COMMUNITY_React Frontend App Core|React Frontend App Core]]
-- [[_COMMUNITY_PDF Processing and Broker Cache|PDF Processing and Broker Cache]]
-- [[_COMMUNITY_System Architecture Overview|System Architecture Overview]]
-- [[_COMMUNITY_Backend Data Models and Canvas|Backend Data Models and Canvas]]
-- [[_COMMUNITY_Frontend Package Config|Frontend Package Config]]
-- [[_COMMUNITY_Database ORM and Document Schema|Database ORM and Document Schema]]
-- [[_COMMUNITY_Dashboard Chart Views|Dashboard Chart Views]]
-- [[_COMMUNITY_Dashboard Root and Sector View|Dashboard Root and Sector View]]
-- [[_COMMUNITY_Server Package Config|Server Package Config]]
-- [[_COMMUNITY_AI Supply Dashboard|AI Supply Dashboard]]
-- [[_COMMUNITY_Data Scraping Server|Data Scraping Server]]
-- [[_COMMUNITY_Package and Model Metrics Views|Package and Model Metrics Views]]
-- [[_COMMUNITY_TypeScript App Config|TypeScript App Config]]
-- [[_COMMUNITY_GitHub and Trends Dashboard Views|GitHub and Trends Dashboard Views]]
-- [[_COMMUNITY_RAG Retrieval Engine|RAG Retrieval Engine]]
-- [[_COMMUNITY_TypeScript Node Config|TypeScript Node Config]]
-- [[_COMMUNITY_Dashboard Context and Charts|Dashboard Context and Charts]]
-- [[_COMMUNITY_RAG Filter and Answer Logic|RAG Filter and Answer Logic]]
-- [[_COMMUNITY_UI Components and Context|UI Components and Context]]
-- [[_COMMUNITY_PDF Ingestion Pipeline|PDF Ingestion Pipeline]]
-- [[_COMMUNITY_Agentic Research Module|Agentic Research Module]]
-- [[_COMMUNITY_API Data Fetchers|API Data Fetchers]]
-- [[_COMMUNITY_Chinese AI Benchmark View|Chinese AI Benchmark View]]
-- [[_COMMUNITY_Document Upload API|Document Upload API]]
-- [[_COMMUNITY_Email Ingestion Pipeline|Email Ingestion Pipeline]]
-- [[_COMMUNITY_Gemini Embedding Service|Gemini Embedding Service]]
-- [[_COMMUNITY_PDF Ingestion Tests|PDF Ingestion Tests]]
-- [[_COMMUNITY_Pipeline Sourcing Tests|Pipeline Sourcing Tests]]
-- [[_COMMUNITY_Data Context and Cache|Data Context and Cache]]
-- [[_COMMUNITY_FastAPI Dependencies Layer|FastAPI Dependencies Layer]]
-- [[_COMMUNITY_Document Search and Listing|Document Search and Listing]]
-- [[_COMMUNITY_Pipeline Usage Examples|Pipeline Usage Examples]]
-- [[_COMMUNITY_Query Analysis and Coverage|Query Analysis and Coverage]]
-- [[_COMMUNITY_Gemini Rate Limiter|Gemini Rate Limiter]]
-- [[_COMMUNITY_Chunk Metadata and Embeddings|Chunk Metadata and Embeddings]]
-- [[_COMMUNITY_SIGNAL Dashboard Overview|SIGNAL Dashboard Overview]]
-- [[_COMMUNITY_GitHub Data Scraper|GitHub Data Scraper]]
+- [[_COMMUNITY_NPM Scrapers & Chat Pipeline|NPM Scrapers & Chat Pipeline]]
+- [[_COMMUNITY_GPU History Backfill Scripts|GPU History Backfill Scripts]]
+- [[_COMMUNITY_AI Company Charts & Metrics|AI Company Charts & Metrics]]
+- [[_COMMUNITY_Transcript Analysis & MongoDB|Transcript Analysis & MongoDB]]
+- [[_COMMUNITY_Chart Configuration Registry|Chart Configuration Registry]]
+- [[_COMMUNITY_Interactive Chat Charts|Interactive Chat Charts]]
+- [[_COMMUNITY_AI Benchmark Data|AI Benchmark Data]]
+- [[_COMMUNITY_Project Dependencies|Project Dependencies]]
+- [[_COMMUNITY_Dashboard Context & Market Signals|Dashboard Context & Market Signals]]
+- [[_COMMUNITY_AI Supply Chain Components|AI Supply Chain Components]]
+- [[_COMMUNITY_Sentiment Analysis Pipeline|Sentiment Analysis Pipeline]]
+- [[_COMMUNITY_DRAM Pricing Charts|DRAM Pricing Charts]]
+- [[_COMMUNITY_AWS Spot Price Scrapers|AWS Spot Price Scrapers]]
+- [[_COMMUNITY_Cloud GPU Price Scrapers|Cloud GPU Price Scrapers]]
+- [[_COMMUNITY_Dashboard Grid & KPI Cards|Dashboard Grid & KPI Cards]]
+- [[_COMMUNITY_Express API Server|Express API Server]]
+- [[_COMMUNITY_SanDisk NAND Storage Filings|SanDisk NAND Storage Filings]]
+- [[_COMMUNITY_DRAM Spot Price Scrapers|DRAM Spot Price Scrapers]]
+- [[_COMMUNITY_StockTwits Selenium Scraper|StockTwits Selenium Scraper]]
+- [[_COMMUNITY_Chart UI Components|Chart UI Components]]
+- [[_COMMUNITY_LiteLLM Pricing Scraper|LiteLLM Pricing Scraper]]
+- [[_COMMUNITY_StockTwits Methodology & Scripts|StockTwits Methodology & Scripts]]
+- [[_COMMUNITY_Options Chain Charts|Options Chain Charts]]
+- [[_COMMUNITY_GitHub Activity Scrapers|GitHub Activity Scrapers]]
+- [[_COMMUNITY_GPU Pricing Scrapers|GPU Pricing Scrapers]]
+- [[_COMMUNITY_Chat Interface Components|Chat Interface Components]]
+- [[_COMMUNITY_Zhipu AI Benchmark Data|Zhipu AI Benchmark Data]]
+- [[_COMMUNITY_Server History Store|Server History Store]]
+- [[_COMMUNITY_GitHub Stars Backfill|GitHub Stars Backfill]]
+- [[_COMMUNITY_Server Scheduler & Cron|Server Scheduler & Cron]]
+- [[_COMMUNITY_Server Storage Layer|Server Storage Layer]]
+- [[_COMMUNITY_Data Fetcher Services|Data Fetcher Services]]
+- [[_COMMUNITY_OpenRouter Model Rankings|OpenRouter Model Rankings]]
+- [[_COMMUNITY_MCP Backfill Scripts|MCP Backfill Scripts]]
+- [[_COMMUNITY_Server Cache Layer|Server Cache Layer]]
+- [[_COMMUNITY_Earnings Transcript Viewer|Earnings Transcript Viewer]]
+- [[_COMMUNITY_SEC Filings Backfill|SEC Filings Backfill]]
+- [[_COMMUNITY_Options Data Scraper|Options Data Scraper]]
+- [[_COMMUNITY_SanDisk Q4 2025 Press Release|SanDisk Q4 2025 Press Release]]
+- [[_COMMUNITY_Data Validity Inspector|Data Validity Inspector]]
+- [[_COMMUNITY_Hacker News Scrapers|Hacker News Scrapers]]
+- [[_COMMUNITY_HuggingFace Model Scrapers|HuggingFace Model Scrapers]]
+- [[_COMMUNITY_Stock Price Scrapers|Stock Price Scrapers]]
+- [[_COMMUNITY_Wikipedia Article Views|Wikipedia Article Views]]
+- [[_COMMUNITY_Options Data Store|Options Data Store]]
+- [[_COMMUNITY_Dashboard README Docs|Dashboard README Docs]]
+- [[_COMMUNITY_GitHub Dependents Scraper|GitHub Dependents Scraper]]
+- [[_COMMUNITY_Keyword Search Scraper|Keyword Search Scraper]]
+- [[_COMMUNITY_SEC Filings Scraper|SEC Filings Scraper]]
 - [[_COMMUNITY_Google Trends Scraper|Google Trends Scraper]]
-- [[_COMMUNITY_List Query Formatting|List Query Formatting]]
-- [[_COMMUNITY_Document Removal Utils|Document Removal Utils]]
-- [[_COMMUNITY_GPU Price Scraper|GPU Price Scraper]]
-- [[_COMMUNITY_MOPS Financial Scraper|MOPS Financial Scraper]]
-- [[_COMMUNITY_App Favicon Design|App Favicon Design]]
-- [[_COMMUNITY_Job Listings Scraper|Job Listings Scraper]]
-- [[_COMMUNITY_PyPI Package Scraper|PyPI Package Scraper]]
-- [[_COMMUNITY_Reddit Data Scraper|Reddit Data Scraper]]
-- [[_COMMUNITY_FastAPI App Entry Point|FastAPI App Entry Point]]
-- [[_COMMUNITY_App Store Scraper|App Store Scraper]]
-- [[_COMMUNITY_Hero Image Asset|Hero Image Asset]]
-- [[_COMMUNITY_Vite Brand Asset|Vite Brand Asset]]
-- [[_COMMUNITY_TypeScript Project References|TypeScript Project References]]
-- [[_COMMUNITY_EIA Energy Data Scraper|EIA Energy Data Scraper]]
-- [[_COMMUNITY_OpenRouter Model Scraper|OpenRouter Model Scraper]]
-- [[_COMMUNITY_Docling Inspection Script|Docling Inspection Script]]
-- [[_COMMUNITY_React Framework Concept|React Framework Concept]]
-- [[_COMMUNITY_React Logo Asset|React Logo Asset]]
-- [[_COMMUNITY_Bluesky Icon|Bluesky Icon]]
-- [[_COMMUNITY_Discord Icon|Discord Icon]]
-- [[_COMMUNITY_Documentation Icon|Documentation Icon]]
-- [[_COMMUNITY_GitHub Icon|GitHub Icon]]
-- [[_COMMUNITY_Icons SVG Sprite|Icons SVG Sprite]]
-- [[_COMMUNITY_Social Icon|Social Icon]]
-- [[_COMMUNITY_X (Twitter) Icon|X (Twitter) Icon]]
+- [[_COMMUNITY_Data Collection Scripts|Data Collection Scripts]]
+- [[_COMMUNITY_Snapshot Store|Snapshot Store]]
+- [[_COMMUNITY_Source Registry & Validity|Source Registry & Validity]]
+- [[_COMMUNITY_Navigation & Sidebar Config|Navigation & Sidebar Config]]
+- [[_COMMUNITY_Docker Image Scrapers|Docker Image Scrapers]]
+- [[_COMMUNITY_MOPS Revenue Scraper|MOPS Revenue Scraper]]
+- [[_COMMUNITY_Options API Handler|Options API Handler]]
+- [[_COMMUNITY_App Entry & Chart Setup|App Entry & Chart Setup]]
+- [[_COMMUNITY_PyPI Package Scrapers|PyPI Package Scrapers]]
+- [[_COMMUNITY_MongoDB Seed Scripts|MongoDB Seed Scripts]]
+- [[_COMMUNITY_Frontend Cache Service|Frontend Cache Service]]
+- [[_COMMUNITY_Vercel Deployment Config|Vercel Deployment Config]]
+- [[_COMMUNITY_EIA Electricity Rates|EIA Electricity Rates]]
+- [[_COMMUNITY_OpenRouter Pricing Scraper|OpenRouter Pricing Scraper]]
+- [[_COMMUNITY_MongoDB Ping Script|MongoDB Ping Script]]
+- [[_COMMUNITY_Community 66|Community 66]]
+- [[_COMMUNITY_Community 67|Community 67]]
+- [[_COMMUNITY_Community 68|Community 68]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `GeminiRAGPipeline` - 46 edges
-2. `DatabaseManager` - 45 edges
-3. `baseOpts()` - 26 edges
-4. `PDFSummarizerPipeline` - 24 edges
-5. `useData()` - 23 edges
-6. `PDFDocument` - 22 edges
-7. `RetrievalFilters` - 20 edges
-8. `compilerOptions` - 20 edges
-9. `compilerOptions` - 18 edges
-10. `mkDs()` - 18 edges
+1. `useData()` - 62 edges
+2. `baseOpts()` - 62 edges
+3. `hBarOpts()` - 46 edges
+4. `fa()` - 33 edges
+5. `mkDs()` - 32 edges
+6. `ChartCard()` - 25 edges
+7. `C` - 25 edges
+8. `EditableGrid()` - 24 edges
+9. `metricTrendCard()` - 18 edges
+10. `trend()` - 18 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `PDFSummarizerPipeline` --uses--> `PDFDocument`  [INFERRED]
-  Rays_Intern/PDF_summarizer/pipeline.py → Rays_Intern/PDF_summarizer/database.py
-- `GeminiRAGPipeline` --uses--> `PDFDocument`  [INFERRED]
-  Rays_Intern/PDF_summarizer/rag_gemini.py → Rays_Intern/PDF_summarizer/database.py
-- `RetrievalFilters` --uses--> `PDFDocument`  [INFERRED]
-  Rays_Intern/PDF_summarizer/rag_gemini.py → Rays_Intern/PDF_summarizer/database.py
-- `PDFChunk` --uses--> `PDFDocument`  [INFERRED]
-  Rays_Intern/PDF_summarizer/rag_gemini.py → Rays_Intern/PDF_summarizer/database.py
-- `DatabaseManager` --uses--> `PDFDocument`  [INFERRED]
-  Rays_Intern/backend/routes/documents.py → Rays_Intern/PDF_summarizer/database.py
+- `fetchNpmPkg()` --calls--> `fmt()`  [INFERRED]
+  src/services/fetchers.js → server/chat.js
+- `Collect StockTwits data workflow` --conceptually_related_to--> `StockTwits collection methodology`  [INFERRED]
+  .github/workflows/stocktwits-collect.yml → stocktwits/Stocktwits-Scraper-main/methodology.md
+- `update_all.py incremental collector` --conceptually_related_to--> `update.py append/de-dupe`  [INFERRED]
+  .github/workflows/stocktwits-collect.yml → stocktwits/Stocktwits-Scraper-main/README.md
+- `getPkgHistory()` --calls--> `fmt()`  [INFERRED]
+  server/scrapers/npm.js → server/chat.js
+- `getOpenRouterRankings()` --calls--> `fmt()`  [INFERRED]
+  server/scrapers/openrouterRankings.js → server/chat.js
 
 ## Import Cycles
-- 1-file cycle: `Rays_Intern/backend/routes/canvas.py -> Rays_Intern/backend/routes/canvas.py`
+- None detected.
 
 ## Hyperedges (group relationships)
-- **RAG Ingestion Pipeline Flow (Parse → Verbalize → Store → Embed)** — pdf_summarizer_readme_docling_parser, pdf_summarizer_readme_gemini_verbalization, pdf_summarizer_readme_pgvector_storage, pdf_summarizer_readme_gemini_embedding, pdf_summarizer_readme_three_chunk_hierarchy [EXTRACTED 1.00]
-- **Backend Core Modules (main, models, dependencies, agent, canvas_db, routes)** — backend_readme_main_module, backend_readme_models_module, backend_readme_dependencies_module, backend_readme_agent_module, backend_readme_canvas_db_module, backend_readme_routes_dir [EXTRACTED 1.00]
-- **Frontend State + UI Layer (ChatView, Sidebar, Toolbar, Zustand stores, API client)** — frontend_readme_chatview, frontend_readme_sidebar, frontend_readme_toolbar, frontend_readme_zustand_stores, frontend_readme_api_client [EXTRACTED 1.00]
+- **Scheduled GitHub Actions data collection** — workflows_collect_data_workflow, workflows_stocktwits_collect_workflow, workflows_collect_data_mongodb, workflows_stocktwits_collect_csvstate [INFERRED 0.75]
+- **StockTwits collection pipeline** — workflows_stocktwits_collect_updateall, scripts_scrape, scripts_update, src_stocktwits_api_scraper, stocktwits_scraper_main_tickers [INFERRED 0.85]
+- **SNDK Revenue Acceleration Arc: Q1-Q3 FY2026 driven by AI demand, BiCS8 ramp, and Datacenter mix shift** — transcripts_sndk_2025_11_06_8k_press_release_q1_2026_results, transcripts_sndk_2026_01_29_8k_press_release_q2_2026_results, transcripts_sndk_2026_04_30_8k_press_release_q3_2026_results, transcripts_sndk_2025_08_21_10_k_mdna_ai_inference_demand, transcripts_sndk_2025_11_06_8k_press_release_bics8_bit_production [INFERRED 0.85]
+- **Flash Manufacturing Partnership Ecosystem (Flash Ventures, Kioxia, SDSS, Nanya)** — transcripts_sndk_2025_08_21_10_k_mdna_flash_ventures, transcripts_sndk_2025_08_21_10_k_mdna_kioxia, transcripts_sndk_2025_08_21_10_k_mdna_sdss_venture, transcripts_sndk_2026_05_01_10_q_mdna_nanya_investment [EXTRACTED 0.95]
+- **Debt Deleveraging Journey: Term Loan Origination to Full Repayment and Net Cash Positive** — transcripts_sndk_2025_08_21_10_k_mdna_term_loan_facility, transcripts_sndk_2025_11_06_8k_press_release_net_cash_positive, transcripts_sndk_2026_05_01_10_q_mdna_term_loan_repaid, transcripts_sndk_2026_04_30_8k_press_release_zero_debt [INFERRED 0.95]
 
-## Communities (75 total, 19 thin omitted)
+## Communities (70 total, 9 thin omitted)
 
-### Community 0 - "React Frontend App Core"
+### Community 0 - "NPM Scrapers & Chat Pipeline"
 Cohesion: 0.06
-Nodes (59): askQuestion(), createCanvas(), deleteCanvas(), deleteDocument(), http, listCanvases(), listDocuments(), loadCanvas() (+51 more)
+Nodes (42): axios, getPkgHistory(), PKGS, agoText(), assembleContext(), buildDocker(), buildGitHub(), buildGithubCommits() (+34 more)
 
-### Community 1 - "PDF Processing and Broker Cache"
+### Community 1 - "GPU History Backfill Scripts"
+Cohesion: 0.05
+Nodes (42): Path, axios, fatalAuthError(), fetchWindow(), fs, GPUS, HISTORY_FILE, KEY_ALIASES (+34 more)
+
+### Community 2 - "AI Company Charts & Metrics"
+Cohesion: 0.12
+Nodes (37): ChartCard(), metricTrendCard(), orComboCard(), DemandAnthropic(), npmSlice(), pypiSlice(), DemandGoogle(), npmSlice() (+29 more)
+
+### Community 3 - "Transcript Analysis & MongoDB"
+Cohesion: 0.07
+Nodes (44): fetchTranscriptsForTicker(), getStoryText(), getToken(), searchEarningsTranscripts(), analyzeDoc(), connectMongo(), isDailyLimit(), isRateLimit() (+36 more)
+
+### Community 4 - "Chart Configuration Registry"
 Cohesion: 0.06
-Nodes (36): BrokerContextCache, _cache_key(), Broker-aware Gemini context caching for Agent 2 (Financial Schema Extractor).  E, Return the full cached system instruction for a given broker name., Stable, filesystem-safe key for a broker name., Manages per-broker Gemini context caches for Agent 2.      Thread-safe. Caches a, Return an active cache name for this broker, creating one if needed.          Re, _system_instruction_for() (+28 more)
+Nodes (30): CHART_INSIGHTS, chartTitle(), CHART_BY_ID, CHART_REGISTRY, chartsForSector(), defaultPins(), DEMAND, REGISTRY (+22 more)
 
-### Community 2 - "System Architecture Overview"
-Cohesion: 0.06
-Nodes (47): agent.py — Research agent goal decomposition + synthesis, canvas_db.py — Canvas + ReactFlow state persistence, dependencies.py — Shared singletons (DB manager, RAG pipeline), FastAPI Backend REST API, main.py — FastAPI app, CORS, router wiring, models.py — Pydantic DTOs (AskResponse, ChunkRef, etc.), routes/ — Feature-area routers (documents, queries, agent, canvas), Threadpool Async Wrapper for RAG pipeline (+39 more)
+### Community 5 - "Interactive Chat Charts"
+Cohesion: 0.12
+Nodes (37): AwsSpotMini(), chartToCSV(), CloudGpuMini(), CommunityMini(), COMPANIES, CompanyPricingMini(), CompanyShareMini(), DockerMini() (+29 more)
 
-### Community 3 - "Backend Data Models and Canvas"
-Cohesion: 0.13
-Nodes (36): AgentRunRequest, AskRequest, Canvas, CanvasState, Canvas persistence models.  Import this module before instantiating DatabaseMana, AgentResult, AgentRunRequest, AskRequest (+28 more)
-
-### Community 4 - "Frontend Package Config"
-Cohesion: 0.06
-Nodes (31): dependencies, axios, react, react-dom, @xyflow/react, zustand, devDependencies, autoprefixer (+23 more)
-
-### Community 5 - "Database ORM and Document Schema"
-Cohesion: 0.13
-Nodes (17): date_cls, Exception, DatabaseManager, PDFChunk, PDFDocument, Manages database connections and operations., Update extended metadata fields for an existing document.         Only overwrite, Return documents that need metadata extraction.          Args:             force (+9 more)
-
-### Community 6 - "Dashboard Chart Views"
-Cohesion: 0.11
-Nodes (24): fa(), BORD, GRID, mkBar(), TICK, dayLabels(), CAPEX_YEARS, STATE_GW (+16 more)
-
-### Community 7 - "Dashboard Root and Sector View"
-Cohesion: 0.18
-Nodes (23): NAV_SECTIONS, SECTOR_OVERVIEW_IDS, VIEW_META, useData(), getModeForView(), App(), VIEW_COMPONENTS, baseOpts() (+15 more)
-
-### Community 8 - "Server Package Config"
+### Community 6 - "AI Benchmark Data"
 Cohesion: 0.08
-Nodes (23): dependencies, app-store-scraper, axios, chart.js, cheerio, cors, express, google-trends-api (+15 more)
+Nodes (31): BENCH_COLORS, BENCH_MODELS, BENCH_VALS, benchData, benchOpts, QTR_LABELS, C, BENCH_COLORS (+23 more)
 
-### Community 9 - "AI Supply Dashboard"
+### Community 7 - "Project Dependencies"
+Cohesion: 0.05
+Nodes (38): dependencies, @aws-sdk/client-pricing, axios, chart.js, cheerio, cors, express, google-trends-api (+30 more)
+
+### Community 8 - "Dashboard Context & Market Signals"
 Cohesion: 0.11
-Nodes (17): mkDs(), AISupplyOptics(), AISupplyOverview(), AISupplyPCB(), ALL_COLORS, ALL_COMPANIES, buildMomDatasets(), buildRevenueDatasets() (+9 more)
+Nodes (21): DashboardContext, DashboardProvider(), SECTOR_IDS, useDashboard(), DemandGeneral(), MARKET_CHARTS, MarketSignals(), DemandOpenRouter() (+13 more)
 
-### Community 10 - "Data Scraping Server"
-Cohesion: 0.09
-Nodes (13): store, cache, cron, scrapers, TTL, app, cache, cors (+5 more)
+### Community 9 - "AI Supply Chain Components"
+Cohesion: 0.07
+Nodes (25): AISupplyFiber(), AISupplyMLCC(), AISupplyOptics(), AISupplyOverview(), AISupplyPCB(), ALL_COLORS, ALL_COMPANIES, buildMomDatasets() (+17 more)
 
-### Community 11 - "Package and Model Metrics Views"
-Cohesion: 0.13
-Nodes (16): KpiCard(), fmtK(), fmtM(), trend(), CAT_COLORS, CAT_DATA, CAT_LABELS, MODEL_PALETTE (+8 more)
+### Community 10 - "Sentiment Analysis Pipeline"
+Cohesion: 0.12
+Nodes (29): analyzeTicker(), betacf(), betai(), CATEGORIES, computeSentiment(), corr(), corrP(), dailyCloses() (+21 more)
 
-### Community 12 - "TypeScript App Config"
-Cohesion: 0.09
-Nodes (21): compilerOptions, allowImportingTsExtensions, erasableSyntaxOnly, jsx, lib, module, moduleDetection, moduleResolution (+13 more)
-
-### Community 13 - "GitHub and Trends Dashboard Views"
-Cohesion: 0.15
-Nodes (15): C, fmtN(), fmtP(), series(), wkLabels(), REPO_KEYS, STATIC_DEPS, STATIC_STARS (+7 more)
-
-### Community 14 - "RAG Retrieval Engine"
-Cohesion: 0.15
-Nodes (12): GeminiRAGPipeline, Spread retrieval across documents for breadth. Round-robins one chunk at a time, Promote diversity across sections and hierarchy levels.          Strategy:, RAG over verbalized pages (text + chart descriptions)., Vector search over verbalized_summary embeddings.          Expects `query` to al, Return (parent, prev_sibling, next_sibling) for a chunk using metadata IDs., Build context from the retrieved chunks: for each chunk include its metadata +, Format one retrieved chunk plus its parent and siblings (metadata + summary + co (+4 more)
-
-### Community 15 - "TypeScript Node Config"
+### Community 11 - "DRAM Pricing Charts"
 Cohesion: 0.10
-Nodes (19): compilerOptions, allowImportingTsExtensions, erasableSyntaxOnly, lib, module, moduleDetection, moduleResolution, noEmit (+11 more)
+Nodes (24): mhSeries(), mkLine(), weeklyLineData(), fa(), DRAM_PALETTE, dramDayLabel(), dramLegend(), dramLineData() (+16 more)
 
-### Community 16 - "Dashboard Context and Charts"
-Cohesion: 0.16
-Nodes (16): CustomizeDropdown(), MONTH_OPTIONS, SUB_VIEW_LABELS, Topbar(), CHART_BY_ID, CHART_REGISTRY, chartsForSector(), defaultPins() (+8 more)
+### Community 12 - "AWS Spot Price Scrapers"
+Cohesion: 0.11
+Nodes (27): ACCEL, advisorStat(), axios, buildHistory(), dailyDates(), getAwsData(), HISTORY_FILE, isoDay() (+19 more)
 
-### Community 17 - "RAG Filter and Answer Logic"
-Cohesion: 0.15
-Nodes (9): True if any metadata filter scopes the search (company/ticker/sector/date/etc.)., Deterministic fallback for the model's is_underspecified judgment (used only if, Build a clarification response for an underspecified, filter-scoped query: state, Answer a question using RAG with optional conversation history.          Pipelin, Convert an ISO date string from the LLM ('YYYY-MM-DD') to a datetime.date., Merge LLM-inferred hard filters with explicit caller-supplied filters.         E, Merge adjacent citations to the same document into one (no LLM call):         '(, Guarantee every numbered list item carries a citation (no LLM call). Run AFTER (+1 more)
-
-### Community 18 - "UI Components and Context"
-Cohesion: 0.17
-Nodes (7): ChartCard(), InlineLegend(), InsightBox(), Navbar(), UIContext, UIProvider(), useUI()
-
-### Community 19 - "PDF Ingestion Pipeline"
-Cohesion: 0.17
-Nodes (10): main(), PDFSummarizerPipeline, Main pipeline: Docling parse → Gemini verbalize → Store in Postgres.  Process PD, Process all PDFs in a directory, up to max_workers PDFs at a time.          Each, Re-extract extended metadata for documents that are missing it.          Runs bo, Parse PDFs with Docling, verbalize charts with Gemini, store in Postgres., Set parent_chunk_id, prev_sibling_chunk_id, next_sibling_chunk_id in each chunk', Get info about a processed document. (+2 more)
-
-### Community 20 - "Agentic Research Module"
-Cohesion: 0.15
-Nodes (9): Agentic research system.  Given a high-level goal, the ResearchAgent:   1. Decom, Ask Gemini to synthesize all sub-answers into a final report., Run the full agentic pipeline.          Returns:             {                 ", Ask Gemini to break the goal into 3-5 specific sub-questions., ResearchAgent, GeminiRAGPipeline, RetrievalFilters, Agentic research routes. (+1 more)
-
-### Community 21 - "API Data Fetchers"
-Cohesion: 0.25
-Nodes (14): fetchAll(), fetchBackendAll(), fetchHF(), fetchJsonSafe(), fetchNpm(), fetchNpmPkg(), fetchPypi(), fetchPypiPkg() (+6 more)
-
-### Community 22 - "Chinese AI Benchmark View"
+### Community 13 - "Cloud GPU Price Scrapers"
 Cohesion: 0.13
-Nodes (14): BENCH_COLORS, BENCH_MODELS, BENCH_VALS, benchData, benchOpts, MKT_COLORS, MKT_DATA, MKT_LABELS (+6 more)
+Nodes (24): AWS_INSTANCES, axios, AZURE_SKUS, BUCKETS, buildPayload(), dailyDates(), effectivePrices(), FALLBACK (+16 more)
 
-### Community 23 - "Document Upload API"
-Cohesion: 0.27
-Nodes (13): DocumentOut, UploadResult, DatabaseManager, GeminiRAGPipeline, Path, PDFSummarizerPipeline, delete_document(), _extract_docs_from_eml() (+5 more)
+### Community 14 - "Dashboard Grid & KPI Cards"
+Cohesion: 0.13
+Nodes (15): EditableGrid(), KpiCard(), DataContext, STATIC_HN_TERMS, STATIC_HN_WEEKLY, STATIC_WIKI_WEEKLY, TERM_COLORS, WIKI_COLORS (+7 more)
 
-### Community 24 - "Email Ingestion Pipeline"
-Cohesion: 0.19
-Nodes (11): _install_cron(), poll(), Gmail IMAP poller — fetches unread research emails and ingests them into the pip, Print instructions and the crontab line to add., Fetch unread emails, ingest any that match the sender filter, return a summary., _sender_matches_filter(), extract_docs_from_eml(), ingest_emls() (+3 more)
+### Community 15 - "Express API Server"
+Cohesion: 0.09
+Nodes (20): app, { buildValidityState }, cache, { chat }, cors, DATA_DIR, express, { getOptionsData } (+12 more)
 
-### Community 25 - "Gemini Embedding Service"
-Cohesion: 0.22
-Nodes (10): embed_text(), embed_texts_batch(), _get_client(), _is_rate_limit(), main(), RAG pipeline: search on verbalized_summary, answer from raw_content.  Flow: Retu, Embed a single text string. Returns [] if text is empty., Embed a batch of texts in one API call. Returns a parallel list of vectors; (+2 more)
+### Community 16 - "SanDisk NAND Storage Filings"
+Cohesion: 0.12
+Nodes (23): AI Infrastructure Demand for NAND Storage, Datacenter End Market (Cloud), Flash Ventures (Sandisk-Kioxia JV), Kioxia Corporation (Strategic Partner), NAND Flash Technology, SanDisk Semiconductor Shanghai (SDSS) Venture, Tariff and Trade Policy Risk, Term Loan Facility ($2B, 2025) (+15 more)
 
-### Community 26 - "PDF Ingestion Tests"
-Cohesion: 0.26
-Nodes (12): _find_pdf_path(), _get_chunk_by_id(), main(), _print_chunk(), print_ingested_document_and_chunks(), Simple test: ingest a single PDF through the full pipeline.  Default behavior: c, Resolve PDF: env var, or first PDF in test_PDFs/ or research_pdfs/., Resolve chunk by UUID string; return None if invalid or missing. (+4 more)
+### Community 17 - "DRAM Spot Price Scrapers"
+Cohesion: 0.17
+Nodes (16): axios, cheerio, getDramIndex(), getDramSpot(), HISTORY_FILE, loadHistory(), parseModels(), path (+8 more)
 
-### Community 27 - "Pipeline Sourcing Tests"
-Cohesion: 0.45
-Nodes (10): build_pipeline(), failed(), make_chunk(), passed(), Tests that source citations (filename + page) flow correctly through the RAG pip, Construct a GeminiRAGPipeline with a mocked client and the given db., test_chunks_used_metadata(), test_context_contains_source() (+2 more)
+### Community 18 - "StockTwits Selenium Scraper"
+Cohesion: 0.13
+Nodes (11): ImprovedStockTwitsScraper, StockTwits Selenium Scraper - browser-based FALLBACK.  Drives a headless Chrome, Comprehensively scrape messages for a symbol within date range          Args:, Extract message data from a BeautifulSoup element, Parse message timestamp to date object, Save messages to CSV file, Initialize the improved StockTwits scraper          Args:             headless:, Setup Chrome WebDriver with optimized settings (+3 more)
 
-### Community 28 - "Data Context and Cache"
-Cohesion: 0.31
-Nodes (4): DataContext, DataProvider(), getCached(), setCached()
+### Community 19 - "Chart UI Components"
+Cohesion: 0.13
+Nodes (13): ChartModal(), ExpandButton(), InlineLegend(), InsightBox(), AI_TWH, EL_YEARS, NON_AI, RATE_YEARS (+5 more)
 
-### Community 29 - "FastAPI Dependencies Layer"
-Cohesion: 0.25
-Nodes (7): get_db(), get_pipeline(), get_rag(), Shared singletons for FastAPI dependency injection.  canvas_db is imported first, DatabaseManager, GeminiRAGPipeline, PDFSummarizerPipeline
+### Community 20 - "LiteLLM Pricing Scraper"
+Cohesion: 0.16
+Nodes (17): axios, getLitellmPricing(), pick(), selectModels(), SPECS, axios, DAYS, fileAt() (+9 more)
 
-### Community 30 - "Document Search and Listing"
-Cohesion: 0.25
-Nodes (5): Database module: Golden Schema for financial RAG.  Store verbalization for searc, Build a fuzzy, bidirectional substring filter on PDFDocument.sender_company., Vector search over verbalized_summary embeddings.          Args:             sim, Return all PDFDocument rows matching metadata filters, with no limit.          M, _sender_company_filter()
+### Community 21 - "StockTwits Methodology & Scripts"
+Cohesion: 0.14
+Nodes (18): Backward max-cursor pagination, Serial scraping to avoid rate limits, Self-reported Bullish/Bearish sentiment, scrape.py single-ticker entrypoint, update.py append/de-dupe, StockTwits API scraper (primary), StockTwits Selenium scraper (fallback), StockTwits collection methodology (+10 more)
 
-### Community 31 - "Pipeline Usage Examples"
-Cohesion: 0.25
-Nodes (7): example_directory(), example_query_database(), example_single_pdf(), Example usage of the Docling + Gemini verbalization pipeline., Process a single PDF from research_pdfs., Process all PDFs in research_pdfs., Query the database for processed documents and chunks.
+### Community 22 - "Options Chain Charts"
+Cohesion: 0.15
+Nodes (7): fmtExpiry(), fmtUSD(), oiChartOpts, Options(), SAMPLES, TickerPanel(), topThree()
 
-### Community 32 - "Query Analysis and Coverage"
-Cohesion: 0.25
-Nodes (7): _apply_period_safety_net(), _extract_coverage_period(), _is_content_enumeration(), True if the question asks to enumerate CONTENT (trends, risks, takeaways, ...) r, Fill coverage_period_from/to deterministically when the question names a period, Single Gemini Flash call that simultaneously:           1. Extracts hard filters, Extract an explicitly-named period (quarter, half-year, month, or year) from the
+### Community 23 - "GitHub Activity Scrapers"
+Cohesion: 0.20
+Nodes (14): fetchCommitActivity(), fetchJson(), fetchNewRepoCount(), getGitHubActivity(), https, REPOS, sleep(), axios (+6 more)
 
-### Community 33 - "Gemini Rate Limiter"
-Cohesion: 0.32
-Nodes (3): GeminiRateLimiter, Shared Gemini API rate limiter.  Enforces two limits:   - RPM: minimum gap betwe, Block until it is safe to make the next Gemini API call, then record it.
+### Community 24 - "GPU Pricing Scrapers"
+Cohesion: 0.20
+Nodes (14): axios, buildHistoryPayload(), dailyDates(), getGpuPrices(), getVastPrices(), HISTORY_FILE, isoDay(), KEY_ALIASES (+6 more)
 
-### Community 34 - "Chunk Metadata and Embeddings"
+### Community 25 - "Chat Interface Components"
+Cohesion: 0.18
+Nodes (8): Chat(), inlineBold(), isTableRow(), renderRich(), SOURCE_META, splitCells(), SUGGESTIONS, CHART_REGISTRY
+
+### Community 26 - "Zhipu AI Benchmark Data"
+Cohesion: 0.14
+Nodes (13): BENCH_COLORS, BENCH_MODELS, BENCH_VALS, benchData, benchOpts, MKT_COLORS, MKT_DATA, MKT_LABELS (+5 more)
+
+### Community 27 - "Server History Store"
+Cohesion: 0.21
+Nodes (12): all(), EXTRACTORS, FILE, load(), path, persist(), PRICE_SPECS, record() (+4 more)
+
+### Community 28 - "GitHub Stars Backfill"
 Cohesion: 0.24
-Nodes (4): Any, Args:             database_url: postgresql+psycopg://user:pass@localhost/pdf_sum, Update the metadata JSONB for a chunk (merge with existing)., UUID
+Nodes (12): axios, fs, getPage(), headers(), HISTORY_FILE, iso(), main(), monthlyAnchors() (+4 more)
 
-### Community 35 - "SIGNAL Dashboard Overview"
+### Community 29 - "Server Scheduler & Cron"
+Cohesion: 0.15
+Nodes (9): AI_MEGACAPS, cache, cron, history, OPTIONS_BASKET, scrapers, SENTIMENT_TICKERS, snapshotStore (+1 more)
+
+### Community 30 - "Server Storage Layer"
+Cohesion: 0.24
+Nodes (11): cache, close(), flush(), fs, init(), pending, read(), readFileBlob() (+3 more)
+
+### Community 31 - "Data Fetcher Services"
+Cohesion: 0.26
+Nodes (12): fetchAll(), fetchBackendAll(), fetchHF(), fetchJsonSafe(), fetchNpm(), fetchNpmPkg(), fetchPypi(), fetchPypiPkg() (+4 more)
+
+### Community 32 - "OpenRouter Model Rankings"
+Cohesion: 0.18
+Nodes (7): axios, getOpenRouterRankings(), path, PROVIDER_NAMES, providerFromSlug(), storage, STORE_FILE
+
+### Community 33 - "MCP Backfill Scripts"
+Cohesion: 0.26
+Nodes (11): axios, cumulativeCount(), fs, headers(), HISTORY_FILE, iso(), main(), monthlyAnchors() (+3 more)
+
+### Community 34 - "Server Cache Layer"
+Cohesion: 0.24
+Nodes (8): get(), getTelemetry(), meta(), recordFailure(), recordSuccess(), store, telemetry, updateTelemetry()
+
+### Community 35 - "Earnings Transcript Viewer"
+Cohesion: 0.21
+Nodes (8): CatalystCard(), ENGINE_LABEL, ROLE_COLOR, SeriesResult(), sevColor(), toneScale(), Trajectory(), Transcripts()
+
+### Community 36 - "SEC Filings Backfill"
+Cohesion: 0.29
+Nodes (10): axios, countFilings(), fs, HISTORY_FILE, iso(), main(), monthlyAnchors(), path (+2 more)
+
+### Community 37 - "Options Data Scraper"
+Cohesion: 0.31
+Nodes (8): fetchChain(), fmtContract(), getOptionsData(), isoDate(), sleep(), withRetry(), captureOptionsOI(), warmOptions()
+
+### Community 38 - "SanDisk Q4 2025 Press Release"
+Cohesion: 0.25
+Nodes (9): BiCS8 NAND Flash Technology, Goodwill Impairment Charge ($1.8B, Q3 FY2025), High Bandwidth Flash (HBF), Q4 FY2025 Financial Results (8-K Press Release), Sandisk Corporation (SNDK), WDC Separation (Spin-off, Feb 21 2025), BiCS8 Bit Production Ramp (15% of bits Q1 FY2026), Net Cash Positive Milestone (Q1 FY2026) (+1 more)
+
+### Community 39 - "Data Validity Inspector"
+Cohesion: 0.36
+Nodes (5): AuditInspector(), DataValidity(), fmtAge(), fmtDur(), STATUS_COLOR
+
+### Community 40 - "Hacker News Scrapers"
+Cohesion: 0.29
+Nodes (5): fetchJson(), https, PER_TERM_QUERIES, queryCount(), WEEKLY_TERMS
+
+### Community 41 - "HuggingFace Model Scrapers"
+Cohesion: 0.36
+Nodes (7): axios, FAMILIES, getFamilyDownloads(), getHuggingFaceData(), getNewModelCounts(), getTopModels(), UA
+
+### Community 42 - "Stock Price Scrapers"
+Cohesion: 0.39
+Nodes (5): genShortRatios(), getStockHistory(), getYF(), sleep(), withRetry()
+
+### Community 43 - "Wikipedia Article Views"
+Cohesion: 0.32
+Nodes (5): ARTICLES, fetchArticleViews(), fetchJson(), fmtDate(), https
+
+### Community 44 - "Options Data Store"
+Cohesion: 0.36
+Nodes (7): backfill(), FILE, load(), path, record(), storage, today()
+
+### Community 45 - "Dashboard README Docs"
 Cohesion: 0.29
 Nodes (7): Chart.js via react-chartjs-2, Dashboard Views (Overview, PyPI, GitHub, etc.), Pure React State Navigation (no router), SIGNAL — AI Demand Tracker Dashboard, Simulated Data Generation (trend/series), Vanilla CSS Variables Styling, Vite + React Frontend Stack
 
-### Community 36 - "GitHub Data Scraper"
+### Community 46 - "GitHub Dependents Scraper"
 Cohesion: 0.38
 Nodes (6): axios, cheerio, getDependents(), getGitHubData(), getStars(), REPOS
 
-### Community 37 - "Google Trends Scraper"
+### Community 47 - "Keyword Search Scraper"
+Cohesion: 0.33
+Nodes (6): DATA_DIR, fs, parseCsv(), path, searchKeyword(), TICKERS
+
+### Community 48 - "SEC Filings Scraper"
+Cohesion: 0.38
+Nodes (5): axios, getSecData(), isoDaysAgo(), sleep(), TERMS
+
+### Community 49 - "Google Trends Scraper"
 Cohesion: 0.38
 Nodes (6): API_KEYWORDS, BRAND_KEYWORDS, getGeoData(), getTrendsData(), googleTrends, parseTimeline()
 
-### Community 38 - "List Query Formatting"
+### Community 50 - "Data Collection Scripts"
+Cohesion: 0.29
+Nodes (5): BLOBS, DATA_DIR, path, scheduler, storage
+
+### Community 51 - "Snapshot Store"
+Cohesion: 0.38
+Nodes (6): FILE, load(), path, put(), seed(), storage
+
+### Community 52 - "Source Registry & Validity"
 Cohesion: 0.33
-Nodes (3): Deterministically format a document inventory as markdown — no LLM call., Handle list-type queries: return all matching documents as an organised inventor, True if the query carries a concept worth semantic ranking, beyond the         m
+Nodes (4): SOURCE_REGISTRY, buildValidityState(), cache, { SOURCE_REGISTRY }
 
-### Community 39 - "Document Removal Utils"
-Cohesion: 0.33
-Nodes (4): main(), Remove a document (and all its chunks) from the database.  Usage:   # By file pa, get_file_hash(), Return SHA256 hash of a file.
+### Community 53 - "Navigation & Sidebar Config"
+Cohesion: 0.40
+Nodes (4): NAV_SECTIONS, SECTOR_OVERVIEW_IDS, VIEW_META, Sidebar()
 
-### Community 40 - "GPU Price Scraper"
-Cohesion: 0.47
-Nodes (5): axios, cheerio, getGpuPrices(), getLambdaPrices(), getVastPrices()
+### Community 54 - "Docker Image Scrapers"
+Cohesion: 0.40
+Nodes (4): fetchImage(), fetchJson(), https, IMAGES
 
-### Community 42 - "App Favicon Design"
+### Community 56 - "Options API Handler"
+Cohesion: 0.60
+Nodes (3): handler(), sleep(), withRetry()
+
+### Community 57 - "App Entry & Chart Setup"
+Cohesion: 0.40
+Nodes (3): DataProvider(), App(), getModeForView()
+
+### Community 59 - "MongoDB Seed Scripts"
+Cohesion: 0.40
+Nodes (4): BLOBS, DATA_DIR, path, storage
+
+### Community 61 - "Vercel Deployment Config"
 Cohesion: 0.50
-Nodes (5): Blue Accent Color (#47bfff), Gaussian Blur Glow Effects, Favicon SVG Icon, Lightning Bolt / Zigzag Shape, Primary Purple Color (#863bff)
-
-### Community 48 - "Hero Image Asset"
-Cohesion: 0.67
-Nodes (3): Layered Platform / Data Stack Design Concept, Hero Image (Isometric Layered Cards Illustration), Hero Section (Frontend UI)
-
-### Community 49 - "Vite Brand Asset"
-Cohesion: 1.00
-Nodes (3): Vite (Build Tool Brand), Vite Logo, vite.svg Static Asset
+Nodes (3): builds, routes, version
 
 ## Knowledge Gaps
-- **234 isolated node(s):** `Any`, `name`, `private`, `version`, `type` (+229 more)
+- **374 isolated node(s):** `name`, `private`, `version`, `type`, `dev` (+369 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **19 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **9 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `GeminiRAGPipeline` connect `RAG Retrieval Engine` to `Query Analysis and Coverage`, `Backend Data Models and Canvas`, `Database ORM and Document Schema`, `List Query Formatting`, `RAG Filter and Answer Logic`, `PDF Ingestion Pipeline`, `Agentic Research Module`, `Document Upload API`, `Gemini Embedding Service`, `FastAPI Dependencies Layer`?**
-  _High betweenness centrality (0.046) - this node is a cross-community bridge._
-- **Why does `PDFSummarizerPipeline` connect `PDF Ingestion Pipeline` to `PDF Processing and Broker Cache`, `Database ORM and Document Schema`, `RAG Retrieval Engine`, `Document Upload API`, `Email Ingestion Pipeline`, `PDF Ingestion Tests`, `FastAPI Dependencies Layer`?**
-  _High betweenness centrality (0.041) - this node is a cross-community bridge._
-- **Why does `DatabaseManager` connect `Database ORM and Document Schema` to `Chunk Metadata and Embeddings`, `Backend Data Models and Canvas`, `RAG Retrieval Engine`, `RAG Filter and Answer Logic`, `PDF Ingestion Pipeline`, `Document Upload API`, `PDF Ingestion Tests`, `FastAPI Dependencies Layer`, `Document Search and Listing`?**
-  _High betweenness centrality (0.037) - this node is a cross-community bridge._
-- **Are the 20 inferred relationships involving `GeminiRAGPipeline` (e.g. with `AgentRunRequest` and `AskRequest`) actually correct?**
-  _`GeminiRAGPipeline` has 20 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 24 inferred relationships involving `DatabaseManager` (e.g. with `CanvasCreateRequest` and `CanvasSaveRequest`) actually correct?**
-  _`DatabaseManager` has 24 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 15 inferred relationships involving `PDFSummarizerPipeline` (e.g. with `DatabaseManager` and `PDFDocument`) actually correct?**
-  _`PDFSummarizerPipeline` has 15 INFERRED edges - model-reasoned connections that need verification._
-- **What connects `Broker-aware Gemini context caching for Agent 2 (Financial Schema Extractor).  E`, `Return the full cached system instruction for a given broker name.`, `Stable, filesystem-safe key for a broker name.` to the rest of the system?**
-  _342 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Why does `fmt()` connect `NPM Scrapers & Chat Pipeline` to `OpenRouter Model Rankings`, `Data Fetcher Services`?**
+  _High betweenness centrality (0.326) - this node is a cross-community bridge._
+- **Why does `fetchNpmPkg()` connect `Data Fetcher Services` to `NPM Scrapers & Chat Pipeline`?**
+  _High betweenness centrality (0.319) - this node is a cross-community bridge._
+- **Why does `Path` connect `GPU History Backfill Scripts` to `OpenRouter Model Rankings`, `MCP Backfill Scripts`, `Transcript Analysis & MongoDB`, `SEC Filings Backfill`, `Server History Store`, `Sentiment Analysis Pipeline`, `AWS Spot Price Scrapers`, `Cloud GPU Price Scrapers`, `Options Data Store`, `Keyword Search Scraper`, `Express API Server`, `DRAM Spot Price Scrapers`, `Data Collection Scripts`, `Snapshot Store`, `LiteLLM Pricing Scraper`, `GPU Pricing Scrapers`, `MongoDB Seed Scripts`, `GitHub Stars Backfill`?**
+  _High betweenness centrality (0.278) - this node is a cross-community bridge._
+- **What connects `name`, `private`, `version` to the rest of the system?**
+  _396 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Should `NPM Scrapers & Chat Pipeline` be split into smaller, more focused modules?**
+  _Cohesion score 0.05513784461152882 - nodes in this community are weakly interconnected._
+- **Should `GPU History Backfill Scripts` be split into smaller, more focused modules?**
+  _Cohesion score 0.05185185185185185 - nodes in this community are weakly interconnected._
+- **Should `AI Company Charts & Metrics` be split into smaller, more focused modules?**
+  _Cohesion score 0.12326530612244897 - nodes in this community are weakly interconnected._

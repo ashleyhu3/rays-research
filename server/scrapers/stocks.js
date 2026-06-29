@@ -1,5 +1,7 @@
 'use strict';
 
+const shortInterestStore = require('../shortInterestStore');
+
 const BROWSER_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
@@ -39,28 +41,6 @@ function fmtLabel(iso) {
   return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' });
 }
 
-// Deterministic smooth short-interest time series anchored to current short %.
-// yahoo-finance2 v3 mis-types sharesShortPriorMonth as a Date, so we derive
-// a plausible starting level from the current value and a ticker-seeded offset.
-function genShortRatios(currentPct, numPoints, tickerSeed) {
-  if (currentPct == null || numPoints < 1) return Array(numPoints).fill(null);
-  const cur = currentPct * 100;
-  // Starting value: ±20 % of current, seeded by ticker so it's stable
-  const offsetFactor = 0.85 + ((tickerSeed % 35) / 100);
-  const prior = cur * offsetFactor;
-
-  const vals = [];
-  for (let i = 0; i < numPoints; i++) {
-    const t    = numPoints > 1 ? i / (numPoints - 1) : 1;
-    const base = prior + (cur - prior) * Math.pow(t, 0.7);
-    // Smooth, deterministic oscillation seeded by ticker (amplitude ≤ 17 % of base)
-    const seed = tickerSeed % (2 * Math.PI * 1000);
-    const wave = Math.sin(i * 0.9 + seed) * 0.10 + Math.cos(i * 1.6 + seed * 1.3) * 0.07;
-    vals.push(parseFloat(Math.max(0.1, base + base * wave).toFixed(2)));
-  }
-  return vals;
-}
-
 async function getStockHistory(ticker) {
   const yf = getYF();
   const end   = new Date();
@@ -90,8 +70,10 @@ async function getStockHistory(ticker) {
   const shortRatio          = ks.shortRatio          ?? null;
   const sharesShort         = ks.sharesShort         ?? null;
 
-  const tickerSeed  = ticker.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
-  const shortRatios = genShortRatios(shortPercentOfFloat, dates.length, tickerSeed);
+  // Persist snapshot whenever Yahoo Finance delivers real data, then build the
+  // time series from accumulated history instead of synthetic simulation.
+  shortInterestStore.record(ticker, shortPercentOfFloat, shortRatio, sharesShort);
+  const shortRatios = shortInterestStore.buildSeries(ticker, dates);
 
   return {
     ticker: ticker.toUpperCase(),

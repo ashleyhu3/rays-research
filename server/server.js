@@ -282,6 +282,7 @@ const STORAGE_BLOBS = [
   // Most-recent NONZERO open interest per options contract, so the chart can
   // backfill OI when Yahoo serves a zero-OI chain intraday/pre-market.
   { name: 'optionsOI',      file: path.join(DATA_DIR, 'optionsOI.json') },
+  { name: 'shortInterestHistory', file: path.join(DATA_DIR, 'shortInterestHistory.json') },
   // Latest scrape per source — loaded into the request cache on boot for an
   // instant first paint instead of blocking on live re-scrapes.
   { name: 'latestSnapshots', file: path.join(DATA_DIR, 'latestSnapshots.json') },

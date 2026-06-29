@@ -159,6 +159,7 @@ function ShortInterestPanel({ ticker }) {
   const shortPct = data.shortPercentOfFloat != null
     ? `${(data.shortPercentOfFloat * 100).toFixed(2)}% of float`
     : null;
+  const hasShortLine = data.shortRatios?.some(v => v != null);
 
   return (
     <div className="cbox span2">
@@ -189,6 +190,13 @@ function ShortInterestPanel({ ticker }) {
       {/* Top panel: short interest ratio (left axis) + price (right axis) */}
       <div style={{ position: 'relative', height: 200 }}>
         <Line data={lineData} options={lineOpts} />
+        {!hasShortLine && (
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+            <span style={{ fontSize: 11, color: '#6b7280', fontFamily: "'Inter',sans-serif" }}>
+              Short interest history not yet available — data accumulates on each visit
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Bottom panel: volume bars, shares the same X labels */}
