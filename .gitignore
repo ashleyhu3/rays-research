@@ -6,3 +6,5 @@ dist/
 # this lives in Mongo, in dev it's a throwaway local file)
 server/data/latestSnapshots.json
 Rays_Intern/
+graphify-out/
+Rays_Intern-graphify-out/
