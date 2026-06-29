@@ -1,6 +1,7 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
+const storage = require('../storage');
 
 /**
  * StockTwits sentiment / posting-volume vs stock-price analysis.
@@ -397,11 +398,12 @@ function weeklyAggregate(byTicker) {
 // Recompute is heavy (CSV parse + 17 Yahoo fetches), so a committed snapshot is
 // served when it's recent. The daily cron refreshes it; a cold start is instant.
 const STORE_FILE = path.join(__dirname, '..', 'data', 'sentiment.json');
+const BLOB = 'sentimentData';
 const MAX_AGE_DAYS = 3;
 
 function readStored() {
   try {
-    const v = JSON.parse(fs.readFileSync(STORE_FILE, 'utf8'));
+    const v = storage.read(BLOB, STORE_FILE);
     if (!v?.asOf || !v.tickers) return null;
     const ageDays = (Date.now() - Date.parse(v.asOf + 'T00:00:00Z')) / 86400000;
     return ageDays <= MAX_AGE_DAYS ? v : null;
@@ -412,7 +414,7 @@ async function getSentimentData() {
   const fresh = readStored();
   if (fresh) return fresh;
   const data = await computeSentiment();
-  try { fs.writeFileSync(STORE_FILE, JSON.stringify(data)); } catch (e) { console.warn('[sentiment] could not persist:', e.message); }
+  storage.write(BLOB, STORE_FILE, data);
   return data;
 }
 
