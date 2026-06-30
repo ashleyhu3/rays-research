@@ -1,4 +1,5 @@
 import { C, fa } from '../config/colors';
+import { GRID, TICK, BORD } from './chartHelpers';
 
 /**
  * ────────────────────────────────────────────────────────────────────────
@@ -135,3 +136,128 @@ export function buildPriceData(liveData, { highlight } = {}) {
     },
   };
 }
+
+/**
+ * ────────────────────────────────────────────────────────────────────────
+ *  PER-COMPANY MODEL HISTORY  —  models in release-date order.
+ * ────────────────────────────────────────────────────────────────────────
+ * Each entry:
+ *   label       — bar label
+ *   releaseDate — 'YYYY-MM' used only for sort order (already pre-sorted)
+ *   match       — OpenRouter model-id prefix for live price lookup
+ *   require     — (optional) substring that must appear in the live id
+ *   exclude     — (optional) substrings that disqualify a live id
+ *   price       — static fallback $/M input tokens
+ *   color       — bar fill colour
+ */
+export const COMPANY_MODELS = {
+  Anthropic: [
+    { label: 'Claude 1',          releaseDate: '2023-03', match: 'anthropic/claude-1',          price:  11.02, color: C.anthropic },
+    { label: 'Claude Instant',    releaseDate: '2023-03', match: 'anthropic/claude-instant',     price:   1.63, color: C.anthropic },
+    { label: 'Claude 2',          releaseDate: '2023-07', match: 'anthropic/claude-2',           exclude: ['.1', '1.'], price: 8.00, color: C.anthropic },
+    { label: 'Claude 2.1',        releaseDate: '2023-11', match: 'anthropic/claude-2.1',         price:   8.00, color: C.anthropic },
+    { label: 'Claude 3 Haiku',    releaseDate: '2024-03', match: 'anthropic/claude-3-haiku',     price:   0.25, color: C.anthropic },
+    { label: 'Claude 3 Sonnet',   releaseDate: '2024-03', match: 'anthropic/claude-3-sonnet',    exclude: ['3.5','3-7'], price: 3.00, color: C.anthropic },
+    { label: 'Claude 3 Opus',     releaseDate: '2024-03', match: 'anthropic/claude-3-opus',      exclude: ['4'],        price: 15.00, color: C.anthropic },
+    { label: 'Claude 3.5 Sonnet', releaseDate: '2024-06', match: 'anthropic/claude-3.5-sonnet',  price:   3.00, color: C.anthropic },
+    { label: 'Claude 3.5 Haiku',  releaseDate: '2024-11', match: 'anthropic/claude-3.5-haiku',   price:   0.80, color: C.anthropic },
+    { label: 'Claude 3.7 Sonnet', releaseDate: '2025-02', match: 'anthropic/claude-3.7-sonnet',  price:   3.00, color: C.anthropic },
+    { label: 'Claude Sonnet 4',   releaseDate: '2025-06', match: 'anthropic/claude-sonnet-4',    exclude: ['5'], price: 3.00, color: C.anthropic },
+    { label: 'Claude Opus 4',     releaseDate: '2025-06', match: 'anthropic/claude-opus-4',      exclude: ['5'], price: 15.00, color: C.anthropic },
+  ],
+  OpenAI: [
+    { label: 'GPT-3.5 Turbo', releaseDate: '2022-11', match: 'openai/gpt-3.5-turbo', price:  0.50, color: C.openai },
+    { label: 'GPT-4',         releaseDate: '2023-03', match: 'openai/gpt-4',         exclude: ['turbo','o','mini','32k','preview'], price: 30.00, color: C.openai },
+    { label: 'GPT-4 Turbo',   releaseDate: '2023-11', match: 'openai/gpt-4-turbo',   price: 10.00, color: C.openai },
+    { label: 'GPT-4o',        releaseDate: '2024-05', match: 'openai/gpt-4o',        exclude: ['mini','audio','realtime','search','preview','2024'], price: 2.50, color: C.openai },
+    { label: 'GPT-4o mini',   releaseDate: '2024-07', match: 'openai/gpt-4o-mini',   exclude: ['audio','search'], price: 0.15, color: C.openai },
+    { label: 'o1',            releaseDate: '2024-09', match: 'openai/o1',            exclude: ['mini','pro','preview'], price: 15.00, color: C.teal },
+    { label: 'o3 mini',       releaseDate: '2025-01', match: 'openai/o3-mini',       price:  1.10, color: C.teal },
+    { label: 'o3',            releaseDate: '2025-04', match: 'openai/o3',            exclude: ['mini','pro','deep'], price: 10.00, color: C.teal },
+    { label: 'GPT-5',         releaseDate: '2025-05', match: 'openai/gpt-5',         exclude: ['mini','nano','image','chat','pro','codex'], price: 5.00, color: C.openai },
+  ],
+  Google: [
+    { label: 'Gemini 1.0 Pro',   releaseDate: '2023-12', match: 'google/gemini-pro',     exclude: ['1.5','2','exp','vision'], price: 0.50, color: C.google },
+    { label: 'Gemini Ultra 1.0', releaseDate: '2024-02', match: 'google/gemini-ultra',    price: 7.00, color: C.google },
+    { label: 'Gemini 1.5 Flash', releaseDate: '2024-04', match: 'google/gemini-1.5-flash', exclude: ['lite','8b'], price: 0.075, color: C.google },
+    { label: 'Gemini 1.5 Pro',   releaseDate: '2024-04', match: 'google/gemini-1.5-pro',  exclude: ['exp'], price: 1.25, color: C.google },
+    { label: 'Gemini 2.0 Flash', releaseDate: '2024-12', match: 'google/gemini-2.0-flash', exclude: ['lite','exp','think'], price: 0.10, color: C.google },
+    { label: 'Gemini 2.5 Flash', releaseDate: '2025-04', match: 'google/gemini-2.5-flash', exclude: ['preview','lite'], price: 0.30, color: C.google },
+    { label: 'Gemini 2.5 Pro',   releaseDate: '2025-04', match: 'google/gemini-2.5-pro',   exclude: ['preview','exp'], price: 1.25, color: C.google },
+  ],
+  Zhipu: [
+    { label: 'GLM-3 Turbo', releaseDate: '2023-10', match: 'z-ai/glm-3-turbo', price: 0.05,  color: C.zhipu },
+    { label: 'GLM-4',       releaseDate: '2024-01', match: 'z-ai/glm-4',       exclude: ['air','flash','plus','v','long','alltools'], price: 0.14, color: C.zhipu },
+    { label: 'GLM-4 Air',   releaseDate: '2024-06', match: 'z-ai/glm-4-air',   price: 0.01,  color: C.zhipu },
+    { label: 'GLM-4 Flash', releaseDate: '2024-06', match: 'z-ai/glm-4-flash', price: 0.00,  color: C.zhipu },
+    { label: 'GLM-4 Plus',  releaseDate: '2024-09', match: 'z-ai/glm-4-plus',  price: 0.14,  color: C.zhipu },
+    { label: 'GLM-Z1',      releaseDate: '2025-01', match: 'z-ai/glm-z1',      exclude: ['flash','rumination'], price: 0.80, color: C.zhipu },
+  ],
+  MiniMax: [
+    { label: 'MiniMax Text-01', releaseDate: '2024-12', match: 'minimax/minimax-text-01', price: 0.20, color: C.minimax },
+    { label: 'MiniMax M1',      releaseDate: '2025-05', match: 'minimax/minimax-m1',      price: 0.30, color: C.minimax },
+  ],
+};
+
+/**
+ * Bar chart data for a company's model pricing, sorted earliest→latest.
+ * Uses live OpenRouter prices where available, falls back to static.
+ */
+export function buildCompanyPriceBar(liveData, provider) {
+  const orModels = liveData?.openrouter?.models ?? liveData?.openrouter?.data?.models;
+  const specs = COMPANY_MODELS[provider] ?? [];
+  let liveUsed = false;
+
+  const rows = specs.map(spec => {
+    let price = spec.price;
+    if (orModels?.length > 0 && spec.match) {
+      const m = pickLive(orModels, spec);
+      if (m) { price = m.pricing.prompt; liveUsed = true; }
+    }
+    return { label: spec.label, price, color: spec.color };
+  });
+
+  return {
+    src: liveUsed ? 'openrouter.ai/api/v1/models · live' : null,
+    data: {
+      labels: rows.map(r => r.label),
+      datasets: [{
+        label: 'Input $/M tokens',
+        data: rows.map(r => r.price),
+        backgroundColor: rows.map(r => fa(r.color, 0.72)),
+        borderColor: rows.map(r => r.color),
+        borderWidth: 1,
+        borderRadius: 4,
+      }],
+    },
+  };
+}
+
+/** Chart.js options for the per-company release-timeline bar chart. */
+export const pricingBarOpts = {
+  responsive: true,
+  maintainAspectRatio: false,
+  animation: false,
+  plugins: {
+    legend: { display: false },
+    tooltip: {
+      backgroundColor: '#1a1f2a',
+      borderColor: 'rgba(255,255,255,.12)',
+      borderWidth: 1,
+      callbacks: { label: ctx => `$${ctx.parsed.y.toFixed(3)}/M tokens` },
+    },
+  },
+  scales: {
+    x: {
+      grid: GRID,
+      border: BORD,
+      ticks: { ...TICK, maxRotation: 45, minRotation: 0 },
+    },
+    y: {
+      grid: GRID,
+      border: BORD,
+      ticks: { ...TICK, callback: v => `$${v}` },
+      beginAtZero: true,
+    },
+  },
+};

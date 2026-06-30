@@ -1,11 +1,10 @@
 import { useMemo } from 'react';
-import { Line, Bar } from 'react-chartjs-2';
-import { C, fa } from '../../config/colors';
+import { Bar, Scatter } from 'react-chartjs-2';
+import { C } from '../../config/colors';
 import { trend } from '../../utils/dataGenerators';
-import { wkLabels, dayLabels } from '../../utils/labels';
-import { baseOpts, hBarOpts, stackedOpts, mkDs, mkBar, fmtM, fmtK, fmtP } from '../../utils/chartHelpers';
-import { companyPriceSeries, priceHistory } from '../../utils/modelPricing';
-import { orProviderSeries, fmtTok } from '../../utils/openrouterProvider';
+import { wkLabels } from '../../utils/labels';
+import { stackedOpts, mkBar, fmtM, fmtK, GRID, TICK, BORD } from '../../utils/chartHelpers';
+import { buildCompanyPriceBar, pricingBarOpts } from '../../utils/modelPricing';
 import { orComboCard } from '../../components/chart/OrGrowthCards';
 import { metricTrendCard } from '../../components/chart/MetricTrendCard';
 import ChartCard from '../../components/chart/ChartCard';
@@ -23,11 +22,30 @@ function npmSlice(ld, pkg, W, a, b) {
   return arr?.length >= W ? arr.slice(-W) : trend(a, b, W, 0.06);
 }
 
+const singleRevenueOpts = (color) => ({
+  responsive: true,
+  maintainAspectRatio: false,
+  animation: false,
+  plugins: {
+    legend: { display: false },
+    tooltip: {
+      callbacks: {
+        label: ctx => {
+          const date = new Date(ctx.raw.x).toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
+          return `$${ctx.raw.y.toFixed(1)}B ARR (${date})`;
+        },
+      },
+    },
+  },
+  scales: {
+    x: { type: 'linear', ticks: { ...TICK, maxTicksLimit: 6, callback: v => new Date(v).toLocaleDateString('en-US', { month: 'short', year: '2-digit', timeZone: 'UTC' }) }, grid: GRID, border: BORD },
+    y: { grid: GRID, ticks: { ...TICK, callback: v => `$${v}B` }, border: BORD, beginAtZero: true },
+  },
+});
+
 export default function DemandAnthropic({ weeks: W }) {
   const { liveData: ld } = useData();
   const wk   = useMemo(() => wkLabels(W), [W]);
-  const D    = Math.min(W * 7, 84);
-  const days = useMemo(() => dayLabels(D), [D]);
 
   // SDK downloads
   const pyVals = useMemo(() => pypiSlice(ld, 'anthropic',        W, 9e6,   16.2e6), [ld, W]);
@@ -40,52 +58,30 @@ export default function DemandAnthropic({ weeks: W }) {
     ],
   }), [wk, pyVals, npVals]);
 
-  // Google Trends
-  const td = ld?.trends;
-  const trendsData = useMemo(() => {
-    if (td?.api?.claude?.length > 0) {
-      return {
-        labels: days,
-        datasets: [
-          mkBar('Claude API',   C.anthropic, td.api.claude.slice(-D)),
-          ...(td.brand?.claude?.length > 0 ? [mkBar('Claude brand', C.teal, td.brand.claude.slice(-D))] : []),
-        ],
-      };
-    }
-    return {
-      labels: days,
-      datasets: [
-        mkBar('Claude API',   C.anthropic, trend(32, 68, D, 0.12)),
-        mkBar('Claude brand', C.teal,      trend(18, 42, D, 0.10)),
-      ],
-    };
-  }, [days, D, td]);
-
   // Daily snapshot history (server-accumulated) for point-in-time metrics
   const mh = ld?.metricsHistory;
 
-  // Wikipedia pageviews
-  const wikiArr  = ld?.wikipedia?.articles?.['Claude (language model)'] ?? [];
-  const wikiData = useMemo(() => {
-    const vals = wikiArr.length > 0 ? wikiArr.slice(-Math.min(W, 13)) : trend(180e3, 220e3, Math.min(W, 13), 0.10);
-    return { labels: wkLabels(vals.length), datasets: [mkDs('Claude Wikipedia', C.anthropic, vals, true)] };
-  }, [wikiArr, W]);
+  // Per-model input price bar (earliest → latest release)
+  const priceBar = useMemo(() => buildCompanyPriceBar(ld, 'Anthropic'), [ld]);
 
-  const hnCl = ld?.hn?.perTerm?.Claude ?? 140;
-
-  // OpenRouter rankings — Anthropic token volume, share, top models
-  const orp = useMemo(() => orProviderSeries(ld?.openrouterRanks, 'Anthropic', W), [ld, W]);
-  const orShareData = useMemo(() => orp && ({
-    labels: orp.labels,
-    datasets: [mkDs('Share of platform tokens', C.anthropic, orp.share)],
-  }), [orp]);
-  const orModelsData = useMemo(() => orp?.models?.length > 0 ? {
-    labels: orp.models.map(m => m.name),
-    datasets: [{ data: orp.models.map(m => m.tokens), backgroundColor: fa(C.anthropic, 0.75), borderColor: C.anthropic, borderWidth: 1, borderRadius: 4 }],
-  } : null, [orp]);
-
-  // Daily input-price history for Anthropic's own models (live snapshot + history)
-  const priceHist = useMemo(() => priceHistory(ld), [ld]);
+  const antRevData = useMemo(() => {
+    const pts = ld?.epochRevenue?.series?.['Anthropic'] ?? [];
+    if (pts.length === 0) return null;
+    return {
+      datasets: [{
+        label: 'Anthropic ARR',
+        data: pts.map(p => ({ x: new Date(p.date + 'T00:00:00Z').getTime(), y: p.value })),
+        borderColor: C.anthropic,
+        backgroundColor: C.anthropic,
+        pointBackgroundColor: C.anthropic,
+        showLine: true,
+        borderWidth: 2,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        tension: 0,
+      }],
+    };
+  }, [ld?.epochRevenue]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <EditableGrid viewId="demand-anthropic">
@@ -98,33 +94,6 @@ export default function DemandAnthropic({ weeks: W }) {
       </ChartCard>
 
       {orComboCard(ld?.openrouterRanks, 'Anthropic', W, C.anthropic, 'an')}
-
-      {orShareData && (
-        <ChartCard
-          chartId="an-or-share"
-          height={220} pinTop
-        >
-          <Line data={orShareData} options={baseOpts(v => `${v.toFixed(1)}%`)} />
-        </ChartCard>
-      )}
-
-      {orModelsData && (
-        <ChartCard
-          chartId="an-or-models"
-          subtitle={`Week of ${orp.latestWeek}. Anthropic models ranked in OpenRouter's top 15 by token volume.`}
-          height={220} pinTop
-        >
-          <Bar data={orModelsData} options={hBarOpts(fmtTok)} />
-        </ChartCard>
-      )}
-
-      <ChartCard
-        chartId="an-trends"
-        legend={[['Claude API', C.anthropic], ['Claude brand', C.teal]]}
-        height={220} span2
-      >
-        <Bar data={trendsData} options={stackedOpts(fmtP)} />
-      </ChartCard>
 
       {metricTrendCard({
         chartId: 'an-stars',
@@ -146,24 +115,22 @@ export default function DemandAnthropic({ weeks: W }) {
         fmt: fmtK,
       })}
 
-      {metricTrendCard({
-        chartId: 'an-pricing',
-        weeks: W,
-        src: 'openrouter.ai/api/v1/models',
-        freq: 'daily',
-        hist: priceHist,
-        series: companyPriceSeries('Anthropic'),
-        fmt: v => `$${v.toFixed(2)}`,
-        height: 260, span2: true,
-      })}
-
       <ChartCard
-        chartId="an-wiki"
-        subtitle={`${hnCl.toLocaleString()} Hacker News story mentions (last 4 weeks) · ${(wikiArr.at(-1) ?? 220000).toLocaleString()} latest weekly Wikipedia views`}
-        height={220} span2
+        chartId="an-pricing"
+        src={priceBar.src}
+        height={260} span2
       >
-        <Line data={wikiData} options={baseOpts(fmtK)} />
+        <Bar data={priceBar.data} options={pricingBarOpts} />
       </ChartCard>
+
+      {antRevData && (
+        <ChartCard
+          chartId="ant-revenue"
+          height={240} span2
+        >
+          <Scatter data={antRevData} options={singleRevenueOpts(C.anthropic)} />
+        </ChartCard>
+      )}
     </EditableGrid>
   );
 }

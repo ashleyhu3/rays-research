@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
-import { Line, Bar } from 'react-chartjs-2';
-import { C, fa } from '../../config/colors';
-import { baseOpts, hBarOpts, mkDs } from '../../utils/chartHelpers';
+import { Line } from 'react-chartjs-2';
+import { C } from '../../config/colors';
+import { baseOpts, mkDs } from '../../utils/chartHelpers';
 import ChartCard from '../../components/chart/ChartCard';
 import EditableGrid from '../../components/chart/EditableGrid';
 import { useData } from '../../context/DataContext';
@@ -16,11 +16,14 @@ function dramDayLabel(isoDate) {
 }
 
 function monthYearLabel(isoDate) {
-  return new Date(isoDate + 'T00:00:00Z').toLocaleDateString('en-US', { month: 'short', year: '2-digit', timeZone: 'UTC' });
+  const d = new Date(isoDate + 'T00:00:00Z');
+  const month = d.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' });
+  const year = String(d.getUTCFullYear()).slice(-2);
+  return `${month} '${year}`;
 }
 
 function historyLabel(isoDate, weeks) {
-  return weeks <= 12 ? dramDayLabel(isoDate) : monthYearLabel(isoDate);
+  return weeks <= 52 ? dramDayLabel(isoDate) : monthYearLabel(isoDate);
 }
 
 function dramLineData(models, history) {
@@ -60,12 +63,6 @@ const GPU_LABELS = {
   RTX_4090: 'RTX 4090',
 };
 
-/* ── LLM API token pricing (LiteLLM cost map) ──────────────────────── */
-// brand token → line colour (keys map to the C.* tokens in colors.js).
-const LLM_COLOR = {
-  openai: C.openai, anthropic: C.anthropic, google: C.google, xai: C.xai,
-  deepseek: C.deepseek, zhipu: C.zhipu, kimi: C.kimi, minimax: C.minimax, qwen: C.qwen,
-};
 
 function windowHistory(history, weeks) {
   if (!history?.dates?.length) return null;
@@ -83,6 +80,12 @@ const CPU_PALETTE = {
   'C7g (Graviton)': C.minimax,
 };
 
+function SectionLabel({ children }) {
+  return (
+    <div className="pricing-section-label">{children}</div>
+  );
+}
+
 const TPU_PALETTE = {
   v4:  C.google,
   v5e: C.teal,
@@ -93,93 +96,10 @@ const TPU_PALETTE = {
 export default function Pricing({ weeks: W = 52 }) {
   const { liveData } = useData();
 
-  /* ── LLM API token pricing (LiteLLM) — official $/1M list prices ──── */
-  // US models first, then Chinese, so the two blocks read left-to-right.
-  const llmModels = useMemo(() => {
-    const m = liveData?.litellm?.models ?? [];
-    const rank = { US: 0, CN: 1 };
-    return [...m].sort((a, b) => (rank[a.region] ?? 9) - (rank[b.region] ?? 9));
-  }, [liveData]);
-  // Price-over-time from the accumulated daily snapshots (history.litellm),
-  // one line per model, for the given field ('input' | 'output').
-  const llmTrend = (field) => {
-    const hist = liveData?.metricsHistory?.litellm;
-    if (!hist || llmModels.length === 0) return null;
-    const dateSet = new Set();
-    for (const m of llmModels) {
-      const s = hist[`${m.label}.${field}`];
-      if (s) Object.keys(s).forEach(d => dateSet.add(d));
-    }
-    const cutoff = Date.now() - W * 7 * 86400000;
-    const dates = [...dateSet].sort().filter(d => new Date(d + 'T00:00:00Z').getTime() >= cutoff);
-    if (dates.length === 0) return null;
-    const datasets = llmModels.map(m => {
-      const s = hist[`${m.label}.${field}`] ?? {};
-      const data = dates.map(d => (d in s ? s[d] : null));
-      if (!data.some(v => v != null)) return null;
-      return { ...mkDs(m.label, LLM_COLOR[m.brand] ?? C.slate, data), spanGaps: true, pointRadius: dates.length === 1 ? 3 : 0 };
-    }).filter(Boolean);
-    if (datasets.length === 0) return null;
-    return { labels: dates.map(d => historyLabel(d, W)), datasets };
-  };
-
-  const llmInputData  = useMemo(() => llmTrend('input'),  [liveData, llmModels, W]); // eslint-disable-line react-hooks/exhaustive-deps
-  const llmOutputData = useMemo(() => llmTrend('output'), [liveData, llmModels, W]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  /* ── GPU spot pricing (moved from the GPU view) ──────────────────── */
+    /* ── GPU spot pricing (moved from the GPU view) ──────────────────── */
   const gpu = liveData?.gpu;
-  const gpuPrices = gpu?.prices ?? gpu; // tolerate the old flat shape from stale caches
-  const hasLive = gpuPrices != null && Object.keys(gpuPrices).length > 0;
-
   const gpuHist = gpu?.history;
   const gpuWindow = useMemo(() => windowHistory(gpuHist, W), [gpuHist, W]);
-
-  // Current marketplace snapshot: on-demand vs interruptible (spot) $/hr per GPU
-  const spotPrices = gpu?.spot ?? {};
-  const currentRateData = useMemo(() => {
-    if (!hasLive) return null;
-    const keys = Object.keys(gpuPrices)
-      .filter(k => Number.isFinite(gpuPrices[k]))
-      .sort((a, b) => gpuPrices[b] - gpuPrices[a]);
-    if (keys.length === 0) return null;
-    return {
-      labels: keys.map(k => GPU_LABELS[k] ?? k.replace(/_/g, ' ')),
-      datasets: [
-        {
-          label: 'On-demand',
-          data: keys.map(k => gpuPrices[k]),
-          backgroundColor: keys.map(k => fa(GPU_PALETTE[k] ?? C.openai, 0.85)),
-          borderColor: keys.map(k => GPU_PALETTE[k] ?? C.openai),
-          borderWidth: 1, borderRadius: 4,
-        },
-        {
-          label: 'Spot (interruptible)',
-          data: keys.map(k => spotPrices[k] ?? null),
-          backgroundColor: keys.map(k => fa(GPU_PALETTE[k] ?? C.openai, 0.35)),
-          borderColor: keys.map(k => GPU_PALETTE[k] ?? C.openai),
-          borderWidth: 1, borderRadius: 4,
-        },
-      ],
-    };
-  }, [hasLive, gpuPrices, spotPrices]);
-
-  const availData = useMemo(() => {
-    const availability = gpu?.availability;
-    if (!availability || Object.keys(availability).length === 0) return null;
-    const entries = Object.entries(availability)
-      .filter(([, count]) => Number.isFinite(count))
-      .sort((a, b) => b[1] - a[1]);
-    return {
-      labels: entries.map(([key]) => GPU_LABELS[key] ?? key.replace(/_/g, ' ')),
-      datasets: [{
-        data: entries.map(([, count]) => count),
-        backgroundColor: entries.map(([key]) => fa(GPU_PALETTE[key] ?? C.openai, 0.70)),
-        borderColor: entries.map(([key]) => GPU_PALETTE[key] ?? C.openai),
-        borderWidth: 1,
-        borderRadius: 4,
-      }],
-    };
-  }, [gpu]);
 
   /* ── Memory (DRAM) spot pricing — TrendForce ─────────────────────── */
   const dram    = liveData?.dram;
@@ -214,7 +134,7 @@ export default function Pricing({ weeks: W = 52 }) {
     const dates  = dramIndex.dates.slice(start);
     const values = dramIndex.values.slice(start);
     return {
-      labels: dates.map(d => new Date(d + 'T00:00:00Z').toLocaleDateString('en-US', { month: 'short', year: '2-digit', timeZone: 'UTC' })),
+      labels: dates.map(monthYearLabel),
       datasets: [mkDs(dramIndex.name, C.teal, values, true)],
     };
   }, [dramIndex, W]);
@@ -246,28 +166,6 @@ export default function Pricing({ weeks: W = 52 }) {
   }
   // AWS-exclusive AI chips (no vast.ai equivalent) — shown as raw AWS spot.
   const awsChipData = useMemo(() => awsLineChart(aws?.history?.spotSeries, ['Trainium', 'Inferentia2']), [aws, awsWindow]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  /* ── Average GPU rental price across the major clouds ─────────────── */
-  // One forward-filled line per GPU bucket (H100 pools H100 + H200), each the
-  // mean on-demand $/GPU/hr across the platforms in server/scrapers/cloudGpu.js.
-  const cloudGpu = liveData?.cloudGpu;
-  const CLOUD_COLORS = { A100: C.teal, H100: C.anthropic, B200: C.google, R400: C.red };
-  const CLOUD_LABELS = { A100: 'A100', H100: 'H100 / H200', B200: 'B200', R400: 'R400' };
-  const cloudAvgData = useMemo(() => {
-    if (!cloudGpu?.dates?.length) return null;
-    const cutoff = Date.now() - W * 7 * 86400000;
-    let start = cloudGpu.dates.findIndex(d => new Date(d + 'T00:00:00Z').getTime() >= cutoff);
-    if (start < 0) start = 0;
-    const dates = cloudGpu.dates.slice(start);
-    const datasets = Object.entries(cloudGpu.series ?? {})
-      .filter(([, arr]) => arr.slice(start).some(Number.isFinite))
-      .map(([bucket, arr]) => ({
-        ...mkDs(CLOUD_LABELS[bucket] ?? bucket, CLOUD_COLORS[bucket] ?? C.slate, arr.slice(start), true),
-        spanGaps: true, pointRadius: 0,
-      }));
-    if (datasets.length === 0) return null;
-    return { labels: dates.map(d => historyLabel(d, W)), datasets };
-  }, [cloudGpu, W]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Combined GPU spot line: vast.ai's actual price where it exists, with the
   // earlier period filled by AWS's spot SHAPE rebased ("indexed") to vast.ai's
@@ -370,33 +268,6 @@ export default function Pricing({ weeks: W = 52 }) {
 
   /* ── CPU spot pricing (AWS Spot Advisor) ──────────────────────────── */
   const cpuData = liveData?.cpu;
-  const cpuCurrent = cpuData?.current ?? {};
-  const cpuOnDemand = cpuData?.onDemand ?? {};
-
-  const cpuCurrentData = useMemo(() => {
-    const keys = Object.keys(cpuCurrent).filter(k => Number.isFinite(cpuCurrent[k]?.spot));
-    if (keys.length === 0) return null;
-    const sorted = [...keys].sort((a, b) => (cpuCurrent[b]?.spot ?? 0) - (cpuCurrent[a]?.spot ?? 0));
-    return {
-      labels: sorted,
-      datasets: [
-        {
-          label: 'On-demand',
-          data: sorted.map(k => cpuOnDemand[k] ?? null),
-          backgroundColor: sorted.map(k => fa(CPU_PALETTE[k] ?? C.slate, 0.85)),
-          borderColor: sorted.map(k => CPU_PALETTE[k] ?? C.slate),
-          borderWidth: 1, borderRadius: 4,
-        },
-        {
-          label: 'Spot',
-          data: sorted.map(k => cpuCurrent[k]?.spot ?? null),
-          backgroundColor: sorted.map(k => fa(CPU_PALETTE[k] ?? C.slate, 0.35)),
-          borderColor: sorted.map(k => CPU_PALETTE[k] ?? C.slate),
-          borderWidth: 1, borderRadius: 4,
-        },
-      ],
-    };
-  }, [cpuCurrent, cpuOnDemand]);
 
   const cpuWindow = useMemo(() => windowHistory(cpuData?.history, W), [cpuData, W]);
   const cpuHistData = useMemo(() => {
@@ -416,33 +287,6 @@ export default function Pricing({ weeks: W = 52 }) {
 
   /* ── TPU preemptible pricing (GCP) ────────────────────────────────── */
   const tpuData = liveData?.tpu;
-  const tpuCurrent = tpuData?.current ?? {};
-  const tpuOnDemand = tpuData?.onDemand ?? {};
-
-  const tpuCurrentData = useMemo(() => {
-    const keys = Object.keys(tpuCurrent).filter(k => Number.isFinite(tpuCurrent[k]?.spot));
-    if (keys.length === 0) return null;
-    const sorted = [...keys].sort((a, b) => (tpuCurrent[b]?.spot ?? 0) - (tpuCurrent[a]?.spot ?? 0));
-    return {
-      labels: sorted.map(k => `TPU ${k}`),
-      datasets: [
-        {
-          label: 'On-demand',
-          data: sorted.map(k => tpuOnDemand[k] ?? null),
-          backgroundColor: sorted.map(k => fa(TPU_PALETTE[k] ?? C.slate, 0.85)),
-          borderColor: sorted.map(k => TPU_PALETTE[k] ?? C.slate),
-          borderWidth: 1, borderRadius: 4,
-        },
-        {
-          label: 'Preemptible (spot)',
-          data: sorted.map(k => tpuCurrent[k]?.spot ?? null),
-          backgroundColor: sorted.map(k => fa(TPU_PALETTE[k] ?? C.slate, 0.35)),
-          borderColor: sorted.map(k => TPU_PALETTE[k] ?? C.slate),
-          borderWidth: 1, borderRadius: 4,
-        },
-      ],
-    };
-  }, [tpuCurrent, tpuOnDemand]);
 
   const tpuWindow = useMemo(() => windowHistory(tpuData?.history, W), [tpuData, W]);
   const tpuHistData = useMemo(() => {
@@ -460,240 +304,100 @@ export default function Pricing({ weeks: W = 52 }) {
     };
   }, [tpuData, tpuWindow, W]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  /* ── AI company revenue (Epoch AI) ────────────────────────────────── */
-  const REVENUE_PALETTE = {
-    OpenAI:      C.openai,
-    Anthropic:   C.anthropic,
-    Google:      C.google,
-    xAI:         C.kimi,
-    'Mistral AI': C.mistral,
-    DeepSeek:    C.deepseek,
-    Meta:        C.minimax,
-  };
-
-  const epochRevData = useMemo(() => {
-    const epoch = liveData?.epochRevenue;
-    if (!epoch?.series) return null;
-    const companies = epoch.companies ?? Object.keys(epoch.series);
-    // Collect all dates across all companies and sort.
-    const dateSet = new Set();
-    for (const co of companies) (epoch.series[co] ?? []).forEach(p => dateSet.add(p.date));
-    const allDates = [...dateSet].sort();
-    if (allDates.length === 0) return null;
-    // For each company, align values to the shared date axis (null where no data).
-    const dateIdx = Object.fromEntries(allDates.map((d, i) => [d, i]));
-    const datasets = companies.map(co => {
-      const pts = epoch.series[co] ?? [];
-      const data = new Array(allDates.length).fill(null);
-      pts.forEach(p => { if (dateIdx[p.date] != null) data[dateIdx[p.date]] = p.value; });
-      const color = REVENUE_PALETTE[co] ?? C.slate;
-      return {
-        ...mkDs(co, color, data),
-        spanGaps: false,
-        pointRadius: 5,
-        pointHoverRadius: 7,
-        tension: 0.3,
-        borderWidth: 2,
-      };
-    }).filter(ds => ds.data.some(v => v != null));
-    if (datasets.length === 0) return null;
-    const cutoff = Date.now() - W * 7 * 86400000;
-    const visibleStart = allDates.findIndex(d => new Date(d + 'T00:00:00Z').getTime() >= cutoff);
-    const start = Math.max(0, visibleStart < 0 ? 0 : visibleStart);
-    const visibleDates = allDates.slice(start);
-    return {
-      labels: visibleDates.map(d => historyLabel(d, W)),
-      datasets: datasets.map(ds => ({ ...ds, data: ds.data.slice(start) })),
-    };
-  }, [liveData?.epochRevenue, W]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const changeData = useMemo(() => {
-    if (models.length === 0) return null;
-    const sorted = [...models].sort((a, b) => b.changePct - a.changePct);
-    return {
-      labels: sorted.map(m => m.model),
-      datasets: [{
-        data:            sorted.map(m => m.changePct),
-        backgroundColor: sorted.map(m => fa(m.changePct >= 0 ? C.openai : C.red, 0.70)),
-        borderColor:     sorted.map(m => (m.changePct >= 0 ? C.openai : C.red)),
-        borderWidth: 1, borderRadius: 4,
-      }],
-    };
-  }, [models]);
-
   const dramAsOf = dram?.asOf ? ` · as of ${dram.asOf}` : '';
 
   return (
-    <EditableGrid viewId="pricing">
-      {llmInputData && (
-        <ChartCard
-          chartId="llm-api-input"
-          legend={llmInputData.datasets.map(d => [d.label, d.borderColor])}
-          height={260} span2
-        >
-          <Line data={llmInputData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
-        </ChartCard>
-      )}
+    <>
+      <SectionLabel>Memory</SectionLabel>
+      <EditableGrid viewId="pricing-memory">
+        {dramIndexData && (
+          <ChartCard
+            chartId="dram-index"
+            title={`${dramIndex.name} — monthly (${dramIndex.unit})`}
+            height={240} span2
+          >
+            <Line data={dramIndexData} options={baseOpts(v => `$${v.toFixed(1)}`)} />
+          </ChartCard>
+        )}
 
-      {llmOutputData && (
-        <ChartCard
-          chartId="llm-api-output"
-          legend={llmOutputData.datasets.map(d => [d.label, d.borderColor])}
-          height={260} span2
-        >
-          <Line data={llmOutputData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
-        </ChartCard>
-      )}
+        {chipData && (
+          <ChartCard
+            chartId="dram-chips"
+            subtitle={`${DRAM_METHOD}${dramAsOf}`}
+            legend={dramLegend(chips)}
+            height={260} span2
+          >
+            <Line data={chipData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
+          </ChartCard>
+        )}
 
-      {dramIndexData && (
-        <ChartCard
-          chartId="dram-index"
-          title={`${dramIndex.name} — monthly (${dramIndex.unit})`}
-          height={240} span2
-        >
-          <Line data={dramIndexData} options={baseOpts(v => `$${v.toFixed(1)}`)} />
-        </ChartCard>
-      )}
+        {moduleData && (
+          <ChartCard
+            chartId="dram-modules"
+            subtitle={`SO-DIMM / UDIMM / RDIMM modules. ${DRAM_METHOD}${dramAsOf}`}
+            legend={dramLegend(modules)}
+            height={240}
+          >
+            <Line data={moduleData} options={baseOpts(v => `$${v.toFixed(0)}`)} />
+          </ChartCard>
+        )}
+      </EditableGrid>
 
-      {chipData && (
-        <ChartCard
-          chartId="dram-chips"
-          subtitle={`${DRAM_METHOD}${dramAsOf}`}
-          legend={dramLegend(chips)}
-          height={260} span2
-        >
-          <Line data={chipData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
-        </ChartCard>
-      )}
+      <SectionLabel>GPU</SectionLabel>
+      <EditableGrid viewId="pricing-gpu">
+        {gpuIndexData && (
+          <ChartCard
+            chartId="gpu-index"
+            height={240} span2
+          >
+            <Line data={gpuIndexData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
+          </ChartCard>
+        )}
 
-      {moduleData && (
-        <ChartCard
-          chartId="dram-modules"
-          subtitle={`SO-DIMM / UDIMM / RDIMM modules. ${DRAM_METHOD}${dramAsOf}`}
-          legend={dramLegend(modules)}
-          height={240}
-        >
-          <Line data={moduleData} options={baseOpts(v => `$${v.toFixed(0)}`)} />
-        </ChartCard>
-      )}
+        {combinedSpotData && (
+          <ChartCard
+            chartId="gpu-spot-combined"
+            legend={awsLegend(combinedSpotData)}
+            height={240} span2
+          >
+            <Line data={combinedSpotData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
+          </ChartCard>
+        )}
 
-      {changeData && (
-        <ChartCard
-          chartId="dram-change"
-          subtitle={`Average session change across each model's variants${dramAsOf}. Red = declining.`}
-          height={240}
-        >
-          <Bar data={changeData} options={hBarOpts(v => `${v > 0 ? '+' : ''}${v.toFixed(1)}%`)} />
-        </ChartCard>
-      )}
+        {awsChipData && (
+          <ChartCard
+            chartId="aws-chip-spot"
+            legend={awsLegend(awsChipData)}
+            height={220} span2
+          >
+            <Line data={awsChipData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
+          </ChartCard>
+        )}
 
-      {currentRateData && (
-        <ChartCard
-          chartId="gpu-current-rates"
-          legend={[['On-demand', C.openai], ['Spot (interruptible)', fa(C.openai, 0.45)]]}
-          height={240} span2
-        >
-          <Bar data={currentRateData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
-        </ChartCard>
-      )}
+      </EditableGrid>
 
-      {availData && (
-        <ChartCard
-          chartId="gpu-avail"
-          height={200}
-        >
-          <Bar data={availData} options={baseOpts(v => Math.round(v))} />
-        </ChartCard>
-      )}
+      <SectionLabel>CPU / TPU</SectionLabel>
+      <EditableGrid viewId="pricing-cpu">
+        {cpuHistData && (
+          <ChartCard
+            chartId="cpu-spot-history"
+            legend={cpuHistData.datasets.map(d => [d.label, d.borderColor])}
+            height={220} span2
+          >
+            <Line data={cpuHistData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
+          </ChartCard>
+        )}
 
-      {gpuIndexData && (
-        <ChartCard
-          chartId="gpu-index"
-          height={240} span2
-        >
-          <Line data={gpuIndexData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
-        </ChartCard>
-      )}
-
-      {combinedSpotData && (
-        <ChartCard
-          chartId="gpu-spot-combined"
-          legend={awsLegend(combinedSpotData)}
-          height={240} span2
-        >
-          <Line data={combinedSpotData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
-        </ChartCard>
-      )}
-
-      {awsChipData && (
-        <ChartCard
-          chartId="aws-chip-spot"
-          legend={awsLegend(awsChipData)}
-          height={220} span2
-        >
-          <Line data={awsChipData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
-        </ChartCard>
-      )}
-
-      {cloudAvgData && (
-        <ChartCard
-          chartId="gpu-cloud-avg"
-          legend={cloudAvgData.datasets.map(d => [d.label, d.borderColor])}
-          height={240} span2
-        >
-          <Line data={cloudAvgData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
-        </ChartCard>
-      )}
-
-      {cpuCurrentData && (
-        <ChartCard
-          chartId="cpu-spot-rates"
-          legend={[['On-demand', C.slate], ['Spot', fa(C.slate, 0.45)]]}
-          height={220} span2
-        >
-          <Bar data={cpuCurrentData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
-        </ChartCard>
-      )}
-
-      {cpuHistData && (
-        <ChartCard
-          chartId="cpu-spot-history"
-          legend={cpuHistData.datasets.map(d => [d.label, d.borderColor])}
-          height={220} span2
-        >
-          <Line data={cpuHistData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
-        </ChartCard>
-      )}
-
-      {tpuCurrentData && (
-        <ChartCard
-          chartId="tpu-spot-rates"
-          legend={[['On-demand', C.google], ['Preemptible (spot)', fa(C.google, 0.45)]]}
-          height={220} span2
-        >
-          <Bar data={tpuCurrentData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
-        </ChartCard>
-      )}
-
-      {tpuHistData && (
-        <ChartCard
-          chartId="tpu-spot-history"
-          legend={tpuHistData.datasets.map(d => [d.label, d.borderColor])}
-          height={220} span2
-        >
-          <Line data={tpuHistData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
-        </ChartCard>
-      )}
-
-      {epochRevData && (
-        <ChartCard
-          chartId="ai-company-revenue"
-          legend={epochRevData.datasets.map(d => [d.label, d.borderColor])}
-          height={280} span2
-        >
-          <Line data={epochRevData} options={baseOpts(v => `$${v.toFixed(0)}B`)} />
-        </ChartCard>
-      )}
-    </EditableGrid>
+        {tpuHistData && (
+          <ChartCard
+            chartId="tpu-spot-history"
+            legend={tpuHistData.datasets.map(d => [d.label, d.borderColor])}
+            height={220} span2
+          >
+            <Line data={tpuHistData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
+          </ChartCard>
+        )}
+      </EditableGrid>
+    </>
   );
 }

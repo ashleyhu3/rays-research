@@ -4,7 +4,6 @@ import { chartsForSector } from '../../config/charts';
 
 import PyPI            from '../sources/PyPI';
 import GitHub          from '../sources/GitHub';
-import Trends          from '../sources/Trends';
 import DemandOpenRouter from '../market-signals/OpenRouter';
 import DemandGeneral   from '../market-signals/InfrastructureOss';
 import HuggingFace     from '../sources/HuggingFace';
@@ -22,7 +21,6 @@ const OVERVIEW_VIEWS = [
   DemandOpenRouter,   // OpenRouter rankings (half-width, top)
   Datacenter,         // Datacenter capex (half) — directly below OpenRouter
   Electricity,        // Datacenter electricity (half) — sits to the right of Datacenter
-  Trends,             // Google Trends (half)
   Chinese,            // Input token pricing (half)
   DemandGeneral,      // OSS signals (quarter each)
   HuggingFace,        // HuggingFace most-downloaded (quarter)

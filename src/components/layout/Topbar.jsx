@@ -21,7 +21,6 @@ const MONTH_OPTIONS = [
 const SUB_VIEW_LABELS = {
   pypi:        'PyPI / npm',
   github:      'GitHub dependents',
-  trends:      'Google Trends',
   openrouter:  'OpenRouter rankings',
   general:     'Infrastructure & OSS',
   web:         'Web traffic & stickiness',

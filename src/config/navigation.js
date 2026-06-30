@@ -81,7 +81,6 @@ export const VIEW_META = {
   // Source-specific signal pages — reachable via direct navigation or Ask tab
   pypi:              { title: 'PYPI / NPM' },
   github:            { title: 'GITHUB DEPENDENTS' },
-  trends:            { title: 'GOOGLE TRENDS' },
   web:               { title: 'WEB TRAFFIC & STICKINESS' },
   hf:                { title: 'HUGGINGFACE DOWNLOADS' },
   pricing:           { title: 'PRICING — GPU & MEMORY SPOT' },
@@ -95,7 +94,7 @@ export const VIEW_META = {
   'ai-supply-mlcc':   { title: 'AI SUPPLY — MLCC' },
   'github-commits':   { title: 'GITHUB COMMIT VELOCITY' },
   docker:             { title: 'DOCKER HUB DEPLOYS' },
-  community:          { title: 'HN & WIKIPEDIA PULSE' },
+  community:          { title: 'HN PULSE' },
   options:            { title: 'OPTIONS FLOW' },
   sentiment:          { title: 'MARKETS — SENTIMENT & OPTIONS' },
   transcripts:        { title: 'EARNINGS TRANSCRIPT AGENT' },

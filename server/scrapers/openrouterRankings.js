@@ -177,10 +177,11 @@ async function getOpenRouterRankings() {
     Object.values(weekBuckets[wk]).reduce((a, b) => a + b, 0)
   );
 
-  // Top 8 providers by total + roll rest into "Other" — for stacked weekly bar
+  // Weekly series for every provider so per-company pages can look up any name.
+  // top8Provs is kept separately for the stacked bar's "Other" rollup.
   const top8Provs = providers.filter(p => p.name !== 'Other').slice(0, 8).map(p => p.name);
   const providerWeekly = {};
-  for (const prov of top8Provs) {
+  for (const prov of Object.keys(providerTotals)) {
     providerWeekly[prov] = allWeeks.map(wk => provByWeek[wk]?.[prov] ?? 0);
   }
   providerWeekly['Other'] = allWeeks.map((wk, i) => {

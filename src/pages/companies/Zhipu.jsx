@@ -1,9 +1,8 @@
 import { useMemo } from 'react';
-import { Line, Bar } from 'react-chartjs-2';
+import { Bar } from 'react-chartjs-2';
 import { C, fa } from '../../config/colors';
-import { baseOpts, hBarOpts, stackedOpts, mkDs, fmtM, GRID, TICK, BORD } from '../../utils/chartHelpers';
-import { companyPriceSeries, priceHistory } from '../../utils/modelPricing';
-import { orProviderSeries } from '../../utils/openrouterProvider';
+import { hBarOpts, stackedOpts, fmtM, GRID, TICK, BORD } from '../../utils/chartHelpers';
+import { buildCompanyPriceBar, pricingBarOpts } from '../../utils/modelPricing';
 import { orComboCard } from '../../components/chart/OrGrowthCards';
 import { metricTrendCard } from '../../components/chart/MetricTrendCard';
 import ChartCard from '../../components/chart/ChartCard';
@@ -60,13 +59,6 @@ export default function DemandZhipu({ weeks: W }) {
   const { liveData: ld } = useData();
   const qN  = Math.min(W, 4);
 
-  // Zhipu token share on OpenRouter (live rankings)
-  const orp = useMemo(() => orProviderSeries(ld?.openrouterRanks, 'Zhipu AI', W), [ld, W]);
-  const orShareData = useMemo(() => orp && ({
-    labels: orp.labels,
-    datasets: [mkDs('Share of platform tokens', C.zhipu, orp.share)],
-  }), [orp]);
-
   // Revenue
   const revData = useMemo(() => ({
     labels: REV_YEARS.slice(0, qN),
@@ -76,21 +68,12 @@ export default function DemandZhipu({ weeks: W }) {
     ],
   }), [qN]);
 
-  // Daily input-price history for Zhipu's own (GLM) models (live snapshot + history)
-  const priceHist = useMemo(() => priceHistory(ld), [ld]);
+  // Per-model input price bar (earliest → latest release)
+  const priceBar = useMemo(() => buildCompanyPriceBar(ld, 'Zhipu'), [ld]);
 
   return (
     <EditableGrid viewId="demand-zhipu">
       {orComboCard(ld?.openrouterRanks, 'Zhipu AI', W, C.zhipu, 'zh')}
-
-      {orShareData && (
-        <ChartCard
-          chartId="zh-or-share"
-          height={260} pinTop
-        >
-          <Line data={orShareData} options={baseOpts(v => `${v.toFixed(1)}%`)} />
-        </ChartCard>
-      )}
 
       <ChartCard
         chartId="zh-revenue"
@@ -118,16 +101,13 @@ export default function DemandZhipu({ weeks: W }) {
         height: 260,
       })}
 
-      {metricTrendCard({
-        chartId: 'zh-pricing',
-        weeks: W,
-        src: 'openrouter.ai/api/v1/models',
-        freq: 'daily',
-        hist: priceHist,
-        series: companyPriceSeries('Zhipu'),
-        fmt: v => `$${v.toFixed(2)}`,
-        height: 260, span2: true,
-      })}
+      <ChartCard
+        chartId="zh-pricing"
+        src={priceBar.src}
+        height={260} span2
+      >
+        <Bar data={priceBar.data} options={pricingBarOpts} />
+      </ChartCard>
 
       <ChartCard
         chartId="zh-bench"

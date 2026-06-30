@@ -52,17 +52,6 @@ const SOURCE_REGISTRY = {
     fallback: 'Daily snapshot store; trend continues from last poll.',
     endpointUrl: 'https://api.github.com/repos/openai/openai-python',
   },
-  trends: {
-    name: 'Google Trends', provider: 'Google Trends (google-trends-api)',
-    ourCadenceMs: 24 * 3600e3, sourceCadence: 'Daily', criticalLagThresholdMs: 48 * 3600e3,
-    upstreamLagMs: 42 * 3600e3, upstreamLagText: '~1.5–2 days',
-    upstreamLagNote: 'Trends interest is a normalized SAMPLE of searches; Google finalizes a day only after re-weighting, so the last 1–2 days are provisional and revised. Effective settled lag ~36–48h.',
-    reliabilityGrade: 'B', reliabilityNote: 'Unofficial endpoint; subject to throttling and occasional index re-normalization that shifts historical points.',
-    ragScope: 'Brand/API search interest — Claude, ChatGPT, Gemini keywords.',
-    fallback: 'Cached 84-day window; provisional tail flagged.',
-    endpointUrl: 'https://trends.google.com/trends/api',
-  },
-
   // ── Pricing & marketplace ───────────────────────────────────────────
   gpu: {
     name: 'GPU Spot Prices', provider: 'vast.ai marketplace API',
@@ -188,17 +177,6 @@ const SOURCE_REGISTRY = {
     fallback: 'Weekly counts cached; last hour held.',
     endpointUrl: 'https://hn.algolia.com/api/v1/search_by_date',
   },
-  wikipedia: {
-    name: 'Wikipedia Pageviews', provider: 'Wikimedia REST pageviews API',
-    ourCadenceMs: 24 * 3600e3, sourceCadence: 'Daily', criticalLagThresholdMs: 48 * 3600e3,
-    upstreamLagMs: 36 * 3600e3, upstreamLagText: '~1–2 days',
-    upstreamLagNote: 'Wikimedia computes pageview aggregates in a daily batch; a day\'s counts are published the following day (and the API does not return today). Effective lag ~24–48h.',
-    reliabilityGrade: 'A', reliabilityNote: 'Official Wikimedia analytics; very dependable.',
-    ragScope: 'Public attention — ChatGPT/LLM/Claude/Gemini article pageviews.',
-    fallback: 'Weekly aggregated series; latest complete day used.',
-    endpointUrl: 'https://wikimedia.org/api/rest_v1/metrics/pageviews',
-  },
-
   // ── Ecosystem / filings ─────────────────────────────────────────────
   githubCommits: {
     name: 'GitHub Commit Velocity', provider: 'GitHub REST stats API',

@@ -41,20 +41,6 @@ export const CHART_TEXT = {
     subtitle: 'How many public repos depend on each SDK — a production-adoption signal.',
   },
 
-  // ── Developer signals · Google Trends (view: trends) ──────────────────
-  'trends-api': {
-    title: 'Search Interest by Provider',
-    subtitle: 'Relative US search interest (0–100); 100 = the leading term at its peak.',
-  },
-  'trends-geo': {
-    title: 'Claude API Search Interest by Metro',
-    subtitle: 'Top US cities by relative Claude API search interest.',
-  },
-  'trends-brand': {
-    title: 'Claude vs ChatGPT Brand Search',
-    subtitle: 'Consumer brand-awareness proxy; ChatGPT leads but Claude is closing.',
-  },
-
   // ── Consumer signals · HuggingFace (view: hf) ─────────────────────────
   'hf-downloads': {
     title: 'Most-Downloaded Models',
@@ -83,7 +69,7 @@ export const CHART_TEXT = {
     subtitle: 'Community approval; newer inference images (Ollama, vLLM) are gaining fast.',
   },
 
-  // ── Community · Hacker News & Wikipedia (view: community) ─────────────
+  // ── Community · Hacker News (view: community) ─────────────────────────
   'hn-volume': {
     title: 'Weekly AI Story Volume on Hacker News',
     subtitle: 'A leading indicator — technical early adopters discuss here before the mainstream.',
@@ -91,10 +77,6 @@ export const CHART_TEXT = {
   'hn-terms': {
     title: 'HN Mentions by Term',
     subtitle: 'Which AI brands and concepts dominate Hacker News discussion.',
-  },
-  'wiki-views': {
-    title: 'Weekly Pageviews for AI Articles',
-    subtitle: 'A public-interest proxy; spikes follow news cycles.',
   },
 
   // ── Infrastructure & OSS · GitHub commit activity (view: github-commits)
@@ -186,14 +168,6 @@ export const CHART_TEXT = {
   },
 
   // ── Pricing · GPU & memory spot (view: pricing) ───────────────────────
-  'gpu-current-rates': {
-    title: 'GPU Rental Rates — On-Demand vs Spot ($/hr)',
-    subtitle: 'Spot = interruptible floor price; on-demand = held-instance rate.',
-  },
-  'gpu-avail': {
-    title: 'GPU Availability ($/hr offers)',
-    subtitle: 'Count of rentable single-GPU offers — a supply/scarcity signal.',
-  },
   'gpu-index': {
     title: 'Mainstream GPU Rental Benchmark ($/hr)',
     subtitle: 'Average on-demand $/hr across the tracked GPUs.',
@@ -205,14 +179,6 @@ export const CHART_TEXT = {
   'aws-chip-spot': {
     title: 'AWS AI-Chip Spot Price — Trainium / Inferentia ($/chip/hr)',
     subtitle: "Per-chip spot price for AWS's in-house AI accelerators (no third-party market equivalent).",
-  },
-  'gpu-cloud-avg': {
-    title: 'Average GPU Price Across Major Clouds ($/GPU/hr)',
-    subtitle: 'Mean on-demand list price per GPU across the major clouds; the H100 line pools H100 and H200.',
-  },
-  'cpu-spot-rates': {
-    title: 'CPU Instance Spot Rates — On-Demand vs Spot ($/hr)',
-    subtitle: 'AWS CPU instance spot prices derived from Spot Advisor savings % × on-demand rate. All 4xlarge (16 vCPUs), us-east-1.',
   },
   'cpu-spot-history': {
     title: 'CPU Instance Spot Price Over Time ($/hr)',
@@ -226,9 +192,17 @@ export const CHART_TEXT = {
     title: 'GCP TPU Preemptible Price Over Time ($/chip/hr)',
     subtitle: 'Daily preemptible price per TPU chip per generation. History accumulates from first scrape.',
   },
-  'ai-company-revenue': {
+  'gen-ai-revenue': {
     title: 'AI Company Annualized Revenue (USD billions)',
-    subtitle: 'Annualized revenue run rates for leading AI labs, sourced from company disclosures and media reports. Each dot is a reported data point.',
+    subtitle: 'Annualized revenue run rates sourced from company disclosures and media reports. Each dot is a reported data point. Source: Epoch AI.',
+  },
+  'oa-revenue': {
+    title: 'OpenAI Annualized Revenue (USD billions)',
+    subtitle: 'Annualized revenue run rates from company disclosures and media reports. Source: Epoch AI.',
+  },
+  'ant-revenue': {
+    title: 'Anthropic Annualized Revenue (USD billions)',
+    subtitle: 'Annualized revenue run rates from company disclosures and media reports. Source: Epoch AI.',
   },
   'dram-index': {
     // The card shows a live title (index name + unit); this static title is the
@@ -244,21 +218,6 @@ export const CHART_TEXT = {
     title: 'Memory Module Spot Price by Model ($)',
     // subtitle is computed in the view
   },
-  'dram-change': {
-    title: 'DRAM Spot — Session Change by Model (%)',
-    // subtitle is computed (as-of date) in the view
-  },
-
-  // ── Pricing · LLM API token prices (view: pricing) ────────────────────
-  'llm-api-input': {
-    title: 'LLM API Input Price Over Time ($/1M tokens)',
-    subtitle: 'Official provider list price to send tokens, flagship US vs Chinese models. One line per model.',
-  },
-  'llm-api-output': {
-    title: 'LLM API Output Price Over Time ($/1M tokens)',
-    subtitle: 'Official provider list price for generated tokens, flagship US vs Chinese models. One line per model.',
-  },
-
   // ── Sentiment (view: sentiment) — StockTwits posting volume & sentiment ─
   // Aggregate (default view)
   'sent-aggregate':    { title: 'StockTwits Sentiment — Bullish vs Bearish (weekly)' },
@@ -304,10 +263,6 @@ export const CHART_TEXT = {
     title: 'OpenAI Models in OpenRouter Top 15',
     // subtitle is computed (latest week) in the view
   },
-  'oa-trends': {
-    title: 'ChatGPT Search Interest — API vs Brand',
-    subtitle: 'Relative search interest (0–100): developer (API) vs consumer (brand).',
-  },
   'oa-stars': {
     title: 'openai-python GitHub Stars',
     subtitle: 'Cumulative stars; a rising slope signals accelerating adoption.',
@@ -316,11 +271,6 @@ export const CHART_TEXT = {
     title: 'OpenAI Model Input Pricing ($/M tokens)',
     subtitle: "Input price per 1M tokens for OpenAI's models, tracked daily.",
   },
-  'oa-wiki': {
-    title: 'ChatGPT Wikipedia Pageviews',
-    // subtitle is computed (HN mentions + latest views) in the view
-  },
-
   // ── Company · Anthropic / Claude (view: demand-anthropic) ─────────────
   'an-sdk': {
     title: 'Anthropic SDK Weekly Downloads',
@@ -334,10 +284,6 @@ export const CHART_TEXT = {
     title: 'Anthropic Models in OpenRouter Top 15',
     // subtitle is computed (latest week) in the view
   },
-  'an-trends': {
-    title: 'Claude Search Interest — API vs Brand',
-    subtitle: 'Relative search interest (0–100); Claude API intent is growing fastest of all providers.',
-  },
   'an-stars': {
     title: 'anthropic-sdk-python GitHub Stars',
     subtitle: 'Cumulative stars; a rising slope signals accelerating adoption.',
@@ -350,11 +296,6 @@ export const CHART_TEXT = {
     title: 'Anthropic Model Input Pricing ($/M tokens)',
     subtitle: "Input price per 1M tokens for Anthropic's Claude models, tracked daily.",
   },
-  'an-wiki': {
-    title: 'Claude Wikipedia Pageviews',
-    // subtitle is computed (HN mentions + latest views) in the view
-  },
-
   // ── Company · Google / Gemini (view: demand-google) ───────────────────
   'goo-sdk': {
     title: 'Google AI SDK Weekly Downloads',
@@ -367,10 +308,6 @@ export const CHART_TEXT = {
   'goo-or-models': {
     title: 'Google Models in OpenRouter Top 15',
     // subtitle is computed (latest week) in the view
-  },
-  'goo-trends': {
-    title: 'Gemini Search Interest — API vs Brand',
-    subtitle: 'Relative search interest (0–100).',
   },
   'goo-stars': {
     title: 'google-genai GitHub Stars',
@@ -388,11 +325,6 @@ export const CHART_TEXT = {
     title: 'Google Model Input Pricing ($/M tokens)',
     subtitle: "Input price per 1M tokens for Google's Gemini models, tracked daily.",
   },
-  'goo-wiki': {
-    title: 'Gemini Wikipedia Pageviews',
-    // subtitle is computed (HN mentions + latest views) in the view
-  },
-
   // ── Company · Zhipu AI / GLM (view: demand-zhipu) ─────────────────────
   'zh-or-share': {
     title: 'Zhipu AI Share of OpenRouter Tokens (%)',

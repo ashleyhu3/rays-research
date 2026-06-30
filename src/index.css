@@ -198,6 +198,20 @@ body { font-family: var(--font-b); background: var(--bg); color: var(--text); }
 .dn  { color: #f87171; }
 .nt  { color: var(--sec); }
 
+/* ── Pricing page section labels ────────────────────────────────────── */
+.pricing-section-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--sec, #8b8fa8);
+  border-bottom: 1px solid var(--border, rgba(255,255,255,.07));
+  padding-bottom: 6px;
+  margin-bottom: 14px;
+  margin-top: 8px;
+}
+.pricing-section-label:first-child { margin-top: 0; }
+
 /* ── Chart grid ────────────────────────────────────────────────────── */
 .cgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
 .span2 { grid-column: 1 / -1; }

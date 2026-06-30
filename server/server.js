@@ -57,7 +57,6 @@ function cachedRoute(key, scraper) {
 const s = scheduler.scrapers;
 
 app.get('/api/pypi',       cachedRoute('pypi',       s.pypi));
-app.get('/api/trends',     cachedRoute('trends',     s.trends));
 app.get('/api/gpu',        cachedRoute('gpu',        s.gpu));
 app.get('/api/github',     cachedRoute('github',     s.github));
 app.get('/api/openrouter', cachedRoute('openrouter', s.openrouter));
@@ -66,15 +65,12 @@ app.get('/api/mops',           cachedRoute('mops',          s.mops));
 app.get('/api/github-commits', cachedRoute('githubCommits', s.githubCommits));
 app.get('/api/docker',         cachedRoute('docker',        s.docker));
 app.get('/api/hn',             cachedRoute('hn',            s.hn));
-app.get('/api/wikipedia',         cachedRoute('wikipedia',        s.wikipedia));
 app.get('/api/openrouter-ranks',  cachedRoute('openrouterRanks',  s.openrouterRanks));
 app.get('/api/dram',              cachedRoute('dram',             s.dram));
 app.get('/api/aws',               cachedRoute('aws',              s.aws));
-app.get('/api/cloud-gpu',         cachedRoute('cloudGpu',         s.cloudGpu));
 app.get('/api/cpu',               cachedRoute('cpu',              s.cpu));
 app.get('/api/tpu',               cachedRoute('tpu',              s.tpu));
 app.get('/api/epoch-revenue',     cachedRoute('epochRevenue',     s.epochRevenue));
-app.get('/api/litellm',           cachedRoute('litellm',          s.litellm));
 app.get('/api/sentiment',         cachedRoute('sentiment',        s.sentiment));
 
 // Keyword frequency search — scans all StockTwits CSVs for whole-word matches,
@@ -281,7 +277,6 @@ const STORAGE_BLOBS = [
   { name: 'gpuHistory',     file: path.join(DATA_DIR, 'gpuHistory.json') },
   { name: 'dramHistory',    file: path.join(DATA_DIR, 'dramHistory.json') },
   { name: 'awsHistory',     file: path.join(DATA_DIR, 'awsHistory.json') },
-  { name: 'cloudGpuHistory', file: path.join(DATA_DIR, 'cloudGpuHistory.json') },
   // Most-recent NONZERO open interest per options contract, so the chart can
   // backfill OI when Yahoo serves a zero-OI chain intraday/pre-market.
   { name: 'optionsOI',      file: path.join(DATA_DIR, 'optionsOI.json') },

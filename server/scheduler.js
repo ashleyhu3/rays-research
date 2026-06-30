@@ -5,7 +5,6 @@ const snapshotStore = require('./snapshotStore');
 
 const scrapers = {
   pypi:          () => require('./scrapers/pypi').getPypiHistory(),
-  trends:        () => require('./scrapers/trends').getTrendsData(),
   gpu:           () => require('./scrapers/gpu').getGpuPrices(),
   github:        () => require('./scrapers/github').getGitHubData(),
   openrouter:    () => require('./scrapers/openrouter').getOpenRouterData(),
@@ -14,7 +13,6 @@ const scrapers = {
   githubCommits: () => require('./scrapers/githubActivity').getGitHubActivity(),
   docker:        () => require('./scrapers/docker').getDockerData(),
   hn:            () => require('./scrapers/hn').getHNData(),
-  wikipedia:        () => require('./scrapers/wikipedia').getWikipediaData(),
   openrouterRanks:  () => require('./scrapers/openrouterRankings').getOpenRouterRankings(),
   dram:             () => require('./scrapers/dram').getDramSpot(),
   npm:              () => require('./scrapers/npm').getNpmHistory(),
@@ -22,11 +20,9 @@ const scrapers = {
   mcp:              () => require('./scrapers/mcp').getMcpData(),
   sec:              () => require('./scrapers/sec').getSecData(),
   aws:              () => require('./scrapers/aws').getAwsData(),
-  cloudGpu:         () => require('./scrapers/cloudGpu').getCloudGpuPrices(),
   cpu:              () => require('./scrapers/cpu').getCpuData(),
   tpu:              () => require('./scrapers/tpu').getTpuData(),
   epochRevenue:     () => require('./scrapers/epochRevenue').getEpochRevenueData(),
-  litellm:          () => require('./scrapers/litellm').getLitellmPricing(),
   sentiment:        () => require('./scrapers/sentiment').getSentimentData(),
 };
 
@@ -45,7 +41,6 @@ const TTL = {
   githubCommits: 24 * 3600000,  // daily
   docker:         6 * 3600000,  // 6-hourly
   hn:             1 * 3600000,  // hourly
-  wikipedia:        24 * 3600000,  // daily
   openrouterRanks:   6 * 3600000,  // 6-hourly — daily granularity but rankings shift through day
   dram:              6 * 3600000,  // 6-hourly — TrendForce spot sessions update through the trading day
   npm:           24 * 3600000,  // daily   — api.npmjs.org reports complete days only
@@ -53,11 +48,9 @@ const TTL = {
   mcp:           24 * 3600000,  // daily   — repo-creation counts; respects GitHub search quota
   sec:           24 * 3600000,  // daily   — EDGAR full-text index updates daily
   aws:            6 * 3600000,  // 6-hourly — AWS Spot Advisor refreshes a few times per day
-  cloudGpu:      24 * 3600000,  // daily   — curated list-price table, one snapshot per UTC day
   cpu:            6 * 3600000,  // 6-hourly — same AWS Spot Advisor feed as aws; CPU savings shift through day
   tpu:           24 * 3600000,  // daily   — GCP TPU preemptible rates; reference rates change rarely
   epochRevenue:  24 * 3600000,  // daily   — Epoch AI CSV is updated as new disclosures appear
-  litellm:       24 * 3600000,  // daily   — official list prices; LiteLLM cost map updates on model launches
   sentiment:     24 * 3600000,  // daily   — StockTwits posting/sentiment vs price; recomputed once per day
 };
 
@@ -173,7 +166,7 @@ function setup() {
   cron.schedule('0 */6 * * *', () => refreshAll(['docker', 'openrouterRanks', 'dram', 'aws', 'cpu']));
 
   // Daily at 03:00 UTC: aggregate stats whose sources only publish once per day
-  cron.schedule('0 3 * * *', () => refreshAll(['gpu', 'cloudGpu', 'tpu', 'epochRevenue', 'litellm', 'sentiment', 'pypi', 'trends', 'github', 'eia', 'mops', 'githubCommits', 'wikipedia', 'npm', 'huggingface', 'mcp', 'sec']));
+  cron.schedule('0 3 * * *', () => refreshAll(['gpu', 'tpu', 'epochRevenue', 'sentiment', 'pypi', 'github', 'eia', 'mops', 'githubCommits', 'npm', 'huggingface', 'mcp', 'sec']));
 
   // Options: warm every 6h, plus once shortly after boot so the RAG has data fast
   cron.schedule('30 */6 * * *', () => warmOptions());

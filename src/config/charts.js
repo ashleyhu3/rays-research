@@ -18,9 +18,6 @@ const REGISTRY = [
   { id: 'pypi-npm',        sectorId: 'dev', subView: 'pypi',   defaultPinned: false },
   { id: 'github-stars',    sectorId: 'dev', subView: 'github', defaultPinned: false },
   { id: 'github-deps',     sectorId: 'dev', subView: 'github', defaultPinned: false },
-  { id: 'trends-api',      sectorId: 'dev', subView: 'trends', defaultPinned: true  },
-  { id: 'trends-geo',      sectorId: 'dev', subView: 'trends', defaultPinned: false },
-  { id: 'trends-brand',    sectorId: 'dev', subView: 'trends', defaultPinned: false },
 
   // ── Market signals ─────────────────────────────────────────────────
   // OpenRouter model rankings
@@ -31,6 +28,7 @@ const REGISTRY = [
   { id: 'or-combo',     sectorId: 'market', subView: 'openrouter', defaultPinned: true },
   { id: 'or-growth',    sectorId: 'market', subView: 'openrouter', defaultPinned: false },
   // Infrastructure & OSS signals
+  { id: 'gen-ai-revenue', sectorId: 'market', subView: 'general', defaultPinned: true  },
   { id: 'gen-mcp',       sectorId: 'market', subView: 'general', defaultPinned: true },
   { id: 'gen-sec',       sectorId: 'market', subView: 'general', defaultPinned: true },
   { id: 'gen-commits',   sectorId: 'market', subView: 'general', defaultPinned: false },
@@ -48,14 +46,8 @@ const REGISTRY = [
   { id: 'dram-index',      sectorId: 'infra', subView: 'pricing',     defaultPinned: false },
   { id: 'dram-chips',      sectorId: 'infra', subView: 'pricing',     defaultPinned: false },
   { id: 'dram-modules',    sectorId: 'infra', subView: 'pricing',     defaultPinned: false },
-  { id: 'dram-change',     sectorId: 'infra', subView: 'pricing',     defaultPinned: false },
-  { id: 'llm-api-input',     sectorId: 'infra', subView: 'pricing',     defaultPinned: false },
-  { id: 'llm-api-output',   sectorId: 'infra', subView: 'pricing',     defaultPinned: false },
-  { id: 'cpu-spot-rates',   sectorId: 'infra', subView: 'pricing',     defaultPinned: false },
   { id: 'cpu-spot-history', sectorId: 'infra', subView: 'pricing',     defaultPinned: false },
-  { id: 'tpu-spot-rates',   sectorId: 'infra', subView: 'pricing',     defaultPinned: false },
-  { id: 'tpu-spot-history',      sectorId: 'infra', subView: 'pricing',     defaultPinned: false },
-  { id: 'ai-company-revenue',   sectorId: 'infra', subView: 'pricing',     defaultPinned: false },
+  { id: 'tpu-spot-history', sectorId: 'infra', subView: 'pricing',     defaultPinned: false },
   { id: 'dc-capex',        sectorId: 'infra', subView: 'datacenter',  defaultPinned: true  },
   { id: 'dc-capacity',     sectorId: 'infra', subView: 'datacenter',  defaultPinned: false },
   { id: 'dc-state',        sectorId: 'infra', subView: 'datacenter',  defaultPinned: false },

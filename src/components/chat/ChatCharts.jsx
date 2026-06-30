@@ -2,8 +2,8 @@ import { Children, useEffect, useMemo, useState } from 'react';
 import { Line, Bar } from 'react-chartjs-2';
 import { C } from '../../config/colors';
 import { useData } from '../../context/DataContext';
-import { baseOpts, hBarOpts, mkDs, mkBar, fmtM, fmtK, fmtP } from '../../utils/chartHelpers';
-import { wkLabels, dayLabels } from '../../utils/labels';
+import { baseOpts, hBarOpts, mkDs, mkBar, fmtM, fmtK } from '../../utils/chartHelpers';
+import { wkLabels } from '../../utils/labels';
 import { trend } from '../../utils/dataGenerators';
 import { companyPriceSeries, priceHistory } from '../../utils/modelPricing';
 import { orProviderSeries } from '../../utils/openrouterProvider';
@@ -198,48 +198,6 @@ export function GitHubMini() {
   return (
     <MiniCard title="GitHub Stars (trend accrues daily)">
       <Bar data={barData} options={hBarOpts(fmtK)} />
-    </MiniCard>
-  );
-}
-
-// ── Google Trends ──────────────────────────────────────────────────────────
-export function TrendsMini() {
-  const { liveData } = useData();
-  const D    = 42;
-  const days = useMemo(() => dayLabels(D), []);
-
-  const data = useMemo(() => {
-    const td  = liveData?.trends;
-    const api = td?.api;
-
-    if (api) {
-      // Handle both lowercase keys (claude) and title-case keys (Claude API)
-      const get = (lower, titleCase) => api[lower] ?? api[titleCase] ?? [];
-      return {
-        labels: days,
-        datasets: [
-          mkDs('Claude API',  C.anthropic, get('claude',  'Claude API').slice(-D)),
-          mkDs('ChatGPT API', C.openai,    get('chatgpt', 'ChatGPT API').slice(-D)),
-          mkDs('Gemini API',  C.google,    get('gemini',  'Gemini API').slice(-D)),
-          mkDs('Mistral API', C.mistral,   get('mistral', 'Mistral API').slice(-D)),
-        ],
-      };
-    }
-
-    return {
-      labels: days,
-      datasets: [
-        mkDs('Claude API',  C.anthropic, trend(32,  68,  D, 0.12)),
-        mkDs('ChatGPT API', C.openai,    trend(88,  100, D, 0.06)),
-        mkDs('Gemini API',  C.google,    trend(42,  55,  D, 0.10)),
-        mkDs('Mistral API', C.mistral,   trend(8,   18,  D, 0.15)),
-      ],
-    };
-  }, [liveData, days]);
-
-  return (
-    <MiniCard title="Google Trends — API Search Interest (daily)">
-      <Line data={data} options={baseOpts(fmtP)} />
     </MiniCard>
   );
 }
@@ -576,23 +534,6 @@ export function CommunityMini() {
   );
 }
 
-// ── Wikipedia pageviews ────────────────────────────────────────────────────
-export function WikipediaMini() {
-  const { liveData } = useData();
-
-  const data = useMemo(() => {
-    const articles = Object.entries(liveData?.wikipedia?.articles ?? {}).slice(0, 4);
-    return weeklyLineData(articles);
-  }, [liveData]);
-
-  if (!data) return null;
-  return (
-    <MiniCard title="Wikipedia AI Pageviews per Week">
-      <Line data={data} options={baseOpts(fmtM)} />
-    </MiniCard>
-  );
-}
-
 // ── HuggingFace family downloads ───────────────────────────────────────────
 export function HuggingFaceMini() {
   const { liveData } = useData();
@@ -917,7 +858,6 @@ export const CHART_REGISTRY = {
 
   pypi:                  [PyPIMini],
   github:                [GitHubMini],
-  trends:                [TrendsMini],
   gpu:                   [GPUMini],
   dram:                  [DramMini],
   'aws-spot':            [AwsSpotMini],
@@ -928,7 +868,7 @@ export const CHART_REGISTRY = {
   'ai-supply':           [MopsMini],
   'github-commits':      [GitHubCommitsMini],
   docker:                [DockerMini],
-  community:             [CommunityMini, WikipediaMini],
+  community:             [CommunityMini],
   hf:                    [HuggingFaceMini],
   mcp:                   [McpMini],
   sec:                   [SecMini],

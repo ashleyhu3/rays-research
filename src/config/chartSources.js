@@ -20,10 +20,6 @@ export const CHART_SOURCES = {
   'github-stars': { src: 'github.com',                    srcUrl: 'https://github.com/openai/openai-python', freq: 'daily' },
   'github-deps':  { src: 'github.com/network/dependents', srcUrl: 'https://github.com/anthropics/anthropic-sdk-python/network/dependents', freq: 'daily' },
 
-  'trends-api':   { src: 'trends.google.com', srcUrl: 'https://trends.google.com/trends/explore?q=Claude+API,ChatGPT+API,Gemini+API', freq: 'daily' },
-  'trends-geo':   { src: 'trends.google.com', srcUrl: 'https://trends.google.com/trends/explore?q=Claude+API&geo=US', freq: 'live' },
-  'trends-brand': { src: 'trends.google.com', srcUrl: 'https://trends.google.com/trends/explore?q=Claude,ChatGPT', freq: 'daily' },
-
   // ── Consumer signals · HuggingFace ────────────────────────────────────
   'hf-downloads':  { src: 'huggingface.co/api', srcUrl: 'https://huggingface.co/models?sort=downloads', freq: 'daily' },
   'hf-families':   { src: 'huggingface.co/api', srcUrl: 'https://huggingface.co/models',                 freq: 'daily' },
@@ -34,10 +30,9 @@ export const CHART_SOURCES = {
   'docker-pulls': { src: 'hub.docker.com/v2/repositories', srcUrl: 'https://hub.docker.com/search?q=&type=image', freq: '6-hourly' },
   'docker-stars': { src: 'hub.docker.com',                 srcUrl: 'https://hub.docker.com',                       freq: '6-hourly' },
 
-  // ── Community · Hacker News & Wikipedia ───────────────────────────────
+  // ── Community · Hacker News ───────────────────────────────────────────
   'hn-volume': { src: 'hn.algolia.com · search_by_date', srcUrl: 'https://hn.algolia.com/?query=AI%20OR%20LLM%20OR%20ChatGPT&type=story', freq: 'weekly' },
   'hn-terms':  { src: 'hn.algolia.com',                  srcUrl: 'https://hn.algolia.com',                                                 freq: 'weekly' },
-  'wiki-views': { src: 'wikimedia.org/api/rest_v1/metrics/pageviews', srcUrl: 'https://pageviews.wmcloud.org/?project=en.wikipedia.org&pages=ChatGPT|Large_language_model', freq: 'daily' },
 
   // ── Infrastructure & OSS · GitHub commit activity ─────────────────────
   'github-commit-velocity': { src: 'api.github.com/repos/{repo}/stats/commit_activity', srcUrl: 'https://github.com/huggingface/transformers/graphs/commit-activity', freq: 'daily' },
@@ -100,34 +95,28 @@ export const CHART_SOURCES = {
   'oa-sdk':       { src: 'pypistats.org · npmjs.com', srcUrl: 'https://pypistats.org/packages/openai', freq: 'weekly' },
   'oa-or-share':  { src: 'openrouter.ai/rankings',    srcUrl: 'https://openrouter.ai/rankings', freq: 'weekly' },
   'oa-or-models': { src: 'openrouter.ai/rankings',    srcUrl: 'https://openrouter.ai/rankings', freq: 'weekly' },
-  'oa-trends':    { src: 'trends.google.com',         srcUrl: 'https://trends.google.com/trends/explore?q=ChatGPT+API,ChatGPT', freq: 'daily' },
   'oa-stars':     { src: 'github.com',                srcUrl: 'https://github.com/openai/openai-python', freq: 'daily' },
   // oa-pricing: src reflects whether live OpenRouter pricing is present (kept in view)
   'oa-pricing':   { srcUrl: 'https://openrouter.ai/models', freq: 'live' },
-  'oa-wiki':      { src: 'wikimedia.org',             srcUrl: 'https://en.wikipedia.org/wiki/ChatGPT', freq: 'weekly' },
 
   // ── Company · Anthropic / Claude ──────────────────────────────────────
   'an-sdk':       { src: 'pypistats.org · npmjs.com', srcUrl: 'https://pypistats.org/packages/anthropic', freq: 'weekly' },
   'an-or-share':  { src: 'openrouter.ai/rankings',    srcUrl: 'https://openrouter.ai/rankings', freq: 'weekly' },
   'an-or-models': { src: 'openrouter.ai/rankings',    srcUrl: 'https://openrouter.ai/rankings', freq: 'weekly' },
-  'an-trends':    { src: 'trends.google.com',         srcUrl: 'https://trends.google.com/trends/explore?q=Claude+API,Claude', freq: 'daily' },
   'an-stars':     { src: 'github.com',                srcUrl: 'https://github.com/anthropics/anthropic-sdk-python', freq: 'daily' },
   'an-github':    { src: 'github.com',                srcUrl: 'https://github.com/anthropics/anthropic-sdk-python', freq: 'daily' },
   // an-pricing: src reflects whether live OpenRouter pricing is present (kept in view)
   'an-pricing':   { srcUrl: 'https://openrouter.ai/models', freq: 'live' },
-  'an-wiki':      { src: 'wikimedia.org',             srcUrl: 'https://en.wikipedia.org/wiki/Claude_(language_model)', freq: 'weekly' },
 
   // ── Company · Google / Gemini ─────────────────────────────────────────
   'goo-sdk':       { src: 'pypistats.org · npmjs.com', srcUrl: 'https://pypistats.org/packages/google-genai', freq: 'weekly' },
   'goo-or-share':  { src: 'openrouter.ai/rankings',    srcUrl: 'https://openrouter.ai/rankings', freq: 'weekly' },
   'goo-or-models': { src: 'openrouter.ai/rankings',    srcUrl: 'https://openrouter.ai/rankings', freq: 'weekly' },
-  'goo-trends':    { src: 'trends.google.com',         srcUrl: 'https://trends.google.com/trends/explore?q=Gemini+API,Gemini', freq: 'daily' },
   'goo-stars':     { src: 'github.com',                srcUrl: 'https://github.com/googleapis/python-genai', freq: 'daily' },
   'goo-github':    { src: 'github.com',                srcUrl: 'https://github.com/googleapis/python-genai', freq: 'daily' },
   // goo-pricing: src reflects whether live OpenRouter pricing is present (kept in view)
   'goo-pricing':   { srcUrl: 'https://openrouter.ai/models', freq: 'live' },
   'goo-hf':        { src: 'huggingface.co/api',        srcUrl: 'https://huggingface.co/google', freq: 'daily' },
-  'goo-wiki':      { src: 'wikimedia.org',             srcUrl: 'https://en.wikipedia.org/wiki/Gemini_(language_model)', freq: 'weekly' },
 
   // ── Company · Zhipu AI / GLM ──────────────────────────────────────────
   'zh-or-share': { src: 'openrouter.ai/rankings', srcUrl: 'https://openrouter.ai/rankings', freq: 'weekly' },

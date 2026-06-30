@@ -14,7 +14,6 @@
     "backfill:dram": "node --env-file=.env server/scripts/backfillDram.js",
     "backfill:aws-spot": "node --env-file=.env server/scripts/backfillAwsSpot.js",
     "backfill:cpu-spot": "node --env-file=.env server/scripts/backfillCpuSpot.js",
-    "backfill:litellm": "node --env-file=.env server/scripts/backfillLitellm.js",
     "backfill:all": "npm run backfill:sec && npm run backfill:mcp && npm run backfill:github-stars",
     "db:ping": "node --env-file=.env server/scripts/dbPing.js",
     "db:seed": "node --env-file=.env server/scripts/seedMongo.js",

@@ -203,37 +203,6 @@ function buildGitHub() {
   };
 }
 
-function buildTrends() {
-  const trends = cache.get('trends');
-  if (!trends) return null;
-  const parts = [];
-  const entities = [];
-  for (const [group, label] of [['api', 'API keywords'], ['brand', 'Brand keywords']]) {
-    if (!trends[group]) continue;
-    entities.push(...Object.keys(trends[group]));
-    const vals = Object.entries(trends[group])
-      .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.at(-1) : v}/100`)
-      .join(' | ');
-    parts.push(`  ${label}: ${vals}`);
-  }
-  if (!parts.length) return null;
-  const detail = [];
-  for (const group of ['api', 'brand']) {
-    for (const [k, v] of Object.entries(trends[group] ?? {})) {
-      if (Array.isArray(v) && v.length >= 2) detail.push(`  ${k}: ${v.slice(-14).join(', ')}`);
-    }
-  }
-  return {
-    id:       'trends',
-    title:    'Google Trends',
-    about:    'Relative Google search interest (0–100) for AI brand and API keywords',
-    source:   'Google Trends',
-    entities,
-    text:     `### Google Trends (relative interest 0–100, last 84 days)\n${parts.join('\n')}`,
-    detail:   detail.length ? `Recent history — daily interest values, last 14 days (oldest → newest):\n${detail.join('\n')}` : null,
-  };
-}
-
 function buildGpu() {
   const gpu = cache.get('gpu');
   const gpuPrices = gpu?.prices ?? gpu;
@@ -612,32 +581,6 @@ function buildHn() {
   };
 }
 
-function buildWikipedia() {
-  const wikipedia = cache.get('wikipedia');
-  if (!wikipedia?.articles) return null;
-  const lines = Object.entries(wikipedia.articles).map(([article, weeks]) => {
-    if (!Array.isArray(weeks) || weeks.length === 0) return `  ${article}: no data`;
-    const last = weeks.at(-1);
-    const prev = weeks.at(-2);
-    const trend = prev > 0
-      ? ` | trend: ${((last - prev) / prev * 100).toFixed(1)}% vs prior week`
-      : '';
-    return `  ${article}: ${fmt(last)} pageviews (latest week) | 12-week total: ${fmt(weeks.slice(-12).reduce((a, b) => a + b, 0))}${trend}`;
-  });
-  const detail = Object.entries(wikipedia.articles)
-    .map(([article, weeks]) => { const t = weeklyTail(weeks); return t ? `  ${article}: ${t}` : null; })
-    .filter(Boolean);
-  return {
-    id:       'wikipedia',
-    title:    'Wikipedia AI Article Pageviews',
-    about:    'Weekly pageviews for AI-related Wikipedia articles (ChatGPT, Artificial intelligence, LLM, Claude, Gemini)',
-    source:   'Wikimedia pageviews API',
-    entities: Object.keys(wikipedia.articles),
-    text:     `### Wikipedia AI Article Pageviews (weekly)\n${lines.join('\n')}`,
-    detail:   detail.length ? `Recent history — weekly pageviews, last 12 weeks (oldest → newest):\n${detail.join('\n')}` : null,
-  };
-}
-
 function buildHuggingface() {
   const hf = cache.get('huggingface');
   if (!hf?.models?.length) return null;
@@ -775,7 +718,6 @@ const REGISTRY = [
   { key: 'pypi',              build: buildPypi },
   { key: 'npm',               build: buildNpm },
   { key: 'github',            build: buildGitHub },
-  { key: 'trends',            build: buildTrends },
   { key: 'gpu',               build: buildGpu },
   { key: 'dram',              build: buildDram },
   { key: 'aws',               build: buildAws },
@@ -787,7 +729,6 @@ const REGISTRY = [
   { key: 'githubCommits',     build: buildGithubCommits },
   { key: 'docker',            build: buildDocker },
   { key: 'hn',                build: buildHn },
-  { key: 'wikipedia',         build: buildWikipedia },
   { key: 'huggingface',       build: buildHuggingface },
   { key: 'mcp',               build: buildMcp },
   { key: 'sec',               build: buildSec },
@@ -1073,7 +1014,6 @@ const SECTION_TO_CHART = {
   huggingface:    'hf',
   openrouterRanks: 'openrouter-rankings',
   github:        'github',
-  trends:        'trends',
   gpu:           'gpu',
   dram:          'dram',
   aws:           'aws-spot',
@@ -1084,7 +1024,6 @@ const SECTION_TO_CHART = {
   githubCommits: 'github-commits',
   docker:        'docker',
   hn:            'community',
-  wikipedia:     'community',
   mcp:               'mcp',
   sec:               'sec',
   options:           'options',
@@ -1096,7 +1035,7 @@ const SECTION_TO_CHART = {
 // their data, but no chart/source tag is returned for them. Mirrors the `view`
 // fields in SOURCE_META (src/pages/chat/Chat.jsx).
 const NAVIGABLE_CHARTS = new Set([
-  'pypi', 'github', 'trends', 'gpu', 'dram', 'openrouter', 'openrouter-rankings',
+  'pypi', 'github', 'gpu', 'dram', 'openrouter', 'openrouter-rankings',
   'electricity', 'ai-supply', 'github-commits', 'docker', 'community', 'hf',
   'mcp', 'sec', 'options',
   // Company-specific charts (mirror the company dashboard pages)

@@ -86,7 +86,7 @@ async function fetchJsonSafe(url, ms = 30000) {
 const SLOW_KEYS = new Set(['github-commits']);
 
 async function fetchBackendAll() {
-  const keys = ['pypi', 'trends', 'gpu', 'github', 'openrouter', 'eia', 'mops', 'github-commits', 'docker', 'hn', 'wikipedia', 'openrouter-ranks', 'dram', 'aws', 'cloud-gpu', 'cpu', 'tpu', 'epoch-revenue', 'litellm', 'sentiment', 'mcp', 'sec', 'huggingface', 'metrics-history'];
+  const keys = ['pypi', 'gpu', 'github', 'openrouter', 'eia', 'mops', 'github-commits', 'docker', 'hn', 'openrouter-ranks', 'dram', 'aws', 'cpu', 'tpu', 'epoch-revenue', 'sentiment', 'mcp', 'sec', 'huggingface', 'metrics-history'];
   const results = await Promise.allSettled(keys.map(k => fetchJsonSafe(`/api/${k}`, SLOW_KEYS.has(k) ? 90000 : 30000)));
   return Object.fromEntries(keys.map((k, i) => [
     k, results[i].status === 'fulfilled' ? results[i].value : null,
@@ -112,7 +112,6 @@ export async function fetchAll() {
     hf:          ok(hf)       ?? [],
     // Backend-provided (may be null if server not running)
     pypiHistory: be.pypi       ?? null,
-    trends:      be.trends     ?? null,
     gpu:         be.gpu        ?? null,
     github:      be.github     ?? null,
     openrouter:  be.openrouter ?? null,
@@ -121,15 +120,12 @@ export async function fetchAll() {
     githubCommits: be['github-commits'] ?? null,
     docker:        be.docker           ?? null,
     hn:            be.hn               ?? null,
-    wikipedia:        be.wikipedia               ?? null,
     openrouterRanks:  be['openrouter-ranks']      ?? null,
     dram:             be.dram                     ?? null,
     aws:              be.aws                      ?? null,
-    cloudGpu:         be['cloud-gpu']             ?? null,
     cpu:              be.cpu                      ?? null,
     tpu:              be.tpu                      ?? null,
     epochRevenue:     be['epoch-revenue']         ?? null,
-    litellm:          be.litellm                  ?? null,
     sentiment:        be.sentiment                ?? null,
     mcp:              be.mcp                      ?? null,
     sec:              be.sec                      ?? null,

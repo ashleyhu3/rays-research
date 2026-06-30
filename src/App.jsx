@@ -39,7 +39,6 @@ import Transcripts from './pages/transcripts/Transcripts';
 // Source-specific signal pages
 import PyPI          from './pages/sources/PyPI';
 import GitHub        from './pages/sources/GitHub';
-import Trends        from './pages/sources/Trends';
 import Web           from './pages/sources/Web';
 import HuggingFace   from './pages/sources/HuggingFace';
 import Datacenter    from './pages/sources/Datacenter';
@@ -51,7 +50,7 @@ import Community      from './pages/sources/Community';
 
 /** Views that use EditableGrid and support layout customisation */
 const LAYOUT_EDITABLE = new Set([
-  'pypi','github','trends','web','hf','pricing','datacenter','electricity','chinese',
+  'pypi','github','web','hf','pricing','datacenter','electricity','chinese',
   'demand-openai','demand-anthropic','demand-google','demand-zhipu','demand-minimax','demand-general','openrouter-rankings',
 ]);
 
@@ -59,7 +58,6 @@ const LAYOUT_EDITABLE = new Set([
 const VIEW_COMPONENTS = {
   pypi:        PyPI,
   github:      GitHub,
-  trends:      Trends,
   web:         Web,
   hf:          HuggingFace,
   pricing:     Pricing,

@@ -1,13 +1,78 @@
 import { useMemo } from 'react';
-import { Line, Bar } from 'react-chartjs-2';
+import { Line, Bar, Scatter } from 'react-chartjs-2';
 import { C, fa } from '../../config/colors';
 import { trend } from '../../utils/dataGenerators';
 import { wkLabels } from '../../utils/labels';
-import { baseOpts, hBarOpts, mkDs, fmtM, fmtK } from '../../utils/chartHelpers';
+import { baseOpts, hBarOpts, mkDs, fmtM, fmtK, GRID, TICK, BORD } from '../../utils/chartHelpers';
 import { metricTrendCard } from '../../components/chart/MetricTrendCard';
 import ChartCard from '../../components/chart/ChartCard';
 import EditableGrid from '../../components/chart/EditableGrid';
 import { useData } from '../../context/DataContext';
+
+const REVENUE_PALETTE = {
+  OpenAI:      C.openai,
+  Anthropic:   C.anthropic,
+  Google:      C.google,
+  xAI:         C.kimi,
+  'Mistral AI': C.mistral,
+  DeepSeek:    C.deepseek,
+  Meta:        C.minimax,
+};
+
+const revenueOpts = {
+  responsive: true,
+  maintainAspectRatio: false,
+  animation: false,
+  plugins: {
+    legend: { display: false },
+    tooltip: {
+      callbacks: {
+        label: ctx => {
+          const date = new Date(ctx.raw.x).toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
+          return `${ctx.dataset.label}: $${ctx.raw.y.toFixed(1)}B (${date})`;
+        },
+      },
+    },
+  },
+  scales: {
+    x: {
+      type: 'linear',
+      ticks: { ...TICK, maxTicksLimit: 6, callback: v => new Date(v).toLocaleDateString('en-US', { month: 'short', year: '2-digit', timeZone: 'UTC' }) },
+      grid: GRID,
+      border: BORD,
+    },
+    y: {
+      grid: GRID,
+      ticks: { ...TICK, callback: v => `$${v}B` },
+      border: BORD,
+      beginAtZero: true,
+    },
+  },
+};
+
+function buildRevenueScatter(epoch, W) {
+  if (!epoch?.series) return null;
+  const companies = epoch.companies ?? Object.keys(epoch.series);
+  const cutoff = Date.now() - W * 7 * 86400000;
+  const datasets = companies.map(co => {
+    const pts = (epoch.series[co] ?? []).filter(p => new Date(p.date + 'T00:00:00Z').getTime() >= cutoff);
+    if (pts.length === 0) return null;
+    const color = REVENUE_PALETTE[co] ?? C.slate;
+    return {
+      label: co,
+      data: pts.map(p => ({ x: new Date(p.date + 'T00:00:00Z').getTime(), y: p.value })),
+      borderColor: color,
+      backgroundColor: color,
+      pointBackgroundColor: color,
+      showLine: true,
+      borderWidth: 2,
+      pointRadius: 5,
+      pointHoverRadius: 7,
+      tension: 0,
+    };
+  }).filter(Boolean);
+  return datasets.length > 0 ? { datasets } : null;
+}
 
 // China market overview
 const MKT_LABELS = ['iFlytek', 'Zhipu AI', 'Alibaba', 'SenseTime', 'Baidu', 'MiniMax', 'Others'];
@@ -101,6 +166,9 @@ export default function DemandGeneral({ weeks: W }) {
     };
   }, [ld]);
 
+  // AI company revenue (Epoch AI)
+  const epochRevData = useMemo(() => buildRevenueScatter(ld?.epochRevenue, W ?? 260), [ld?.epochRevenue, W]);
+
   // HN weekly AI story volume
   const hnWeekly = ld?.hn?.weekly ?? [];
   const hnData   = useMemo(() => {
@@ -113,6 +181,16 @@ export default function DemandGeneral({ weeks: W }) {
 
   return (
     <EditableGrid viewId="demand-general">
+      {epochRevData && (
+        <ChartCard
+          chartId="gen-ai-revenue"
+          legend={epochRevData.datasets.map(d => [d.label, d.borderColor])}
+          height={280} span2
+        >
+          <Scatter data={epochRevData} options={revenueOpts} />
+        </ChartCard>
+      )}
+
       <ChartCard
         chartId="gen-gpu"
         height={220} span2
