@@ -98,6 +98,7 @@ export default function DemandAnthropic({ weeks: W }) {
       {metricTrendCard({
         chartId: 'an-stars',
         weeks: W,
+        alwaysLine: true,
         hist: mh?.github,
         series: [
           { metric: 'anthropics/anthropic-sdk-python.stars', label: 'Stars', color: C.anthropic },

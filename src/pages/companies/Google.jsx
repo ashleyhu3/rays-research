@@ -58,6 +58,7 @@ export default function DemandGoogle({ weeks: W }) {
       {metricTrendCard({
         chartId: 'goo-stars',
         weeks: W,
+        alwaysLine: true,
         hist: mh?.github,
         series: [
           { metric: 'googleapis/python-genai.stars', label: 'Stars', color: C.google },

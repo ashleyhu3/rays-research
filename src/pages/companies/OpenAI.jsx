@@ -98,6 +98,7 @@ export default function DemandOpenAI({ weeks: W }) {
       {metricTrendCard({
         chartId: 'oa-stars',
         weeks: W,
+        alwaysLine: true,
         hist: mh?.github,
         series: [
           { metric: 'openai/openai-python.stars', label: 'Stars', color: C.openai },

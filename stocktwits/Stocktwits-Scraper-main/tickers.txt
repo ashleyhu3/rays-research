@@ -17,6 +17,7 @@ CIEN
 LITE
 COHR
 GLW
+APH
 
 # ── Optics equipment ─────────────────────────────────────────────────
 TER

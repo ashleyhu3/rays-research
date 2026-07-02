@@ -9,6 +9,8 @@ import ChartCard from './ChartCard';
  * store. Renders a Line of the accumulated daily values once two or more
  * days exist; until then falls back to a Bar of the latest values, so the
  * card is honest about having one data point rather than faking a curve.
+ * Callers can set alwaysLine for metrics that should retain a date x-axis
+ * even while history contains only one snapshot.
  *
  * Plain function (not a component) for the same reason as orComboCard:
  * EditableGrid reads chartId off its direct children.
@@ -16,7 +18,10 @@ import ChartCard from './ChartCard';
  * series: [{ metric: 'anthropics/anthropic-sdk-python.stars', label: 'Stars', color }]
  * hist:   liveData.metricsHistory[source] — { metric: { date: value } }
  */
-export function metricTrendCard({ chartId, title, src, srcUrl, freq, subtitle, hist, series, fmt, height = 220, span2 = false, weeks }) {
+export function metricTrendCard({
+  chartId, title, src, srcUrl, freq, subtitle, hist, series, fmt,
+  height = 220, span2 = false, weeks, alwaysLine = false,
+}) {
   const present = series
     .map(s => ({ ...s, points: hist?.[s.metric] ?? null }))
     .filter(s => s.points && Object.keys(s.points).length > 0);
@@ -26,7 +31,7 @@ export function metricTrendCard({ chartId, title, src, srcUrl, freq, subtitle, h
   // daily snapshots. `weeks` undefined → show the full accumulated history.
   let allDates = [...new Set(present.flatMap(s => Object.keys(s.points)))].sort();
   if (weeks > 0) allDates = allDates.slice(-weeks * 7);
-  const isTrend  = allDates.length >= 2;
+  const isTrend = alwaysLine || allDates.length >= 2;
 
   const data = isTrend
     ? {

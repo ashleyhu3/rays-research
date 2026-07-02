@@ -23,7 +23,7 @@ const TICKERS = [
   // Memory Semiconductors
   'SNDK', 'MU', 'WDC', 'STX',
   // Optics
-  'AAOI', 'CIEN', 'LITE', 'COHR', 'GLW',
+  'AAOI', 'CIEN', 'LITE', 'COHR', 'GLW', 'APH',
   // Optics Equipment
   'TER', 'TSEM', 'VIAV', 'KEYS', 'AEHR',
   // Semi Equipment

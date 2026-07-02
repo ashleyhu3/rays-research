@@ -29,7 +29,7 @@ const DATA_DIR = path.join(__dirname, '..', '..', 'stocktwits', 'Stocktwits-Scra
 // it with storage/memory so its data isn't wasted.
 const CATEGORIES = {
   'Memory Semiconductors': ['SNDK', 'MU', 'WDC', 'STX'],
-  'Optics':                ['AAOI', 'CIEN', 'LITE', 'COHR', 'GLW'],
+  'Optics':                ['AAOI', 'CIEN', 'LITE', 'COHR', 'GLW', 'APH'],
   'Optics Equipment':      ['TER', 'TSEM', 'VIAV', 'KEYS', 'AEHR'],
   'Semi Equipment':        ['LRCX', 'AMAT', 'KLAC'],
 };
@@ -410,8 +410,8 @@ function readStored() {
   } catch { return null; }
 }
 
-async function getSentimentData() {
-  const fresh = readStored();
+async function getSentimentData({ force = false } = {}) {
+  const fresh = force ? null : readStored();
   if (fresh) return fresh;
   const data = await computeSentiment();
   storage.write(BLOB, STORE_FILE, data);
