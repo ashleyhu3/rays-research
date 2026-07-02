@@ -33,7 +33,16 @@ export const NAV_SECTIONS = [
       { id: 'ai-supply-fiber',  label: 'Fiber supply chain'  },
       { id: 'ai-supply-pcb',    label: 'PCB supply chain'    },
       { id: 'ai-supply-mlcc',   label: 'MLCC supply chain'   },
-      { id: 'dc-buildouts',     label: 'AI infrastructure buildout' },
+    ],
+  },
+  {
+    label: 'AI supply chain',
+    sectorId: 'aisupplychain',
+    mode: 'aisupplychain',
+    items: [
+      { id: 'dc-server',    label: 'Server supply chain'    },
+      { id: 'dc-capacity',  label: 'AI capacity'            },
+      { id: 'dc-timelines', label: 'Company buildout timelines' },
     ],
   },
   {
@@ -93,7 +102,9 @@ export const VIEW_META = {
   'ai-supply-fiber':  { title: 'AI SUPPLY — FIBER' },
   'ai-supply-pcb':    { title: 'AI SUPPLY — PCB' },
   'ai-supply-mlcc':   { title: 'AI SUPPLY — MLCC' },
-  'dc-buildouts':     { title: 'AI INFRASTRUCTURE BUILDOUT' },
+  'dc-server':        { title: 'AI SUPPLY CHAIN — SERVER SUPPLY CHAIN' },
+  'dc-capacity':      { title: 'AI SUPPLY CHAIN — AI CAPACITY' },
+  'dc-timelines':     { title: 'AI SUPPLY CHAIN — COMPANY BUILDOUT TIMELINES' },
   'github-commits':   { title: 'GITHUB COMMIT VELOCITY' },
   docker:             { title: 'DOCKER HUB DEPLOYS' },
   community:          { title: 'HN PULSE' },

@@ -107,8 +107,9 @@ const { buildValidityState } = require('./validity');
 app.get('/api/validity/status', (_req, res) => res.json(buildValidityState()));
 
 // Earnings transcript pipeline.
-// Stages 1-2 collect full transcripts from Alpha Vantage, then normalize the
-// source into deterministic prepared/Q&A speaker blocks before LLM analysis.
+// Stages 1-2 collect full transcripts (Octagon by default, Alpha Vantage as a
+// fallback) then normalize the source into deterministic prepared/Q&A speaker
+// blocks before topic tagging, tone scoring, and cross-quarter analysis.
 const { collectFromAlphaVantage } = require('./transcripts/alphavantage');
 const { collectFromOctagon } = require('./transcripts/octagon');
 const { semanticChunkDocument } = require('./transcripts/chunker');

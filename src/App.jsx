@@ -30,7 +30,7 @@ import DemandGeneral    from './pages/market-signals/InfrastructureOss';
 import DemandOpenRouter from './pages/market-signals/OpenRouter';
 // Supply chain
 import AISupply, { AISupplyOptics, AISupplyPCB, AISupplyMLCC, AISupplyFiber } from './pages/supply-chain/SupplyChain';
-import DcBuildouts from './pages/supply-chain/DcBuildouts';
+import DcTimelines, { DcServerSupply, DcCapacity } from './pages/supply-chain/DcBuildouts';
 // Tools
 import Options from './pages/options/Options';
 import Pricing from './pages/pricing/Pricing';
@@ -53,7 +53,7 @@ import Community      from './pages/sources/Community';
 const LAYOUT_EDITABLE = new Set([
   'pypi','github','web','hf','pricing','datacenter','electricity','chinese',
   'demand-openai','demand-anthropic','demand-google','demand-zhipu','demand-minimax','demand-general','openrouter-rankings',
-  'dc-buildouts',
+  'dc-capacity','dc-timelines',
 ]);
 
 /** Map view id → React component */
@@ -71,7 +71,9 @@ const VIEW_COMPONENTS = {
   'ai-supply-fiber':  AISupplyFiber,
   'ai-supply-pcb':    AISupplyPCB,
   'ai-supply-mlcc':   AISupplyMLCC,
-  'dc-buildouts':     DcBuildouts,
+  'dc-server':        DcServerSupply,
+  'dc-capacity':      DcCapacity,
+  'dc-timelines':     DcTimelines,
   'github-commits':   GitHubActivity,
   'docker':           Docker,
   'community':        Community,

@@ -37,7 +37,8 @@ function TableIcon() {
   );
 }
 
-const SUPPLY_VIEWS  = new Set(['ai-supply', 'ai-supply-optics', 'ai-supply-fiber', 'ai-supply-pcb', 'ai-supply-mlcc', 'dc-buildouts']);
+const SUPPLY_VIEWS  = new Set(['ai-supply', 'ai-supply-optics', 'ai-supply-fiber', 'ai-supply-pcb', 'ai-supply-mlcc']);
+const INFRA_VIEWS   = new Set(['dc-server', 'dc-capacity', 'dc-timelines']);
 const TOOL_VIEWS    = new Set(['options']);
 const PRICING_VIEWS = new Set(['pricing']);
 const SENTIMENT_VIEWS = new Set(['sentiment']);
@@ -50,12 +51,13 @@ export default function Navbar({ onNavigate, currentView }) {
 
   const isChat      = currentView === 'chat';
   const isSupply    = SUPPLY_VIEWS.has(currentView);
+  const isInfra     = INFRA_VIEWS.has(currentView);
   const isOptions   = TOOL_VIEWS.has(currentView);
   const isPricing   = PRICING_VIEWS.has(currentView);
   const isSentiment = SENTIMENT_VIEWS.has(currentView);
   const isSources   = SOURCES_VIEWS.has(currentView);
   const isTranscripts = TRANSCRIPT_VIEWS.has(currentView);
-  const isDemand    = !isChat && !isSupply && !isOptions && !isPricing && !isSentiment && !isSources && !isTranscripts;
+  const isDemand    = !isChat && !isSupply && !isInfra && !isOptions && !isPricing && !isSentiment && !isSources && !isTranscripts;
 
   const title = loading
     ? 'Updating live data…'
@@ -80,6 +82,12 @@ export default function Navbar({ onNavigate, currentView }) {
           onClick={() => onNavigate('ai-supply')}
         >
           AI Supply
+        </button>
+        <button
+          className={`nlink${isInfra ? ' active' : ''}`}
+          onClick={() => onNavigate('dc-server')}
+        >
+          AI Supply Chain
         </button>
         <button
           className={`nlink${isPricing ? ' active' : ''}`}

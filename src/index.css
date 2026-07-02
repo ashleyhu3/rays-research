@@ -212,6 +212,28 @@ body { font-family: var(--font-b); background: var(--bg); color: var(--text); }
 }
 .pricing-section-label:first-child { margin-top: 0; }
 
+/* Compact header for the two full-page AI-capacity charts, so the plot area
+   fills more of the card. */
+.egrid-item[data-chart-id="dc-gw-annual"] > .cbox,
+.egrid-item[data-chart-id="dc-geo"] > .cbox { padding: 11px 16px; }
+.egrid-item[data-chart-id="dc-gw-annual"] .ch-head,
+.egrid-item[data-chart-id="dc-geo"] .ch-head { margin-bottom: 2px; }
+.egrid-item[data-chart-id="dc-gw-annual"] .ch-title,
+.egrid-item[data-chart-id="dc-geo"] .ch-title { font-size: 11.5px; }
+
+/* Section headers on the company buildout-timelines page (cost vs power). */
+.dc-section-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--sec, #8b8fa8);
+  border-bottom: 1px solid var(--border, rgba(255,255,255,.07));
+  padding-bottom: 6px;
+  margin: 8px 0 14px;
+}
+.dc-section-label:first-child { margin-top: 0; }
+
 /* ── Chart grid ────────────────────────────────────────────────────── */
 .cgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
 .span2 { grid-column: 1 / -1; }
@@ -221,6 +243,39 @@ body { font-family: var(--font-b); background: var(--bg); color: var(--text); }
   border-radius: 12px; padding: 18px; min-width: 0;
 }
 .cbox.new { border-color: rgba(232,197,71,.2); }
+
+/* ── DC timeline external tooltip: floats beside the hovered bar and may
+   overflow the chart card so all project detail shows at once ─────────── */
+.dc-tt {
+  position: absolute; z-index: 60; pointer-events: none;
+  background: #1a1f2a; border: 1px solid rgba(255,255,255,.14);
+  border-radius: 8px; padding: 10px 12px;
+  font-family: 'Inter', sans-serif; font-size: 11px; color: var(--text);
+  box-shadow: 0 8px 28px rgba(0,0,0,.5);
+  opacity: 0; transition: opacity .12s ease;
+  min-width: 190px; max-width: 340px; white-space: normal;
+}
+.dc-tt-title {
+  font-weight: 600; font-size: 12.5px; color: #fff;
+  margin-bottom: 8px; padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255,255,255,.1);
+}
+.dc-tt-item { display: flex; gap: 8px; padding: 5px 0; }
+.dc-tt-item + .dc-tt-item { border-top: 1px solid rgba(255,255,255,.05); }
+/* Two-column flow for years with many concurrent projects. */
+.dc-tt--2col { max-width: 640px; }
+.dc-tt--2col .dc-tt-items { column-count: 2; column-gap: 20px; }
+.dc-tt--2col .dc-tt-item { break-inside: avoid; }
+.dc-tt--2col .dc-tt-item:first-child { padding-top: 0; }
+.dc-tt-dot {
+  width: 8px; height: 8px; border-radius: 2px;
+  margin-top: 4px; flex-shrink: 0;
+}
+.dc-tt-item-body { min-width: 0; }
+.dc-tt-loc   { color: #fff; font-weight: 500; line-height: 1.4; display: flex; justify-content: space-between; gap: 16px; align-items: baseline; }
+.dc-tt-val   { color: #8a94a6; font-weight: 400; flex-shrink: 0; }
+.dc-tt-facts { color: #8a94a6; line-height: 1.5; }
+.dc-tt-notes { color: #b0b0a8; line-height: 1.45; margin-top: 2px; }
 
 /* ── Overview dashboard: one flat grid with custom per-chart widths ──── */
 /* All charts flow into a single 4-column grid. Each view's own .cgrid collapses
@@ -358,6 +413,46 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
 }
 .ch-table tbody tr:hover td { background: rgba(255,255,255,.03); }
 .ch-table tbody tr:last-child td { border-bottom: none; }
+
+/* ── Supply-chain dependency matrix (Fig. 70) ───────────────────────── */
+/* Fits the full 9-customer grid to the card width — no horizontal scroll.
+   table-layout:fixed shares remaining width evenly; cells wrap vertically. */
+.scm-wrap {
+  overflow-x: hidden;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  margin-top: 6px;
+}
+.scm-table {
+  border-collapse: collapse;
+  width: 100%; table-layout: fixed;
+  font-family: var(--font-b);
+}
+.scm-table th:first-child,
+.scm-table td:first-child { width: 116px; }
+.scm-th {
+  background: rgba(17,20,25,.99);
+  color: var(--text); font-weight: 700; text-align: left;
+  padding: 7px 6px; font-size: 12px;
+  border-right: 1px solid var(--border);
+  border-bottom: 2px solid var(--border-hi);
+  word-break: break-word;
+}
+.scm-th-sub {
+  color: var(--ter); font-weight: 500; font-size: 10px;
+  text-transform: uppercase; letter-spacing: .04em; margin-top: 1px;
+}
+.scm-rowlabel {
+  padding: 7px 8px; white-space: normal;
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border-hi);
+}
+.scm-group {
+  font-size: 10px; font-weight: 800; text-transform: uppercase;
+  letter-spacing: .05em; margin-bottom: 3px;
+}
+.scm-sub { color: var(--text); font-size: 12px; font-weight: 600; }
+.scm-table tbody tr:hover .scm-td { filter: brightness(1.22); }
 
 /* ── Customise dropdown ─────────────────────────────────────────────── */
 .cust-wrap { position: relative; }

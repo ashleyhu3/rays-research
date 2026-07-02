@@ -444,6 +444,10 @@ export const CHART_TEXT = {
     title: 'Global AI Data Center Projects — Geographic Distribution',
     subtitle: 'Each bubble = one announced project; size scales with planned GW capacity.',
   },
+  'dc-deploy-mix': {
+    title: 'Incremental AI Capacity Deployment by Buyer (GW)',
+    subtitle: 'Annual GW additions: OpenAI, the four hyperscaler CSPs (Oracle, Google, AWS, Microsoft — the aggregate CSP total split by capacity share), and all other operators.',
+  },
   'dc-overview-gantt': {
     title: 'All AI Infrastructure Projects — Buildout Timeline',
     subtitle: 'Gantt view of every announced project. Hover for GW, investment, partners & notes. Bright bars = capacity confirmed; dim bars = investment-only.',
