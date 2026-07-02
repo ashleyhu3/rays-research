@@ -238,10 +238,24 @@ app.get('/api/transcripts/analysis/:ticker', async (req, res) => {
       (sum, enrichment) => sum + (enrichment.toneSummary?.llmInterpreted || 0),
       0,
     );
+    // Flatten structured key figures across every quarter so the UI can show a
+    // keyword's trajectory report-over-report in one grid.
+    const quarterOrder = enrichment => (Number(enrichment.year) || 0) * 10
+      + (Number(String(enrichment.quarter || '').replace(/\D/g, '')) || 0);
+    const keyFigures = enrichments
+      .slice()
+      .sort((a, b) => quarterOrder(b) - quarterOrder(a))
+      .flatMap(enrichment => (enrichment.keyFigures || []).map(figure => ({
+        ...figure,
+        period: `${enrichment.year} ${enrichment.quarter}`,
+        periodKey: quarterOrder(enrichment),
+        fiscal_period: enrichment.fiscal_period,
+      })));
     res.json({
       ticker,
       analysis: result.analysis,
       reports: result.reports,
+      keyFigures,
       execution: result.events,
       modelUsage: {
         deterministicPipeline: true,

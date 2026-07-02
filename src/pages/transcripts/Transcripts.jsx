@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Bar, Line } from 'react-chartjs-2';
+import { Line } from 'react-chartjs-2';
 import '../../utils/chartSetup';
 import { C, fa } from '../../config/colors';
-import { baseOpts, hBarOpts } from '../../utils/chartHelpers';
+import { baseOpts } from '../../utils/chartHelpers';
 import './Transcripts.css';
 
 const CURRENT_YEAR = new Date().getFullYear();
@@ -19,6 +19,72 @@ const FOCUS_TOPICS = [
 ];
 
 const FOCUS_COLORS = [C.orange, C.mistral, C.teal, C.google, C.openai, C.perplexity];
+
+const DIR_ARROW = { up: '▲', down: '▼', flat: '→' };
+
+function sentClass(investorConfidence) {
+  if (investorConfidence == null) return 'tx-fig-tone';
+  if (investorConfidence >= 58) return 'tx-fig-tone is-pos';
+  if (investorConfidence < 43) return 'tx-fig-tone is-neg';
+  return 'tx-fig-tone';
+}
+
+// Parse a compact value string ("$180–190B", "63%", "9x") into a number + unit
+// so figures can be trended over time. Ranges collapse to their midpoint.
+function parseFigureValue(text) {
+  if (!text) return null;
+  const source = String(text);
+  const numbers = (source.match(/\d+(?:\.\d+)?/g) || []).map(Number);
+  if (!numbers.length) return null;
+  const value = numbers.length >= 2 ? (numbers[0] + numbers[1]) / 2 : numbers[0];
+  const hasDollar = /\$/.test(source);
+  if (/%/.test(source)) return { value, unit: '%' };
+  if (/\d\s*x\b/i.test(source)) return { value, unit: '×' };
+  if (/trillion/i.test(source)) return { value: value * 1000, unit: '$B' };
+  if (hasDollar && /million/i.test(source)) return { value: value / 1000, unit: '$B' };
+  if (/billion/i.test(source) || /\dB\b/.test(source) || hasDollar) return { value, unit: '$B' };
+  if (/million/i.test(source)) return { value, unit: 'M' };
+  return null;
+}
+
+// Group a keyword's figures into per-label series that span ≥2 quarters.
+function buildValueSeries(figures) {
+  const groups = new Map();
+  for (const figure of figures) {
+    const parsed = parseFigureValue(figure.current);
+    if (!parsed) continue;
+    const key = `${figure.label.toLowerCase().replace(/[^a-z ]/g, '').trim()}|${parsed.unit}`;
+    if (!groups.has(key)) groups.set(key, { label: figure.label, unit: parsed.unit, points: new Map() });
+    const group = groups.get(key);
+    if (!group.points.has(figure.period)) group.points.set(figure.period, parsed.value);
+  }
+  return [...groups.values()]
+    .filter(group => group.points.size >= 2)
+    .sort((a, b) => b.points.size - a.points.size);
+}
+
+// A couple of describing words derived from the change, not just the number.
+function describeFigure(figure) {
+  const delta = figure.delta || '';
+  if (figure.forwardLooking) {
+    return figure.direction === 'up' ? 'Guidance raised'
+      : figure.direction === 'down' ? 'Guidance cut'
+      : 'Guidance reaffirmed';
+  }
+  if (/tripl/i.test(delta)) return 'Tripled';
+  if (/doubl/i.test(delta)) return 'Doubled';
+  const source = delta || figure.current || '';
+  const isPercent = source.includes('%');
+  const magnitude = parseFloat(source.replace(/[^0-9.]/g, ''));
+  if (figure.direction === 'up') {
+    if (isPercent && magnitude >= 100) return 'Surging';
+    if (isPercent && magnitude >= 40) return 'Strong growth';
+    if (isPercent && magnitude > 0) return 'Steady growth';
+    return 'Higher';
+  }
+  if (figure.direction === 'down') return isPercent && magnitude >= 40 ? 'Sharp decline' : 'Lower';
+  return 'Reported level';
+}
 
 const SAMPLE = `Prepared Remarks
 
@@ -160,6 +226,9 @@ export default function Transcripts() {
 
   const [activeTicker, setActiveTicker] = useState('GOOGL');
   const [period, setPeriod] = useState(null);
+  const [metricFilter, setMetricFilter] = useState('all');
+  const [valueUnit, setValueUnit] = useState(null);
+  const selectKeyword = keyword => { setMetricFilter(keyword); setValueUnit(null); };
   const [enrichment, setEnrichment] = useState(null);
   const [library, setLibrary] = useState([]);
 
@@ -244,20 +313,62 @@ export default function Transcripts() {
   const usage = analysis?.modelUsage;
   const toneReady = (enrichment?.toneSummary?.chunks || 0) > 0;
 
-  // Keyword mention counts for the selected quarter.
-  const focusMentions = useMemo(() => {
-    const counts = new Map((enrichment?.topicSummary ?? []).map(item => [item.topic, item.count]));
-    return FOCUS_TOPICS.map(topic => counts.get(topic) || 0);
-  }, [enrichment]);
+  // All structured figures across quarters (for the value trend chart).
+  const allFigures = useMemo(() => analysis?.keyFigures ?? [], [analysis]);
 
-  // Topic-classification confidence per focus signal (from the report).
-  const focusConfidence = useMemo(() => {
-    const byTopic = new Map((report?.topics ?? []).map(item => [item.topic, item]));
-    return FOCUS_TOPICS.map(topic => byTopic.get(topic)?.confidence || 0);
-  }, [report]);
+  // Figures for the selected transcript only (for the grid).
+  const periodFigures = useMemo(() => allFigures
+    .filter(figure => figure.fiscal_period === period)
+    .sort((a, b) => (
+      (b.forwardLooking === true) - (a.forwardLooking === true)
+      || (b.prior ? 1 : 0) - (a.prior ? 1 : 0)
+    )), [allFigures, period]);
 
-  // Broader keyword landscape — top mentioned topics this quarter.
-  const topTopics = useMemo(() => (enrichment?.topicSummary ?? []).slice(0, 12), [enrichment]);
+  const figureCounts = useMemo(
+    () => FOCUS_TOPICS.map(topic => periodFigures.filter(figure => figure.keyword === topic).length),
+    [periodFigures],
+  );
+
+  const shownFigures = metricFilter === 'all'
+    ? periodFigures
+    : periodFigures.filter(figure => figure.keyword === metricFilter);
+
+  // Numeric value series over time for the charted keyword.
+  const chartKeyword = useMemo(() => {
+    if (metricFilter !== 'all') return metricFilter;
+    let best = null;
+    let bestScore = 0;
+    for (const topic of FOCUS_TOPICS) {
+      const score = buildValueSeries(allFigures.filter(figure => figure.keyword === topic))
+        .reduce((sum, series) => sum + series.points.size, 0);
+      if (score > bestScore) { bestScore = score; best = topic; }
+    }
+    return best;
+  }, [metricFilter, allFigures]);
+
+  const valueChart = useMemo(() => {
+    if (!chartKeyword) return null;
+    const series = buildValueSeries(allFigures.filter(figure => figure.keyword === chartKeyword));
+    if (!series.length) return null;
+    const units = [...new Set(series.map(item => item.unit))];
+    const unit = valueUnit && units.includes(valueUnit) ? valueUnit : units[0];
+    const periods = report?.coverage?.periods ?? [];
+    const datasets = series
+      .filter(item => item.unit === unit)
+      .slice(0, 5)
+      .map((item, index) => ({
+        label: item.label,
+        data: periods.map(name => (item.points.has(name) ? item.points.get(name) : null)),
+        borderColor: FOCUS_COLORS[index % FOCUS_COLORS.length],
+        backgroundColor: fa(FOCUS_COLORS[index % FOCUS_COLORS.length], 0.12),
+        borderWidth: 2,
+        pointRadius: 3,
+        pointBackgroundColor: FOCUS_COLORS[index % FOCUS_COLORS.length],
+        tension: 0.25,
+        spanGaps: true,
+      }));
+    return { keyword: chartKeyword, unit, units, labels: periods, datasets };
+  }, [chartKeyword, allFigures, valueUnit, report]);
 
   // Confidence-per-quarter lines for each focus signal that has a timeline.
   const toneOverTime = useMemo(() => {
@@ -282,22 +393,18 @@ export default function Transcripts() {
     return datasets.length ? { labels: periods, datasets } : null;
   }, [report, timelines]);
 
-  const hasMentions = focusMentions.some(value => value > 0);
-  const evidence = (report?.topics ?? [])
-    .flatMap(topic => (topic.evidence ?? []).map(item => ({ ...item, topic: topic.topic })))
-    .filter(item => FOCUS_TOPICS.includes(item.topic))
-    .slice(0, 6);
-
-  const barOptions = hBarOpts(value => value.toLocaleString());
-  const confOptions = {
-    ...hBarOpts(value => `${value}`),
-    scales: { ...hBarOpts(value => `${value}`).scales, x: { ...hBarOpts(value => `${value}`).scales.x, max: 100 } },
-  };
+  const legendPlugin = { display: true, position: 'bottom', labels: { color: '#9aa3b0', boxWidth: 10, font: { size: 9 } } };
   const lineOptions = {
     ...baseOpts(value => `${value}`),
-    plugins: { ...baseOpts(value => `${value}`).plugins, legend: { display: true, position: 'bottom', labels: { color: '#9aa3b0', boxWidth: 10, font: { size: 9 } } } },
+    plugins: { ...baseOpts(value => `${value}`).plugins, legend: legendPlugin },
     scales: { ...baseOpts(value => `${value}`).scales, y: { ...baseOpts(value => `${value}`).scales.y, beginAtZero: true, max: 100 } },
   };
+  const valueFmt = unit => value => (unit === '$B' ? `$${value}B` : unit === '%' ? `${value}%` : unit === '×' ? `${value}×` : `${value}`);
+  const valueOptions = unit => ({
+    ...baseOpts(valueFmt(unit)),
+    plugins: { ...baseOpts(valueFmt(unit)).plugins, legend: legendPlugin },
+    scales: { ...baseOpts(valueFmt(unit)).scales, y: { ...baseOpts(valueFmt(unit)).scales.y, beginAtZero: true } },
+  });
 
   return (
     <div className="tx-page">
@@ -323,8 +430,19 @@ export default function Transcripts() {
             <>
               <header className="tx-analysis-head">
                 <div>
-                  <h2>{report.company} <span>· {period ? period.replace(/(\d{4})(Q\d)/, '$1 $2') : report.coverage.periods.at(-1)}</span></h2>
-                  <p>{report.coverage.periods.join(' · ')} · {report.coverage.topics} topics tracked · {usage?.totalChunks || 0} chunks classified locally</p>
+                  <h2>{report.company} <span>· transcript intelligence</span></h2>
+                  <div className="tx-period-tabs">
+                    {report.coverage.periods.map(name => {
+                      const fiscal = name.replace(/\s+/g, '');
+                      return (
+                        <button
+                          key={name}
+                          className={period === fiscal ? 'active' : ''}
+                          onClick={() => setPeriod(fiscal)}
+                        >{name}</button>
+                      );
+                    })}
+                  </div>
                 </div>
                 <div className="tx-head-meta">
                   <span className="tx-pill is-confident"><strong>{report.overallConfidence}</strong> confidence</span>
@@ -367,80 +485,81 @@ export default function Transcripts() {
                 </div>
               </div>
 
+              <section className="tx-figures-card">
+                <div className="tx-chart-head">
+                  <h3>Key figures</h3>
+                  <small>quantified changes in {period ? period.replace(/(\d{4})(Q\d)/, '$1 $2') : 'this transcript'}</small>
+                </div>
+                <div className="tx-figures-filter">
+                  <button className={metricFilter === 'all' ? 'active' : ''} onClick={() => selectKeyword('all')}>
+                    All <span>{periodFigures.length}</span>
+                  </button>
+                  {FOCUS_TOPICS.map((topic, index) => (
+                    <button
+                      key={topic}
+                      className={metricFilter === topic ? 'active' : ''}
+                      onClick={() => selectKeyword(topic)}
+                      disabled={!figureCounts[index]}
+                    >
+                      {topic} <span>{figureCounts[index]}</span>
+                    </button>
+                  ))}
+                </div>
+                <div className="tx-figure-grid">
+                  {shownFigures.map(figure => (
+                    <div className={`tx-fig is-${figure.direction}`} key={figure.id} title={figure.statement}>
+                      <div className="tx-fig-top">
+                        <span className="tx-fig-kw">{figure.keyword}</span>
+                        <span className="tx-fig-period">{figure.period}</span>
+                      </div>
+                      <div className="tx-fig-val">
+                        <span className="tx-dir">{DIR_ARROW[figure.direction]}</span>
+                        <b>{figure.current}</b>
+                        {figure.prior && <em>from {figure.prior}</em>}
+                      </div>
+                      <div className="tx-fig-label">{figure.label}</div>
+                      <div className="tx-fig-desc">
+                        <strong>{describeFigure(figure)}</strong>
+                        {figure.delta && <span>{figure.delta}</span>}
+                        {figure.forwardLooking && <span className="tx-fig-guide">guidance</span>}
+                      </div>
+                      {figure.sentiment && (
+                        <div className={sentClass(figure.sentiment.investorConfidence)}>
+                          <i /> {figure.sentiment.label}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {!shownFigures.length && <div className="tx-chart-empty">No quantified statements for this keyword yet.</div>}
+                </div>
+              </section>
+
               <div className="tx-chart-grid">
-                <ChartCard title="Focus keyword mentions" hint="this quarter" hasData={hasMentions}>
-                  <Bar
-                    options={barOptions}
-                    data={{
-                      labels: FOCUS_TOPICS,
-                      datasets: [{
-                        label: 'Mentions',
-                        data: focusMentions,
-                        backgroundColor: FOCUS_TOPICS.map((_, index) => fa(FOCUS_COLORS[index], 0.55)),
-                        borderColor: FOCUS_TOPICS.map((_, index) => FOCUS_COLORS[index]),
-                        borderWidth: 1,
-                        borderRadius: 4,
-                      }],
-                    }}
-                  />
-                </ChartCard>
+                <div className="tx-chart-card is-wide">
+                  <div className="tx-chart-head">
+                    <h3>{valueChart ? `${valueChart.keyword} values over time` : 'Values over time'}</h3>
+                    <div className="tx-chart-head-right">
+                      {valueChart && valueChart.units.length > 1 && (
+                        <div className="tx-unit-toggle">
+                          {valueChart.units.map(unit => (
+                            <button key={unit} className={valueChart.unit === unit ? 'active' : ''} onClick={() => setValueUnit(unit)}>{unit}</button>
+                          ))}
+                        </div>
+                      )}
+                      <small>{valueChart ? `${valueChart.unit} · pick a keyword to focus` : 'no multi-quarter series'}</small>
+                    </div>
+                  </div>
+                  <div className="tx-chart-body is-tall">
+                    {valueChart
+                      ? <Line options={valueOptions(valueChart.unit)} data={{ labels: valueChart.labels, datasets: valueChart.datasets }} />
+                      : <div className="tx-chart-empty">No values repeat across quarters for this keyword.</div>}
+                  </div>
+                </div>
 
-                <ChartCard title="Signal confidence" hint="topic classification · 0–100" hasData={focusConfidence.some(Boolean)}>
-                  <Bar
-                    options={confOptions}
-                    data={{
-                      labels: FOCUS_TOPICS,
-                      datasets: [{
-                        label: 'Confidence',
-                        data: focusConfidence,
-                        backgroundColor: FOCUS_TOPICS.map((_, index) => fa(FOCUS_COLORS[index], 0.35)),
-                        borderColor: FOCUS_TOPICS.map((_, index) => FOCUS_COLORS[index]),
-                        borderWidth: 1,
-                        borderRadius: 4,
-                      }],
-                    }}
-                  />
-                </ChartCard>
-
-                <ChartCard title="Keyword landscape" hint="top mentioned topics" wide hasData={topTopics.length > 0}>
-                  <Bar
-                    options={barOptions}
-                    data={{
-                      labels: topTopics.map(item => item.topic),
-                      datasets: [{
-                        label: 'Mentions',
-                        data: topTopics.map(item => item.count),
-                        backgroundColor: fa(C.google, 0.4),
-                        borderColor: C.google,
-                        borderWidth: 1,
-                        borderRadius: 4,
-                      }],
-                    }}
-                  />
-                </ChartCard>
-
-                <ChartCard title="Tone across quarters" hint={report.coverage.periods.length > 1 ? 'confidence trend · 0–100' : 'add more quarters to trend'} wide tall hasData={!!toneOverTime}>
+                <ChartCard title="Tone across quarters" hint={report.coverage.periods.length > 1 ? 'investor confidence · 0–100' : 'add more quarters to trend'} wide tall hasData={!!toneOverTime}>
                   <Line options={lineOptions} data={toneOverTime || { labels: [], datasets: [] }} />
                 </ChartCard>
               </div>
-
-              {evidence.length > 0 && (
-                <section className="tx-evidence-card">
-                  <div className="tx-chart-head"><h3>Key statements</h3><small>strongest evidence per focus signal</small></div>
-                  <div className="tx-evidence-list">
-                    {evidence.map(item => (
-                      <div className="tx-evidence-item" key={`${item.topic}-${item.statement}`}>
-                        <div>
-                          <span className="tx-topic-primary">{item.topic}</span>
-                          {item.forwardLooking && <span className="tx-forward">Guidance</span>}
-                          <span className="tx-ev-src">{item.period} · {item.speaker || 'Unknown'} · {item.confidence}% conf.</span>
-                        </div>
-                        <blockquote>{item.statement}</blockquote>
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              )}
             </>
           ) : (
             <section className="tx-analysis-overview is-error">No analyzed transcripts found for {activeTicker}.</section>
