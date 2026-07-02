@@ -2,9 +2,9 @@ import { useMemo } from 'react';
 import { Bar } from 'react-chartjs-2';
 import { C, fa } from '../../config/colors';
 import { hBarOpts, stackedOpts, fmtM, GRID, TICK, BORD } from '../../utils/chartHelpers';
+import { metricTrendCard } from '../../components/chart/MetricTrendCard';
 import { buildCompanyPriceBar, pricingBarOpts } from '../../utils/modelPricing';
 import { orComboCard } from '../../components/chart/OrGrowthCards';
-import { metricTrendCard } from '../../components/chart/MetricTrendCard';
 import ChartCard from '../../components/chart/ChartCard';
 import EditableGrid from '../../components/chart/EditableGrid';
 import { useData } from '../../context/DataContext';
@@ -57,6 +57,7 @@ const stackedRevOpts = {
 
 export default function DemandZhipu({ weeks: W }) {
   const { liveData: ld } = useData();
+  const mh = ld?.metricsHistory;
   const qN  = Math.min(W, 4);
 
   // Revenue
@@ -115,6 +116,16 @@ export default function DemandZhipu({ weeks: W }) {
       >
         <Bar data={benchData} options={benchOpts} />
       </ChartCard>
+
+      {metricTrendCard({
+        chartId: 'zh-web-visits',
+        weeks: W,
+        hist: ld?.webTraffic?.history,
+        series: [{ metric: 'zhipuai.cn.visits', label: 'Monthly visits', color: C.zhipu }],
+        fmt: fmtM,
+        height: 240,
+        span2: true,
+      })}
     </EditableGrid>
   );
 }

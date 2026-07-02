@@ -131,6 +131,16 @@ export default function DemandAnthropic({ weeks: W }) {
           <Scatter data={antRevData} options={singleRevenueOpts(C.anthropic)} />
         </ChartCard>
       )}
+
+      {metricTrendCard({
+        chartId: 'an-web-visits',
+        weeks: W,
+        hist: ld?.webTraffic?.history,
+        series: [{ metric: 'anthropic.com.visits', label: 'Monthly visits', color: C.anthropic }],
+        fmt: fmtM,
+        height: 240,
+        span2: true,
+      })}
     </EditableGrid>
   );
 }

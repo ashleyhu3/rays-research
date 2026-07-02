@@ -1,133 +1,147 @@
 'use strict';
 
-// Yahoo aggressively rate-limits (429) the library's default
-// "yahoo-finance2/x.y.z" User-Agent from datacenter IPs — which is why the
-// crumb fetch fails in production but works from a laptop. Presenting a real
-// browser User-Agent makes the crumb/cookie handshake look like an ordinary
-// page load and clears the 429s.
-const BROWSER_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
+const BASE = 'https://api.massive.com';
 
-let _yf;
-function getYF() {
-  if (!_yf) {
-    const YahooFinance = require('yahoo-finance2').default;
-    _yf = new YahooFinance({
-      suppressNotices: ['yahooSurvey'],
-      fetchOptions: { headers: { 'User-Agent': BROWSER_UA } },
+function getKey() {
+  const key = process.env.MASSIVE_API_KEY;
+  if (!key) throw new Error('MASSIVE_API_KEY is not set');
+  return key;
+}
+
+async function mGet(path, params = {}) {
+  const url = new URL(path, BASE);
+  for (const [k, v] of Object.entries(params)) {
+    if (v != null) url.searchParams.set(String(k), String(v));
+  }
+  const res = await fetch(url.toString(), {
+    headers: { Authorization: `Bearer ${getKey()}`, Accept: 'application/json' },
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`Massive ${res.status}: ${body.slice(0, 200)}`);
+  }
+  return res.json();
+}
+
+// Paginate /v3/snapshot/options for a specific expiration date.
+async function fetchChain(symbol, expDate) {
+  const results = [];
+  let resp = await mGet(`/v3/snapshot/options/${symbol}`, {
+    expiration_date: expDate,
+    order: 'asc',
+    sort: 'strike_price',
+    limit: 250,
+  });
+  results.push(...(resp.results ?? []));
+  while (resp.next_url) {
+    const next = new URL(resp.next_url);
+    next.searchParams.delete('apiKey');
+    const r = await fetch(next.toString(), {
+      headers: { Authorization: `Bearer ${getKey()}`, Accept: 'application/json' },
     });
+    resp = await r.json();
+    results.push(...(resp.results ?? []));
   }
-  return _yf;
+  return results;
 }
 
-const sleep = ms => new Promise(r => setTimeout(r, ms));
+function fmtContract(r, spotPrice) {
+  const d      = r.details ?? {};
+  const strike = d.strike_price ?? null;
+  // IV comes as a decimal (0.2547 = 25.47%)
+  const iv     = r.implied_volatility;
+  const inTheMoney = d.contract_type === 'call'
+    ? (spotPrice != null && strike != null && spotPrice > strike)
+    : (spotPrice != null && strike != null && spotPrice < strike);
 
-// Retry the crumb/quote fetch on transient rate limits. A 429 on the crumb
-// handshake often clears on a second attempt once a cookie is seeded.
-async function withRetry(fn, tries = 3) {
-  for (let i = 1; i <= tries; i++) {
-    try { return await fn(); }
-    catch (e) {
-      const rateLimited = e.message?.includes('429') || /Too Many Requests|crumb/i.test(e.message ?? '');
-      if (i === tries || !rateLimited) throw e;
-      await sleep(1500 * i);
-    }
-  }
-}
-
-function isoDate(d) {
-  if (!d) return null;
-  const dt = d instanceof Date ? d : new Date(d);
-  return isNaN(dt.getTime()) ? null : dt.toISOString().slice(0, 10);
-}
-
-function fmtContract(c) {
   return {
-    contractSymbol:    c.contractSymbol    ?? '',
-    strike:            c.strike            ?? null,
-    lastPrice:         c.lastPrice         ?? null,
-    bid:               c.bid               ?? null,
-    ask:               c.ask               ?? null,
-    volume:            c.volume            ?? 0,
-    openInterest:      c.openInterest      ?? null,
-    // IV comes as a decimal (0.2547 = 25.47%); round to 1 decimal
-    impliedVolatility: c.impliedVolatility != null
-      ? Math.round(c.impliedVolatility * 1000) / 10
-      : null,
-    inTheMoney: c.inTheMoney ?? false,
-    expiration: isoDate(c.expiration),
+    contractSymbol:    d.ticker           ?? '',
+    strike,
+    lastPrice:         r.last_trade?.price ?? null,
+    bid:               r.last_quote?.bid   ?? null,
+    ask:               r.last_quote?.ask   ?? null,
+    volume:            r.day?.volume       ?? 0,
+    openInterest:      r.open_interest     ?? null,
+    // IV is a decimal (0.195 = 19.5%). Deep-ITM same-day-expiry contracts can
+    // return a raw integer (e.g. 20) when Black-Scholes breaks down — cap at
+    // 500% so those artifacts don't surface in the UI.
+    impliedVolatility: iv != null ? (iv * 100 <= 500 ? Math.round(iv * 1000) / 10 : null) : null,
+    inTheMoney,
+    expiration:        d.expiration_date   ?? null,
+    greeks:            r.greeks            ?? null,
   };
 }
 
-// Fetch the raw options chain. In production OPTIONS_PROXY_URL points at the
-// serverless proxy (see api/options.js, deployed to Vercel): Yahoo rate-limits Render's
-// shared egress IPs, so we let the proxy do the Yahoo handshake from a clean IP
-// and return the raw chain. Unset locally → call Yahoo directly (works fine
-// from a laptop / Codespace).
-async function fetchChain(symbol, queryOpts, dateStr) {
-  const proxy = process.env.OPTIONS_PROXY_URL;
-  if (!proxy) {
-    return withRetry(() => getYF().options(symbol, queryOpts, { validateResult: false }));
+// Collect all unique expiration dates within the next 2 months via the
+// reference/contracts endpoint. It's metadata-only (no market data), so it
+// pages quickly. We stop as soon as the last-seen expiration exceeds the cutoff.
+async function fetchExpirations(symbol) {
+  const now    = new Date();
+  const cutoff = new Date(now.getFullYear(), now.getMonth() + 2, now.getDate() + 1);
+  const seen   = new Set();
+  let resp = await mGet(`/v3/reference/options/contracts`, {
+    underlying_ticker: symbol,
+    order: 'asc',
+    sort: 'expiration_date',
+    limit: 250,
+  });
+  while (true) {
+    let pastCutoff = false;
+    for (const r of resp.results ?? []) {
+      const d = r.expiration_date;
+      if (!d) continue;
+      if (new Date(d) > cutoff) { pastCutoff = true; break; }
+      seen.add(d);
+    }
+    if (pastCutoff || !resp.next_url) break;
+    const next = new URL(resp.next_url);
+    next.searchParams.delete('apiKey');
+    resp = await fetch(next.toString(), {
+      headers: { Authorization: `Bearer ${getKey()}`, Accept: 'application/json' },
+    }).then(r => r.json());
   }
-  const url = new URL(proxy);
-  url.searchParams.set('ticker', symbol);
-  if (dateStr) url.searchParams.set('date', dateStr);
-  const headers = {};
-  if (process.env.PROXY_SECRET) headers['x-proxy-key'] = process.env.PROXY_SECRET;
-
-  const r = await fetch(url, { headers });
-  if (!r.ok) {
-    const body = await r.text().catch(() => '');
-    // Prefix 429 on the proxy's rate-limit status so server.js maps it to the
-    // friendly "try again in a moment" 503 just like a direct Yahoo 429.
-    const tag = r.status === 503 ? '429 ' : '';
-    throw new Error(`${tag}options proxy ${r.status}: ${body.slice(0, 200)}`);
-  }
-  return r.json();
+  return [...seen].sort();
 }
 
 async function getOptionsData(ticker, dateStr) {
   const symbol = ticker.trim().toUpperCase();
 
-  // v3 API: yf.options(symbol, { date? }, moduleOpts)
-  // Response: { expirationDates, quote, options: [{ expirationDate, calls, puts }] }
-  const queryOpts = dateStr ? { date: dateStr } : {};
-  const chain = await fetchChain(symbol, queryOpts, dateStr);
+  // Fetch expirations list and spot price in parallel.
+  // The snapshot call (limit=1) is just to get the current spot price cheaply.
+  const [expirations, spotResp] = await Promise.all([
+    fetchExpirations(symbol),
+    mGet(`/v3/snapshot/options/${symbol}`, { limit: 1 }),
+  ]);
 
-  // Limit expirations to ≤ 2 months from today
-  const now    = new Date();
-  const cutoff = new Date(now.getFullYear(), now.getMonth() + 2, now.getDate() + 1);
-  const expirations = (chain.expirationDates ?? [])
-    .map(isoDate)
-    .filter(d => d != null && new Date(d) <= cutoff);
+  if (!expirations.length) throw new Error(`No near-term expirations for ${symbol}`);
+  const spotPrice = spotResp.results?.[0]?.underlying_asset?.price ?? null;
 
-  // calls/puts live in chain.options[0] in v3
-  const contracts = chain.options?.[0] ?? {};
-  const quote     = chain.quote ?? {};
+  const selectedDate = (dateStr && expirations.includes(dateStr)) ? dateStr : expirations[0];
 
-  const result = {
-    ticker:       symbol,
-    price:        quote.regularMarketPrice          ?? null,
-    priceChange:  quote.regularMarketChange         ?? null,
-    changePct:    quote.regularMarketChangePercent  ?? null,
+  // Fetch full chain for selected expiration + prev-day close in parallel.
+  // /v2/snapshot is not available on the options plan; use prev-day aggs instead.
+  const [chainRows, prevResp] = await Promise.all([
+    fetchChain(symbol, selectedDate),
+    mGet(`/v2/aggs/ticker/${symbol}/prev`).catch(() => null),
+  ]);
+
+  const prevClose   = prevResp?.results?.[0]?.c ?? null;
+  const priceChange = (spotPrice != null && prevClose != null) ? spotPrice - prevClose : null;
+  const changePct   = (priceChange != null && prevClose)       ? (priceChange / prevClose) * 100 : null;
+
+  const calls = chainRows.filter(r => r.details?.contract_type === 'call').map(r => fmtContract(r, spotPrice));
+  const puts  = chainRows.filter(r => r.details?.contract_type === 'put').map(r => fmtContract(r, spotPrice));
+
+  return {
+    ticker: symbol,
+    price: spotPrice,
+    priceChange,
+    changePct,
     expirations,
-    selectedDate: isoDate(contracts.expirationDate) ?? expirations[0] ?? null,
-    calls: (contracts.calls ?? []).map(fmtContract),
-    puts:  (contracts.puts  ?? []).map(fmtContract),
+    selectedDate,
+    calls,
+    puts,
   };
-
-  // Capture today's nonzero OI, then backfill any zeros from the most recent
-  // nonzero snapshot so the chart always has real open-interest values.
-  // Best-effort: never let a storage hiccup break the options response.
-  try {
-    const optionsStore = require('../optionsStore');
-    optionsStore.record(symbol, result);
-    const oiAsOf = optionsStore.backfill(symbol, result);
-    if (oiAsOf) result.oiAsOf = oiAsOf;
-  } catch (e) {
-    console.warn('[options] OI store skipped:', e.message);
-  }
-
-  return result;
 }
 
 module.exports = { getOptionsData };

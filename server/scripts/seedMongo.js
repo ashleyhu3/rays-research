@@ -19,8 +19,6 @@ const BLOBS = [
   { name: 'dramHistory',          file: path.join(DATA_DIR, 'dramHistory.json') },
   { name: 'awsHistory',           file: path.join(DATA_DIR, 'awsHistory.json') },
   { name: 'cloudGpuHistory',      file: path.join(DATA_DIR, 'cloudGpuHistory.json') },
-  { name: 'optionsOI',            file: path.join(DATA_DIR, 'optionsOI.json') },
-  { name: 'shortInterestHistory', file: path.join(DATA_DIR, 'shortInterestHistory.json') },
   { name: 'sentimentData',        file: path.join(DATA_DIR, 'sentiment.json') },
 ];
 

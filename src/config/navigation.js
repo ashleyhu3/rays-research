@@ -33,6 +33,7 @@ export const NAV_SECTIONS = [
       { id: 'ai-supply-fiber',  label: 'Fiber supply chain'  },
       { id: 'ai-supply-pcb',    label: 'PCB supply chain'    },
       { id: 'ai-supply-mlcc',   label: 'MLCC supply chain'   },
+      { id: 'dc-buildouts',     label: 'AI infrastructure buildout' },
     ],
   },
   {
@@ -92,6 +93,7 @@ export const VIEW_META = {
   'ai-supply-fiber':  { title: 'AI SUPPLY — FIBER' },
   'ai-supply-pcb':    { title: 'AI SUPPLY — PCB' },
   'ai-supply-mlcc':   { title: 'AI SUPPLY — MLCC' },
+  'dc-buildouts':     { title: 'AI INFRASTRUCTURE BUILDOUT' },
   'github-commits':   { title: 'GITHUB COMMIT VELOCITY' },
   docker:             { title: 'DOCKER HUB DEPLOYS' },
   community:          { title: 'HN PULSE' },

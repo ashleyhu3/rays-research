@@ -26,7 +26,7 @@ export default function EditableGrid({ viewId, children }) {
   // default to half-width; users can widen any chart to full via the controls.
   const defaultLayout = useMemo(() => {
     const ordered = cards.map((c, i) => ({
-      item: { chartId: c.props.chartId, span: 'half', col: 'auto' },
+      item: { chartId: c.props.chartId, span: c.props.defaultFull ? 'full' : 'half', col: 'auto' },
       pin:  c.props.pinTop ? 1 : 0,
       i,
     }));

@@ -5,6 +5,11 @@ dist/
 # Volatile latest-scrape cache (seeded into the request cache on boot; in prod
 # this lives in Mongo, in dev it's a throwaway local file)
 server/data/latestSnapshots.json
+server/data/transcripts/octagon/
+server/data/transcripts/alphavantage/
+server/data/transcripts/processed/
+server/data/transcripts/embeddings/
+server/.venv-transcripts/
 Rays_Intern/
 graphify-out/
 Rays_Intern-graphify-out/

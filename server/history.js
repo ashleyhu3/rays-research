@@ -142,6 +142,14 @@ const EXTRACTORS = {
     }
     return out;
   },
+  webTraffic(data) {
+    const out = {};
+    for (const [domain, v] of Object.entries(data?.sites ?? {})) {
+      const n = v?.totalVisits ?? v?.visits;
+      if (n != null && Number.isFinite(n)) out[`${domain}.visits`] = n;
+    }
+    return out;
+  },
 };
 
 // Called by the scheduler after every successful scrape

@@ -93,6 +93,16 @@ export default function DemandGoogle({ weeks: W }) {
         fmt: fmtM,
       })}
 
+      {metricTrendCard({
+        chartId: 'goo-web-visits',
+        weeks: W,
+        hist: ld?.webTraffic?.history,
+        series: [{ metric: 'gemini.google.com.visits', label: 'Monthly visits', color: C.google }],
+        fmt: fmtM,
+        height: 240,
+        span2: true,
+      })}
+
     </EditableGrid>
   );
 }

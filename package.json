@@ -14,13 +14,26 @@
     "backfill:dram": "node --env-file=.env server/scripts/backfillDram.js",
     "backfill:aws-spot": "node --env-file=.env server/scripts/backfillAwsSpot.js",
     "backfill:cpu-spot": "node --env-file=.env server/scripts/backfillCpuSpot.js",
+    "backfill:transcripts:alpha": "node --env-file=.env server/scripts/backfillAlphaVantageTranscripts.js",
+    "enrich:transcripts": "node --env-file=.env server/scripts/enrichTranscripts.js",
+    "embed:transcripts": "server/.venv-transcripts/bin/python server/retrieval/chroma_pipeline.py index",
+    "query:transcripts": "server/.venv-transcripts/bin/python server/retrieval/chroma_pipeline.py query",
+    "tone:transcripts:local": "server/.venv-transcripts/bin/python server/retrieval/tone_pipeline.py",
+    "tone:transcripts:llm": "node --env-file=.env server/scripts/interpretTranscriptTone.js",
+    "facts:transcripts": "node --env-file=.env server/scripts/extractTranscriptFacts.js",
+    "analyze:transcripts": "npm run tone:transcripts:local && npm run tone:transcripts:llm && npm run facts:transcripts",
+    "pipeline:transcripts": "node server/scripts/runTranscriptPipeline.mjs",
     "backfill:all": "npm run backfill:sec && npm run backfill:mcp && npm run backfill:github-stars",
     "db:ping": "node --env-file=.env server/scripts/dbPing.js",
     "db:seed": "node --env-file=.env server/scripts/seedMongo.js",
-    "collect": "node --env-file=.env server/scripts/collect.js"
+    "db:seed:dc": "node --env-file=.env server/scripts/seedDcBuildouts.js",
+    "collect": "node --env-file=.env server/scripts/collect.js",
+    "test:transcripts": "node --test server/transcripts/*.test.js server/transcripts/*.test.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-pricing": "^3.1069.0",
+    "@langchain/core": "^1.2.1",
+    "@langchain/langgraph": "^1.4.7",
     "axios": "^1.17.0",
     "chart.js": "^4.4.1",
     "cheerio": "^1.2.0",
@@ -33,6 +46,8 @@
     "react": "^18.3.1",
     "react-chartjs-2": "^5.2.0",
     "react-dom": "^18.3.1",
+    "topojson-client": "^3.1.0",
+    "world-atlas": "^2.0.2",
     "yahoo-finance2": "^3.15.2"
   },
   "devDependencies": {

@@ -11,6 +11,7 @@ import Pricing         from '../pricing/Pricing';
 import Datacenter      from '../sources/Datacenter';
 import Electricity     from '../sources/Electricity';
 import Chinese         from '../sources/Chinese';
+import WebTrafficOverview from '../sources/WebTrafficOverview';
 
 // The overview is one flat grid (no section headers). Pinned charts flow in the
 // order their views are mounted here; per-chart width is set in CSS
@@ -24,6 +25,7 @@ const OVERVIEW_VIEWS = [
   Chinese,            // Input token pricing (half)
   DemandGeneral,      // OSS signals (quarter each)
   HuggingFace,        // HuggingFace most-downloaded (quarter)
+  WebTrafficOverview, // AI company website visits stacked bar
   PyPI, GitHub, Pricing,
 ];
 

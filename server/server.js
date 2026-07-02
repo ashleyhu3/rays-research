@@ -72,6 +72,7 @@ app.get('/api/cpu',               cachedRoute('cpu',              s.cpu));
 app.get('/api/tpu',               cachedRoute('tpu',              s.tpu));
 app.get('/api/epoch-revenue',     cachedRoute('epochRevenue',     s.epochRevenue));
 app.get('/api/sentiment',         cachedRoute('sentiment',        s.sentiment));
+app.get('/api/web-traffic',       cachedRoute('webTraffic',       s.webTraffic));
 
 // Keyword frequency search — scans all StockTwits CSVs for whole-word matches,
 // grouped by month. Results cached 1 hour per (lowercased) keyword.
@@ -105,10 +106,155 @@ app.get('/api/metrics-history', (_req, res) => res.json(history.all()));
 const { buildValidityState } = require('./validity');
 app.get('/api/validity/status', (_req, res) => res.json(buildValidityState()));
 
-// Earnings-transcript sentiment agent. Accepts a pasted/structured transcript,
-// or {symbol, quarter} to fetch a real speaker-segmented transcript from Alpha
-// Vantage (free) before analyzing.
+// Earnings transcript pipeline.
+// Stages 1-2 collect full transcripts from Alpha Vantage, then normalize the
+// source into deterministic prepared/Q&A speaker blocks before LLM analysis.
+const { collectFromAlphaVantage } = require('./transcripts/alphavantage');
+const { collectFromOctagon } = require('./transcripts/octagon');
+const { semanticChunkDocument } = require('./transcripts/chunker');
+const { listLocalEnrichments, readEnrichment, saveEnrichment } = require('./transcripts/enrichmentStore');
+const { parseTranscriptDocument } = require('./transcripts/parser');
+const { listTranscripts, saveTranscript } = require('./transcripts/store');
 const { runTranscriptAgent, parseTranscript, fetchTranscript, analyzeSeries } = require('./transcriptAgent');
+
+app.get('/api/transcripts/library', async (_req, res) => {
+  try {
+    res.json(await listTranscripts());
+  } catch (e) {
+    console.error('[transcripts:library]', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/transcripts/collect', async (req, res) => {
+  const body = req.body ?? {};
+  try {
+    const provider = String(body.provider || 'alphavantage').toLowerCase();
+    const collector = provider === 'octagon' ? collectFromOctagon : collectFromAlphaVantage;
+    const transcript = await collector({
+      ticker: body.ticker,
+      quarter: body.quarter,
+      year: body.year,
+    });
+    const saved = await saveTranscript(transcript);
+    const enrichment = semanticChunkDocument(transcript);
+    const enrichedStorage = await saveEnrichment(enrichment);
+    res.json({ transcript, enrichment, storage: { transcript: saved, enrichment: enrichedStorage } });
+  } catch (e) {
+    const status = e.status === 401 || e.status === 403
+      ? 401
+      : e.status === 429
+      ? 429
+      : /required|must be|recognizable|fiscal period/i.test(e.message)
+      ? 400
+      : 502;
+    console.error('[transcripts:collect]', e.message);
+    res.status(status).json({ error: e.message });
+  }
+});
+
+app.post('/api/transcripts/parse', async (req, res) => {
+  const body = req.body ?? {};
+  try {
+    const transcript = parseTranscriptDocument({
+      ticker: body.ticker,
+      quarter: body.quarter,
+      year: body.year,
+      earnings_date: body.earnings_date,
+      transcript: body.text,
+      metadata: {
+        provider: 'manual',
+        collectedAt: new Date().toISOString(),
+      },
+    });
+    const saved = await saveTranscript(transcript);
+    const enrichment = semanticChunkDocument(transcript);
+    const enrichedStorage = await saveEnrichment(enrichment);
+    res.json({ transcript, enrichment, storage: { transcript: saved, enrichment: enrichedStorage } });
+  } catch (e) {
+    console.error('[transcripts:parse]', e.message);
+    res.status(400).json({ error: e.message });
+  }
+});
+
+app.get('/api/transcripts/enrichment/:ticker/:period', (req, res) => {
+  const ticker = String(req.params.ticker || '').toUpperCase().replace(/[^A-Z0-9.-]/g, '');
+  const period = String(req.params.period || '').toUpperCase().replace(/[^0-9Q]/g, '');
+  const enrichment = readEnrichment(ticker, period);
+  if (!enrichment) return res.status(404).json({ error: `No enrichment found for ${ticker} ${period}.` });
+  res.json(enrichment);
+});
+
+app.get('/api/transcripts/topics', (_req, res) => {
+  const enrichments = listLocalEnrichments();
+  const counts = new Map();
+  for (const enrichment of enrichments) {
+    for (const item of enrichment.topicSummary || []) {
+      counts.set(item.topic, (counts.get(item.topic) || 0) + item.count);
+    }
+  }
+  res.json({
+    transcripts: enrichments.length,
+    chunks: enrichments.reduce((sum, item) => sum + (item.stats?.chunks || 0), 0),
+    topics: [...counts.entries()]
+      .map(([topic, count]) => ({ topic, count }))
+      .sort((a, b) => b.count - a.count || a.topic.localeCompare(b.topic)),
+  });
+});
+
+app.get('/api/transcripts/facts', (req, res) => {
+  const ticker = String(req.query.ticker || '').toUpperCase();
+  const period = String(req.query.period || '').toUpperCase();
+  const topic = String(req.query.topic || '');
+  const limit = Math.min(500, Math.max(1, Number(req.query.limit) || 100));
+  const facts = listLocalEnrichments()
+    .flatMap(enrichment => enrichment.facts || [])
+    .filter(fact => !ticker || fact.ticker === ticker)
+    .filter(fact => !period || fact.fiscal_period === period)
+    .filter(fact => !topic || fact.topics.includes(topic))
+    .slice(0, limit);
+  res.json({ count: facts.length, facts });
+});
+
+app.get('/api/transcripts/analysis/:ticker', async (req, res) => {
+  const ticker = String(req.params.ticker || '').toUpperCase().replace(/[^A-Z0-9.-]/g, '');
+  if (!ticker) return res.status(400).json({ error: 'ticker required' });
+  try {
+    const enrichments = (await listLocalEnrichments()).filter(
+      enrichment => String(enrichment.ticker || enrichment.symbol || '').toUpperCase() === ticker,
+    );
+    if (!enrichments.length) {
+      return res.status(404).json({ error: `No analyzed transcripts found for ${ticker}.` });
+    }
+
+    const { runTranscriptManager } = await import('./transcripts/manager.mjs');
+    const result = await runTranscriptManager({ documents: enrichments });
+    const totalChunks = enrichments.reduce(
+      (sum, enrichment) => sum + (enrichment.toneSummary?.chunks || enrichment.stats?.chunks || 0),
+      0,
+    );
+    const llmInterpreted = enrichments.reduce(
+      (sum, enrichment) => sum + (enrichment.toneSummary?.llmInterpreted || 0),
+      0,
+    );
+    res.json({
+      ticker,
+      analysis: result.analysis,
+      reports: result.reports,
+      execution: result.events,
+      modelUsage: {
+        deterministicPipeline: true,
+        totalChunks,
+        llmInterpreted,
+        llmShare: totalChunks ? Number((llmInterpreted / totalChunks).toFixed(4)) : 0,
+        scope: 'Optional qualitative tone interpretation on selected management answers only.',
+      },
+    });
+  } catch (e) {
+    console.error('[transcripts:analysis]', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
 
 // Four-quarter cross-analysis (SNDK): AV newest quarter + EDGAR for the older three.
 app.post('/api/transcript/series', async (req, res) => {
@@ -140,6 +286,40 @@ app.post('/api/transcript/analyze', async (req, res) => {
   } catch (e) {
     console.error('[transcript]', e.message);
     res.status(502).json({ error: e.message });
+  }
+});
+
+// ── AI data center buildout data (MongoDB → frontend) ───────────────────────
+app.get('/api/dc-buildouts', async (req, res) => {
+  const { MongoClient } = require('mongodb');
+  const fallback = require('./data/dcBuildouts.json');
+  if (!process.env.MONGODB_URI) return res.json(fallback);
+  let client;
+  try {
+    client = new MongoClient(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 8000 });
+    await client.connect();
+    const db = client.db(process.env.MONGODB_DB || undefined);
+    const [trends, operators, projects, companyDocs] = await Promise.all([
+      db.collection('dcDeploymentTrends').findOne({ _type: 'snapshot' }),
+      db.collection('dcOperators').find({}).toArray(),
+      db.collection('dcProjects').find({}).toArray(),
+      db.collection('dcCompanyCharts').find({}).toArray(),
+    ]);
+    if (!trends || !operators.length || !projects.length) return res.json(fallback);
+    const { _id, _type, updatedAt, ...trendFields } = trends;
+    const companyCharts = {};
+    for (const { _id, _key, updatedAt, ...c } of companyDocs) companyCharts[_key] = c;
+    res.json({
+      deploymentTrends: trendFields,
+      operators: operators.map(({ _id, updatedAt, ...o }) => o),
+      projects:  projects.map(({ _id, updatedAt, ...p }) => p),
+      companyCharts: Object.keys(companyCharts).length ? companyCharts : fallback.companyCharts,
+    });
+  } catch (e) {
+    console.error('[dc-buildouts]', e.message);
+    res.json(fallback);
+  } finally {
+    await client?.close();
   }
 });
 
@@ -199,14 +379,6 @@ app.post('/api/refresh', async (req, res) => {
   }
 });
 
-// Manual trigger for the post-settlement OI capture sweep — useful when
-// the nightly cron ran before Yahoo published OI, or a ticker was rate-limited.
-// Accepts optional { tickers: ['MU', 'SNDK'] } body; defaults to full basket.
-app.post('/api/capture-oi', async (req, res) => {
-  const tickers = Array.isArray(req.body?.tickers) ? req.body.tickers : undefined;
-  res.json({ ok: true, message: 'OI capture started in background', tickers: tickers ?? 'full basket' });
-  scheduler.captureOptionsOI(tickers).catch(e => console.error('[capture-oi]', e.message));
-});
 
 /* ── Options flow (per-ticker, 5-min cache) ──────────────────────── */
 app.get('/api/stocks/:ticker', async (req, res) => {
@@ -246,10 +418,6 @@ app.get('/api/options/:ticker', async (req, res) => {
     res.json(data);
   } catch (e) {
     console.error('[options]', ticker, e.message);
-    const rateLimited = e.message?.includes('429') || /Too Many Requests|crumb/i.test(e.message ?? '');
-    if (rateLimited) {
-      return res.status(503).json({ error: 'Yahoo Finance is rate-limiting requests right now. Please try again in a moment.' });
-    }
     res.status(500).json({ error: `Could not load options for ${ticker}: ${e.message}` });
   }
 });
@@ -277,11 +445,7 @@ const STORAGE_BLOBS = [
   { name: 'gpuHistory',     file: path.join(DATA_DIR, 'gpuHistory.json') },
   { name: 'dramHistory',    file: path.join(DATA_DIR, 'dramHistory.json') },
   { name: 'awsHistory',     file: path.join(DATA_DIR, 'awsHistory.json') },
-  // Most-recent NONZERO open interest per options contract, so the chart can
-  // backfill OI when Yahoo serves a zero-OI chain intraday/pre-market.
-  { name: 'optionsOI',      file: path.join(DATA_DIR, 'optionsOI.json') },
-  { name: 'shortInterestHistory', file: path.join(DATA_DIR, 'shortInterestHistory.json') },
-  { name: 'sentimentData',       file: path.join(DATA_DIR, 'sentiment.json') },
+{ name: 'sentimentData',       file: path.join(DATA_DIR, 'sentiment.json') },
   // Latest scrape per source — loaded into the request cache on boot for an
   // instant first paint instead of blocking on live re-scrapes.
   { name: 'latestSnapshots', file: path.join(DATA_DIR, 'latestSnapshots.json') },

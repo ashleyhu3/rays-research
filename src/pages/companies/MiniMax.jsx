@@ -2,9 +2,9 @@ import { useMemo } from 'react';
 import { Bar } from 'react-chartjs-2';
 import { C, fa } from '../../config/colors';
 import { baseOpts, hBarOpts, fmtM, GRID, TICK, BORD } from '../../utils/chartHelpers';
+import { metricTrendCard } from '../../components/chart/MetricTrendCard';
 import { buildCompanyPriceBar, pricingBarOpts } from '../../utils/modelPricing';
 import { orComboCard } from '../../components/chart/OrGrowthCards';
-import { metricTrendCard } from '../../components/chart/MetricTrendCard';
 import ChartCard from '../../components/chart/ChartCard';
 import EditableGrid from '../../components/chart/EditableGrid';
 import { useData } from '../../context/DataContext';
@@ -30,6 +30,7 @@ const QTR_LABELS = ['Q1 25', 'Q2 25', 'Q3 25', 'Q4 25', 'Q1 26'];
 
 export default function DemandMiniMax({ weeks: W }) {
   const { liveData: ld } = useData();
+  const mh = ld?.metricsHistory;
   const qN = Math.min(W, 5);
 
   // Consumer MAU
@@ -81,6 +82,16 @@ export default function DemandMiniMax({ weeks: W }) {
       >
         <Bar data={benchData} options={benchOpts} />
       </ChartCard>
+
+      {metricTrendCard({
+        chartId: 'mm-web-visits',
+        weeks: W,
+        hist: ld?.webTraffic?.history,
+        series: [{ metric: 'hailuoai.com.visits', label: 'Monthly visits', color: C.minimax }],
+        fmt: fmtM,
+        height: 240,
+        span2: true,
+      })}
     </EditableGrid>
   );
 }

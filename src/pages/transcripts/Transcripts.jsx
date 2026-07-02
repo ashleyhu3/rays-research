@@ -1,358 +1,713 @@
-import { useState, useMemo, useEffect } from 'react';
-import { Line } from 'react-chartjs-2';
-import { C, fa } from '../../config/colors';
-import { GRID, TICK, BORD } from '../../utils/chartHelpers';
+import { useEffect, useMemo, useState } from 'react';
+import './Transcripts.css';
 
-/* Earnings-Transcript Sentiment Agent.
-   - Single quarter: paste, or fetch by ticker+quarter (Alpha Vantage).
-   - SNDK 4-quarter series: AV newest quarter (Q&A) + SEC EDGAR press releases
-     for the older three, with cross-quarter tone/catalyst comparison.
-   Every flagged catalyst expands to the verbatim transcript text that caused it. */
+const CURRENT_YEAR = new Date().getFullYear();
+const SAMPLE = `Prepared Remarks
 
-const SAMPLE = `Sanjay Mehrotra (CEO): We are thrilled to announce a record quarter, with sequential revenue growth of 18% and demand at all-time highs.
-Mark Murphy (CFO): Operating cash flows were strong at $1.2 billion and we expect structural tailwinds to lift margins next year.
-C.J. Muse (Evercore ISI Analyst): NAND spot prices dropped 14% over three weeks and PC OEMs are slashing build targets. Why not expect severe margin compression next quarter?
-Sanjay Mehrotra (CEO): Spot pricing is volatile and doesn't reflect our long-term contracts. We see temporary inventory digestion dipping gross margins by maybe 250 basis points, but cloud demand is solid.`;
+Sanjay Mehrotra -- President and Chief Executive Officer
+We delivered a record quarter, supported by strong data center demand and improving pricing.
 
-const ROLE_COLOR = { Management: C.openai, Analyst: C.red, Operator: C.slate, Unknown: C.slate };
-const ENGINE_LABEL = {
-  'gemini-2.5-flash': 'Gemini 2.5 Flash',
-  'groq-llama-3.3-70b (two-tier)': 'Groq Llama-3.3-70B (two-tier)',
-  'lexicon': 'Lexicon (fallback)',
+Mark Murphy -- Executive Vice President and Chief Financial Officer
+[00:14:22] Revenue grew 18% sequentially and operating cash flow reached $1.2 billion.
+
+Question-and-Answer Session
+
+C.J. Muse -- Evercore ISI Analyst
+How should investors think about gross margin pressure if NAND spot prices continue to decline?
+
+Sanjay Mehrotra -- President and Chief Executive Officer
+Spot pricing does not reflect our long-term contracts. We expect temporary inventory digestion, while cloud demand remains solid.`;
+
+const ROLE_COLORS = {
+  Management: '#70d6a7',
+  Analyst: '#ffad72',
+  Operator: '#8da2c0',
+  Unknown: '#a2a8b3',
 };
-const sevColor = s => (s >= 4 ? '#f87171' : s >= 3 ? '#fbbf24' : '#94a3b8');
 
-const toneScale = (title) => ({
-  responsive: true, maintainAspectRatio: false, animation: { duration: 300 },
-  plugins: {
-    legend: { display: true, position: 'bottom', labels: { color: '#c8c8c0', font: { size: 11 }, padding: 12, boxWidth: 12 } },
-    tooltip: { backgroundColor: '#1a1f2a', borderColor: 'rgba(255,255,255,.12)', borderWidth: 1, callbacks: { label: c => ` ${c.dataset.label}: ${c.parsed.y == null ? '—' : c.parsed.y.toFixed(2)}` } },
-  },
-  scales: {
-    x: { title: { display: !!title, text: title, color: '#b0b0a8', font: { size: 11 } }, grid: GRID, ticks: TICK, border: BORD },
-    y: { min: -1, max: 1, title: { display: true, text: 'Sentiment (−1 to +1)', color: '#b0b0a8', font: { size: 11 } }, grid: GRID, ticks: { ...TICK, stepSize: 0.5 }, border: BORD },
-  },
-});
-
-function Kpi({ label, value, sub, color }) {
+function Icon({ name, size = 16 }) {
+  const paths = {
+    database: <><ellipse cx="12" cy="5" rx="8" ry="3" /><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5" /><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6" /></>,
+    split: <><path d="M6 3v5c0 2 1.5 3 3.5 3H18" /><path d="m15 8 3 3-3 3" /><path d="M6 21v-5c0-2 1.5-3 3.5-3H18" /></>,
+    file: <><path d="M6 2h8l4 4v16H6z" /><path d="M14 2v5h5" /><path d="M9 12h6M9 16h6" /></>,
+    arrow: <><path d="M5 12h14" /><path d="m14 7 5 5-5 5" /></>,
+    clock: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>,
+    users: <><path d="M16 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 20v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></>,
+    quote: <><path d="M9 11H5a3 3 0 0 0-3 3v5h7v-8Zm13 0h-4a3 3 0 0 0-3 3v5h7v-8Z" /></>,
+    check: <path d="m5 12 4 4L19 6" />,
+    spark: <><path d="m12 3 1.2 4.2L17 9l-3.8 1.8L12 15l-1.2-4.2L7 9l3.8-1.8L12 3Z" /><path d="m5 15 .7 2.3L8 18l-2.3.7L5 21l-.7-2.3L2 18l2.3-.7L5 15Z" /></>,
+    upload: <><path d="M12 16V4" /><path d="m7 9 5-5 5 5" /><path d="M5 20h14" /></>,
+  };
   return (
-    <div style={{ flex: 1, minWidth: 140, padding: '12px 16px', background: 'rgba(17,20,25,.7)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 8 }}>
-      <div style={{ color: '#8a8f99', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 5 }}>{label}</div>
-      <div style={{ color: color ?? 'var(--text)', fontSize: 22, fontWeight: 700, fontFamily: 'var(--font-m, monospace)' }}>{value}</div>
-      {sub && <div style={{ color: '#6b7280', fontSize: 11, marginTop: 3 }}>{sub}</div>}
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {paths[name]}
+    </svg>
+  );
+}
+
+function PipelineStep({ number, title, caption, icon, active, complete, locked }) {
+  return (
+    <div className={`tx-pipeline-step${active ? ' is-active' : ''}${complete ? ' is-complete' : ''}${locked ? ' is-locked' : ''}`}>
+      <div className="tx-pipeline-icon">{complete ? <Icon name="check" /> : <Icon name={icon} />}</div>
+      <div>
+        <div className="tx-eyebrow">Stage {number}</div>
+        <div className="tx-pipeline-title">{title}</div>
+        <div className="tx-pipeline-caption">{caption}</div>
+      </div>
     </div>
   );
 }
 
-// A catalyst with an expandable verbatim transcript excerpt — the "script that
-// caused the flag."
-function CatalystCard({ c }) {
-  const [open, setOpen] = useState(false);
+function Metric({ label, value, detail, icon }) {
   return (
-    <div style={{ background: 'rgba(17,20,25,.7)', border: '1px solid rgba(255,255,255,.08)', borderRadius: 8, padding: '11px 14px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4, flexWrap: 'wrap' }}>
-        <span style={{ color: sevColor(c.severity), fontWeight: 700, fontSize: 12, fontFamily: 'var(--font-m, monospace)' }}>SEV {c.severity}/5</span>
-        <span style={{ color: 'var(--text)', fontWeight: 600, fontSize: 13 }}>{c.catalyst ?? '—'}</span>
-        <span style={{ color: '#6b7280', fontSize: 11 }}>· block {c.block_id} · {c.role} · {c.speaker}</span>
+    <div className="tx-metric">
+      <div className="tx-metric-icon"><Icon name={icon} /></div>
+      <div>
+        <div className="tx-metric-value">{value}</div>
+        <div className="tx-metric-label">{label}</div>
+        {detail && <div className="tx-metric-detail">{detail}</div>}
       </div>
-      <div style={{ color: '#a8afba', fontSize: 12.5, lineHeight: 1.5 }}>{c.summary}</div>
-      {c.metrics?.length > 0 && (
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 7 }}>
-          {c.metrics.map((m, k) => (
-            <span key={k} style={{ background: 'rgba(96,165,250,.12)', color: '#93c5fd', border: '1px solid rgba(96,165,250,.25)', borderRadius: 4, padding: '1px 7px', fontSize: 11, fontFamily: 'var(--font-m, monospace)' }}>{m}</span>
-          ))}
+    </div>
+  );
+}
+
+function EmptyViewer() {
+  return (
+    <div className="tx-empty">
+      <div className="tx-empty-mark"><Icon name="file" size={26} /></div>
+      <h3>No transcript loaded</h3>
+      <p>Choose a ticker and fiscal period to collect a transcript from Alpha Vantage, or paste one into the local parser.</p>
+      <div className="tx-empty-example">
+        <span>Example</span>
+        <code>GOOGL · Q1 · 2026</code>
+      </div>
+    </div>
+  );
+}
+
+function TranscriptViewer({ document, enrichment }) {
+  const [mode, setMode] = useState('transcript');
+  const [section, setSection] = useState('all');
+  const [speaker, setSpeaker] = useState('all');
+  const [topic, setTopic] = useState('all');
+  const [query, setQuery] = useState('');
+
+  useEffect(() => {
+    setMode('transcript');
+    setSection('all');
+    setSpeaker('all');
+    setTopic('all');
+    setQuery('');
+  }, [document?.fiscal_period, document?.ticker]);
+
+  const blocks = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    return (document?.speaker_blocks ?? []).filter(block => {
+      if (section !== 'all' && block.section !== section) return false;
+      if (speaker !== 'all' && block.speaker !== speaker) return false;
+      return !needle || block.text.toLowerCase().includes(needle) || block.speaker.toLowerCase().includes(needle);
+    });
+  }, [document, section, speaker, query]);
+
+  const chunks = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    return (enrichment?.chunks ?? []).filter(chunk => {
+      if (section !== 'all' && chunk.section !== section) return false;
+      if (speaker !== 'all' && chunk.speaker !== speaker) return false;
+      if (topic !== 'all' && !chunk.topics.includes(topic)) return false;
+      return !needle
+        || chunk.text.toLowerCase().includes(needle)
+        || chunk.speaker.toLowerCase().includes(needle)
+        || chunk.topics.some(value => value.toLowerCase().includes(needle));
+    });
+  }, [enrichment, query, section, speaker, topic]);
+
+  const facts = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    return (enrichment?.facts ?? []).filter(fact => {
+      if (section !== 'all' && fact.section !== section) return false;
+      if (speaker !== 'all' && fact.speaker !== speaker) return false;
+      if (topic !== 'all' && !fact.topics.includes(topic)) return false;
+      return !needle
+        || fact.statement.toLowerCase().includes(needle)
+        || fact.speaker.toLowerCase().includes(needle)
+        || fact.topics.some(value => value.toLowerCase().includes(needle));
+    });
+  }, [enrichment, query, section, speaker, topic]);
+
+  const initials = name => name.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase();
+  const visibleCount = mode === 'facts' ? facts.length : mode === 'chunks' ? chunks.length : blocks.length;
+  const sectionCount = value => {
+    if (mode === 'facts') return enrichment?.facts.filter(item => item.section === value).length || 0;
+    if (mode === 'chunks') return enrichment?.chunks.filter(item => item.section === value).length || 0;
+    return value === 'prepared' ? document.stats.preparedBlocks : document.stats.qaBlocks;
+  };
+
+  return (
+    <section className="tx-viewer-card">
+      <div className="tx-viewer-head">
+        <div>
+          <div className="tx-eyebrow">Normalized transcript</div>
+          <h2>{document.ticker} <span>{document.fiscal_period}</span></h2>
+          <p>{document.earnings_date ? `Earnings call · ${document.earnings_date}` : 'Earnings date unavailable'} · collected via {document.metadata?.provider || 'Octagon'}</p>
         </div>
-      )}
-      {c.text && (
+        <div className="tx-normalized-badge"><Icon name="check" size={13} /> Parsed locally</div>
+      </div>
+
+      <div className="tx-metrics">
+        <Metric icon="users" value={document.stats.speakers} label="Speakers" detail="identified participants" />
+        <Metric icon="quote" value={document.stats.preparedBlocks} label="Prepared" detail="speaker paragraphs" />
+        <Metric icon="split" value={document.stats.qaBlocks} label="Q&A" detail="questions + answers" />
+        <Metric icon="file" value={document.stats.wordCount.toLocaleString()} label="Words" detail={`${document.stats.totalBlocks} total blocks`} />
+      </div>
+
+      {enrichment && (
         <>
-          <button onClick={() => setOpen(o => !o)} style={{ marginTop: 8, background: 'transparent', color: '#93c5fd', border: 'none', padding: 0, fontSize: 12, cursor: 'pointer' }}>
-            {open ? '▾ hide transcript excerpt' : '▸ show transcript excerpt'}
-          </button>
-          {open && (
-            <div style={{ marginTop: 6, padding: '8px 12px', background: 'rgba(0,0,0,.25)', borderLeft: '2px solid ' + sevColor(c.severity), borderRadius: 4, color: '#cbd5e1', fontSize: 12.5, lineHeight: 1.55, fontStyle: 'italic' }}>
-              “{c.text}”
+          <div className="tx-enrichment">
+            <div>
+              <span>Semantic layer</span>
+              <strong>{enrichment.stats.chunks} chunks · {enrichment.stats.topics} topics</strong>
+            </div>
+            <div className="tx-topic-cloud">
+              {enrichment.topicSummary.slice(0, 8).map(item => (
+                <button key={item.topic} onClick={() => { setMode('chunks'); setTopic(item.topic); }}>
+                  {item.topic}<span>{item.count}</span>
+                </button>
+              ))}
+            </div>
+            <div className={`tx-vector-status${enrichment.embedding ? ' is-ready' : ''}`}>
+              <Icon name={enrichment.embedding ? 'check' : 'clock'} size={12} />
+              {enrichment.embedding ? `${enrichment.embedding.model.split('/').pop()} · ${enrichment.embedding.dimension}d` : 'Vector index pending'}
+            </div>
+          </div>
+          {(enrichment.factSummary || enrichment.toneSummary) && (
+            <div className="tx-analysis-strip">
+              <div><span>Extracted facts</span><strong>{enrichment.factSummary?.total || 0}</strong><small>{enrichment.factSummary?.highConfidence || 0} high confidence</small></div>
+              <div><span>Forward looking</span><strong>{enrichment.factSummary?.forwardLooking || 0}</strong><small>guidance statements</small></div>
+              <div><span>Investor confidence</span><strong>{enrichment.toneSummary?.averageInvestorConfidence ?? '—'}</strong><small>0–100 composite</small></div>
+              <div><span>LLM interpreted</span><strong>{enrichment.toneSummary?.llmInterpreted || 0}</strong><small>management answers</small></div>
             </div>
           )}
         </>
       )}
-    </div>
-  );
-}
 
-// Per-block sentiment trajectory (single quarter).
-function Trajectory({ result }) {
-  const data = useMemo(() => {
-    const blocks = result?.blocks ?? [];
-    if (!blocks.length) return null;
-    const series = role => blocks.map(b => (b.role === role ? b.finbert_score : null));
-    return {
-      labels: blocks.map(b => b.block_id),
-      datasets: ['Management', 'Analyst'].map(role => ({
-        label: role, data: series(role), borderColor: ROLE_COLOR[role], backgroundColor: fa(ROLE_COLOR[role], 0.12),
-        pointBackgroundColor: blocks.map(b => (b.role === role && b.flagged ? '#fbbf24' : ROLE_COLOR[role])),
-        pointRadius: blocks.map(b => (b.role === role && b.flagged ? 7 : 3)), pointHoverRadius: 8, borderWidth: 2, spanGaps: true, tension: 0.25,
-      })),
-    };
-  }, [result]);
-  if (!data) return null;
-  return (
-    <div style={{ background: 'rgba(14,17,22,.6)', border: '1px solid rgba(255,255,255,.08)', borderRadius: 8, padding: '14px 16px 8px', marginBottom: 16 }}>
-      <div style={{ color: '#cbd5e1', fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Sentiment trajectory — management vs analyst <span style={{ color: '#fbbf24', fontWeight: 400 }}>(amber = flagged shifts)</span></div>
-      <div style={{ height: 280 }}><Line data={data} options={toneScale('Speech block')} /></div>
-    </div>
-  );
-}
-
-function SingleResult({ result }) {
-  const s = result.summary;
-  const gapColor = s.sentimentGap == null ? undefined : s.sentimentGap > 0.4 ? '#f87171' : s.sentimentGap < -0.2 ? '#4ade80' : '#fbbf24';
-  const td = { padding: '7px 10px', fontSize: 12.5, borderBottom: '1px solid rgba(255,255,255,.05)' };
-  const th = { ...td, color: '#8a8f99', textTransform: 'uppercase', fontSize: 10.5, letterSpacing: '.05em', fontWeight: 600 };
-  return (
-    <>
-      {result.source && (
-        <div style={{ color: '#93c5fd', fontSize: 12.5, marginBottom: 10 }}>
-          Source: <b>{result.source.provider}</b> · {result.source.symbol} {result.source.quarter}{!result.source.usingKey && <span style={{ color: '#6b7280' }}> (demo key)</span>}
-        </div>
-      )}
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
-        <Kpi label="Management tone" value={s.mgmtAvg != null ? s.mgmtAvg.toFixed(2) : '—'} sub="avg score" color={s.mgmtAvg > 0 ? '#4ade80' : '#f87171'} />
-        <Kpi label="Analyst tone" value={s.analystAvg != null ? s.analystAvg.toFixed(2) : '—'} sub="avg score" color={s.analystAvg > 0 ? '#4ade80' : '#f87171'} />
-        <Kpi label="Sentiment gap" value={s.sentimentGap != null ? `${s.sentimentGap > 0 ? '+' : ''}${s.sentimentGap.toFixed(2)}` : '—'} sub={s.gapState} color={gapColor} />
-        <Kpi label="Engine" value={ENGINE_LABEL[s.engine] ?? s.engine} sub={`${s.llmCovered}/${s.blockCount} blocks · ${s.flaggedCount} flagged`} color={s.engine === 'lexicon' ? '#fbbf24' : '#cbd5e1'} />
-      </div>
-      {s.gapImplication && <div style={{ background: 'rgba(251,191,36,.08)', border: '1px solid rgba(251,191,36,.25)', borderRadius: 8, padding: '10px 14px', marginBottom: 16, color: '#e8d8a8', fontSize: 13 }}><b>{s.gapState}.</b> {s.gapImplication}</div>}
-
-      <Trajectory result={result} />
-
-      {result.catalysts.length > 0 && (
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ color: '#cbd5e1', fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Catalysts behind tone shifts ({result.catalysts.length}) — click to see the transcript excerpt</div>
-          <div style={{ display: 'grid', gap: 10 }}>{result.catalysts.map((c, i) => <CatalystCard key={i} c={c} />)}</div>
-        </div>
-      )}
-
-      <div style={{ background: 'rgba(14,17,22,.6)', border: '1px solid rgba(255,255,255,.08)', borderRadius: 8, overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead><tr><th style={th}>#</th><th style={th}>Speaker</th><th style={th}>Role</th><th style={th}>Tone</th><th style={th}>Flag</th><th style={th}>Catalyst</th></tr></thead>
-          <tbody>{result.blocks.map(b => (
-            <tr key={b.block_id} title={b.text}>
-              <td style={td}>{b.block_id}</td>
-              <td style={td}>{b.speaker}</td>
-              <td style={{ ...td, color: ROLE_COLOR[b.role] }}>{b.role}</td>
-              <td style={{ ...td, color: b.finbert_score > 0 ? '#4ade80' : b.finbert_score < 0 ? '#f87171' : '#94a3b8', fontFamily: 'var(--font-m, monospace)' }}>{b.finbert_score.toFixed(2)}</td>
-              <td style={td}>{b.flagged ? <span style={{ color: '#fbbf24' }}>● {b.investigated ? 'LLM' : 'T1'}</span> : ''}</td>
-              <td style={{ ...td, color: '#a8afba' }}>{b.catalyst ?? ''}</td>
-            </tr>
-          ))}</tbody>
-        </table>
-      </div>
-    </>
-  );
-}
-
-function SeriesResult({ series }) {
-  const ordered = useMemo(() => [...series.cross.trend].reverse(), [series]); // oldest → newest
-  const chart = {
-    labels: ordered.map(q => q.label),
-    datasets: [
-      { label: 'Management tone', data: ordered.map(q => q.mgmtAvg), borderColor: ROLE_COLOR.Management, backgroundColor: fa(ROLE_COLOR.Management, 0.12), pointRadius: 5, pointHoverRadius: 7, borderWidth: 2, spanGaps: true, tension: 0.25 },
-      { label: 'Analyst tone (where available)', data: ordered.map(q => q.analystAvg), borderColor: ROLE_COLOR.Analyst, backgroundColor: fa(ROLE_COLOR.Analyst, 0.12), pointRadius: 5, pointHoverRadius: 7, borderWidth: 2, borderDash: [5, 4], spanGaps: true, tension: 0.25 },
-    ],
-  };
-  return (
-    <>
-      <div style={{ color: '#cbd5e1', fontSize: 15, fontWeight: 700, marginBottom: 4 }}>{series.symbol} — last four quarters</div>
-      <div style={{ color: '#6b7280', fontSize: 12, marginBottom: 14 }}>Newest quarter: Alpha Vantage (full Q&amp;A). Older three: SEC EDGAR press releases (management-only).</div>
-
-      <div style={{ background: 'rgba(14,17,22,.6)', border: '1px solid rgba(255,255,255,.08)', borderRadius: 8, padding: '14px 16px 8px', marginBottom: 14 }}>
-        <div style={{ color: '#cbd5e1', fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Management tone across quarters</div>
-        <div style={{ height: 240 }}><Line data={chart} options={toneScale('Quarter (oldest → newest)')} /></div>
-      </div>
-
-      {series.cross.narrative && (
-        <div style={{ background: 'rgba(59,130,246,.08)', border: '1px solid rgba(59,130,246,.25)', borderRadius: 8, padding: '12px 16px', marginBottom: 18, color: '#cfe0f5', fontSize: 13, lineHeight: 1.6 }}>
-          <div style={{ color: '#93c5fd', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 5 }}>Cross-quarter narrative</div>
-          {series.cross.narrative}
-        </div>
-      )}
-
-      {series.quarters.map((q, i) => {
-        const s = q.result?.summary;
-        return (
-          <div key={i} style={{ marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid rgba(255,255,255,.06)' }}>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
-              <span style={{ color: 'var(--text)', fontSize: 14, fontWeight: 700 }}>{q.label}</span>
-              <span style={{ color: '#6b7280', fontSize: 12 }}>{q.period} · reported {q.date}</span>
-              <span style={{ fontSize: 11, padding: '1px 8px', borderRadius: 4, background: q.hasQA ? 'rgba(74,222,128,.12)' : 'rgba(148,163,184,.12)', color: q.hasQA ? '#4ade80' : '#94a3b8' }}>{q.hasQA ? 'Full Q&A' : 'Mgmt-only'}</span>
-              <span style={{ color: '#6b7280', fontSize: 11 }}>{q.source}</span>
-            </div>
-            {!q.result ? (
-              <div style={{ color: '#f87171', fontSize: 12.5 }}>No analysis — {q.note || 'no data'}</div>
-            ) : (
-              <>
-                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 10 }}>
-                  <Kpi label="Mgmt tone" value={s.mgmtAvg != null ? s.mgmtAvg.toFixed(2) : '—'} color={s.mgmtAvg > 0 ? '#4ade80' : '#f87171'} />
-                  {q.hasQA && <Kpi label="Analyst tone" value={s.analystAvg != null ? s.analystAvg.toFixed(2) : '—'} color={s.analystAvg > 0 ? '#4ade80' : '#f87171'} />}
-                  {q.hasQA && <Kpi label="Gap" value={s.sentimentGap != null ? `${s.sentimentGap > 0 ? '+' : ''}${s.sentimentGap.toFixed(2)}` : '—'} sub={s.gapState} />}
-                  <Kpi label="Catalysts" value={q.result.catalysts.length} sub={`top sev ${s.topSeverity}/5 · ${ENGINE_LABEL[s.engine] ?? s.engine}`} />
-                </div>
-                {q.result.catalysts.length > 0
-                  ? <div style={{ display: 'grid', gap: 9 }}>{q.result.catalysts.map((c, k) => <CatalystCard key={k} c={c} />)}</div>
-                  : <div style={{ color: '#6b7280', fontSize: 12.5 }}>No catalysts flagged (clean/positive quarter).</div>}
-              </>
-            )}
+      <div className="tx-toolbar">
+        <div className="tx-toolbar-left">
+          <div className="tx-view-toggle">
+            <button className={mode === 'transcript' ? 'active' : ''} onClick={() => setMode('transcript')}>Transcript</button>
+            <button className={mode === 'chunks' ? 'active' : ''} onClick={() => setMode('chunks')} disabled={!enrichment}>Semantic chunks</button>
+            <button className={mode === 'facts' ? 'active' : ''} onClick={() => setMode('facts')} disabled={!enrichment?.facts?.length}>Facts</button>
           </div>
-        );
-      })}
-    </>
+          <div className="tx-tabs">
+            {[
+              ['all', 'All', mode === 'facts' ? enrichment?.factSummary?.total : mode === 'chunks' ? enrichment?.stats.chunks : document.stats.totalBlocks],
+              ['prepared', 'Prepared', sectionCount('prepared')],
+              ['qa', 'Q&A', sectionCount('qa')],
+            ].map(([value, label, count]) => (
+              <button key={value} className={section === value ? 'active' : ''} onClick={() => setSection(value)}>
+                {label}<span>{count || 0}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="tx-filters">
+          <input value={query} onChange={event => setQuery(event.target.value)} placeholder={mode === 'facts' ? 'Search facts or metrics' : mode === 'chunks' ? 'Search chunks or topics' : 'Search transcript'} />
+          {mode !== 'transcript' && (
+            <select value={topic} onChange={event => setTopic(event.target.value)}>
+              <option value="all">All topics</option>
+              {enrichment?.topicSummary.map(item => <option key={item.topic} value={item.topic}>{item.topic} ({item.count})</option>)}
+            </select>
+          )}
+          <select value={speaker} onChange={event => setSpeaker(event.target.value)}>
+            <option value="all">All speakers</option>
+            {document.speakers.map(item => <option key={item.name} value={item.name}>{item.name}</option>)}
+          </select>
+        </div>
+      </div>
+
+      {mode === 'transcript' ? (
+        <div className="tx-block-list">
+          {blocks.map(block => (
+            <article className="tx-block" key={block.id}>
+              <div className="tx-avatar" style={{ '--speaker-color': ROLE_COLORS[block.role] || ROLE_COLORS.Unknown }}>{initials(block.speaker)}</div>
+              <div className="tx-block-body">
+                <div className="tx-block-meta">
+                  <div>
+                    <strong>{block.speaker}</strong>
+                    {block.title && <span className="tx-speaker-title">{block.title}</span>}
+                  </div>
+                  <div className="tx-block-tags">
+                    <span className={`tx-role tx-role--${block.role.toLowerCase()}`}>{block.role}</span>
+                    <span>{block.section === 'qa' ? (block.kind === 'question' ? 'Question' : block.kind === 'answer' ? 'Answer' : 'Q&A') : 'Prepared'}</span>
+                    {block.timestamp && <span><Icon name="clock" size={11} /> {block.timestamp}</span>}
+                  </div>
+                </div>
+                <p>{block.text}</p>
+                <div className="tx-block-foot">Block {String(block.id).padStart(2, '0')} · paragraph {block.paragraph} · {block.company} {block.quarter}</div>
+              </div>
+            </article>
+          ))}
+          {!blocks.length && <div className="tx-no-results">No transcript blocks match these filters.</div>}
+        </div>
+      ) : mode === 'chunks' ? (
+        <div className="tx-block-list">
+          {chunks.map(chunk => (
+            <article className="tx-block tx-chunk" key={chunk.id}>
+              <div className="tx-avatar" style={{ '--speaker-color': ROLE_COLORS[chunk.role] || ROLE_COLORS.Unknown }}>{initials(chunk.speaker)}</div>
+              <div className="tx-block-body">
+                <div className="tx-block-meta">
+                  <div>
+                    <strong>{chunk.speaker}</strong>
+                    {chunk.title && <span className="tx-speaker-title">{chunk.title}</span>}
+                  </div>
+                  <div className="tx-block-tags">
+                    <span className="tx-topic-primary">{chunk.topic}</span>
+                    {chunk.tone?.composite && (
+                      <span className={`tx-tone${chunk.tone.composite.investorConfidence < 43 ? ' is-concerned' : chunk.tone.composite.investorConfidence >= 58 ? ' is-confident' : ''}`}>
+                        Tone {chunk.tone.composite.investorConfidence}
+                      </span>
+                    )}
+                    <span>{chunk.tokenCount} tokens</span>
+                    <span>{chunk.section === 'qa' ? 'Q&A' : 'Prepared'}</span>
+                  </div>
+                </div>
+                <p>{chunk.text}</p>
+                <div className="tx-chunk-topics">
+                  {chunk.topics.map(value => <button key={value} onClick={() => setTopic(value)}>{value}</button>)}
+                </div>
+                {chunk.tone?.llm && (
+                  <div className="tx-tone-reason">
+                    <strong>{chunk.tone.llm.stance.replaceAll('_', ' ')}</strong>
+                    <span>{chunk.tone.llm.reasoning}</span>
+                  </div>
+                )}
+                <div className="tx-block-foot">{chunk.id} · source block {chunk.sourceBlockId} · topic confidence {(chunk.topicConfidence * 100).toFixed(0)}%</div>
+              </div>
+            </article>
+          ))}
+          {!chunks.length && <div className="tx-no-results">No semantic chunks match these filters.</div>}
+        </div>
+      ) : (
+        <div className="tx-block-list">
+          {facts.map(fact => (
+            <article className="tx-fact" key={fact.id}>
+              <div className="tx-fact-head">
+                <div>
+                  <span className="tx-topic-primary">{fact.topic}</span>
+                  {fact.forwardLooking && <span className="tx-forward">Forward looking</span>}
+                  <span>{fact.confidence} confidence</span>
+                </div>
+                <small>{fact.speaker} · {fact.section === 'qa' ? 'Q&A' : 'Prepared'}</small>
+              </div>
+              <blockquote>{fact.statement}</blockquote>
+              {!!fact.metrics.length && (
+                <div className="tx-fact-metrics">
+                  {fact.metrics.map(metric => <span key={`${metric.type}-${metric.value}`}>{metric.value}<small>{metric.type.replaceAll('_', ' ')}</small></span>)}
+                </div>
+              )}
+              {fact.sentiment && (
+                <div className="tx-fact-tone">
+                  <span>{fact.sentiment.label}</span>
+                  <div><i style={{ width: `${fact.sentiment.investorConfidence}%` }} /></div>
+                  <strong>{fact.sentiment.investorConfidence}</strong>
+                </div>
+              )}
+              <div className="tx-block-foot">{fact.id} · source block {fact.sourceBlockId}</div>
+            </article>
+          ))}
+          {!facts.length && <div className="tx-no-results">No structured facts match these filters.</div>}
+        </div>
+      )}
+      <div className="tx-result-count">{visibleCount} {mode === 'facts' ? 'facts' : mode === 'chunks' ? 'chunks' : 'blocks'} shown</div>
+    </section>
   );
 }
 
-// ── LSEG Stored Transcripts (pulled via backfillTranscripts.js → MongoDB) ────
-function StoredTranscripts({ onAnalyze }) {
-  const [docs, setDocs]       = useState(null); // null = loading, [] = none
-  const [expanded, setExpanded] = useState(false);
-
-  useEffect(() => {
-    fetch('/api/transcripts/stored')
-      .then(r => r.json())
-      .then(d => setDocs(Array.isArray(d) ? d : []))
-      .catch(() => setDocs([]));
-  }, []);
-
-  if (!docs || docs.length === 0) return null;
-
-  // Group by ticker
-  const byTicker = {};
-  for (const d of docs) {
-    if (!byTicker[d.ticker]) byTicker[d.ticker] = [];
-    byTicker[d.ticker].push(d);
+function documentFromEnrichment(enrichment) {
+  const chunks = enrichment?.chunks ?? [];
+  const speakerMap = new Map();
+  for (const chunk of chunks) {
+    if (!chunk.speaker || speakerMap.has(chunk.speaker)) continue;
+    speakerMap.set(chunk.speaker, {
+      name: chunk.speaker,
+      title: chunk.title || '',
+      role: chunk.role || 'Unknown',
+    });
   }
-  const tickers = Object.keys(byTicker).sort();
+  const preparedBlocks = chunks.filter(chunk => chunk.section === 'prepared').length;
+  const qaBlocks = chunks.filter(chunk => chunk.section === 'qa').length;
+  return {
+    ticker: enrichment.ticker,
+    quarter: enrichment.quarter,
+    year: enrichment.year,
+    fiscal_period: enrichment.fiscal_period,
+    earnings_date: enrichment.earnings_date || null,
+    metadata: {
+      provider: enrichment.sourceProvider || 'local analysis',
+      analyzed: true,
+    },
+    speakers: [...speakerMap.values()],
+    speaker_blocks: chunks.map((chunk, index) => ({
+      id: chunk.id || index + 1,
+      speaker: chunk.speaker || 'Unknown speaker',
+      title: chunk.title || '',
+      role: chunk.role || 'Unknown',
+      section: chunk.section || 'prepared',
+      kind: chunk.kind || 'remark',
+      timestamp: chunk.timestamp || null,
+      paragraph: chunk.chunkInBlock || 1,
+      company: enrichment.ticker,
+      quarter: enrichment.fiscal_period,
+      text: chunk.text,
+    })),
+    stats: {
+      speakers: speakerMap.size,
+      preparedBlocks,
+      qaBlocks,
+      totalBlocks: chunks.length,
+      wordCount: chunks.reduce(
+        (total, chunk) => total + String(chunk.text || '').split(/\s+/).filter(Boolean).length,
+        0,
+      ),
+    },
+  };
+}
 
-  const badge = { fontSize: 11, padding: '1px 7px', borderRadius: 4, background: 'rgba(99,179,237,.12)', color: '#93c5fd', border: '1px solid rgba(99,179,237,.25)', fontFamily: 'var(--font-m, monospace)' };
-  const row = { display: 'flex', alignItems: 'baseline', gap: 8, padding: '7px 0', borderBottom: '1px solid rgba(255,255,255,.04)', flexWrap: 'wrap' };
+function AnalysisOverview({ payload, loading, error, onSelectPeriod }) {
+  const report = payload?.reports?.[0];
+  const timelines = payload?.analysis?.timelines ?? [];
+  const topicNames = new Set(report?.topics?.map(item => item.topic) ?? []);
+  const visibleTimelines = timelines.filter(item => topicNames.has(item.topic));
+  const usage = payload?.modelUsage;
+
+  if (loading) {
+    return (
+      <section className="tx-analysis-overview is-loading">
+        <div className="tx-analysis-loader"><span className="tx-spinner" /> Running deterministic cross-quarter analysis…</div>
+      </section>
+    );
+  }
+  if (error) {
+    return <section className="tx-analysis-overview is-error">{error}</section>;
+  }
+  if (!report) return null;
 
   return (
-    <div style={{ marginBottom: 20, background: 'rgba(14,17,22,.6)', border: '1px solid rgba(255,255,255,.08)', borderRadius: 8, overflow: 'hidden' }}>
-      <button
-        onClick={() => setExpanded(e => !e)}
-        style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '11px 16px', background: 'transparent', border: 'none', cursor: 'pointer', color: '#cbd5e1', fontSize: 13, fontWeight: 600 }}
-      >
-        <span>{expanded ? '▾' : '▸'}</span>
-        LSEG Stored Transcripts
-        <span style={{ ...badge, background: 'rgba(74,222,128,.1)', color: '#4ade80', border: '1px solid rgba(74,222,128,.2)' }}>{docs.length} docs · {tickers.length} tickers</span>
-        <span style={{ color: '#6b7280', fontWeight: 400, fontSize: 11 }}>fetched via backfillTranscripts.js</span>
-      </button>
-      {expanded && (
-        <div style={{ padding: '0 16px 14px' }}>
-          {tickers.map(ticker => (
-            <div key={ticker} style={{ marginBottom: 8 }}>
-              <div style={{ color: '#8a8f99', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 4, marginTop: 10 }}>{ticker}</div>
-              {byTicker[ticker].map(d => (
-                <div key={d._id} style={row}>
-                  <span style={badge}>{d.quarter ?? '?'}</span>
-                  <span style={{ color: 'var(--text)', fontSize: 12.5, flex: 1 }}>{d.headline?.slice(0, 80) ?? '—'}</span>
-                  <span style={{ color: '#6b7280', fontSize: 11 }}>{(d.date ?? '').slice(0, 10)} · {d.blockCount ?? '?'} blocks</span>
-                  <button
-                    onClick={() => onAnalyze(d)}
-                    style={{ background: 'rgba(59,130,246,.15)', color: '#93c5fd', border: '1px solid rgba(59,130,246,.3)', borderRadius: 5, padding: '3px 10px', fontSize: 11, cursor: 'pointer' }}
-                  >
-                    {d.analysis ? 'View analysis' : 'Analyze'}
-                  </button>
-                </div>
-              ))}
+    <section className="tx-analysis-overview">
+      <div className="tx-report-head">
+        <div>
+          <div className="tx-eyebrow">Stages 08–12 · Cross-quarter report</div>
+          <h2>{report.company} transcript intelligence</h2>
+          <p>{report.coverage.periods.join(' · ')} · {report.coverage.topics} topics · {report.coverage.comparisons} quarter comparisons</p>
+        </div>
+        <div className="tx-confidence">
+          <strong>{report.overallConfidence}</strong>
+          <span>Overall confidence</span>
+          <small>{report.tone}</small>
+        </div>
+      </div>
+
+      <div className="tx-processing-note">
+        <span>Hybrid pipeline</span>
+        <strong>{usage?.totalChunks || 0} chunks processed deterministically</strong>
+        <p>
+          Gemini/Groq interpreted {usage?.llmInterpreted || 0} selected management answers
+          {usage?.totalChunks ? ` (${((usage.llmShare || 0) * 100).toFixed(1)}% of chunks)` : ''}; the complete transcripts were not sent through an LLM.
+        </p>
+      </div>
+
+      <div className="tx-report-grid">
+        <div className="tx-topic-signals">
+          <div className="tx-report-section-head"><span>Topic signals</span><small>First → latest quarter</small></div>
+          {report.topics.map(topic => (
+            <div className="tx-signal" key={topic.topic}>
+              <strong>{topic.topic}</strong>
+              <span className={`tx-direction${topic.direction.includes('↓') ? ' is-down' : topic.direction.includes('↑') ? ' is-up' : ''}`}>{topic.direction}</span>
+              <div><i style={{ width: `${topic.confidence}%` }} /></div>
+              <small>{topic.confidence}</small>
             </div>
           ))}
         </div>
-      )}
-    </div>
+
+        <div className="tx-notable-change">
+          <div className="tx-report-section-head"><span>Notable change</span><small>{report.notableChange.from} → {report.notableChange.to}</small></div>
+          <h3>{report.notableChange.narrative}</h3>
+          <div className="tx-change-stats">
+            <span>Sentiment <strong>{report.notableChange.sentimentDelta > 0 ? '+' : ''}{report.notableChange.sentimentDelta}</strong></span>
+            <span>Confidence <strong>{report.notableChange.confidenceDelta > 0 ? '+' : ''}{Math.round(report.notableChange.confidenceDelta * 100)}</strong></span>
+          </div>
+          <div className="tx-report-evidence">
+            {report.notableChange.evidence.map(item => (
+              <blockquote key={`${item.period}-${item.statement}`}>
+                <span>{item.period} · {item.speaker}</span>
+                {item.statement}
+              </blockquote>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="tx-timeline">
+        <div className="tx-report-section-head"><span>Topic timeline</span><small>Click a quarter to open its transcript</small></div>
+        {visibleTimelines.map(timeline => (
+          <div className="tx-timeline-row" key={timeline.topic}>
+            <strong>{timeline.topic}</strong>
+            <div>
+              {timeline.points.map(point => (
+                <button key={point.period} onClick={() => onSelectPeriod(point.period)}>
+                  <span>{point.period}</span>
+                  <i className={point.sentimentScore >= .2 ? 'is-positive' : point.sentimentScore <= -.2 ? 'is-negative' : ''} />
+                  <small>{point.sentiment} · {Math.round(point.confidenceScore * 100)}</small>
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="tx-contradiction-summary">
+        <span>Potential contradictions</span>
+        <strong>{report.contradictions.length}</strong>
+        <p>{report.contradictions.length ? 'Review the flagged quarter-over-quarter statements below.' : 'No comparable management statements crossed the contradiction threshold.'}</p>
+      </div>
+    </section>
   );
 }
 
 export default function Transcripts() {
-  const [text, setText] = useState('');
-  const [symbol, setSymbol] = useState('');
-  const [quarter, setQuarter] = useState('');
-  const [result, setResult] = useState(null);
-  const [series, setSeries] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [ticker, setTicker] = useState('GOOGL');
+  const [quarter, setQuarter] = useState('Q1');
+  const [year, setYear] = useState(CURRENT_YEAR);
+  const [document, setDocument] = useState(null);
+  const [enrichment, setEnrichment] = useState(null);
+  const [library, setLibrary] = useState([]);
+  const [manualOpen, setManualOpen] = useState(false);
+  const [manualText, setManualText] = useState('');
+  const [loading, setLoading] = useState('');
+  const [error, setError] = useState('');
+  const [analysis, setAnalysis] = useState(null);
+  const [analysisLoading, setAnalysisLoading] = useState(true);
+  const [analysisError, setAnalysisError] = useState('');
 
-  async function call(url, body, busyMsg) {
-    if (loading) return;
-    setLoading(busyMsg || true); setError(null); setResult(null); setSeries(null);
-    try {
-      const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`);
-      return json;
-    } catch (e) { setError(e.message); return null; }
-    finally { setLoading(false); }
-  }
-
-  const analyze = async () => { if (text.trim()) setResult(await call('/api/transcript/analyze', { text, anomalyThreshold: 0.4 }, 'Analyzing…')); };
-  const fetchTicker = async () => { if (symbol.trim() && quarter.trim()) setResult(await call('/api/transcript/analyze', { symbol, quarter }, `Fetching ${symbol.toUpperCase()} ${quarter.toUpperCase()}…`)); };
-  const runSeries = async () => setSeries(await call('/api/transcript/series', { symbol: 'SNDK' }, 'Analyzing SNDK · 4 quarters (this takes a couple minutes)…'));
-
-  // Handle clicking "Analyze" or "View analysis" on a stored LSEG transcript
-  const handleStoredAnalyze = async (doc) => {
-    setSeries(null); setError(null); setResult(null);
-    if (doc.analysis?.summary) {
-      // Already analyzed — display directly without re-running
-      setResult(doc.analysis);
-      return;
-    }
-    // Re-analyze using the stored blocks (avoid fetching raw text again)
-    if (!doc.blocks?.length) { setError('No speaker blocks stored for this transcript.'); return; }
-    setLoading(`Analyzing ${doc.ticker} ${doc.quarter ?? ''}…`);
-    try {
-      const res = await fetch('/api/transcript/analyze', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transcript: doc.blocks, anomalyThreshold: 0.4 }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`);
-      if (json.summary) {
-        json.source = { provider: 'LSEG Workspace', symbol: doc.ticker, quarter: doc.quarter ?? doc.date?.slice(0, 10) ?? '', usingKey: true };
-      }
-      setResult(json);
-    } catch (e) { setError(e.message); }
-    finally { setLoading(false); }
+  const refreshLibrary = () => {
+    fetch('/api/transcripts/library')
+      .then(response => response.ok ? response.json() : [])
+      .then(data => {
+        const items = Array.isArray(data) ? data : [];
+        setLibrary(items);
+        setDocument(current => current || items.find(
+          item => item.ticker === 'GOOGL' || item.transcript?.ticker === 'GOOGL',
+        )?.transcript || null);
+      })
+      .catch(() => setLibrary([]));
   };
 
-  const inp = { background: '#11141a', color: 'var(--text)', border: '1px solid rgba(255,255,255,.14)', borderRadius: 6, padding: '8px 11px', fontSize: 13 };
-  const btn = (primary) => ({ background: loading ? '#2a3038' : (primary ? 'var(--accent, #3b82f6)' : 'transparent'), color: primary ? '#fff' : '#8a8f99', border: primary ? 'none' : '1px solid rgba(255,255,255,.15)', borderRadius: 6, padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: loading ? 'default' : 'pointer' });
+  useEffect(refreshLibrary, []);
+
+  useEffect(() => {
+    setAnalysisLoading(true);
+    setAnalysisError('');
+    fetch('/api/transcripts/analysis/GOOGL')
+      .then(async response => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+        return data;
+      })
+      .then(data => {
+        setAnalysis(data);
+        const latestPeriod = data.reports?.[0]?.coverage?.periods?.at(-1);
+        if (latestPeriod) loadAnalyzedPeriod(latestPeriod);
+      })
+      .catch(requestError => setAnalysisError(requestError.message))
+      .finally(() => setAnalysisLoading(false));
+  }, []);
+
+  useEffect(() => {
+    if (!document?.ticker || !document?.fiscal_period) {
+      setEnrichment(null);
+      return;
+    }
+    setEnrichment(null);
+    fetch(`/api/transcripts/enrichment/${document.ticker}/${document.fiscal_period}`)
+      .then(response => response.ok ? response.json() : null)
+      .then(setEnrichment)
+      .catch(() => setEnrichment(null));
+  }, [document?.ticker, document?.fiscal_period]);
+
+  async function submit(endpoint, payload, label) {
+    if (loading) return;
+    setLoading(label);
+    setError('');
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+      setDocument(data.transcript);
+      setEnrichment(data.enrichment || null);
+      refreshLibrary();
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setLoading('');
+    }
+  }
+
+  const collect = event => {
+    event.preventDefault();
+    submit('/api/transcripts/collect', { ticker, quarter, year: Number(year) }, `Collecting ${ticker.toUpperCase()} ${year}${quarter}…`);
+  };
+
+  const parseManual = () => submit(
+    '/api/transcripts/parse',
+    { ticker, quarter, year: Number(year), text: manualText },
+    'Parsing transcript locally…',
+  );
+
+  async function loadAnalyzedPeriod(period) {
+    const fiscalPeriod = period.replace(/\s+/g, '');
+    try {
+      const response = await fetch(`/api/transcripts/enrichment/GOOGL/${fiscalPeriod}`);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+      setDocument(documentFromEnrichment(data));
+      setEnrichment(data);
+      setTicker('GOOGL');
+      setQuarter(data.quarter || fiscalPeriod.slice(-2));
+      setYear(data.year || fiscalPeriod.slice(0, 4));
+    } catch (requestError) {
+      setAnalysisError(requestError.message);
+    }
+  }
+
+  const selectAnalyzedPeriod = period => {
+    const fiscalPeriod = period.replace(/\s+/g, '');
+    const item = library.find(entry => (
+      (entry.ticker === 'GOOGL' || entry.transcript?.ticker === 'GOOGL')
+      && (entry.fiscal_period === fiscalPeriod || entry.transcript?.fiscal_period === fiscalPeriod)
+    ));
+    if (item?.transcript) {
+      setDocument(item.transcript);
+      return;
+    }
+    loadAnalyzedPeriod(period);
+  };
 
   return (
-    <div style={{ padding: '4px 2px 40px', maxWidth: 1200, margin: '0 auto' }}>
-      <div style={{ marginBottom: 10, color: '#8a8f99', fontSize: 13, lineHeight: 1.5 }}>
-        Fetch a real speaker-segmented transcript by ticker (Alpha Vantage, free), paste one, or run the SNDK four-quarter cross-analysis.
-        The agent scores tone block-by-block, flags shifts, and names the catalyst — click any catalyst to see the exact transcript text that triggered it.
+    <div className="tx-page">
+      <header className="tx-hero">
+        <div>
+          <div className="tx-kicker"><span /> Research pipeline</div>
+          <h1>Earnings calls, structured before they are analyzed.</h1>
+          <p>Collect once, preserve every speaker, then build topic-aware semantic chunks and local retrieval vectors without sending the full call through an LLM.</p>
+        </div>
+        <div className="tx-provider">
+          <div className="tx-provider-mark">A</div>
+          <div><span>Transcript source</span><strong>Alpha Vantage</strong></div>
+          <i>Full call</i>
+        </div>
+      </header>
+
+      <div className="tx-pipeline">
+        <PipelineStep number="01" title="Collect" caption="Alpha Vantage → JSON + Markdown" icon="database" active={!document} complete={!!document} />
+        <Icon name="arrow" />
+        <PipelineStep number="02" title="Parse" caption="Prepared · Q&A · speakers" icon="split" active={!!document} complete={!!document} />
+        <Icon name="arrow" />
+        <PipelineStep number="03" title="Chunk" caption="Speaker + topic boundaries" icon="split" active={!!document && !enrichment} complete={!!enrichment} />
+        <Icon name="arrow" />
+        <PipelineStep number="04" title="Embed" caption="BGE · Chroma" icon="database" active={!!enrichment && !enrichment.embedding} complete={!!enrichment?.embedding} />
+        <Icon name="arrow" />
+        <PipelineStep number="05" title="Classify" caption="Deterministic topic tags" icon="spark" complete={!!enrichment?.topicSummary?.length} />
+        <Icon name="arrow" />
+        <PipelineStep number="06" title="Extract" caption="Facts · metrics · guidance" icon="file" complete={!!enrichment?.factSummary?.total} />
+        <Icon name="arrow" />
+        <PipelineStep number="07" title="Tone" caption="FinBERT · emotion · LLM" icon="spark" complete={enrichment?.toneSummary?.chunks === enrichment?.stats?.chunks} />
       </div>
 
-      <StoredTranscripts onAnalyze={handleStoredAnalyze} />
+      <div className="tx-workspace">
+        <aside className="tx-collector">
+          <div className="tx-card-head">
+            <div>
+              <div className="tx-eyebrow">Stage 01</div>
+              <h2>Collect a transcript</h2>
+            </div>
+            <span className="tx-live-dot">Source only</span>
+          </div>
+          <p className="tx-card-copy">Alpha Vantage supplies the complete speaker-segmented call. No Gemini or Groq analysis runs during collection or parsing.</p>
+          <div className="tx-source-note">
+            The free API is limited to 25 requests per day. Stored transcripts are reused locally and in MongoDB, so downstream analysis does not spend additional transcript requests.
+          </div>
 
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap' }}>
-        <input value={symbol} onChange={e => setSymbol(e.target.value.toUpperCase())} placeholder="Ticker (e.g. IBM)" spellCheck={false} style={{ ...inp, width: 130 }} />
-        <input value={quarter} onChange={e => setQuarter(e.target.value.toUpperCase())} placeholder="Quarter (2026Q1)" spellCheck={false} style={{ ...inp, width: 150 }} />
-        <button onClick={fetchTicker} disabled={!!loading || !symbol.trim() || !quarter.trim()} style={btn(true)}>Fetch &amp; analyze</button>
-        <span style={{ color: '#6b7280' }}>·</span>
-        <button onClick={runSeries} disabled={!!loading} style={btn(true)}>Analyze SNDK · 4 quarters</button>
+          <form onSubmit={collect} className="tx-form">
+            <label>
+              Ticker
+              <input value={ticker} onChange={event => setTicker(event.target.value.toUpperCase())} placeholder="GOOGL" maxLength={10} spellCheck={false} />
+            </label>
+            <div className="tx-form-row">
+              <label>
+                Fiscal quarter
+                <select value={quarter} onChange={event => setQuarter(event.target.value)}>
+                  {['Q1', 'Q2', 'Q3', 'Q4'].map(value => <option key={value}>{value}</option>)}
+                </select>
+              </label>
+              <label>
+                Fiscal year
+                <input type="number" min="2000" max="2100" value={year} onChange={event => setYear(event.target.value)} />
+              </label>
+            </div>
+            <button className="tx-primary" disabled={!!loading || !ticker.trim()}>
+              {loading && loading.startsWith('Collecting') ? <span className="tx-spinner" /> : <Icon name="database" />}
+              {loading && loading.startsWith('Collecting') ? loading : 'Collect & normalize'}
+            </button>
+          </form>
+
+          {error && <div className="tx-error">{error}</div>}
+
+          <div className="tx-divider"><span>or use a local transcript</span></div>
+          <button className="tx-secondary" onClick={() => setManualOpen(value => !value)}>
+            <Icon name="upload" /> {manualOpen ? 'Hide pasted transcript' : 'Paste transcript'}
+          </button>
+          {manualOpen && (
+            <div className="tx-manual">
+              <textarea value={manualText} onChange={event => setManualText(event.target.value)} placeholder="Prepared Remarks&#10;&#10;Speaker Name -- Title&#10;Transcript paragraph…" />
+              <div>
+                <button onClick={() => setManualText(SAMPLE)} disabled={!!loading}>Load sample</button>
+                <button onClick={parseManual} disabled={!!loading || !ticker.trim() || !manualText.trim()}>
+                  {loading === 'Parsing transcript locally…' ? 'Parsing…' : 'Parse locally'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="tx-library">
+            <div className="tx-library-head">
+              <span>Recent collections</span>
+              <small>{library.length}</small>
+            </div>
+            {library.slice(0, 6).map(item => (
+              <button key={`${item.ticker}-${item.fiscal_period}`} onClick={() => setDocument(item.transcript)}>
+                <span>{item.ticker}</span>
+                <div><strong>{item.fiscal_period}</strong><small>{item.stats?.totalBlocks || 0} blocks · {item.stats?.wordCount?.toLocaleString() || 0} words</small></div>
+                <Icon name="arrow" size={14} />
+              </button>
+            ))}
+            {!library.length && <p>Normalized transcripts will appear here after collection.</p>}
+          </div>
+        </aside>
+
+        <main className="tx-main">
+          <AnalysisOverview
+            payload={analysis}
+            loading={analysisLoading}
+            error={analysisError}
+            onSelectPeriod={selectAnalyzedPeriod}
+          />
+          {document ? <TranscriptViewer document={document} enrichment={enrichment} /> : <EmptyViewer />}
+        </main>
       </div>
-
-      <div style={{ color: '#6b7280', fontSize: 11.5, margin: '0 0 6px' }}>— or paste a transcript —</div>
-      <textarea value={text} onChange={e => setText(e.target.value)} spellCheck={false}
-        placeholder="Sanjay Mehrotra (CEO): We are thrilled to announce a record quarter…"
-        style={{ width: '100%', minHeight: 110, ...inp, fontFamily: 'var(--font-m, monospace)', resize: 'vertical' }} />
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center', margin: '10px 0 18px', flexWrap: 'wrap' }}>
-        <button onClick={analyze} disabled={!!loading || !text.trim()} style={btn(true)}>{loading ? (typeof loading === 'string' ? loading : 'Working…') : 'Analyze pasted transcript'}</button>
-        <button onClick={() => setText(SAMPLE)} disabled={!!loading} style={btn(false)}>Load sample (Micron)</button>
-        {error && <span style={{ color: '#f87171', fontSize: 12 }}>⚠ {error}</span>}
-      </div>
-
-      {series ? <SeriesResult series={series} /> : result && result.summary ? <SingleResult result={result} /> : null}
     </div>
   );
 }

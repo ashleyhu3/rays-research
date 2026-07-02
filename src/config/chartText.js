@@ -432,4 +432,53 @@ export const CHART_TEXT = {
     title: 'Week-over-Week Token Growth — Top Models (%)',
     subtitle: '% change in weekly tokens vs the prior week; faded bars mark declining models.',
   },
+  'dc-gw-annual': {
+    title: 'Annual AI Capacity Deployments (GW)',
+    subtitle: 'Incremental gigawatts coming online each year by operator type — peak 2027 at 32.3 GW.',
+  },
+  'dc-operators': {
+    title: 'Total Planned AI Capacity by Operator (GW)',
+    subtitle: 'Aggregate gigawatts announced across all projects; sorted largest first.',
+  },
+  'dc-geo': {
+    title: 'Global AI Data Center Projects — Geographic Distribution',
+    subtitle: 'Each bubble = one announced project; size scales with planned GW capacity.',
+  },
+  'dc-overview-gantt': {
+    title: 'All AI Infrastructure Projects — Buildout Timeline',
+    subtitle: 'Gantt view of every announced project. Hover for GW, investment, partners & notes. Bright bars = capacity confirmed; dim bars = investment-only.',
+  },
+  'dc-aws-gantt':    { title: 'Amazon AWS — Data Center Buildout Timeline' },
+  'dc-google-gantt': { title: 'Google — Data Center Buildout Timeline' },
+  'dc-msft-gantt':   { title: 'Microsoft — Data Center Buildout Timeline' },
+  'dc-oracle-gantt': { title: 'Oracle — Data Center Buildout Timeline' },
+  'dc-openai-gantt': { title: 'OpenAI — Infrastructure Buildout Timeline' },
+  'dc-nebius-gantt': { title: 'Nebius — Data Center Buildout Timeline' },
+  'dc-meta-gantt':   { title: 'Meta Platforms — Data Center Buildout Timeline' },
+
+  // ── Web traffic (per-company line charts & overview stacked bar) ───────
+  'oa-web-visits': {
+    title: 'openai.com Monthly Website Visits',
+    subtitle: 'Daily snapshots of SimilarWeb monthly visit estimates for openai.com via Apify.',
+  },
+  'an-web-visits': {
+    title: 'anthropic.com Monthly Website Visits',
+    subtitle: 'Daily snapshots of SimilarWeb monthly visit estimates for anthropic.com via Apify.',
+  },
+  'goo-web-visits': {
+    title: 'gemini.google.com Monthly Website Visits',
+    subtitle: 'Daily snapshots of SimilarWeb monthly visit estimates for gemini.google.com via Apify.',
+  },
+  'mm-web-visits': {
+    title: 'hailuoai.com Monthly Website Visits',
+    subtitle: 'Daily snapshots of SimilarWeb monthly visit estimates for hailuoai.com (MiniMax) via Apify.',
+  },
+  'zh-web-visits': {
+    title: 'zhipuai.cn Monthly Website Visits',
+    subtitle: 'Daily snapshots of SimilarWeb monthly visit estimates for zhipuai.cn via Apify.',
+  },
+  'web-visits-total': {
+    title: 'AI Company Website Visits — Total Monthly (All 5)',
+    subtitle: 'Stacked daily snapshot of SimilarWeb monthly visits across OpenAI, Anthropic, Google Gemini, MiniMax, and Zhipu.',
+  },
 };

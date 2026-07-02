@@ -121,6 +121,16 @@ export default function DemandOpenAI({ weeks: W }) {
           <Scatter data={oaRevData} options={singleRevenueOpts(C.openai)} />
         </ChartCard>
       )}
+
+      {metricTrendCard({
+        chartId: 'oa-web-visits',
+        weeks: W,
+        hist: ld?.webTraffic?.history,
+        series: [{ metric: 'openai.com.visits', label: 'Monthly visits', color: C.openai }],
+        fmt: fmtM,
+        height: 240,
+        span2: true,
+      })}
     </EditableGrid>
   );
 }

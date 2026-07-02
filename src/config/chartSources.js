@@ -152,4 +152,12 @@ export const CHART_SOURCES = {
   'or-provshare': { src: 'openrouter.ai/rankings', srcUrl: 'https://openrouter.ai/rankings', freq: 'weekly' },
   'or-combo':     { src: 'openrouter.ai/rankings', srcUrl: 'https://openrouter.ai/rankings', freq: 'weekly' },
   'or-growth':    { src: 'openrouter.ai/rankings', srcUrl: 'https://openrouter.ai/rankings', freq: 'weekly' },
+
+  // ── Web traffic (SimilarWeb via Apify) ────────────────────────────────
+  'oa-web-visits':    { src: 'SimilarWeb via Apify', srcUrl: 'https://www.similarweb.com/website/openai.com/',        freq: 'daily' },
+  'an-web-visits':    { src: 'SimilarWeb via Apify', srcUrl: 'https://www.similarweb.com/website/anthropic.com/',     freq: 'daily' },
+  'goo-web-visits':   { src: 'SimilarWeb via Apify', srcUrl: 'https://www.similarweb.com/website/gemini.google.com/', freq: 'daily' },
+  'mm-web-visits':    { src: 'SimilarWeb via Apify', srcUrl: 'https://www.similarweb.com/website/hailuoai.com/',      freq: 'daily' },
+  'zh-web-visits':    { src: 'SimilarWeb via Apify', srcUrl: 'https://www.similarweb.com/website/zhipuai.cn/',        freq: 'daily' },
+  'web-visits-total': { src: 'SimilarWeb via Apify', srcUrl: 'https://apify.com/curious_coder/similarweb-scraper',    freq: 'daily' },
 };

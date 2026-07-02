@@ -11,8 +11,6 @@ const PRICE_COLOR = '#b0b0a8';
 
 // Open-interest-by-strike distribution, restricted to strikes within ±30% of
 // the current price so the heart of the chain isn't squeezed by far-OTM tails.
-// OI is backfilled server-side from the most recent nonzero snapshot when
-// Yahoo serves a zero-OI chain (see server/optionsStore.js).
 function buildOiChart(data) {
   const price = data?.price;
   if (price == null) return null;
@@ -237,7 +235,7 @@ export function TickerPanel({ ticker }) {
             ({data.changePct >= 0 ? '+' : ''}{data.changePct.toFixed(2)}%)
           </span>
         )}
-        <span className="opts-ticker-delay">~15 min delayed · Yahoo Finance</span>
+        <span className="opts-ticker-delay">Real-time · Massive</span>
       </div>
 
       {/* Expiration chips + Calls/Puts toggle */}
@@ -322,7 +320,6 @@ export function TickerPanel({ ticker }) {
               <h3 className="opts-chart-title">Open Interest by Strike</h3>
               <p className="opts-chart-sub">
                 Strikes within ±30% of current price · expires {fmtExpiry(selectedDate ?? '')}
-                {data.oiAsOf && ` · OI as of ${data.oiAsOf}`}
               </p>
             </div>
             <div className="opts-chart-toggle">
@@ -385,7 +382,7 @@ export default function Options() {
         <div className="opts-empty">
           <div className="opts-empty-icon"><WaveIcon /></div>
           <h2>Options Flow</h2>
-          <p>Top 3 calls and puts by volume. Search several tickers at once (comma-separated) — results appear in the order you enter them. Up to 2 months of expirations. 15-min delayed data via Yahoo Finance.</p>
+          <p>Top 3 calls and puts by volume. Search several tickers at once (comma-separated) — results appear in the order you enter them. Up to 2 months of expirations. Real-time data via Massive.</p>
           <div className="opts-samples">
             {SAMPLES.map(t => (
               <button key={t} className="opts-sample" onClick={() => search(t)}>{t}</button>

@@ -35,6 +35,8 @@ const REGISTRY = [
   { id: 'gen-docker',    sectorId: 'market', subView: 'general', defaultPinned: false },
   { id: 'gen-hn',        sectorId: 'market', subView: 'general', defaultPinned: true },
   { id: 'gen-cnmarket',  sectorId: 'market', subView: 'general', defaultPinned: false },
+  // ── Web traffic ────────────────────────────────────────────────────
+  { id: 'web-visits-total', sectorId: 'market', subView: 'web', defaultPinned: true },
 
   // ── Consumer signals ───────────────────────────────────────────────
   { id: 'hf-downloads',     sectorId: 'consumer', subView: 'hf',     defaultPinned: true  },

@@ -101,7 +101,7 @@ function ShortInterestPanel({ ticker }) {
         padding: 10,
         callbacks: {
           label: c => c.dataset.yAxisID === 'yLeft'
-            ? ` ${c.dataset.label}: ${c.parsed.y?.toFixed(2)}%`
+            ? ` ${c.dataset.label}: ${c.parsed.y?.toFixed(2)}d`
             : ` ${c.dataset.label}: $${c.parsed.y?.toFixed(2)}`,
         },
       },
@@ -111,7 +111,7 @@ function ShortInterestPanel({ ticker }) {
       yLeft: {
         position: 'left',
         grid: GRID,
-        ticks: { ...TICK, callback: v => `${v.toFixed(2)}%` },
+        ticks: { ...TICK, callback: v => `${v.toFixed(2)}d` },
         border: BORD,
       },
       yRight: {
@@ -156,9 +156,6 @@ function ShortInterestPanel({ ticker }) {
     },
   };
 
-  const shortPct = data.shortPercentOfFloat != null
-    ? `${(data.shortPercentOfFloat * 100).toFixed(2)}% of float`
-    : null;
   const hasShortLine = data.shortRatios?.some(v => v != null);
 
   return (
@@ -166,8 +163,8 @@ function ShortInterestPanel({ ticker }) {
       <div className="ch-head">
         <div className="ch-title">Short Interest — {data.name || ticker}</div>
         <div className="ch-meta">
-          <span className="freq-badge freq-weekly">bi-monthly est.</span>
-          <span className="ch-src">Yahoo Finance</span>
+          <span className="freq-badge freq-weekly">bi-monthly · FINRA</span>
+          <span className="ch-src">Massive</span>
         </div>
       </div>
 
@@ -175,7 +172,7 @@ function ShortInterestPanel({ ticker }) {
       <div style={{ display: 'flex', gap: 18, marginBottom: 10, fontSize: 11, color: '#b0b0a8', fontFamily: "'Inter',sans-serif" }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
           <span style={{ width: 16, height: 2, background: SHORT_BLUE, display: 'inline-block', borderRadius: 1 }} />
-          Short Interest Ratio
+          Days to Cover
         </span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
           <span style={{ width: 16, height: 2, background: PRICE_GRAY, display: 'inline-block', borderRadius: 1 }} />
@@ -193,7 +190,7 @@ function ShortInterestPanel({ ticker }) {
         {!hasShortLine && (
           <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
             <span style={{ fontSize: 11, color: '#6b7280', fontFamily: "'Inter',sans-serif" }}>
-              Short interest history not yet available — data accumulates on each visit
+              Short interest data unavailable for this ticker
             </span>
           </div>
         )}
@@ -205,9 +202,8 @@ function ShortInterestPanel({ ticker }) {
       </div>
 
       {/* Summary row */}
-      {(shortPct || data.shortRatio != null || data.sharesShort != null) && (
+      {(data.shortRatio != null || data.sharesShort != null) && (
         <div style={{ fontSize: 11, color: '#b0b0a8', marginTop: 8, fontFamily: "'Inter',sans-serif", display: 'flex', gap: 18, flexWrap: 'wrap' }}>
-          {shortPct       && <span>Short % float: <strong style={{ color: '#e8e8e0' }}>{shortPct}</strong></span>}
           {data.sharesShort != null && <span>Shares short: <strong style={{ color: '#e8e8e0' }}>{fmtM(data.sharesShort)}</strong></span>}
           {data.shortRatio  != null && <span>Days to cover: <strong style={{ color: '#e8e8e0' }}>{data.shortRatio.toFixed(1)}</strong></span>}
         </div>
