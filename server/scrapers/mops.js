@@ -84,17 +84,29 @@ async function getMopsRevenue() {
   const results = await Promise.allSettled(ALL_COMPANIES.map(c => fetchCompany(c.id)));
 
   const companies = {};
+  let withData = 0;
   ALL_COMPANIES.forEach((c, i) => {
     const rows = results[i].status === 'fulfilled' ? results[i].value : [];
     if (results[i].status === 'rejected') {
       console.warn(`[mops] ${c.id}: ${results[i].reason?.message}`);
     }
+    const monthly = buildSeries(rows);
+    if (monthly.length > 0) withData += 1;
     companies[c.id] = {
       ...c,
       srcUrl:  mopsUrl(c.id, c.exchange),
-      monthly: buildSeries(rows),
+      monthly,
     };
   });
+
+  // Every company came back empty — almost always FinMind rate-limiting the
+  // shared Render egress IP (anonymous access is 300 req/hr per IP; set
+  // FINMIND_TOKEN to lift it). Throw instead of returning an all-empty payload
+  // so cachedRoute keeps the last good snapshot rather than persisting empties
+  // and silently blanking the supply-chain charts until the next restart.
+  if (withData === 0) {
+    throw new Error('FinMind returned no data for any company (likely rate-limited; set FINMIND_TOKEN)');
+  }
 
   return { companies };
 }
