@@ -457,13 +457,22 @@ app.get('/api/health', (_, res) => res.json({ ok: true, ts: new Date().toISOStri
 /* ── Persistent storage (Mongo in prod, JSON files in dev) ──────────── */
 const DATA_DIR = path.join(__dirname, 'data');
 const STORAGE_BLOBS = [
-  { name: 'metricsHistory',  file: path.join(DATA_DIR, 'metricsHistory.json') },
-  { name: 'gpuHistory',      file: path.join(DATA_DIR, 'gpuHistory.json') },
-  { name: 'dramHistory',     file: path.join(DATA_DIR, 'dramHistory.json') },
-  { name: 'awsHistory',      file: path.join(DATA_DIR, 'awsHistory.json') },
-  { name: 'cpuHistory',      file: path.join(DATA_DIR, 'cpuHistory.json') },
-  { name: 'tpuHistory',      file: path.join(DATA_DIR, 'tpuHistory.json') },
-  { name: 'sentimentData',   file: path.join(DATA_DIR, 'sentiment.json') },
+  { name: 'metricsHistory', file: path.join(DATA_DIR, 'metricsHistory.json') },
+  { name: 'gpuHistory',     file: path.join(DATA_DIR, 'gpuHistory.json') },
+  { name: 'dramHistory',    file: path.join(DATA_DIR, 'dramHistory.json') },
+  { name: 'awsHistory',     file: path.join(DATA_DIR, 'awsHistory.json') },
+  // Every history blob a scraper reads/writes MUST be listed here so init()
+  // preloads it from Mongo into the cache. An unlisted blob falls back to the
+  // committed JSON file on read (storage.read), so a scrape appends to a stale/
+  // empty file and then overwrites Mongo — silently truncating history on every
+  // restart. cpu/tpu/cloudGpu/optionsOI/shortInterest were unlisted and lost
+  // their backfill this way; keep this list in sync with the scrapers' BLOBs.
+  { name: 'cpuHistory',     file: path.join(DATA_DIR, 'cpuHistory.json') },
+  { name: 'tpuHistory',     file: path.join(DATA_DIR, 'tpuHistory.json') },
+  { name: 'cloudGpuHistory', file: path.join(DATA_DIR, 'cloudGpuHistory.json') },
+  { name: 'optionsOI',      file: path.join(DATA_DIR, 'optionsOI.json') },
+  { name: 'shortInterestHistory', file: path.join(DATA_DIR, 'shortInterestHistory.json') },
+  { name: 'sentimentData',  file: path.join(DATA_DIR, 'sentiment.json') },
   // Latest scrape per source — loaded into the request cache on boot for an
   // instant first paint instead of blocking on live re-scrapes.
   { name: 'latestSnapshots', file: path.join(DATA_DIR, 'latestSnapshots.json') },
