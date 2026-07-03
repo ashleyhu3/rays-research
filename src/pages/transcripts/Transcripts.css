@@ -148,6 +148,39 @@
 .tx-pill.is-confident { border-color: rgba(112,214,167,.25); background: rgba(112,214,167,.06); color: #70d6a7; }
 .tx-pill.is-confident strong { color: #70d6a7; }
 
+/* ── Ticker selector (market-style: click a ticker → its analysis) ────── */
+.tx-ticker-bar {
+  padding: 14px 16px 15px;
+  border: 1px solid var(--tx-line);
+  border-radius: 12px;
+  background: var(--tx-panel);
+}
+.tx-ticker-bar-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 11px; }
+.tx-ticker-bar-head small { color: #6b7583; font-size: 10px; }
+.tx-ticker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: 9px;
+}
+.tx-ticker-card {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 11px 12px;
+  text-align: left;
+  cursor: pointer;
+  border: 1px solid var(--tx-line);
+  border-radius: 10px;
+  background: rgba(255,255,255,.02);
+  transition: border-color .15s, background .15s, transform .12s;
+}
+.tx-ticker-card:hover { border-color: rgba(125,183,255,.35); background: rgba(125,183,255,.05); transform: translateY(-1px); }
+.tx-ticker-card.active { border-color: var(--tx-blue); background: rgba(125,183,255,.1); box-shadow: inset 0 0 0 1px rgba(125,183,255,.25); }
+.tx-ticker-sym { font: 700 14px var(--font-m); letter-spacing: .01em; color: #eaf1fb; }
+.tx-ticker-card.active .tx-ticker-sym { color: #b8d7fd; }
+.tx-ticker-name { font-size: 12px; color: #cbd3df; line-height: 1.2; }
+.tx-ticker-meta { font-size: 9.5px; color: #6b7583; text-transform: uppercase; letter-spacing: .06em; margin-top: 1px; }
+
 /* ── Tone-pending banner ────────────────────────────────────────────── */
 .tx-tone-banner {
   display: flex; gap: 9px; align-items: center;

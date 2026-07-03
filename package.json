@@ -23,6 +23,7 @@
     "facts:transcripts": "node --env-file=.env server/scripts/extractTranscriptFacts.js",
     "figures:transcripts": "node --env-file=.env server/scripts/extractKeyFigures.js",
     "analyze:transcripts": "npm run tone:transcripts:local && npm run tone:transcripts:llm && npm run facts:transcripts && npm run figures:transcripts",
+    "publish:transcripts": "node --env-file=.env server/scripts/publishTranscriptsToMongo.js",
     "pipeline:transcripts": "node server/scripts/runTranscriptPipeline.mjs",
     "backfill:all": "npm run backfill:sec && npm run backfill:mcp && npm run backfill:github-stars",
     "db:ping": "node --env-file=.env server/scripts/dbPing.js",

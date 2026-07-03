@@ -53,7 +53,25 @@ async function listLocalEnrichments() {
       const docs = await database.collection('transcript_enrichments')
         .find({}, { projection: { _id: 0 } })
         .toArray();
-      if (docs.length) return docs;
+      if (docs.length) {
+        // Chunks are stored in a separate collection; re-attach them per
+        // enrichment. The analysis manager reparses any document lacking
+        // chunks, so returning summary-only docs makes it throw on the
+        // deployed site (which reads from Mongo) while working locally.
+        const chunks = await database.collection('transcript_chunks')
+          .find({}, { projection: { _id: 0 } })
+          .toArray();
+        const byKey = new Map();
+        for (const chunk of chunks) {
+          const key = `${chunk.ticker}:${chunk.fiscal_period}`;
+          if (!byKey.has(key)) byKey.set(key, []);
+          byKey.get(key).push(chunk);
+        }
+        return docs.map(doc => ({
+          ...doc,
+          chunks: byKey.get(`${doc.ticker}:${doc.fiscal_period}`) || [],
+        }));
+      }
     } catch (error) {
       console.warn('[enrichment-store] MongoDB list failed; falling back to local:', error.message);
     } finally {

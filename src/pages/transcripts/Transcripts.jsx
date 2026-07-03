@@ -7,6 +7,16 @@ import './Transcripts.css';
 
 const CURRENT_YEAR = new Date().getFullYear();
 
+// Display names for the covered tickers. Anything not listed falls back to the
+// raw symbol, so newly collected tickers still render in the selector.
+const COMPANY_NAMES = {
+  GOOGL: 'Alphabet',
+  MSFT: 'Microsoft',
+  AMZN: 'Amazon',
+  META: 'Meta Platforms',
+  ORCL: 'Oracle',
+};
+
 // The six signals the analysis is built around. Names must match the topic
 // labels produced by server/transcripts/topics.js.
 const FOCUS_TOPICS = [
@@ -313,6 +323,29 @@ export default function Transcripts() {
   const usage = analysis?.modelUsage;
   const toneReady = (enrichment?.toneSummary?.chunks || 0) > 0;
 
+  // Distinct tickers with a collected/analyzed transcript, for the selector.
+  // Derived from the library the page already loads — no extra request.
+  const tickers = useMemo(() => {
+    const byTicker = new Map();
+    for (const item of library) {
+      const symbol = String(item.ticker || '').toUpperCase();
+      if (!symbol) continue;
+      if (!byTicker.has(symbol)) byTicker.set(symbol, { ticker: symbol, periods: new Set() });
+      if (item.fiscal_period) byTicker.get(symbol).periods.add(item.fiscal_period);
+    }
+    return [...byTicker.values()]
+      .map(entry => ({ ticker: entry.ticker, name: COMPANY_NAMES[entry.ticker] || entry.ticker, quarters: entry.periods.size }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [library]);
+
+  const selectTicker = symbol => {
+    if (symbol === activeTicker) return;
+    setActiveTicker(symbol);
+    setPeriod(null);
+    setMetricFilter('all');
+    setValueUnit(null);
+  };
+
   // All structured figures across quarters (for the value trend chart).
   const allFigures = useMemo(() => analysis?.keyFigures ?? [], [analysis]);
 
@@ -420,6 +453,28 @@ export default function Transcripts() {
         />
 
         <main className="tx-main">
+          {tickers.length > 0 && (
+            <nav className="tx-ticker-bar" aria-label="Covered companies">
+              <div className="tx-ticker-bar-head">
+                <span className="tx-eyebrow">Companies</span>
+                <small>{tickers.length} covered · click a ticker</small>
+              </div>
+              <div className="tx-ticker-grid">
+                {tickers.map(entry => (
+                  <button
+                    key={entry.ticker}
+                    className={`tx-ticker-card${entry.ticker === activeTicker ? ' active' : ''}`}
+                    onClick={() => selectTicker(entry.ticker)}
+                    aria-pressed={entry.ticker === activeTicker}
+                  >
+                    <span className="tx-ticker-sym">{entry.ticker}</span>
+                    <span className="tx-ticker-name">{entry.name}</span>
+                    <span className="tx-ticker-meta">{entry.quarters} quarter{entry.quarters === 1 ? '' : 's'}</span>
+                  </button>
+                ))}
+              </div>
+            </nav>
+          )}
           {analysisLoading ? (
             <section className="tx-analysis-overview is-loading">
               <div className="tx-analysis-loader"><span className="tx-spinner" /> Running cross-quarter analysis…</div>
