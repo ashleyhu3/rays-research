@@ -30,7 +30,10 @@ import DemandGeneral    from './pages/market-signals/InfrastructureOss';
 import DemandOpenRouter from './pages/market-signals/OpenRouter';
 // Supply chain
 import AISupply, { AISupplyOptics, AISupplyPCB, AISupplyMLCC, AISupplyFiber } from './pages/supply-chain/SupplyChain';
-import DcTimelines, { DcServerSupply, DcCapacity } from './pages/supply-chain/DcBuildouts';
+import DcTimelines, {
+  DcCapacity,
+  DcCoAWS, DcCoGoogle, DcCoMicrosoft, DcCoOracle, DcCoOpenAI, DcCoNebius, DcCoMeta,
+} from './pages/supply-chain/DcBuildouts';
 // Tools
 import Options from './pages/options/Options';
 import Pricing from './pages/pricing/Pricing';
@@ -54,6 +57,7 @@ const LAYOUT_EDITABLE = new Set([
   'pypi','github','web','hf','pricing','datacenter','electricity','chinese',
   'demand-openai','demand-anthropic','demand-google','demand-zhipu','demand-minimax','demand-general','openrouter-rankings',
   'dc-capacity','dc-timelines',
+  'dc-co-aws','dc-co-google','dc-co-microsoft','dc-co-oracle','dc-co-openai','dc-co-nebius','dc-co-meta',
 ]);
 
 /** Map view id → React component */
@@ -71,9 +75,15 @@ const VIEW_COMPONENTS = {
   'ai-supply-fiber':  AISupplyFiber,
   'ai-supply-pcb':    AISupplyPCB,
   'ai-supply-mlcc':   AISupplyMLCC,
-  'dc-server':        DcServerSupply,
   'dc-capacity':      DcCapacity,
   'dc-timelines':     DcTimelines,
+  'dc-co-aws':        DcCoAWS,
+  'dc-co-google':     DcCoGoogle,
+  'dc-co-microsoft':  DcCoMicrosoft,
+  'dc-co-oracle':     DcCoOracle,
+  'dc-co-openai':     DcCoOpenAI,
+  'dc-co-nebius':     DcCoNebius,
+  'dc-co-meta':       DcCoMeta,
   'github-commits':   GitHubActivity,
   'docker':           Docker,
   'community':        Community,

@@ -185,3 +185,124 @@ export default function SupplyChainMatrix() {
     </div>
   );
 }
+
+// ── Per-company view ─────────────────────────────────────────────────────────
+// Which segment (of a colSpan "industry-shared" row) covers a given column index.
+function segmentForColumn(segments, colIdx) {
+  let acc = 0;
+  for (const seg of segments) {
+    if (colIdx < acc + seg.span) return seg;
+    acc += seg.span;
+  }
+  return null;
+}
+
+// Slice the full matrix down to a single customer column: keep only rows where
+// that customer has disclosed data. Industry-shared (colSpan) rows are flagged
+// `shared` since they apply to every customer, not just this one.
+function buildCompanyRows(column) {
+  const colIdx = MATRIX_COLUMNS.findIndex(c => c.key === column);
+  const out = [];
+  for (const r of MATRIX_ROWS) {
+    if (r.cells) {
+      const cell = parseCell(r.cells[column] ?? '');
+      if (cell.blank) continue;
+      out.push({ group: r.group, sub: r.sub, cell, shared: false });
+    } else if (r.segments) {
+      const seg = segmentForColumn(r.segments, colIdx);
+      if (!seg) continue;
+      const cell = parseCell(seg.cell);
+      if (cell.blank) continue;
+      out.push({ group: r.group, sub: r.sub, cell, shared: true });
+    }
+  }
+  return out;
+}
+
+/**
+ * Company-scoped supply-chain table — the same Fig. 70 matrix filtered to a
+ * single customer column (e.g. 'amazon' for AWS). Rendered on the per-company
+ * AI supply-chain pages. Companies with no column in the matrix (they buy
+ * capacity/GPUs rather than design silicon) get an explanatory note instead.
+ */
+export function CompanySupplyTable({ column, label }) {
+  const rows = useMemo(() => (column ? buildCompanyRows(column) : []), [column]);
+
+  // Group tiers by supply-chain section so each section is one table row.
+  const sections = useMemo(() => {
+    const out = [];
+    for (const r of rows) {
+      const last = out[out.length - 1];
+      if (last && last.group === r.group) last.tiers.push(r);
+      else out.push({ group: r.group, tiers: [r] });
+    }
+    return out;
+  }, [rows]);
+
+  if (!column || rows.length === 0) {
+    return (
+      <div className="cbox span2">
+        <div className="ch-head">
+          <div className="ch-title">{label} — server supply chain</div>
+          <div className="ch-meta"><span className="ch-src">Nomura research (Fig. 70)</span></div>
+        </div>
+        <div className="ch-sub">
+          {label} procures compute capacity through GPU vendors and hyperscale partners
+          rather than operating a disclosed in-house server supply chain in the Nomura
+          matrix. See the hyperscaler pages (Amazon AWS, Google, Microsoft, Meta) for
+          component-level sourcing.
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="cbox span2">
+      <div className="ch-head">
+        <div className="ch-title">{label} — server supply chain</div>
+        <div className="ch-meta"><span className="ch-src">Nomura research (Fig. 70)</span></div>
+      </div>
+      <div className="ch-sub">
+        {label}'s disclosed suppliers, sliced from the full matrix. Bold = primary vendor;
+        italic = conditional (?); 🔒 = unique strategy;{' '}
+        <i style={{ color: 'var(--sec)' }}>shared</i> = industry-wide (not {label}-specific).
+      </div>
+
+      <div className="scm-wrap scm-wrap--h">
+        <table className="scm-table scm-table--h">
+          <thead>
+            <tr>
+              {rows.map((r, ri) => {
+                const g = MATRIX_GROUPS[r.group];
+                const prev = rows[ri - 1];
+                const groupStart = !prev || prev.group !== r.group;
+                return (
+                  <th key={ri} className="scm-th">
+                    {groupStart && <div className="scm-group" style={{ color: g.color }}>{g.label}</div>}
+                    <div className="scm-sub">
+                      {r.sub}
+                      {r.shared && (
+                        <span style={{ color: 'var(--sec)', fontStyle: 'italic', fontWeight: 400 }}> · shared</span>
+                      )}
+                    </div>
+                  </th>
+                );
+              })}
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              {rows.map((r, ri) => (
+                <td key={ri} className="scm-td" style={TD_BASE}>
+                  <CellText cell={r.cell} />
+                </td>
+              ))}
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div className="src-note">Source: Company data, Nomura research · Fig. 70 Server supply chain</div>
+    </div>
+  );
+}

@@ -19,7 +19,7 @@ const storage = require('../storage');
  *   - daily significance: post volume → next-day return (Pearson r + p-value)
  *   - daily significance: net sentiment → next-day return
  *   - summary stats incl. top-quartile-volume win rate
- * Plus a category-average 20-day rolling correlation (the periodicity chart)
+ * Plus a category-average 30-day rolling correlation (the periodicity chart)
  * and a cross-ticker weekly bull/bear aggregate (the headline sentiment trend).
  */
 
@@ -36,7 +36,7 @@ const CATEGORIES = {
 const TICKER_CATEGORY = {};
 for (const [cat, ts] of Object.entries(CATEGORIES)) for (const t of ts) TICKER_CATEGORY[t] = cat;
 
-const ROLL_WINDOW = 20; // trading days
+const ROLL_WINDOW = 30; // trading days
 
 // ── Dependency-free streaming RFC4180 CSV parser ────────────────────────────
 // The `text` column carries embedded commas, quotes and newlines, so a

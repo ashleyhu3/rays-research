@@ -38,7 +38,10 @@ function TableIcon() {
 }
 
 const SUPPLY_VIEWS  = new Set(['ai-supply', 'ai-supply-optics', 'ai-supply-fiber', 'ai-supply-pcb', 'ai-supply-mlcc']);
-const INFRA_VIEWS   = new Set(['dc-server', 'dc-capacity', 'dc-timelines']);
+const INFRA_VIEWS   = new Set([
+  'dc-capacity', 'dc-timelines',
+  'dc-co-aws', 'dc-co-google', 'dc-co-microsoft', 'dc-co-oracle', 'dc-co-openai', 'dc-co-nebius', 'dc-co-meta',
+]);
 const TOOL_VIEWS    = new Set(['options']);
 const PRICING_VIEWS = new Set(['pricing']);
 const SENTIMENT_VIEWS = new Set(['sentiment']);
@@ -85,7 +88,7 @@ export default function Navbar({ onNavigate, currentView }) {
         </button>
         <button
           className={`nlink${isInfra ? ' active' : ''}`}
-          onClick={() => onNavigate('dc-server')}
+          onClick={() => onNavigate('dc-capacity')}
         >
           AI Supply Chain
         </button>

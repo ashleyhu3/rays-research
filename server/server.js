@@ -251,11 +251,33 @@ app.get('/api/transcripts/analysis/:ticker', async (req, res) => {
         periodKey: quarterOrder(enrichment),
         fiscal_period: enrichment.fiscal_period,
       })));
+    // Per-quarter tone split by who is speaking: management answers (read as an
+    // investor would — "investor tone") vs. the analysts asking the questions
+    // ("analyst tone"). Both use the same composite investor-confidence score so
+    // they trend on one 0–100 axis.
+    const roleToneAverage = (chunks, role) => {
+      const scores = (chunks || [])
+        .filter(chunk => chunk.role === role && chunk.tone?.composite)
+        .map(chunk => chunk.tone.composite.investorConfidence);
+      return scores.length
+        ? Number((scores.reduce((sum, value) => sum + value, 0) / scores.length).toFixed(1))
+        : null;
+    };
+    const toneByRole = enrichments
+      .slice()
+      .sort((a, b) => quarterOrder(a) - quarterOrder(b))
+      .map(enrichment => ({
+        period: `${enrichment.year} ${enrichment.quarter}`,
+        fiscal_period: enrichment.fiscal_period,
+        investor: roleToneAverage(enrichment.chunks, 'Management'),
+        analyst: roleToneAverage(enrichment.chunks, 'Analyst'),
+      }));
     res.json({
       ticker,
       analysis: result.analysis,
       reports: result.reports,
       keyFigures,
+      toneByRole,
       execution: result.events,
       modelUsage: {
         deterministicPipeline: true,

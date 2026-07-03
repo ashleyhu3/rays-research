@@ -426,6 +426,66 @@ export default function Transcripts() {
     return datasets.length ? { labels: periods, datasets } : null;
   }, [report, timelines]);
 
+  // Overall transcript tone per quarter, split by speaker: management answers
+  // read as an investor ("investor tone") vs. the analysts' questions
+  // ("analyst tone"). Both are the same 0–100 composite confidence score.
+  const roleTones = useMemo(() => analysis?.toneByRole ?? [], [analysis]);
+  const roleToneOverTime = useMemo(() => {
+    const periods = report?.coverage?.periods ?? [];
+    if (!periods.length || !roleTones.length) return null;
+    const byPeriod = new Map(roleTones.map(item => [item.period, item]));
+    const series = [
+      { label: 'Investor tone (management)', key: 'investor', color: C.teal },
+      { label: 'Analyst tone', key: 'analyst', color: C.perplexity },
+    ];
+    const datasets = series.map(item => ({
+      label: item.label,
+      data: periods.map(name => byPeriod.get(name)?.[item.key] ?? null),
+      borderColor: item.color,
+      backgroundColor: fa(item.color, 0.15),
+      borderWidth: 2,
+      pointRadius: 3,
+      pointBackgroundColor: item.color,
+      tension: 0.3,
+      spanGaps: true,
+    }));
+    return datasets.some(dataset => dataset.data.some(value => value != null))
+      ? { labels: periods, datasets }
+      : null;
+  }, [report, roleTones]);
+
+  // Within a single transcript: how management and analyst tone move statement
+  // by statement as the call unfolds (prepared remarks → Q&A). Built from the
+  // selected period's chunks; each line is that role's composite confidence.
+  const callToneChart = useMemo(() => {
+    const sectionRank = { prepared: 0, qa: 1 };
+    const spoken = (enrichment?.chunks || [])
+      .filter(chunk => (chunk.role === 'Management' || chunk.role === 'Analyst') && chunk.tone?.composite)
+      .map((chunk, index) => ({ chunk, index }))
+      .sort((a, b) => (sectionRank[a.chunk.section] ?? 2) - (sectionRank[b.chunk.section] ?? 2) || a.index - b.index)
+      .map(item => item.chunk);
+    if (spoken.length < 2) return null;
+    const series = [
+      { label: 'Management tone', role: 'Management', color: C.teal },
+      { label: 'Analyst tone', role: 'Analyst', color: C.perplexity },
+    ];
+    const datasets = series.map(item => ({
+      label: item.label,
+      data: spoken.map(chunk => (chunk.role === item.role ? chunk.tone.composite.investorConfidence : null)),
+      borderColor: item.color,
+      backgroundColor: fa(item.color, 0.12),
+      borderWidth: 2,
+      pointRadius: 2,
+      pointHoverRadius: 4,
+      pointBackgroundColor: item.color,
+      tension: 0.3,
+      spanGaps: true,
+    }));
+    return datasets.some(dataset => dataset.data.some(value => value != null))
+      ? { labels: spoken.map((_, index) => index + 1), datasets }
+      : null;
+  }, [enrichment]);
+
   const legendPlugin = { display: true, position: 'bottom', labels: { color: '#9aa3b0', boxWidth: 10, font: { size: 9 } } };
   const lineOptions = {
     ...baseOpts(value => `${value}`),
@@ -540,6 +600,17 @@ export default function Transcripts() {
                 </div>
               </div>
 
+              <div className="tx-eyebrow">Tone analysis</div>
+              <div className="tx-chart-grid">
+                <ChartCard title="Analyst vs investor tone" hint={report.coverage.periods.length > 1 ? 'management answers vs. analyst questions · 0–100' : 'add more quarters to trend'} wide tall hasData={!!roleToneOverTime}>
+                  <Line options={lineOptions} data={roleToneOverTime || { labels: [], datasets: [] }} />
+                </ChartCard>
+
+                <ChartCard title="Tone across quarters" hint={report.coverage.periods.length > 1 ? 'investor confidence by signal · 0–100' : 'add more quarters to trend'} wide tall hasData={!!toneOverTime}>
+                  <Line options={lineOptions} data={toneOverTime || { labels: [], datasets: [] }} />
+                </ChartCard>
+              </div>
+
               <section className="tx-figures-card">
                 <div className="tx-chart-head">
                   <h3>Key figures</h3>
@@ -590,30 +661,36 @@ export default function Transcripts() {
               </section>
 
               <div className="tx-chart-grid">
-                <div className="tx-chart-card is-wide">
-                  <div className="tx-chart-head">
-                    <h3>{valueChart ? `${valueChart.keyword} values over time` : 'Values over time'}</h3>
-                    <div className="tx-chart-head-right">
-                      {valueChart && valueChart.units.length > 1 && (
-                        <div className="tx-unit-toggle">
-                          {valueChart.units.map(unit => (
-                            <button key={unit} className={valueChart.unit === unit ? 'active' : ''} onClick={() => setValueUnit(unit)}>{unit}</button>
-                          ))}
-                        </div>
-                      )}
-                      <small>{valueChart ? `${valueChart.unit} · pick a keyword to focus` : 'no multi-quarter series'}</small>
+                {metricFilter === 'all' ? (
+                  <ChartCard
+                    title="Management vs analyst tone through the call"
+                    hint={period ? 'per-statement confidence, prepared remarks → Q&A · 0–100' : 'select a quarter'}
+                    wide tall hasData={!!callToneChart}
+                  >
+                    <Line options={lineOptions} data={callToneChart || { labels: [], datasets: [] }} />
+                  </ChartCard>
+                ) : (
+                  <div className="tx-chart-card is-wide">
+                    <div className="tx-chart-head">
+                      <h3>{valueChart ? `${valueChart.keyword} values over time` : `${metricFilter} values over time`}</h3>
+                      <div className="tx-chart-head-right">
+                        {valueChart && valueChart.units.length > 1 && (
+                          <div className="tx-unit-toggle">
+                            {valueChart.units.map(unit => (
+                              <button key={unit} className={valueChart.unit === unit ? 'active' : ''} onClick={() => setValueUnit(unit)}>{unit}</button>
+                            ))}
+                          </div>
+                        )}
+                        <small>{valueChart ? `${valueChart.unit} · across quarters` : 'no multi-quarter series'}</small>
+                      </div>
+                    </div>
+                    <div className="tx-chart-body is-tall">
+                      {valueChart
+                        ? <Line options={valueOptions(valueChart.unit)} data={{ labels: valueChart.labels, datasets: valueChart.datasets }} />
+                        : <div className="tx-chart-empty">No values repeat across quarters for this keyword.</div>}
                     </div>
                   </div>
-                  <div className="tx-chart-body is-tall">
-                    {valueChart
-                      ? <Line options={valueOptions(valueChart.unit)} data={{ labels: valueChart.labels, datasets: valueChart.datasets }} />
-                      : <div className="tx-chart-empty">No values repeat across quarters for this keyword.</div>}
-                  </div>
-                </div>
-
-                <ChartCard title="Tone across quarters" hint={report.coverage.periods.length > 1 ? 'investor confidence · 0–100' : 'add more quarters to trend'} wide tall hasData={!!toneOverTime}>
-                  <Line options={lineOptions} data={toneOverTime || { labels: [], datasets: [] }} />
-                </ChartCard>
+                )}
               </div>
             </>
           ) : (

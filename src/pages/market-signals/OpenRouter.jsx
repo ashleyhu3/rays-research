@@ -61,32 +61,6 @@ function weekLabel(isoDate) {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
 }
 
-// Stacked bar options with legend shown (for provider breakdown)
-const stackedLegendOpts = (yFmt) => ({
-  ...stackedOpts(yFmt),
-  plugins: {
-    legend: {
-      display: true,
-      position: 'bottom',
-      labels: {
-        color: '#c8c8c0',
-        font: { size: 10, family: "'Inter',sans-serif" },
-        padding: 10,
-        boxWidth: 10,
-      },
-    },
-    tooltip: {
-      backgroundColor: '#1a1f2a',
-      borderColor: 'rgba(255,255,255,.12)',
-      borderWidth: 1,
-      titleFont: { family: "'Inter',sans-serif", size: 11 },
-      bodyFont:  { family: "'Inter',sans-serif", size: 11 },
-      padding: 10,
-      callbacks: { label: c => ` ${c.dataset.label}: ${yFmt(c.parsed.y)}` },
-    },
-  },
-});
-
 function NoKey() {
   return (
     <div style={{ padding: '48px 24px', textAlign: 'center', color: '#94a3b8' }}>
@@ -251,7 +225,7 @@ export default function DemandOpenRouter({ weeks: W = 52 }) {
         chartId="or-provstack"
         height={260} span2
       >
-        {provStackData ? <Bar data={provStackData} options={stackedLegendOpts(fmtB)} /> : <NoKey />}
+        {provStackData ? <Bar data={provStackData} options={stackedOpts(fmtB)} /> : <NoKey />}
       </ChartCard>
 
       <ChartCard

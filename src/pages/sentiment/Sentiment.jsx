@@ -376,19 +376,6 @@ const CAT_COLOR = {
 const monthLabel = iso =>
   new Date(iso + 'T00:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
 
-function lsFit(xs, ys) {
-  let n = 0, sx = 0, sy = 0, sxx = 0, sxy = 0;
-  for (let i = 0; i < xs.length; i++) {
-    const x = xs[i], y = ys[i];
-    if (x == null || y == null || !isFinite(x) || !isFinite(y)) continue;
-    n++; sx += x; sy += y; sxx += x * x; sxy += x * y;
-  }
-  const d = n * sxx - sx * sx;
-  if (n < 2 || d === 0) return null;
-  const m = (n * sxy - sx * sy) / d;
-  return { m, b: (sy - m * sx) / n };
-}
-
 function scatterOpts({ xTitle, yTitle, xFmt = v => v, yFmt = v => v, pointLabel }) {
   return {
     responsive: true, maintainAspectRatio: false, animation: { duration: 300 },
@@ -517,26 +504,12 @@ export default function Sentiment() {
     };
   }, [v]);
 
-  const tkLeadLag = useMemo(() => {
-    const s = v?.scatter; if (!s?.count?.length) return null;
-    const pts = s.count.map((c, i) => ({ x: c, y: s.ret[i] })).filter(p => isFinite(p.x) && isFinite(p.y));
-    const ds = [{ label: `${ticker} days`, data: pts, showLine: false, pointRadius: 3, pointHoverRadius: 5, backgroundColor: fa(tkColor, 0.5), borderColor: tkColor }];
-    const f = lsFit(s.count, s.ret);
-    if (f) {
-      const xmin = Math.min(...s.count), xmax = Math.max(...s.count);
-      ds.push({ label: 'Trend', data: [{ x: xmin, y: f.m * xmin + f.b }, { x: xmax, y: f.m * xmax + f.b }], showLine: true, pointRadius: 0, borderColor: C.red, borderDash: [5, 4], borderWidth: 1.5, fill: false });
-    }
-    return { datasets: ds };
-  }, [v, ticker, tkColor]);
-
   const tkRolling = useMemo(() => {
     const r = v?.rolling; if (!r?.dates?.length) return null;
     return {
       labels: r.dates.map(monthLabel),
       datasets: [
-        { ...mkDs('Vol ↔ price level',       C.openai,    r.volPrice, false), spanGaps: true, pointRadius: 0 },
-        { ...mkDs('Vol → next-day return',   C.anthropic, r.volNextR, false), spanGaps: true, pointRadius: 0 },
-        { ...mkDs('Sentiment → next-day',    C.minimax,   r.sentNext, false), spanGaps: true, pointRadius: 0 },
+        { ...mkDs('Vol ↔ price level', C.openai, r.volPrice, false), spanGaps: true, pointRadius: 0 },
       ],
     };
   }, [v]);
@@ -597,19 +570,19 @@ export default function Sentiment() {
             </ChartCard>
           )}
           {catVolNext && (
-            <ChartCard chartId="sent-cat-volnext" subtitle="20-day rolling correlation of posting volume → next-day return, averaged within each sector."
+            <ChartCard chartId="sent-cat-volnext" subtitle="30-day rolling correlation of posting volume → next-day return, averaged within each sector."
               legend={catVolNext.datasets.map(d => [d.label, d.borderColor])} height={240} span2>
               <Line data={catVolNext} options={baseOpts(v2 => v2.toFixed(2))} />
             </ChartCard>
           )}
           {catVolPrice && (
-            <ChartCard chartId="sent-cat-volprice" subtitle="20-day rolling correlation of posting volume vs price level, averaged within each sector."
+            <ChartCard chartId="sent-cat-volprice" subtitle="30-day rolling correlation of posting volume vs price level, averaged within each sector."
               legend={catVolPrice.datasets.map(d => [d.label, d.borderColor])} height={240} span2>
               <Line data={catVolPrice} options={baseOpts(v2 => v2.toFixed(2))} />
             </ChartCard>
           )}
           {catSentNext && (
-            <ChartCard chartId="sent-cat-sentnext" subtitle="20-day rolling correlation of net sentiment (bull−bear) → next-day return, averaged within each sector."
+            <ChartCard chartId="sent-cat-sentnext" subtitle="30-day rolling correlation of net sentiment (bull−bear) → next-day return, averaged within each sector."
               legend={catSentNext.datasets.map(d => [d.label, d.borderColor])} height={240} span2>
               <Line data={catSentNext} options={baseOpts(v2 => v2.toFixed(2))} />
             </ChartCard>
@@ -671,16 +644,9 @@ export default function Sentiment() {
               <Line data={tkSentiment} options={baseOpts(v2 => `${v2.toFixed(0)}%`)} />
             </ChartCard>
           )}
-          {tkLeadLag && (
-            <ChartCard chartId="sent-tk-leadlag" title={`Daily Post Count vs Next-Day Return — ${ticker}`}
-              subtitle={`Each point is one trading day. Dashed = fitted trend. r=${v.daily?.volNextR?.r ?? '–'} (p=${v.daily?.volNextR?.p ?? '–'}, n=${v.daily?.volNextR?.n ?? '–'}).`}
-              height={300} span2>
-              <Line data={tkLeadLag} options={scatterOpts({ xTitle: 'Daily post count', yTitle: 'Next-day return (%)', xFmt: v2 => v2.toLocaleString(), yFmt: v2 => `${v2.toFixed(0)}%`, pointLabel: c => ` (${c.parsed.x?.toLocaleString()} posts, ${c.parsed.y?.toFixed(2)}%)` })} />
-            </ChartCard>
-          )}
           {tkRolling && (
-            <ChartCard chartId="sent-tk-rolling" title={`Rolling 20-Day Correlations — ${ticker}`}
-              subtitle="This ticker's three rolling correlations over time: volume↔price level, volume→next-day return, and net sentiment→next-day return."
+            <ChartCard chartId="sent-tk-rolling" title={`Rolling 30-Day Correlation — ${ticker}`}
+              subtitle="This ticker's rolling 30-day correlation of posting volume ↔ price level over time."
               legend={tkRolling.datasets.map(d => [d.label, d.borderColor])} height={280} span2>
               <Line data={tkRolling} options={baseOpts(v2 => v2.toFixed(2))} />
             </ChartCard>

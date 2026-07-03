@@ -6,7 +6,7 @@ import { C, fa } from '../../config/colors';
 import { stackedOpts, hBarOpts, GRID, TICK, BORD } from '../../utils/chartHelpers';
 import ChartCard from '../../components/chart/ChartCard';
 import EditableGrid from '../../components/chart/EditableGrid';
-import SupplyChainMatrix from './SupplyChainMatrix';
+import { CompanySupplyTable } from './SupplyChainMatrix';
 
 const worldCountries = feature(worldData, worldData.objects.countries);
 
@@ -74,6 +74,129 @@ const TTP_BASE = {
 };
 
 function gwToR(gw) { return Math.max(4, Math.sqrt(gw) * 9); }
+
+/* ─── Geocoding for buildout-timeline locations ───────────────────────
+   The buildout-timeline projects (companyCharts) carry a location string but
+   no coordinates, so the company map plots the *same* projects as the timeline
+   by looking their location up here ([lat, lon]). Parentheticals like
+   "(Stargate)" / "(x AMD)" are stripped before lookup. Non-geographic entries
+   ("Worldwide", "Space") are intentionally absent → not plotted. */
+const GEO_LOOKUP = {
+  'Abu Dhabi, UAE': [24.45, 54.38], 'Across US': [39.5, -98.35], 'Argentina': [-38.4, -63.6],
+  'Australia': [-25.3, 133.8], 'Belgium': [50.5, 4.47], 'Bethune, Lille, France': [50.53, 2.64],
+  'Canada': [56.13, -106.35], 'Chile': [-35.68, -71.54], 'Dammam, Saudi Arabia': [26.43, 50.10],
+  'Dietzenbach, Germany': [50.01, 8.78], 'El Paso, Texas': [31.76, -106.49], 'France': [46.6, 2.35],
+  'Georgia, US': [32.9, -83.6], 'Germany': [51.16, 10.45], 'Hermantown, Minnesota': [46.80, -92.24],
+  'Horndal, Sweden': [60.29, 16.42], 'India': [20.59, 78.96], 'Indonesia': [-0.79, 113.92],
+  'Israel': [31.05, 34.85], 'Kansas City, US': [39.10, -94.58], 'Keflavik, Iceland': [64.00, -22.56],
+  'Kronstorf, Austria': [48.13, 14.44], 'Lappeenranta, Finland': [61.06, 28.19],
+  'Lebanon, Indiana': [40.05, -86.47], 'Lenoir, North Carolina': [35.91, -81.54],
+  'Lima, Ohio': [40.74, -84.11], 'Loughton, UK': [51.65, 0.06], 'Louisiana': [30.98, -91.96],
+  'Malaysia': [4.21, 101.98], 'Medina County, Texas': [29.36, -99.11], 'Mississippi': [32.35, -89.40],
+  'Missouri': [38.46, -92.29], 'Missouri/Kansas City': [39.10, -94.58], 'Mäntsälä, Finland': [60.63, 25.32],
+  'Netherlands': [52.13, 5.29], 'New Albany, Ohio': [40.08, -82.80], 'Northern Indiana': [41.2, -86.3],
+  'Northwest Louisiana': [32.5, -93.75], 'Norway': [60.47, 8.47], 'Oklahoma, US': [35.47, -97.52],
+  'Paris, France': [48.86, 2.35], 'Pennsylvania, US': [41.20, -77.19], 'Pine Island, MN': [44.20, -92.66],
+  'Richmond County, NC': [34.96, -79.75], 'Saudi Arabia': [23.89, 45.08], 'Sines, Portugal': [37.96, -8.87],
+  'Singapore': [1.35, 103.82], 'South Carolina, US': [33.84, -80.95], 'South Korea': [36.5, 127.85],
+  'Spain': [40.46, -3.75], 'St. Joseph Co., Indiana': [41.62, -86.29], 'Sweden': [60.13, 18.64],
+  'Sydney, Australia': [-33.87, 151.21], 'Taiwan': [23.70, 120.96], 'Texas': [31.0, -99.0],
+  'Thailand': [15.87, 100.99], 'UAE': [23.42, 53.85], 'UK': [54.0, -2.0], 'US': [39.5, -98.35],
+  'Van Buren Twp., MI': [42.20, -83.56], 'Varde/Esbjerg, Denmark': [55.62, 8.48],
+  'Vineland, New Jersey': [39.49, -75.03], 'Virginia, US': [37.43, -78.66],
+  'Visakhapatnam, India': [17.69, 83.22], 'Waltham Cross, UK': [51.69, -0.03],
+  'Warren County, Mississippi': [32.36, -90.85], 'Wisconsin, US': [44.5, -89.5],
+};
+
+function geocode(location) {
+  const key = (location ?? '').replace(/\s*\([^)]*\)/g, '').trim();
+  return GEO_LOOKUP[key] ?? null;
+}
+
+// Bubble radius from whichever metric the timeline project carries.
+function projectRadius(p) {
+  if (p.gw)    return gwToR(p.gw);
+  if (p.usdBn) return Math.max(4, Math.sqrt(p.usdBn) * 3);
+  return 5;
+}
+
+/* ─── Company geo data — the SAME projects as the buildout timeline ──── */
+function companyTimelineGeoData(projects, color) {
+  const pts = [];
+  for (const p of (projects ?? [])) {
+    const coord = geocode(p.location);
+    if (!coord) continue;
+    pts.push({
+      x: coord[1], y: coord[0], r: projectRadius(p),
+      gw: p.gw, usdBn: p.usdBn, location: p.location, partners: p.partners, notes: p.notes, label: p.location,
+    });
+  }
+  return {
+    datasets: [{
+      label: 'Datacenters', data: pts,
+      backgroundColor: fa(color, 0.55), borderColor: color, borderWidth: 1.5,
+    }],
+  };
+}
+
+/* ─── Auto-fit map bounds to a company's points ───────────────────────
+   Zoom to the smallest box enclosing every plotted datacenter (+ padding),
+   nudged toward the card's ~2:1 aspect so a US-only footprint fills the frame
+   as "just America" rather than a stretched world strip. */
+const GEO_ASPECT = 2.0; // lon-span : lat-span
+const GEO_PAD    = 0.18; // fraction of span added as breathing room
+
+function geoBounds(points) {
+  if (!points.length) return { xMin: -170, xMax: 180, yMin: -55, yMax: 80 };
+  let xMin = Infinity, xMax = -Infinity, yMin = Infinity, yMax = -Infinity;
+  for (const p of points) {
+    xMin = Math.min(xMin, p.x); xMax = Math.max(xMax, p.x);
+    yMin = Math.min(yMin, p.y); yMax = Math.max(yMax, p.y);
+  }
+  const xc = (xMin + xMax) / 2, yc = (yMin + yMax) / 2;
+  let xSpan = Math.max(xMax - xMin, 12) * (1 + GEO_PAD);
+  let ySpan = Math.max(yMax - yMin, 8)  * (1 + GEO_PAD);
+  if (xSpan / ySpan < GEO_ASPECT) xSpan = ySpan * GEO_ASPECT;
+  else                            ySpan = xSpan / GEO_ASPECT;
+  return {
+    xMin: Math.max(xc - xSpan / 2, -180), xMax: Math.min(xc + xSpan / 2, 180),
+    yMin: Math.max(yc - ySpan / 2, -60),  yMax: Math.min(yc + ySpan / 2, 84),
+  };
+}
+
+function companyBubbleOpts(bounds) {
+  return {
+    responsive: true, maintainAspectRatio: false, animation: { duration: 300 },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        ...TTP_BASE,
+        callbacks: {
+          title: () => '',
+          label: c => {
+            const p = c.raw;
+            const head = p.gw ? `${p.gw} GW` : p.usdBn ? `$${p.usdBn}bn` : '';
+            const lines = [` ${p.location ?? p.label}${head ? `: ${head}` : ''}`];
+            if (p.gw && p.usdBn) lines.push(` $${p.usdBn}bn`);
+            if (p.partners)      lines.push(` Partners: ${p.partners}`);
+            if (p.notes)         lines.push(` ${p.notes}`);
+            return lines;
+          },
+        },
+      },
+    },
+    scales: {
+      x: {
+        min: bounds.xMin, max: bounds.xMax, grid: GRID, border: BORD,
+        ticks: { ...TICK, callback: v => `${v > 0 ? '+' : ''}${Math.round(v)}°` },
+      },
+      y: {
+        min: bounds.yMin, max: bounds.yMax, grid: GRID, border: BORD,
+        ticks: { ...TICK, callback: v => `${Math.round(v)}°N` },
+      },
+    },
+  };
+}
 
 /* ─── Stacked-bar options ─────────────────────────────────────────── */
 function buildStackedOpts() {
@@ -484,11 +607,87 @@ function useDcBuildouts() {
   return raw;
 }
 
-/* ─── Page: Server supply chain ─────────────────────────────────── */
-export function DcServerSupply() {
+/* ─── Capacity operators (no Fig. 70 column) — combined sourcing table ───
+   Operators that have a buildout timeline but no column in the server
+   supply-chain matrix: they buy compute & capacity rather than build servers.
+   Summarised together on the Overview by their disclosed silicon suppliers
+   and ecosystem partners (parsed from their buildout projects). */
+const CAPACITY_OPERATORS = [
+  { key: 'oracle', name: 'Oracle', color: CO_COLOR.oracle },
+  { key: 'openai', name: 'OpenAI', color: CO_COLOR.openai },
+  { key: 'nebius', name: 'Nebius', color: CO_COLOR.nebius },
+];
+
+// Silicon / compute suppliers surfaced from the "(x Vendor …)" location tags.
+const COMPUTE_VENDORS = [
+  { re: /nvidia/i,   label: 'NVIDIA' },
+  { re: /\bAMD\b/,   label: 'AMD' },
+  { re: /broadcom/i, label: 'Broadcom' },
+  { re: /cerebras/i, label: 'Cerebras' },
+  { re: /\bAWS\b/,   label: 'AWS Trainium' },
+];
+
+const OP_CELL = { padding: '6px 8px', fontSize: 12, lineHeight: 1.5, verticalAlign: 'top' };
+
+function operatorSourcing(projects) {
+  const compute = new Set();
+  const partners = new Set();
+  for (const p of (projects ?? [])) {
+    const loc = p.location ?? '';
+    for (const v of COMPUTE_VENDORS) if (v.re.test(loc)) compute.add(v.label);
+    for (const s of (p.partners ?? '').split(/;\s*/)) {
+      const t = s.trim();
+      if (t) partners.add(t);
+    }
+  }
+  return { compute: [...compute], partners: [...partners] };
+}
+
+function CapacityOperatorsTable({ raw }) {
+  const cc = raw.companyCharts ?? {};
+  const rows = CAPACITY_OPERATORS.map(o => ({ ...o, ...operatorSourcing(cc[o.key]?.projects) }));
+  const dash = <span style={{ color: 'var(--ter)', opacity: 0.5 }}>—</span>;
+
   return (
-    <div className="cgrid">
-      <SupplyChainMatrix />
+    <div className="cbox span2">
+      <div className="ch-head">
+        <div className="ch-title">Capacity operators — compute sourcing &amp; partners</div>
+        <div className="ch-meta"><span className="ch-src">Company data, Nomura research</span></div>
+      </div>
+      <div className="ch-sub">
+        Operators with a buildout timeline but <b>no column in the Fig. 70 server supply chain</b> —
+        they procure compute and capacity through GPU vendors and ecosystem partners rather than
+        designing servers in-house. Shown together by their disclosed sourcing relationships.
+      </div>
+
+      <div className="scm-wrap">
+        <table className="scm-table">
+          <thead>
+            <tr>
+              <th className="scm-th">Operator</th>
+              <th className="scm-th">Silicon / compute</th>
+              <th className="scm-th">Ecosystem &amp; capacity partners</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(r => (
+              <tr key={r.key}>
+                <td className="scm-td scm-rowlabel" style={{ borderLeft: `4px solid ${r.color}` }}>
+                  <div className="scm-group" style={{ color: r.color }}>{r.name}</div>
+                </td>
+                <td className="scm-td" style={OP_CELL}>
+                  {r.compute.length ? r.compute.join(', ') : dash}
+                </td>
+                <td className="scm-td" style={OP_CELL}>
+                  {r.partners.length ? r.partners.join(', ') : dash}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="src-note">Source: Company data, Nomura research · derived from disclosed buildout projects</div>
     </div>
   );
 }
@@ -573,6 +772,7 @@ export function DcCapacity() {
   const deployOpts = useMemo(() => deployTrendOpts(), []);
 
   return (
+    <>
     <EditableGrid viewId="dc-capacity">
 
       {/* ── 1 & 2 sit side by side, each half the page width (no defaultFull). ── */}
@@ -602,6 +802,12 @@ export function DcCapacity() {
       </ChartCard>
 
     </EditableGrid>
+
+    {/* Operators without a Fig. 70 server supply-chain column, grouped. */}
+    <div className="cgrid">
+      <CapacityOperatorsTable raw={raw} />
+    </div>
+    </>
   );
 }
 
@@ -669,3 +875,78 @@ export default function DcTimelines() {
     </>
   );
 }
+
+/* ─── Per-company pages ──────────────────────────────────────────────
+   One page per operator that has a buildout timeline: the buildout
+   timeline, that company's slice of the server supply-chain matrix, and
+   its geographic footprint (subset of the aggregate map).
+
+   axis: 'cost' → $bn-invested timeline · 'gw' → power-capacity timeline.
+   matrixCol: key in the Fig. 70 matrix, or null if the company has no
+   disclosed in-house supply chain (buys capacity/GPUs instead).
+   projectName: how the operator appears in the geo project list.        */
+const DC_COMPANIES = {
+  aws:       { key: 'aws',       name: 'Amazon AWS', color: CO_COLOR.aws,       gantt: 'dc-aws-gantt',    axis: 'cost', matrixCol: 'amazon',    projectName: 'AWS'       },
+  google:    { key: 'google',    name: 'Google',     color: CO_COLOR.google,    gantt: 'dc-google-gantt', axis: 'cost', matrixCol: 'google',    projectName: 'Google'    },
+  microsoft: { key: 'microsoft', name: 'Microsoft',  color: CO_COLOR.microsoft, gantt: 'dc-msft-gantt',   axis: 'cost', matrixCol: 'microsoft', projectName: 'Microsoft' },
+  oracle:    { key: 'oracle',    name: 'Oracle',     color: CO_COLOR.oracle,    gantt: 'dc-oracle-gantt', axis: 'cost', matrixCol: null,        projectName: 'Oracle'    },
+  openai:    { key: 'openai',    name: 'OpenAI',     color: CO_COLOR.openai,    gantt: 'dc-openai-gantt', axis: 'cost', matrixCol: null,        projectName: 'OpenAI'    },
+  nebius:    { key: 'nebius',    name: 'Nebius',     color: CO_COLOR.nebius,    gantt: 'dc-nebius-gantt', axis: 'gw',   matrixCol: null,        projectName: 'Nebius'    },
+  meta:      { key: 'meta',      name: 'Meta',       color: CO_COLOR.meta,      gantt: 'dc-meta-gantt',   axis: 'gw',   matrixCol: 'meta',      projectName: 'Meta'      },
+};
+
+function DcCompanyPage({ cfg }) {
+  const raw = useDcBuildouts();
+  const projects = (raw.companyCharts ?? {})[cfg.key]?.projects;
+
+  const barData = useMemo(
+    () => cfg.axis === 'gw'
+      ? companyGwBarData(projects, cfg.color)
+      : companyBarData(projects, cfg.color),
+    [projects, cfg],
+  );
+  const barOpts = useMemo(
+    () => (cfg.axis === 'gw' ? companyGwBarOpts() : companyBarOpts()),
+    [cfg.axis],
+  );
+
+  // Geo map plots the same projects as the timeline, auto-fitted to their extent.
+  const geoData = useMemo(() => companyTimelineGeoData(projects, cfg.color), [projects, cfg]);
+  const geoOpts = useMemo(() => companyBubbleOpts(geoBounds(geoData.datasets[0].data)), [geoData]);
+  const hasGeo = geoData.datasets[0].data.length > 0;
+
+  const timelineTitle = `${cfg.name} — buildout timeline (${cfg.axis === 'gw' ? 'GW' : '$bn'})`;
+
+  return (
+    <>
+      <EditableGrid viewId={`dc-co-${cfg.key}`}>
+        <ChartCard chartId={cfg.gantt} title={timelineTitle} clean span2 isNew height={TIMELINE_H}>
+          <Bar data={barData} options={barOpts} />
+        </ChartCard>
+
+        {hasGeo && (
+          <ChartCard chartId={`dc-geo-${cfg.key}`} title={`${cfg.name} — geographic distribution`}
+            clean span2 isNew height={TIMELINE_H}>
+            <Bubble data={geoData} options={geoOpts} plugins={[worldMapPlugin]} />
+          </ChartCard>
+        )}
+      </EditableGrid>
+
+      {/* Only operators with a column in the Fig. 70 matrix get a supply-chain
+          table here; the rest are summarised together on the Overview page. */}
+      {cfg.matrixCol && (
+        <div className="cgrid">
+          <CompanySupplyTable column={cfg.matrixCol} label={cfg.name} />
+        </div>
+      )}
+    </>
+  );
+}
+
+export const DcCoAWS       = () => <DcCompanyPage cfg={DC_COMPANIES.aws} />;
+export const DcCoGoogle    = () => <DcCompanyPage cfg={DC_COMPANIES.google} />;
+export const DcCoMicrosoft = () => <DcCompanyPage cfg={DC_COMPANIES.microsoft} />;
+export const DcCoOracle    = () => <DcCompanyPage cfg={DC_COMPANIES.oracle} />;
+export const DcCoOpenAI    = () => <DcCompanyPage cfg={DC_COMPANIES.openai} />;
+export const DcCoNebius    = () => <DcCompanyPage cfg={DC_COMPANIES.nebius} />;
+export const DcCoMeta      = () => <DcCompanyPage cfg={DC_COMPANIES.meta} />;

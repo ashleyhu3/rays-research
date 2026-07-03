@@ -29,10 +29,19 @@ async function readEnrichment(ticker, fiscalPeriod) {
         { projection: { _id: 0 } },
       );
       if (doc) {
-        const chunks = await database.collection('transcript_chunks')
-          .find({ ticker: doc.ticker, fiscal_period: doc.fiscal_period }, { projection: { _id: 0 } })
-          .toArray();
-        return { ...doc, chunks };
+        // Chunks and facts live in separate collections (saveEnrichment splits
+        // them out and $unsets facts from the enrichment doc). Re-attach both,
+        // or downstream scripts that re-save the enrichment will clobber the
+        // local copy's facts.
+        const [chunks, facts] = await Promise.all([
+          database.collection('transcript_chunks')
+            .find({ ticker: doc.ticker, fiscal_period: doc.fiscal_period }, { projection: { _id: 0 } })
+            .toArray(),
+          database.collection('transcript_facts')
+            .find({ ticker: doc.ticker, fiscal_period: doc.fiscal_period }, { projection: { _id: 0 } })
+            .toArray(),
+        ]);
+        return { ...doc, chunks, ...(facts.length ? { facts } : {}) };
       }
     } catch (error) {
       console.warn('[enrichment-store] MongoDB read failed; falling back to local:', error.message);
@@ -54,23 +63,37 @@ async function listLocalEnrichments() {
         .find({}, { projection: { _id: 0 } })
         .toArray();
       if (docs.length) {
-        // Chunks are stored in a separate collection; re-attach them per
-        // enrichment. The analysis manager reparses any document lacking
+        // Chunks and facts are stored in separate collections; re-attach both
+        // per enrichment. The analysis manager reparses any document lacking
         // chunks, so returning summary-only docs makes it throw on the
-        // deployed site (which reads from Mongo) while working locally.
-        const chunks = await database.collection('transcript_chunks')
-          .find({}, { projection: { _id: 0 } })
-          .toArray();
-        const byKey = new Map();
-        for (const chunk of chunks) {
-          const key = `${chunk.ticker}:${chunk.fiscal_period}`;
-          if (!byKey.has(key)) byKey.set(key, []);
-          byKey.get(key).push(chunk);
-        }
-        return docs.map(doc => ({
-          ...doc,
-          chunks: byKey.get(`${doc.ticker}:${doc.fiscal_period}`) || [],
-        }));
+        // deployed site (which reads from Mongo) while working locally. Facts
+        // must be re-attached too: the fact/figure scripts re-save the whole
+        // enrichment to the local file, so a fact-less doc silently wipes the
+        // local facts (and leaves figure extraction with no candidates).
+        const [chunks, facts] = await Promise.all([
+          database.collection('transcript_chunks').find({}, { projection: { _id: 0 } }).toArray(),
+          database.collection('transcript_facts').find({}, { projection: { _id: 0 } }).toArray(),
+        ]);
+        const groupByKey = items => {
+          const map = new Map();
+          for (const item of items) {
+            const key = `${item.ticker}:${item.fiscal_period}`;
+            if (!map.has(key)) map.set(key, []);
+            map.get(key).push(item);
+          }
+          return map;
+        };
+        const chunksByKey = groupByKey(chunks);
+        const factsByKey = groupByKey(facts);
+        return docs.map(doc => {
+          const key = `${doc.ticker}:${doc.fiscal_period}`;
+          const docFacts = factsByKey.get(key);
+          return {
+            ...doc,
+            chunks: chunksByKey.get(key) || [],
+            ...(docFacts && docFacts.length ? { facts: docFacts } : {}),
+          };
+        });
       }
     } catch (error) {
       console.warn('[enrichment-store] MongoDB list failed; falling back to local:', error.message);

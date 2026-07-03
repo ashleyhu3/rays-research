@@ -454,6 +454,18 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
 .scm-sub { color: var(--text); font-size: 12px; font-weight: 600; }
 .scm-table tbody tr:hover .scm-td { filter: brightness(1.22); }
 
+/* Horizontal (transposed) per-company table: tiers as columns, one supplier
+   row. Scrolls sideways since a company can span ~26 tiers. */
+.scm-wrap--h { overflow-x: auto; }
+.scm-table--h { table-layout: auto; width: max-content; min-width: 100%; }
+.scm-table--h th,
+.scm-table--h td,
+.scm-table--h th:first-child,
+.scm-table--h td:first-child {
+  width: auto; min-width: 150px; max-width: 240px; vertical-align: top;
+}
+.scm-table--h .scm-th { border-right: 1px solid var(--border); }
+
 /* ── Customise dropdown ─────────────────────────────────────────────── */
 .cust-wrap { position: relative; }
 
