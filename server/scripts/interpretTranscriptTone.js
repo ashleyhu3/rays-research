@@ -138,7 +138,7 @@ async function main() {
     throw new Error('Set GEMINI_API_KEY or GROQ_API_KEY.');
   }
 
-  const enrichments = listLocalEnrichments()
+  const enrichments = (await listLocalEnrichments())
     .sort((a, b) => `${a.ticker}:${a.fiscal_period}`.localeCompare(`${b.ticker}:${b.fiscal_period}`));
   let interpreted = 0;
   let batches = 0;

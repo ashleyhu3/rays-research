@@ -178,16 +178,16 @@ app.post('/api/transcripts/parse', async (req, res) => {
   }
 });
 
-app.get('/api/transcripts/enrichment/:ticker/:period', (req, res) => {
+app.get('/api/transcripts/enrichment/:ticker/:period', async (req, res) => {
   const ticker = String(req.params.ticker || '').toUpperCase().replace(/[^A-Z0-9.-]/g, '');
   const period = String(req.params.period || '').toUpperCase().replace(/[^0-9Q]/g, '');
-  const enrichment = readEnrichment(ticker, period);
+  const enrichment = await readEnrichment(ticker, period);
   if (!enrichment) return res.status(404).json({ error: `No enrichment found for ${ticker} ${period}.` });
   res.json(enrichment);
 });
 
-app.get('/api/transcripts/topics', (_req, res) => {
-  const enrichments = listLocalEnrichments();
+app.get('/api/transcripts/topics', async (_req, res) => {
+  const enrichments = await listLocalEnrichments();
   const counts = new Map();
   for (const enrichment of enrichments) {
     for (const item of enrichment.topicSummary || []) {
@@ -203,12 +203,12 @@ app.get('/api/transcripts/topics', (_req, res) => {
   });
 });
 
-app.get('/api/transcripts/facts', (req, res) => {
+app.get('/api/transcripts/facts', async (req, res) => {
   const ticker = String(req.query.ticker || '').toUpperCase();
   const period = String(req.query.period || '').toUpperCase();
   const topic = String(req.query.topic || '');
   const limit = Math.min(500, Math.max(1, Number(req.query.limit) || 100));
-  const facts = listLocalEnrichments()
+  const facts = (await listLocalEnrichments())
     .flatMap(enrichment => enrichment.facts || [])
     .filter(fact => !ticker || fact.ticker === ticker)
     .filter(fact => !period || fact.fiscal_period === period)
@@ -292,9 +292,8 @@ app.post('/api/transcript/analyze', async (req, res) => {
 
 // ── AI data center buildout data (MongoDB → frontend) ───────────────────────
 app.get('/api/dc-buildouts', async (req, res) => {
+  if (!process.env.MONGODB_URI) return res.status(503).json({ error: 'MONGODB_URI not configured' });
   const { MongoClient } = require('mongodb');
-  const fallback = require('./data/dcBuildouts.json');
-  if (!process.env.MONGODB_URI) return res.json(fallback);
   let client;
   try {
     client = new MongoClient(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 8000 });
@@ -306,7 +305,9 @@ app.get('/api/dc-buildouts', async (req, res) => {
       db.collection('dcProjects').find({}).toArray(),
       db.collection('dcCompanyCharts').find({}).toArray(),
     ]);
-    if (!trends || !operators.length || !projects.length) return res.json(fallback);
+    if (!trends || !operators.length || !projects.length) {
+      return res.status(404).json({ error: 'No DC buildout data in database yet.' });
+    }
     const { _id, _type, updatedAt, ...trendFields } = trends;
     const companyCharts = {};
     for (const { _id, _key, updatedAt, ...c } of companyDocs) companyCharts[_key] = c;
@@ -314,11 +315,11 @@ app.get('/api/dc-buildouts', async (req, res) => {
       deploymentTrends: trendFields,
       operators: operators.map(({ _id, updatedAt, ...o }) => o),
       projects:  projects.map(({ _id, updatedAt, ...p }) => p),
-      companyCharts: Object.keys(companyCharts).length ? companyCharts : fallback.companyCharts,
+      companyCharts,
     });
   } catch (e) {
     console.error('[dc-buildouts]', e.message);
-    res.json(fallback);
+    res.status(500).json({ error: e.message });
   } finally {
     await client?.close();
   }
@@ -442,11 +443,13 @@ app.get('/api/health', (_, res) => res.json({ ok: true, ts: new Date().toISOStri
 /* ── Persistent storage (Mongo in prod, JSON files in dev) ──────────── */
 const DATA_DIR = path.join(__dirname, 'data');
 const STORAGE_BLOBS = [
-  { name: 'metricsHistory', file: path.join(DATA_DIR, 'metricsHistory.json') },
-  { name: 'gpuHistory',     file: path.join(DATA_DIR, 'gpuHistory.json') },
-  { name: 'dramHistory',    file: path.join(DATA_DIR, 'dramHistory.json') },
-  { name: 'awsHistory',     file: path.join(DATA_DIR, 'awsHistory.json') },
-{ name: 'sentimentData',       file: path.join(DATA_DIR, 'sentiment.json') },
+  { name: 'metricsHistory',  file: path.join(DATA_DIR, 'metricsHistory.json') },
+  { name: 'gpuHistory',      file: path.join(DATA_DIR, 'gpuHistory.json') },
+  { name: 'dramHistory',     file: path.join(DATA_DIR, 'dramHistory.json') },
+  { name: 'awsHistory',      file: path.join(DATA_DIR, 'awsHistory.json') },
+  { name: 'cpuHistory',      file: path.join(DATA_DIR, 'cpuHistory.json') },
+  { name: 'tpuHistory',      file: path.join(DATA_DIR, 'tpuHistory.json') },
+  { name: 'sentimentData',   file: path.join(DATA_DIR, 'sentiment.json') },
   // Latest scrape per source — loaded into the request cache on boot for an
   // instant first paint instead of blocking on live re-scrapes.
   { name: 'latestSnapshots', file: path.join(DATA_DIR, 'latestSnapshots.json') },

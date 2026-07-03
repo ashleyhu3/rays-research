@@ -1,9 +1,19 @@
 {
   "version": 2,
   "builds": [
-    { "src": "api/options.js", "use": "@vercel/node" }
+    { "src": "api/options.js", "use": "@vercel/node" },
+    { "src": "api/transcripts/library.js", "use": "@vercel/node" },
+    { "src": "api/transcripts/collect.js", "use": "@vercel/node" },
+    { "src": "api/transcripts/parse.js", "use": "@vercel/node" },
+    { "src": "api/transcripts/analysis/[ticker].js", "use": "@vercel/node" },
+    { "src": "api/transcripts/enrichment/[ticker]/[period].js", "use": "@vercel/node" }
   ],
   "routes": [
-    { "src": "/api/options", "dest": "/api/options.js" }
+    { "src": "/api/options", "dest": "/api/options.js" },
+    { "src": "/api/transcripts/library", "dest": "/api/transcripts/library.js" },
+    { "src": "/api/transcripts/collect", "dest": "/api/transcripts/collect.js" },
+    { "src": "/api/transcripts/parse", "dest": "/api/transcripts/parse.js" },
+    { "src": "/api/transcripts/analysis/([^/]+)", "dest": "/api/transcripts/analysis/[ticker].js?ticker=$1" },
+    { "src": "/api/transcripts/enrichment/([^/]+)/([^/]+)", "dest": "/api/transcripts/enrichment/[ticker]/[period].js?ticker=$1&period=$2" }
   ]
 }

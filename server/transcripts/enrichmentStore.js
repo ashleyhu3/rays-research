@@ -11,13 +11,55 @@ function enrichmentPath(ticker, fiscalPeriod) {
   return path.join(ROOT, safeTicker, `${safePeriod}.json`);
 }
 
-function readEnrichment(ticker, fiscalPeriod) {
+function readEnrichmentLocal(ticker, fiscalPeriod) {
   const file = enrichmentPath(ticker, fiscalPeriod);
   if (!fs.existsSync(file)) return null;
   return JSON.parse(fs.readFileSync(file, 'utf8'));
 }
 
-function listLocalEnrichments() {
+async function readEnrichment(ticker, fiscalPeriod) {
+  if (process.env.MONGODB_URI) {
+    const { MongoClient } = require('mongodb');
+    const client = new MongoClient(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 8000 });
+    try {
+      await client.connect();
+      const database = client.db(process.env.MONGODB_DB || undefined);
+      const doc = await database.collection('transcript_enrichments').findOne(
+        { ticker: String(ticker).toUpperCase(), fiscal_period: String(fiscalPeriod).toUpperCase() },
+        { projection: { _id: 0 } },
+      );
+      if (doc) {
+        const chunks = await database.collection('transcript_chunks')
+          .find({ ticker: doc.ticker, fiscal_period: doc.fiscal_period }, { projection: { _id: 0 } })
+          .toArray();
+        return { ...doc, chunks };
+      }
+    } catch (error) {
+      console.warn('[enrichment-store] MongoDB read failed; falling back to local:', error.message);
+    } finally {
+      await client.close().catch(() => {});
+    }
+  }
+  return readEnrichmentLocal(ticker, fiscalPeriod);
+}
+
+async function listLocalEnrichments() {
+  if (process.env.MONGODB_URI) {
+    const { MongoClient } = require('mongodb');
+    const client = new MongoClient(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 8000 });
+    try {
+      await client.connect();
+      const database = client.db(process.env.MONGODB_DB || undefined);
+      const docs = await database.collection('transcript_enrichments')
+        .find({}, { projection: { _id: 0 } })
+        .toArray();
+      if (docs.length) return docs;
+    } catch (error) {
+      console.warn('[enrichment-store] MongoDB list failed; falling back to local:', error.message);
+    } finally {
+      await client.close().catch(() => {});
+    }
+  }
   if (!fs.existsSync(ROOT)) return [];
   return fs.readdirSync(ROOT, { withFileTypes: true })
     .filter(entry => entry.isDirectory())
@@ -38,8 +80,12 @@ function listLocalEnrichments() {
 
 async function saveEnrichment(enrichment) {
   const file = enrichmentPath(enrichment.ticker, enrichment.fiscal_period);
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, JSON.stringify(enrichment, null, 2));
+  try {
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, JSON.stringify(enrichment, null, 2));
+  } catch (fsError) {
+    console.warn('[enrichment-store] Local file write skipped (read-only fs):', fsError.message);
+  }
 
   let mongoStored = false;
   if (process.env.MONGODB_URI) {

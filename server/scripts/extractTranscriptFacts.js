@@ -5,7 +5,7 @@ const { extractFacts } = require('../transcripts/facts');
 const { attachCompositeTone } = require('../transcripts/tone');
 
 async function main() {
-  const enrichments = listLocalEnrichments()
+  const enrichments = (await listLocalEnrichments())
     .sort((a, b) => `${a.ticker}:${a.fiscal_period}`.localeCompare(`${b.ticker}:${b.fiscal_period}`));
   let total = 0;
 

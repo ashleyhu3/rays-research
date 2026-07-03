@@ -45,9 +45,13 @@ async function saveTranscript(document) {
   const directory = path.join(providerRoot(document.metadata?.provider), document.ticker);
   const jsonPath = path.join(directory, `${document.fiscal_period}.json`);
   const markdownPath = path.join(directory, `${document.fiscal_period}.md`);
-  fs.mkdirSync(directory, { recursive: true });
-  fs.writeFileSync(jsonPath, JSON.stringify(document, null, 2));
-  fs.writeFileSync(markdownPath, transcriptMarkdown(document));
+  try {
+    fs.mkdirSync(directory, { recursive: true });
+    fs.writeFileSync(jsonPath, JSON.stringify(document, null, 2));
+    fs.writeFileSync(markdownPath, transcriptMarkdown(document));
+  } catch (fsError) {
+    console.warn('[transcript-store] Local file write skipped (read-only fs):', fsError.message);
+  }
 
   let mongoStored = false;
   if (process.env.MONGODB_URI) {

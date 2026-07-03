@@ -14,12 +14,15 @@ const storage = require('../storage');
 
 const DATA_DIR = path.join(__dirname, '..', 'data');
 const BLOBS = [
-  { name: 'metricsHistory',       file: path.join(DATA_DIR, 'metricsHistory.json') },
-  { name: 'gpuHistory',           file: path.join(DATA_DIR, 'gpuHistory.json') },
-  { name: 'dramHistory',          file: path.join(DATA_DIR, 'dramHistory.json') },
-  { name: 'awsHistory',           file: path.join(DATA_DIR, 'awsHistory.json') },
-  { name: 'cloudGpuHistory',      file: path.join(DATA_DIR, 'cloudGpuHistory.json') },
-  { name: 'sentimentData',        file: path.join(DATA_DIR, 'sentiment.json') },
+  { name: 'metricsHistory',  file: path.join(DATA_DIR, 'metricsHistory.json') },
+  { name: 'gpuHistory',      file: path.join(DATA_DIR, 'gpuHistory.json') },
+  { name: 'dramHistory',     file: path.join(DATA_DIR, 'dramHistory.json') },
+  { name: 'awsHistory',      file: path.join(DATA_DIR, 'awsHistory.json') },
+  { name: 'cpuHistory',      file: path.join(DATA_DIR, 'cpuHistory.json') },
+  { name: 'tpuHistory',      file: path.join(DATA_DIR, 'tpuHistory.json') },
+  { name: 'cloudGpuHistory', file: path.join(DATA_DIR, 'cloudGpuHistory.json') },
+  { name: 'sentimentData',   file: path.join(DATA_DIR, 'sentiment.json') },
+  { name: 'latestSnapshots', file: path.join(DATA_DIR, 'latestSnapshots.json') },
 ];
 
 storage.seedFromFiles(BLOBS)
