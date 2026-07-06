@@ -136,6 +136,13 @@ body { font-family: var(--font-b); background: var(--bg); color: var(--text); }
   color: var(--accent); font-family: var(--font-m);
 }
 
+.nav-trend {
+  font-size: 9px; margin-left: auto; line-height: 1;
+  flex-shrink: 0; letter-spacing: 0;
+}
+.nav-trend.up   { color: #34d399; }
+.nav-trend.down { color: #f87171; }
+
 .sidebar-footer { margin-top: auto; padding: 14px; border-top: 1px solid var(--border); }
 .last-upd { font-size: 10px; color: var(--ter); margin-bottom: 8px; }
 .last-upd b { color: var(--sec); }
