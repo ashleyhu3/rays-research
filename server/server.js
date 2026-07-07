@@ -460,6 +460,122 @@ app.get('/api/options/:ticker', async (req, res) => {
   }
 });
 
+/* ── Options-volume email alerts ─────────────────────────────────────── */
+const alertsStore  = require('./alertsStore');
+const alertsEngine = require('./alertsEngine');
+const mailer       = require('./mailer');
+
+const EMAIL_RE  = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const TICKER_RE = /^[A-Z0-9.^=-]{1,10}$/;
+
+function parseTickerList(input) {
+  const raw = Array.isArray(input) ? input : String(input ?? '').split(/[,\s]+/);
+  const seen = new Set();
+  for (const t of raw) {
+    const sym = String(t).trim().toUpperCase();
+    if (sym && TICKER_RE.test(sym)) seen.add(sym);
+  }
+  return [...seen];
+}
+
+// Whether SMTP is wired up — the UI warns the user if alerts can be stored but
+// not actually delivered yet.
+app.get('/api/alerts/status', async (_req, res) => {
+  const status = await mailer.verify();
+  if (status.error && status.configured) console.warn('[mailer] SMTP verification failed:', status.error);
+  res.json({
+    emailConfigured: status.configured,
+    emailVerified: status.verified,
+  });
+});
+
+// Create/update a subscription (upsert by email).
+app.post('/api/alerts/subscribe', (req, res) => {
+  const { email, tickers, threshold, minVolume } = req.body ?? {};
+  const cleanEmail = String(email ?? '').trim().toLowerCase();
+  if (!EMAIL_RE.test(cleanEmail)) return res.status(400).json({ error: 'A valid email is required.' });
+
+  const cleanTickers = parseTickerList(tickers);
+  if (!cleanTickers.length) return res.status(400).json({ error: 'Enter at least one valid ticker.' });
+  if (cleanTickers.length > 40) return res.status(400).json({ error: 'Too many tickers (max 40).' });
+
+  const thr = threshold != null ? Number(threshold) : undefined;
+  if (thr != null && (!Number.isFinite(thr) || thr < 0.05 || thr > 20))
+    return res.status(400).json({ error: 'Threshold must be between 0.05 and 20 (as a fraction, e.g. 0.5 = +50%).' });
+  const minV = minVolume != null ? Number(minVolume) : undefined;
+  if (minV != null && (!Number.isFinite(minV) || minV < 0))
+    return res.status(400).json({ error: 'Minimum volume must be a non-negative number.' });
+
+  const record = alertsStore.upsertSubscription({ email: cleanEmail, tickers: cleanTickers, threshold: thr, minVolume: minV });
+  res.json({ ok: true, subscription: record, emailConfigured: mailer.isConfigured() });
+});
+
+// Look up an existing subscription by email.
+app.get('/api/alerts/subscription', (req, res) => {
+  const email = String(req.query.email ?? '').trim().toLowerCase();
+  if (!EMAIL_RE.test(email)) return res.status(400).json({ error: 'A valid email is required.' });
+  const sub = alertsStore.getSubscription(email);
+  if (!sub) return res.status(404).json({ error: 'No subscription found for that email.' });
+  res.json({ subscription: sub });
+});
+
+// Remove a subscription.
+app.post('/api/alerts/unsubscribe', (req, res) => {
+  const email = String(req.body?.email ?? '').trim().toLowerCase();
+  if (!EMAIL_RE.test(email)) return res.status(400).json({ error: 'A valid email is required.' });
+  const removed = alertsStore.removeSubscription(email);
+  if (!removed) return res.status(404).json({ error: 'No subscription found for that email.' });
+  res.json({ ok: true });
+});
+
+// Run the alert cycle now for one subscriber — evaluates today vs yesterday and
+// (if anything triggered) sends the email. Returns the full per-ticker preview.
+app.post('/api/alerts/check-now', async (req, res) => {
+  const email = String(req.body?.email ?? '').trim().toLowerCase();
+  if (!EMAIL_RE.test(email)) return res.status(400).json({ error: 'A valid email is required.' });
+  if (!alertsStore.getSubscription(email)) return res.status(404).json({ error: 'No subscription found for that email. Subscribe first.' });
+  try {
+    const result = await alertsEngine.run({ onlyEmail: email });
+    const notification = result.notifications[0] ?? { email, rows: [], triggeredTickers: [], sent: false };
+    res.json({
+      ...notification,
+      errors: result.errors,
+      emailConfigured: result.emailConfigured,
+    });
+  } catch (e) {
+    console.error('[alerts:check-now]', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Send a fixed delivery-test message to an existing subscriber. This makes SMTP
+// setup verifiable without waiting for a second trading day and a real surge.
+// Keep a small in-memory cooldown so the public endpoint cannot be hammered.
+const testEmailSentAt = new Map();
+app.post('/api/alerts/test-email', async (req, res) => {
+  const email = String(req.body?.email ?? '').trim().toLowerCase();
+  if (!EMAIL_RE.test(email)) return res.status(400).json({ error: 'A valid email is required.' });
+  if (!alertsStore.getSubscription(email)) {
+    return res.status(404).json({ error: 'No subscription found for that email. Subscribe first.' });
+  }
+  if (!mailer.isConfigured()) {
+    return res.status(503).json({ error: 'Email delivery is not configured on the server.' });
+  }
+  const previous = testEmailSentAt.get(email) || 0;
+  if (Date.now() - previous < 60_000) {
+    return res.status(429).json({ error: 'Please wait a minute before sending another test email.' });
+  }
+  try {
+    const result = await alertsEngine.sendTestEmail(email);
+    if (!result.sent) return res.status(503).json({ error: result.reason || 'Email delivery is unavailable.' });
+    testEmailSentAt.set(email, Date.now());
+    res.json({ ok: true, sent: true });
+  } catch (e) {
+    console.error('[alerts:test-email]', e.message);
+    res.status(502).json({ error: 'The mail server rejected the test email. Check the server logs and SMTP settings.' });
+  }
+});
+
 app.post('/api/chat', async (req, res) => {
   const { message, history } = req.body ?? {};
   if (!message || typeof message !== 'string') {
@@ -495,6 +611,8 @@ const STORAGE_BLOBS = [
   { name: 'optionsOI',      file: path.join(DATA_DIR, 'optionsOI.json') },
   { name: 'shortInterestHistory', file: path.join(DATA_DIR, 'shortInterestHistory.json') },
   { name: 'sentimentData',  file: path.join(DATA_DIR, 'sentiment.json') },
+  // Options-volume email alerts: subscriptions + rolling per-ticker daily volume.
+  { name: 'optionsAlerts',  file: path.join(DATA_DIR, 'optionsAlerts.json') },
   // Latest scrape per source — loaded into the request cache on boot for an
   // instant first paint instead of blocking on live re-scrapes.
   { name: 'latestSnapshots', file: path.join(DATA_DIR, 'latestSnapshots.json') },

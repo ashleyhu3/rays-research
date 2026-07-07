@@ -120,6 +120,7 @@ export const VIEW_META = {
   docker:             { title: 'DOCKER HUB DEPLOYS' },
   community:          { title: 'HN PULSE' },
   options:            { title: 'OPTIONS FLOW' },
+  alerts:             { title: 'OPTIONS VOLUME ALERTS' },
   sentiment:          { title: 'MARKETS — SENTIMENT & OPTIONS' },
   transcripts:        { title: 'EARNINGS TRANSCRIPT AGENT' },
   sources:            { title: 'DATA VALIDITY TERMINAL' },

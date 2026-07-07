@@ -228,6 +228,7 @@ export const CHART_TEXT = {
   'sent-significance': { title: 'Volume → Next-Day Return — Statistical Significance' },
   // Per-ticker (search view)
   'sent-tk-weekly-vp': { title: 'Weekly Posting Volume vs Price' },
+  'sent-tk-weekly-logvp': { title: 'Weekly Posting Volume vs Price (log–log)' },
   'sent-tk-sentiment': { title: 'Bullish vs Bearish (weekly)' },
   'sent-tk-leadlag':   { title: 'Daily Post Count vs Next-Day Return' },
   'sent-tk-rolling':   { title: 'Rolling 20-Day Correlations' },

@@ -4,9 +4,10 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
+    "test": "npm run test:alerts && npm run test:transcripts",
     "dev": "node --env-file=.env server/server.js",
     "build": "vite build",
-    "start": "NODE_ENV=production node server/server.js",
+    "start": "NODE_ENV=production node --env-file-if-exists=.env server/server.js",
     "backfill:sec": "node --env-file=.env server/scripts/backfillSec.js",
     "backfill:mcp": "node --env-file=.env server/scripts/backfillMcp.js",
     "backfill:github-stars": "node --env-file=.env server/scripts/backfillGithubStars.js",
@@ -30,7 +31,9 @@
     "db:seed": "node --env-file=.env server/scripts/seedMongo.js",
     "db:seed:dc": "node --env-file=.env server/scripts/seedDcBuildouts.js",
     "collect": "node --env-file=.env server/scripts/collect.js",
-    "test:transcripts": "node --test server/transcripts/*.test.js server/transcripts/*.test.mjs"
+    "alerts:run": "node --env-file-if-exists=.env server/scripts/runAlerts.js",
+    "test:transcripts": "node --test server/transcripts/*.test.js server/transcripts/*.test.mjs",
+    "test:alerts": "node --test server/alertsEngine.test.js server/mailer.test.js"
   },
   "dependencies": {
     "@aws-sdk/client-pricing": "^3.1069.0",
@@ -45,6 +48,7 @@
     "groq-sdk": "^0.9.0",
     "mongodb": "^7.3.0",
     "node-cron": "^4.2.1",
+    "nodemailer": "^9.0.3",
     "react": "^18.3.1",
     "react-chartjs-2": "^5.2.0",
     "react-dom": "^18.3.1",

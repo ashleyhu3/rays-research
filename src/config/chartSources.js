@@ -87,6 +87,7 @@ export const CHART_SOURCES = {
   'sent-level-returns':{ src: 'StockTwits + Yahoo Finance', srcUrl: 'https://stocktwits.com/', freq: 'daily' },
   'sent-significance': { src: 'StockTwits + Yahoo Finance', srcUrl: 'https://stocktwits.com/', freq: 'daily' },
   'sent-tk-weekly-vp': { src: 'StockTwits + Yahoo Finance', srcUrl: 'https://stocktwits.com/', freq: 'daily' },
+  'sent-tk-weekly-logvp': { src: 'StockTwits + Yahoo Finance', srcUrl: 'https://stocktwits.com/', freq: 'daily' },
   'sent-tk-sentiment': { src: 'stocktwits.com', srcUrl: 'https://stocktwits.com/', freq: 'daily' },
   'sent-tk-leadlag':   { src: 'StockTwits + Yahoo Finance', srcUrl: 'https://stocktwits.com/', freq: 'daily' },
   'sent-tk-rolling':   { src: 'StockTwits + Yahoo Finance', srcUrl: 'https://stocktwits.com/', freq: 'daily' },

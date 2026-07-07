@@ -38,6 +38,7 @@ import DcTimelines, {
 import Options from './pages/options/Options';
 import Pricing from './pages/pricing/Pricing';
 import Sentiment from './pages/sentiment/Sentiment';
+import Alerts from './pages/alerts/Alerts';
 import DataValidity from './pages/data-validity/DataValidity';
 import Transcripts from './pages/transcripts/Transcripts';
 // Source-specific signal pages
@@ -88,6 +89,7 @@ const VIEW_COMPONENTS = {
   'docker':           Docker,
   'community':        Community,
   'options':          Options,
+  'alerts':           Alerts,
   'sentiment':        Sentiment,
   'sources':          DataValidity,
   'transcripts':      Transcripts,
@@ -124,7 +126,7 @@ export default function App() {
   // Check if this is a sector overview page
   const sectorId = SECTOR_OVERVIEW_IDS[currentView] ?? null;
   const ViewComponent = sectorId ? null : VIEW_COMPONENTS[currentView];
-  const showSidebar = currentView !== 'pricing' && currentView !== 'options' && currentView !== 'chat' && currentView !== 'sentiment' && currentView !== 'sources' && currentView !== 'transcripts';
+  const showSidebar = currentView !== 'pricing' && currentView !== 'options' && currentView !== 'chat' && currentView !== 'sentiment' && currentView !== 'sources' && currentView !== 'transcripts' && currentView !== 'alerts';
 
   return (
     <DashboardProvider>

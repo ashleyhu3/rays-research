@@ -43,6 +43,7 @@ const INFRA_VIEWS   = new Set([
   'dc-co-aws', 'dc-co-google', 'dc-co-microsoft', 'dc-co-oracle', 'dc-co-openai', 'dc-co-nebius', 'dc-co-meta',
 ]);
 const TOOL_VIEWS    = new Set(['options']);
+const ALERTS_VIEWS  = new Set(['alerts']);
 const PRICING_VIEWS = new Set(['pricing']);
 const SENTIMENT_VIEWS = new Set(['sentiment']);
 const SOURCES_VIEWS   = new Set(['sources']);
@@ -56,11 +57,12 @@ export default function Navbar({ onNavigate, currentView }) {
   const isSupply    = SUPPLY_VIEWS.has(currentView);
   const isInfra     = INFRA_VIEWS.has(currentView);
   const isOptions   = TOOL_VIEWS.has(currentView);
+  const isAlerts    = ALERTS_VIEWS.has(currentView);
   const isPricing   = PRICING_VIEWS.has(currentView);
   const isSentiment = SENTIMENT_VIEWS.has(currentView);
   const isSources   = SOURCES_VIEWS.has(currentView);
   const isTranscripts = TRANSCRIPT_VIEWS.has(currentView);
-  const isDemand    = !isChat && !isSupply && !isInfra && !isOptions && !isPricing && !isSentiment && !isSources && !isTranscripts;
+  const isDemand    = !isChat && !isSupply && !isInfra && !isOptions && !isAlerts && !isPricing && !isSentiment && !isSources && !isTranscripts;
 
   const title = loading
     ? 'Updating live data…'
@@ -103,6 +105,12 @@ export default function Navbar({ onNavigate, currentView }) {
           onClick={() => onNavigate('sentiment')}
         >
           Markets
+        </button>
+        <button
+          className={`nlink${isAlerts ? ' active' : ''}`}
+          onClick={() => onNavigate('alerts')}
+        >
+          Alerts
         </button>
         <button
           className={`nlink${isTranscripts ? ' active' : ''}`}

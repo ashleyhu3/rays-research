@@ -52,6 +52,8 @@ jobs:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           EIA_API_KEY: ${{ secrets.EIA_API_KEY }}
           VAST_API_KEY: ${{ secrets.VAST_API_KEY }}
+          # Daily closes for the StockTwits sentiment snapshot (Yahoo fallback if unset)
+          MASSIVE_API_KEY: ${{ secrets.MASSIVE_API_KEY }}
           # Optional — enable live AWS & GCP cloud-GPU prices (else reference rates)
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

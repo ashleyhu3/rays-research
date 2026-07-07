@@ -8,8 +8,9 @@ const storage = require('../storage');
  *
  * Ports the exploratory notebook (Posting Volume vs Stock Price Analysis) into
  * a server scraper: it reads the StockTwits message CSVs collected by
- * stocktwits/Stocktwits-Scraper-main, joins them to daily prices from Yahoo,
- * and computes the same volume↔price metrics — plus a bull/bear sentiment
+ * stocktwits/Stocktwits-Scraper-main, joins them to daily prices from Massive
+ * (Yahoo fallback), and computes the same volume↔price metrics — plus a
+ * bull/bear sentiment
  * dimension the notebook didn't use (the CSVs carry a self-reported sentiment
  * label per message). The JSON it returns drives the Sentiment dashboard tab.
  *
@@ -36,7 +37,7 @@ const CATEGORIES = {
 const TICKER_CATEGORY = {};
 for (const [cat, ts] of Object.entries(CATEGORIES)) for (const t of ts) TICKER_CATEGORY[t] = cat;
 
-const ROLL_WINDOW = 30; // trading days
+const ROLL_WINDOW_DAYS = 30; // calendar days
 
 // ── Dependency-free streaming RFC4180 CSV parser ────────────────────────────
 // The `text` column carries embedded commas, quotes and newlines, so a
@@ -105,7 +106,13 @@ async function loadTicker(ticker) {
   return days.size ? days : null;
 }
 
-// ── Yahoo daily closes ──────────────────────────────────────────────────────
+// ── Daily closes: Massive (Polygon-compatible) primary, Yahoo fallback ───────
+// Massive is our authenticated market-data provider (same key as the options and
+// short-interest scrapers), so unlike Yahoo's unofficial endpoint it isn't
+// throttled by shared-IP rate limits — the flakiness that used to make this
+// whole snapshot fail to recompute and stay frozen for days. Yahoo remains a
+// fallback so local dev (no key) and a Massive hiccup degrade gracefully.
+const MASSIVE_BASE = 'https://api.massive.com';
 const BROWSER_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 let _yf;
 function getYF() {
@@ -116,23 +123,61 @@ function getYF() {
   return _yf;
 }
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+const isoDay = d => new Date(d).toISOString().slice(0, 10);
 
-async function dailyCloses(ticker, start, end) {
+// Massive daily bars → Map<'YYYY-MM-DD', close>. Returns null when Massive is
+// unavailable (no key or request error) so the caller can fall back to Yahoo;
+// returns a (possibly empty) Map when the request itself succeeds.
+async function massiveDailyCloses(ticker, start, end) {
+  const key = process.env.MASSIVE_API_KEY;
+  if (!key) return null;
+  const url = `${MASSIVE_BASE}/v2/aggs/ticker/${encodeURIComponent(ticker)}/range/1/day/${isoDay(start)}/${isoDay(end)}`
+            + `?adjusted=true&sort=asc&limit=50000`;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${key}`, Accept: 'application/json' } });
+      if (!res.ok) {
+        if (attempt === 3 || res.status !== 429) { console.warn(`[sentiment] massive price ${ticker} HTTP ${res.status}`); return null; }
+        await sleep(1200 * attempt); continue;
+      }
+      const data = await res.json();
+      const out = new Map();
+      for (const b of data.results ?? []) {
+        if (b.c == null || b.t == null) continue;
+        out.set(isoDay(b.t), b.c);
+      }
+      return out;
+    } catch (e) {
+      if (attempt === 3) { console.warn(`[sentiment] massive price ${ticker} failed:`, e.message); return null; }
+      await sleep(1200 * attempt);
+    }
+  }
+  return null;
+}
+
+// Yahoo fallback (unofficial endpoint; may be IP-throttled).
+async function yahooDailyCloses(ticker, start, end) {
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
       const r = await getYF().chart(ticker, { period1: start, period2: end, interval: '1d' });
       const out = new Map(); // 'YYYY-MM-DD' -> close
       for (const q of r.quotes ?? []) {
         if (q.close == null || !q.date) continue;
-        out.set(new Date(q.date).toISOString().slice(0, 10), q.close);
+        out.set(isoDay(q.date), q.close);
       }
       return out;
     } catch (e) {
-      if (attempt === 3) { console.warn(`[sentiment] price fetch ${ticker} failed:`, e.message); return new Map(); }
+      if (attempt === 3) { console.warn(`[sentiment] yahoo price ${ticker} failed:`, e.message); return new Map(); }
       await sleep(1200 * attempt);
     }
   }
   return new Map();
+}
+
+async function dailyCloses(ticker, start, end) {
+  const m = await massiveDailyCloses(ticker, start, end);
+  if (m && m.size) return m;
+  return yahooDailyCloses(ticker, start, end);
 }
 
 // ── Stats ───────────────────────────────────────────────────────────────────
@@ -280,21 +325,29 @@ function analyzeTicker(ticker, days, closes) {
     hvWinRate:   hv.length ? +((hv.filter(r => r.retNext > 0).length / hv.length) * 100).toFixed(1) : null,
   };
 
-  // Rolling correlations over a trailing window of daily rows — the time-series
-  // form of the three static correlations, one value per trading day. All three
-  // share the same date axis (the dValid rows past the first window).
+  // Rolling correlations over a trailing 30-CALENDAR-day window of daily rows —
+  // the time-series form of the three static correlations, one value per trading
+  // day. A calendar window (not a fixed count of rows) keeps it a true one-month
+  // lookback instead of 30 trading days ≈ 6 calendar weeks (same reasoning as
+  // the daily30 cutoff below). Two-pointer since dValid is date-sorted
+  // ascending; each window ends the day before its label date, so a point
+  // never looks ahead into the day it's plotted on.
   const rollDates = [];
-  for (let end = ROLL_WINDOW; end < dValid.length; end++) rollDates.push(dValid[end].date);
-  const rollVals = (fx, fy) => {
-    const out = [];
-    for (let end = ROLL_WINDOW; end < dValid.length; end++) {
-      const win = dValid.slice(end - ROLL_WINDOW, end);
-      const r = pearson(win.map(fx), win.map(fy));
-      out.push(r == null ? null : +r.toFixed(3));
-    }
-    return out;
-  };
-  const rolling = dValid.length > ROLL_WINDOW + 1
+  const rollWindows = [];
+  const firstMs = dValid.length ? Date.parse(dValid[0].date + 'T00:00:00Z') : 0;
+  for (let end = 0, start = 0; end < dValid.length; end++) {
+    const endMs = Date.parse(dValid[end].date + 'T00:00:00Z');
+    if (endMs - firstMs < ROLL_WINDOW_DAYS * 86400000) continue; // not a full month of history yet
+    const cutoff = endMs - ROLL_WINDOW_DAYS * 86400000;
+    while (Date.parse(dValid[start].date + 'T00:00:00Z') <= cutoff) start++;
+    rollDates.push(dValid[end].date);
+    rollWindows.push(dValid.slice(start, end));
+  }
+  const rollVals = (fx, fy) => rollWindows.map(win => {
+    const r = pearson(win.map(fx), win.map(fy));
+    return r == null ? null : +r.toFixed(3);
+  });
+  const rolling = rollDates.length
     ? {
         dates:    rollDates,
         volPrice: rollVals(r => r.count, r => r.close),
@@ -330,14 +383,18 @@ function analyzeTicker(ticker, days, closes) {
       volNextR:  corr(counts, retsNext),
       sentNextR: corr(nets, retsNext),
     },
-    // Last 30 trading days that have both a price close and ≥1 post —
-    // used for the rolling 30-day daily volume vs price chart.
+    // Trailing 30 CALENDAR days of daily post count vs price (days that have
+    // both a price close and ≥1 post), anchored to the most recent data date —
+    // the rolling 30-day window. A calendar cutoff (not the last 30 rows) keeps
+    // it a true one-month window instead of 30 trading days ≈ 6 calendar weeks.
     daily30: (() => {
-      const last = dRows.slice(-30);
+      if (!dRows.length) return { dates: [], price: [], volume: [] };
+      const cutoff = Date.parse(dRows[dRows.length - 1].date + 'T00:00:00Z') - 30 * 86400000;
+      const win = dRows.filter(r => Date.parse(r.date + 'T00:00:00Z') > cutoff);
       return {
-        dates:  last.map(r => r.date),
-        price:  last.map(r => (r.close == null ? null : +r.close.toFixed(2))),
-        volume: last.map(r => r.count),
+        dates:  win.map(r => r.date),
+        price:  win.map(r => (r.close == null ? null : +r.close.toFixed(2))),
+        volume: win.map(r => r.count),
       };
     })(),
     summary,
@@ -395,8 +452,9 @@ function weeklyAggregate(byTicker) {
   };
 }
 
-// Recompute is heavy (CSV parse + 17 Yahoo fetches), so a committed snapshot is
-// served when it's recent. The daily cron refreshes it; a cold start is instant.
+// Recompute is heavy (CSV parse + ~17 Massive price fetches), so a stored
+// snapshot is served when it's recent. Scheduled refreshers force a real
+// recompute (see getSentimentData); a cold web request stays instant.
 const STORE_FILE = path.join(__dirname, '..', 'data', 'sentiment.json');
 const BLOB = 'sentimentData';
 const MAX_AGE_DAYS = 3;
@@ -411,7 +469,13 @@ function readStored() {
 }
 
 async function getSentimentData({ force = false } = {}) {
-  const fresh = force ? null : readStored();
+  // The web route calls this without force and serves a recent snapshot cheaply.
+  // The always-on collector sets SENTIMENT_FORCE=1 to bypass the freshness gate
+  // so the snapshot genuinely recomputes each run (the daily-update path). The
+  // old default — no forced caller — meant a <3-day-old snapshot short-circuited
+  // every refresh, so the data could never advance more than once every 4 days.
+  const forced = force || process.env.SENTIMENT_FORCE === '1';
+  const fresh = forced ? null : readStored();
   if (fresh) return fresh;
   const data = await computeSentiment();
   storage.write(BLOB, STORE_FILE, data);
@@ -419,25 +483,46 @@ async function getSentimentData({ force = false } = {}) {
 }
 
 async function computeSentiment() {
+  // Prior snapshot: reused per-ticker when a price fetch fails, so one flaky
+  // symbol (or a transient outage) degrades that ticker only instead of wiping
+  // the whole snapshot.
+  let prev = null;
+  try { const v = storage.read(BLOB, STORE_FILE); if (v?.tickers) prev = v; } catch {}
+
   const tickers = Object.values(CATEGORIES).flat();
   const byTicker = {};
+  let freshCount = 0;
   for (const ticker of tickers) {
     const days = await loadTicker(ticker);
-    if (!days) { console.warn(`[sentiment] no CSV for ${ticker}`); continue; }
+    if (!days) {
+      if (prev?.tickers?.[ticker]) byTicker[ticker] = prev.tickers[ticker];
+      else console.warn(`[sentiment] no CSV for ${ticker}`);
+      continue;
+    }
     const dates = [...days.keys()].sort();
     const start = dates[0];
     const endD = new Date(dates[dates.length - 1] + 'T00:00:00Z');
     endD.setUTCDate(endD.getUTCDate() + 7);
     const end = endD.toISOString().slice(0, 10);
     const closes = await dailyCloses(ticker, start, end);
-    await sleep(250); // be gentle with Yahoo
-    const res = analyzeTicker(ticker, days, closes);
-    if (res) byTicker[ticker] = res;
+    await sleep(250); // be gentle with the price API
+    const res = closes.size ? analyzeTicker(ticker, days, closes) : null;
+    if (res) {
+      byTicker[ticker] = res;
+      freshCount++;
+    } else if (prev?.tickers?.[ticker]) {
+      byTicker[ticker] = prev.tickers[ticker];
+      console.warn(`[sentiment] ${ticker}: price fetch failed — kept previous snapshot`);
+    } else {
+      console.warn(`[sentiment] ${ticker}: no price data and no prior snapshot — dropped`);
+    }
   }
-  if (Object.keys(byTicker).length === 0) throw new Error('sentiment: no tickers analyzed');
+  // Never overwrite a good snapshot with a fully-stale one: if not a single
+  // ticker refreshed, throw so the caller keeps the previous blob and retries.
+  if (freshCount === 0) throw new Error('sentiment: no tickers refreshed (all price fetches failed)');
 
   const rolling = {
-    window: ROLL_WINDOW,
+    window: ROLL_WINDOW_DAYS,
     byMetric: {
       volPrice: rollingByCategory(byTicker, 'volPrice'),
       volNextR: rollingByCategory(byTicker, 'volNextR'),

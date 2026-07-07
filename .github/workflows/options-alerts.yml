@@ -1,0 +1,50 @@
+name: Send options volume alerts
+
+# The web service can sleep when idle, so run the alert engine from GitHub's
+# scheduler against the same MongoDB blob used by the app.
+#
+# Required repository secrets:
+#   MONGODB_URI, MASSIVE_API_KEY, SMTP_HOST, SMTP_USER, SMTP_PASS
+# Optional:
+#   MONGODB_DB, SMTP_PORT, SMTP_SECURE, ALERT_FROM_EMAIL
+
+on:
+  schedule:
+    # 21:30 UTC is after the US close year-round (4:30pm ET in winter,
+    # 5:30pm ET in summer), allowing the day's option volume to settle.
+    - cron: '30 21 * * 1-5'
+  workflow_dispatch: {}
+
+concurrency:
+  group: options-volume-alerts
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci --omit=dev
+
+      - name: Check volume and send alerts
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          MONGODB_DB: ${{ secrets.MONGODB_DB }}
+          MASSIVE_API_KEY: ${{ secrets.MASSIVE_API_KEY }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_SECURE: ${{ secrets.SMTP_SECURE }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          ALERT_FROM_EMAIL: ${{ secrets.ALERT_FROM_EMAIL }}
+        run: node server/scripts/runAlerts.js
