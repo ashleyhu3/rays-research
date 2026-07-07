@@ -39,6 +39,8 @@ function dramLineData(models, history) {
 
 const dramLegend = models => models.map((m, i) => [m.model, DRAM_PALETTE[i % DRAM_PALETTE.length]]);
 
+const awsLegend = ds => (ds?.datasets ?? []).map(d => [d.label, d.borderColor]);
+
 const GPU_PALETTE = {
   H100_SXM: C.openai,
   H100_PCIe: C.deepseek,
@@ -80,12 +82,6 @@ const CPU_PALETTE = {
   'C7g (Graviton)': C.minimax,
 };
 
-function SectionLabel({ children }) {
-  return (
-    <div className="pricing-section-label">{children}</div>
-  );
-}
-
 const TPU_PALETTE = {
   v4:  C.google,
   v5e: C.teal,
@@ -93,7 +89,10 @@ const TPU_PALETTE = {
   v6e: C.anthropic,
 };
 
-export default function Pricing({ weeks: W = 52 }) {
+// Shared computation for every pricing page. Each page below renders one slice
+// of the returned object; the maths stays here because the GPU charts depend on
+// both the vast.ai and AWS histories together.
+function usePricingCharts(W) {
   const { liveData } = useData();
 
     /* ── GPU spot pricing (moved from the GPU view) ──────────────────── */
@@ -143,7 +142,6 @@ export default function Pricing({ weeks: W = 52 }) {
   // Exact EC2 spot backfill (≤90d) continued forward via the free Spot Advisor.
   const aws = liveData?.aws;
   const AWS_COLOR = { H100: C.openai, H200: C.anthropic, A100: C.teal, Trainium: C.google, Inferentia2: C.minimax };
-  const awsLegend = ds => (ds?.datasets ?? []).map(d => [d.label, d.borderColor]);
 
   // Master time axis = AWS history (reaches furthest back), windowed to W weeks.
   const awsWindow = useMemo(() => {
@@ -306,98 +304,133 @@ export default function Pricing({ weeks: W = 52 }) {
 
   const dramAsOf = dram?.asOf ? ` · as of ${dram.asOf}` : '';
 
+  return {
+    dramIndex, dramIndexData, chipData, chips, moduleData, modules, dramAsOf,
+    gpuIndexData, combinedSpotData, awsChipData,
+    cpuHistData, tpuHistData,
+  };
+}
+
+function NoData({ label }) {
   return (
-    <>
-      <SectionLabel>Memory</SectionLabel>
-      <EditableGrid viewId="pricing-memory">
-        {dramIndexData && (
-          <ChartCard
-            chartId="dram-index"
-            title={`${dramIndex.name} — monthly (${dramIndex.unit})`}
-            height={240} span2
-          >
-            <Line data={dramIndexData} options={baseOpts(v => `$${v.toFixed(1)}`)} />
-          </ChartCard>
-        )}
+    <div style={{ color: 'var(--ter)', fontSize: 12, padding: '16px 0' }}>
+      No {label} pricing data yet — hit <b style={{ color: 'var(--sec)' }}>Refresh Data</b> to fetch the latest spot prices.
+    </div>
+  );
+}
 
-        {chipData && (
-          <ChartCard
-            chartId="dram-chips"
-            subtitle={`${DRAM_METHOD}${dramAsOf}`}
-            legend={dramLegend(chips)}
-            height={260} span2
-          >
-            <Line data={chipData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
-          </ChartCard>
-        )}
+// ── Page: Memory ──────────────────────────────────────────────────────────
+export function PricingMemory({ weeks: W = 52 }) {
+  const { dramIndex, dramIndexData, chipData, chips, moduleData, modules, dramAsOf } = usePricingCharts(W);
+  const anyData = dramIndexData || chipData || moduleData;
 
-        {moduleData && (
-          <ChartCard
-            chartId="dram-modules"
-            subtitle={`SO-DIMM / UDIMM / RDIMM modules. ${DRAM_METHOD}${dramAsOf}`}
-            legend={dramLegend(modules)}
-            height={240}
-          >
-            <Line data={moduleData} options={baseOpts(v => `$${v.toFixed(0)}`)} />
-          </ChartCard>
-        )}
-      </EditableGrid>
+  return (
+    <EditableGrid viewId="pricing-memory">
+      {dramIndexData && (
+        <ChartCard
+          chartId="dram-index"
+          title={`${dramIndex.name} — monthly (${dramIndex.unit})`}
+          height={240} span2
+        >
+          <Line data={dramIndexData} options={baseOpts(v => `$${v.toFixed(1)}`)} />
+        </ChartCard>
+      )}
 
-      <SectionLabel>GPU</SectionLabel>
-      <EditableGrid viewId="pricing-gpu">
-        {gpuIndexData && (
-          <ChartCard
-            chartId="gpu-index"
-            height={240} span2
-          >
-            <Line data={gpuIndexData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
-          </ChartCard>
-        )}
+      {chipData && (
+        <ChartCard
+          chartId="dram-chips"
+          subtitle={`${DRAM_METHOD}${dramAsOf}`}
+          legend={dramLegend(chips)}
+          height={260} span2
+        >
+          <Line data={chipData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
+        </ChartCard>
+      )}
 
-        {combinedSpotData && (
-          <ChartCard
-            chartId="gpu-spot-combined"
-            legend={awsLegend(combinedSpotData)}
-            height={240} span2
-          >
-            <Line data={combinedSpotData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
-          </ChartCard>
-        )}
+      {moduleData && (
+        <ChartCard
+          chartId="dram-modules"
+          subtitle={`SO-DIMM / UDIMM / RDIMM modules. ${DRAM_METHOD}${dramAsOf}`}
+          legend={dramLegend(modules)}
+          height={240} span2
+        >
+          <Line data={moduleData} options={baseOpts(v => `$${v.toFixed(0)}`)} />
+        </ChartCard>
+      )}
 
-        {awsChipData && (
-          <ChartCard
-            chartId="aws-chip-spot"
-            legend={awsLegend(awsChipData)}
-            height={220} span2
-          >
-            <Line data={awsChipData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
-          </ChartCard>
-        )}
+      {!anyData && <ChartCard chartId="dram-index" title="Memory spot pricing" height={200} span2><NoData label="memory" /></ChartCard>}
+    </EditableGrid>
+  );
+}
 
-      </EditableGrid>
+// ── Page: GPU ─────────────────────────────────────────────────────────────
+export function PricingGPU({ weeks: W = 52 }) {
+  const { gpuIndexData, combinedSpotData, awsChipData } = usePricingCharts(W);
+  const anyData = gpuIndexData || combinedSpotData || awsChipData;
 
-      <SectionLabel>CPU / TPU</SectionLabel>
-      <EditableGrid viewId="pricing-cpu">
-        {cpuHistData && (
-          <ChartCard
-            chartId="cpu-spot-history"
-            legend={cpuHistData.datasets.map(d => [d.label, d.borderColor])}
-            height={220} span2
-          >
-            <Line data={cpuHistData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
-          </ChartCard>
-        )}
+  return (
+    <EditableGrid viewId="pricing-gpu">
+      {gpuIndexData && (
+        <ChartCard chartId="gpu-index" height={240} span2>
+          <Line data={gpuIndexData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
+        </ChartCard>
+      )}
 
-        {tpuHistData && (
-          <ChartCard
-            chartId="tpu-spot-history"
-            legend={tpuHistData.datasets.map(d => [d.label, d.borderColor])}
-            height={220} span2
-          >
-            <Line data={tpuHistData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
-          </ChartCard>
-        )}
-      </EditableGrid>
-    </>
+      {combinedSpotData && (
+        <ChartCard chartId="gpu-spot-combined" legend={awsLegend(combinedSpotData)} height={240} span2>
+          <Line data={combinedSpotData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
+        </ChartCard>
+      )}
+
+      {awsChipData && (
+        <ChartCard chartId="aws-chip-spot" legend={awsLegend(awsChipData)} height={220} span2>
+          <Line data={awsChipData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
+        </ChartCard>
+      )}
+
+      {!anyData && <ChartCard chartId="gpu-index" title="GPU spot pricing" height={200} span2><NoData label="GPU" /></ChartCard>}
+    </EditableGrid>
+  );
+}
+
+// ── Page: CPU ─────────────────────────────────────────────────────────────
+export function PricingCPU({ weeks: W = 52 }) {
+  const { cpuHistData } = usePricingCharts(W);
+
+  return (
+    <EditableGrid viewId="pricing-cpu">
+      {cpuHistData ? (
+        <ChartCard
+          chartId="cpu-spot-history"
+          legend={cpuHistData.datasets.map(d => [d.label, d.borderColor])}
+          height={220} span2
+        >
+          <Line data={cpuHistData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
+        </ChartCard>
+      ) : (
+        <ChartCard chartId="cpu-spot-history" title="CPU spot pricing" height={200} span2><NoData label="CPU" /></ChartCard>
+      )}
+    </EditableGrid>
+  );
+}
+
+// ── Page: TPU ─────────────────────────────────────────────────────────────
+export function PricingTPU({ weeks: W = 52 }) {
+  const { tpuHistData } = usePricingCharts(W);
+
+  return (
+    <EditableGrid viewId="pricing-tpu">
+      {tpuHistData ? (
+        <ChartCard
+          chartId="tpu-spot-history"
+          legend={tpuHistData.datasets.map(d => [d.label, d.borderColor])}
+          height={220} span2
+        >
+          <Line data={tpuHistData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
+        </ChartCard>
+      ) : (
+        <ChartCard chartId="tpu-spot-history" title="TPU preemptible pricing" height={200} span2><NoData label="TPU" /></ChartCard>
+      )}
+    </EditableGrid>
   );
 }

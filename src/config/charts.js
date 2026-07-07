@@ -72,21 +72,12 @@ const REGISTRY = [
   { id: 'cn-bench',   sectorId: 'tokens', subView: 'chinese', defaultPinned: false },
 
   // ── Supply chain ───────────────────────────────────────────────────
-  { id: 'supply-all-rev',    sectorId: 'supply', subView: 'ai-supply',        defaultPinned: true  },
-  { id: 'supply-all-yoy',    sectorId: 'supply', subView: 'ai-supply',        defaultPinned: false },
-  { id: 'supply-all-mom',    sectorId: 'supply', subView: 'ai-supply',        defaultPinned: false },
-  { id: 'supply-optics-rev', sectorId: 'supply', subView: 'ai-supply-optics', defaultPinned: true  },
-  { id: 'supply-optics-yoy', sectorId: 'supply', subView: 'ai-supply-optics', defaultPinned: false },
-  { id: 'supply-optics-mom', sectorId: 'supply', subView: 'ai-supply-optics', defaultPinned: false },
-  { id: 'supply-fiber-rev',  sectorId: 'supply', subView: 'ai-supply-fiber',  defaultPinned: true  },
-  { id: 'supply-fiber-yoy',  sectorId: 'supply', subView: 'ai-supply-fiber',  defaultPinned: false },
-  { id: 'supply-fiber-mom',  sectorId: 'supply', subView: 'ai-supply-fiber',  defaultPinned: false },
-  { id: 'supply-pcb-rev',    sectorId: 'supply', subView: 'ai-supply-pcb',    defaultPinned: true  },
-  { id: 'supply-pcb-yoy',    sectorId: 'supply', subView: 'ai-supply-pcb',    defaultPinned: false },
-  { id: 'supply-pcb-mom',    sectorId: 'supply', subView: 'ai-supply-pcb',    defaultPinned: false },
-  { id: 'supply-mlcc-rev',   sectorId: 'supply', subView: 'ai-supply-mlcc',   defaultPinned: true  },
-  { id: 'supply-mlcc-yoy',   sectorId: 'supply', subView: 'ai-supply-mlcc',   defaultPinned: false },
-  { id: 'supply-mlcc-mom',   sectorId: 'supply', subView: 'ai-supply-mlcc',   defaultPinned: false },
+  ...['optics', 'fiber', 'pcb', 'mlcc', 'cooling', 'power', 'equipment', 'memory', 'foundry'].flatMap(chain => [
+    { id: `supply-${chain}-rev`,       sectorId: 'supply', subView: `ai-supply-${chain}`, defaultPinned: true  },
+    { id: `supply-${chain}-total-rev`, sectorId: 'supply', subView: `ai-supply-${chain}`, defaultPinned: false },
+    { id: `supply-${chain}-yoy`,       sectorId: 'supply', subView: `ai-supply-${chain}`, defaultPinned: false },
+    { id: `supply-${chain}-mom`,       sectorId: 'supply', subView: `ai-supply-${chain}`, defaultPinned: false },
+  ]),
 ];
 
 /** Registry with the display title attached from chartText.js. */

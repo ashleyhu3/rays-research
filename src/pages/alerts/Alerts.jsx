@@ -70,12 +70,12 @@ export default function Alerts() {
   const [msg, setMsg]             = useState(null);   // { kind: 'ok'|'err', text }
   const [preview, setPreview]     = useState(null);   // result of /check-now
 
-  // Learn whether SMTP is wired up so we can warn the user upfront.
+  // Learn whether email delivery is wired up so we can warn the user upfront.
   useEffect(() => {
     fetch('/api/alerts/status')
       .then(r => r.json())
       .then(setStatus)
-      .catch(() => setStatus({ emailConfigured: false }));
+      .catch(() => setStatus({ emailConfigured: false, emailProvider: 'Email' }));
   }, []);
 
   async function lookup() {
@@ -214,13 +214,13 @@ export default function Alerts() {
 
       {status && !status.emailConfigured && (
         <div className="alerts-note warn">
-          ⚠ Email delivery isn't configured on the server yet (SMTP env vars unset). You can still subscribe and
-          preview alerts with <strong>Check now</strong>, but emails won't send until SMTP is set up.
+          Email delivery isn't configured on the server yet ({status.emailProvider || 'provider'} env vars unset). You can still subscribe and
+          preview alerts with <strong>Check now</strong>, but emails won't send until delivery is set up.
         </div>
       )}
       {status?.emailConfigured && status.emailVerified === false && (
         <div className="alerts-note err">
-          Email settings are present, but the server could not connect or authenticate with SMTP. Check the server log and credentials.
+          {status.emailProvider || 'Email'} settings are present, but the server could not connect or authenticate. Check the server log and credentials.
         </div>
       )}
 

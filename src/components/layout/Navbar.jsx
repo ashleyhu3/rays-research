@@ -37,14 +37,17 @@ function TableIcon() {
   );
 }
 
-const SUPPLY_VIEWS  = new Set(['ai-supply', 'ai-supply-optics', 'ai-supply-fiber', 'ai-supply-pcb', 'ai-supply-mlcc']);
+const SUPPLY_VIEWS  = new Set([
+  'ai-supply-optics', 'ai-supply-fiber', 'ai-supply-pcb', 'ai-supply-mlcc',
+  'ai-supply-cooling', 'ai-supply-power', 'ai-supply-equipment', 'ai-supply-memory', 'ai-supply-foundry',
+]);
 const INFRA_VIEWS   = new Set([
   'dc-capacity', 'dc-timelines',
   'dc-co-aws', 'dc-co-google', 'dc-co-microsoft', 'dc-co-oracle', 'dc-co-openai', 'dc-co-nebius', 'dc-co-meta',
 ]);
 const TOOL_VIEWS    = new Set(['options']);
 const ALERTS_VIEWS  = new Set(['alerts']);
-const PRICING_VIEWS = new Set(['pricing']);
+const PRICING_VIEWS = new Set(['pricing-memory', 'pricing-gpu', 'pricing-cpu', 'pricing-tpu']);
 const SENTIMENT_VIEWS = new Set(['sentiment']);
 const SOURCES_VIEWS   = new Set(['sources']);
 const TRANSCRIPT_VIEWS = new Set(['transcripts']);
@@ -84,7 +87,7 @@ export default function Navbar({ onNavigate, currentView }) {
         </button>
         <button
           className={`nlink${isSupply ? ' active' : ''}`}
-          onClick={() => onNavigate('ai-supply')}
+          onClick={() => onNavigate('ai-supply-optics')}
         >
           AI Supply
         </button>
@@ -96,7 +99,7 @@ export default function Navbar({ onNavigate, currentView }) {
         </button>
         <button
           className={`nlink${isPricing ? ' active' : ''}`}
-          onClick={() => onNavigate('pricing')}
+          onClick={() => onNavigate('pricing-memory')}
         >
           Pricing
         </button>

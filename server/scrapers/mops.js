@@ -15,7 +15,7 @@ const ALL_COMPANIES = [
   { id: '6442', ticker: '6442TT', group: 'fiber', exchange: 'twse', name: '光聖'    },
   // Optics supply chain — optical components for AI networking (800G+ transceivers)
   { id: '3081', ticker: '3081TT', group: 'optics', exchange: 'tpex', name: '聯亞光電' },
-  { id: '3363', ticker: '3363TT', group: 'optics', exchange: 'tpex', name: '品興'    },
+  { id: '3363', ticker: '3363TT', group: 'optics', exchange: 'tpex', name: '上詮'    },
   { id: '3163', ticker: '3163TT', group: 'optics', exchange: 'tpex', name: '波若威'  },
   // PCB supply chain — boards for AI servers, GPU carrier cards, HDI substrates
   { id: '2383', ticker: '2383TT', group: 'pcb', exchange: 'twse', name: '台光電'   },
@@ -24,15 +24,41 @@ const ALL_COMPANIES = [
   { id: '8046', ticker: '8046TT', group: 'pcb', exchange: 'twse', name: '南電'     },
   { id: '4958', ticker: '4958TT', group: 'pcb', exchange: 'twse', name: '臻鼎-KY'  },
   { id: '6274', ticker: '6274TT', group: 'pcb', exchange: 'tpex', name: '台燿科技' },
-  { id: '8358', ticker: '8358TT', group: 'pcb', exchange: 'tpex', name: '金像電子' },
+  { id: '8358', ticker: '8358TT', group: 'pcb', exchange: 'tpex', name: '金居'     },
   // MLCC supply chain — multilayer ceramic capacitors for AI servers / boards
   { id: '2327', ticker: '2327TT', group: 'mlcc', exchange: 'twse', name: '國巨'   },
   { id: '2492', ticker: '2492TT', group: 'mlcc', exchange: 'twse', name: '華新科'  },
   { id: '3026', ticker: '3026TT', group: 'mlcc', exchange: 'twse', name: '禾伸堂'  },
+  // Cooling supply chain — thermal solutions for AI servers (air / liquid cooling)
+  { id: '3017', ticker: '3017TT', group: 'cooling', exchange: 'twse', name: '奇鋐'   },
+  { id: '3653', ticker: '3653TT', group: 'cooling', exchange: 'twse', name: '健策'   },
+  { id: '3324', ticker: '3324TT', group: 'cooling', exchange: 'tpex', name: '雙鴻'   },
+  { id: '8996', ticker: '8996TT', group: 'cooling', exchange: 'twse', name: '高力'   },
+  // Power supply chain — power supplies & power components for AI datacenters
+  { id: '2308', ticker: '2308TT', group: 'power', exchange: 'twse', name: '台達電'   },
+  { id: '2301', ticker: '2301TT', group: 'power', exchange: 'twse', name: '光寶科'   },
+  { id: '6415', ticker: '6415TT', group: 'power', exchange: 'twse', name: '矽力-KY'  },
+  { id: '3665', ticker: '3665TT', group: 'power', exchange: 'twse', name: '貿聯-KY'  },
+  // Equipment supply chain — semiconductor process / test equipment
+  { id: '3131', ticker: '3131TT', group: 'equipment', exchange: 'tpex',     name: '弘塑' },
+  { id: '6187', ticker: '6187TT', group: 'equipment', exchange: 'tpex',     name: '萬潤' },
+  { id: '2467', ticker: '2467TT', group: 'equipment', exchange: 'twse',     name: '志聖' },
+  { id: '3583', ticker: '3583TT', group: 'equipment', exchange: 'twse',     name: '辛耘' },
+  { id: '7769', ticker: '7769TT', group: 'equipment', exchange: 'emerging', name: '鴻勁' },
+  { id: '2360', ticker: '2360TT', group: 'equipment', exchange: 'twse',     name: '致茂' },
+  // Memory supply chain — DRAM / flash makers & controllers
+  { id: '2408', ticker: '2408TT', group: 'memory', exchange: 'twse', name: '南亞科' },
+  { id: '2337', ticker: '2337TT', group: 'memory', exchange: 'twse', name: '旺宏'   },
+  { id: '8299', ticker: '8299TT', group: 'memory', exchange: 'tpex', name: '群聯'   },
+  { id: '2344', ticker: '2344TT', group: 'memory', exchange: 'twse', name: '華邦電' },
+  // Foundry supply chain — wafer fabrication
+  { id: '2330', ticker: '2330TT', group: 'foundry', exchange: 'twse', name: '台積電'   },
+  { id: '2303', ticker: '2303TT', group: 'foundry', exchange: 'twse', name: '聯電'     },
+  { id: '5347', ticker: '5347TT', group: 'foundry', exchange: 'tpex', name: '世界先進' },
 ];
 
 function mopsUrl(coId, exchange) {
-  const typek = exchange === 'twse' ? 'sii' : 'otc';
+  const typek = exchange === 'twse' ? 'sii' : exchange === 'emerging' ? 'rotc' : 'otc';
   return `https://mops.twse.com.tw/mops/web/t05st10_ifrs?co_id=${coId}&TYPEK=${typek}&isnew=false`;
 }
 

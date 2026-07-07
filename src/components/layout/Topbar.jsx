@@ -82,13 +82,13 @@ function CustomizeDropdown({ sectorId }) {
   );
 }
 
-export default function Topbar({ title, weeks, onWeeksChange, months, onMonthsChange, sectorId, viewId, layoutEditable }) {
+export default function Topbar({ title, titleContent, weeks, onWeeksChange, months, onMonthsChange, sectorId, viewId, layoutEditable }) {
   const { editMode, setEditMode } = useUI();
   const { resetLayout } = useLayout();
 
   return (
     <div className="topbar">
-      <h1>{title}</h1>
+      {titleContent ?? <h1>{title}</h1>}
       <div className="topbar-r">
         {onWeeksChange && WEEK_OPTIONS.map(opt => (
           <button

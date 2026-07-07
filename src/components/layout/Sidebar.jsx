@@ -1,6 +1,7 @@
 import { NAV_SECTIONS } from '../../config/navigation';
 import { useData } from '../../context/DataContext';
 import { orWeeklyTrend } from '../../utils/openrouterProvider';
+import { pricingTrend } from '../../utils/pricingTrend';
 
 /** Company nav item id → OpenRouter provider name for weekly-token trend. */
 const COMPANY_PROVIDERS = {
@@ -10,6 +11,21 @@ const COMPANY_PROVIDERS = {
   'demand-zhipu':     'Zhipu AI',
   'demand-minimax':   'MiniMax',
 };
+
+const TREND_LABEL = {
+  demand:  { up: 'Weekly token usage increasing', down: 'Weekly token usage decreasing', flat: 'Weekly token usage unchanged' },
+  pricing: { up: 'Latest price higher than previous datapoint', down: 'Latest price lower than previous datapoint', flat: 'No change from previous datapoint' },
+};
+
+const TREND_GLYPH = { up: '▲', down: '▼', flat: '—' };
+
+/** Resolve the up/down arrow (and its tooltip kind) for a nav item, if any. */
+function trendFor(item, ld) {
+  const provider = COMPANY_PROVIDERS[item.id];
+  if (provider) return { dir: orWeeklyTrend(ld?.openrouterRanks, provider), kind: 'demand' };
+  if (item.id.startsWith('pricing-')) return { dir: pricingTrend(ld, item.id), kind: 'pricing' };
+  return { dir: null };
+}
 
 export default function Sidebar({ currentView, onNavigate, mode = 'demand' }) {
   const { liveData: ld } = useData();
@@ -37,8 +53,8 @@ export default function Sidebar({ currentView, onNavigate, mode = 'demand' }) {
               <span className="nav-lbl">{section.label}</span>
             ) : null}
             {visibleItems.map((item) => {
-              const provider = COMPANY_PROVIDERS[item.id];
-              const trend = provider ? orWeeklyTrend(ld?.openrouterRanks, provider) : null;
+              const { dir, kind } = trendFor(item, ld);
+              const label = dir ? TREND_LABEL[kind][dir] : null;
               return (
                 <button
                   key={item.id}
@@ -46,13 +62,9 @@ export default function Sidebar({ currentView, onNavigate, mode = 'demand' }) {
                   onClick={() => onNavigate(item.id)}
                 >
                   {item.label}
-                  {trend && (
-                    <span
-                      className={`nav-trend ${trend}`}
-                      aria-label={trend === 'up' ? 'Weekly token usage increasing' : 'Weekly token usage decreasing'}
-                      title={trend === 'up' ? 'Weekly token usage increasing' : 'Weekly token usage decreasing'}
-                    >
-                      {trend === 'up' ? '▲' : '▼'}
+                  {dir && (
+                    <span className={`nav-trend ${dir}`} aria-label={label} title={label}>
+                      {TREND_GLYPH[dir]}
                     </span>
                   )}
                 </button>

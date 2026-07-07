@@ -7,7 +7,7 @@ import GitHub          from '../sources/GitHub';
 import DemandOpenRouter from '../market-signals/OpenRouter';
 import DemandGeneral   from '../market-signals/InfrastructureOss';
 import HuggingFace     from '../sources/HuggingFace';
-import Pricing         from '../pricing/Pricing';
+import { PricingMemory, PricingGPU, PricingCPU, PricingTPU } from '../pricing/Pricing';
 import Datacenter      from '../sources/Datacenter';
 import Electricity     from '../sources/Electricity';
 import Chinese         from '../sources/Chinese';
@@ -26,7 +26,8 @@ const OVERVIEW_VIEWS = [
   DemandGeneral,      // OSS signals (quarter each)
   HuggingFace,        // HuggingFace most-downloaded (quarter)
   WebTrafficOverview, // AI company website visits stacked bar
-  PyPI, GitHub, Pricing,
+  PyPI, GitHub,
+  PricingMemory, PricingGPU, PricingCPU, PricingTPU,
 ];
 
 export default function SectorOverview({ sectorId, weeks }) {

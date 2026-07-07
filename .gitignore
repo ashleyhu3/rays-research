@@ -4,6 +4,7 @@ dist/
 
 # All data lives in MongoDB — never commit local data files
 server/data/
+stocktwits/Stocktwits-Scraper-main/data/
 server/.venv-transcripts/
 Rays_Intern/
 graphify-out/

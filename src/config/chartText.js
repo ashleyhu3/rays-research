@@ -233,23 +233,19 @@ export const CHART_TEXT = {
   'sent-tk-leadlag':   { title: 'Daily Post Count vs Next-Day Return' },
   'sent-tk-rolling':   { title: 'Rolling 20-Day Correlations' },
 
-  // ── Supply chain (views: ai-supply / ai-supply-optics / ai-supply-pcb) ─
-  'supply-all-rev':    { title: 'Monthly Revenue — All Companies (NT$M)' },
-  'supply-all-yoy':    { title: 'YoY Growth — All Companies (%)' },
-  'supply-all-mom':    { title: 'MoM Growth — All Companies (%)' },
-  'supply-total-rev':  { title: 'Total Monthly Revenue — All Companies (NT$M)' },
-  'supply-optics-rev': { title: 'Monthly Revenue — Optics (NT$M)' },
-  'supply-optics-yoy': { title: 'YoY Growth — Optics (%)' },
-  'supply-optics-mom': { title: 'MoM Growth — Optics (%)' },
-  'supply-fiber-rev':  { title: 'Monthly Revenue — Fiber (NT$M)' },
-  'supply-fiber-yoy':  { title: 'YoY Growth — Fiber (%)' },
-  'supply-fiber-mom':  { title: 'MoM Growth — Fiber (%)' },
-  'supply-pcb-rev':    { title: 'Monthly Revenue — PCB (NT$M)' },
-  'supply-pcb-yoy':    { title: 'YoY Growth — PCB (%)' },
-  'supply-pcb-mom':    { title: 'MoM Growth — PCB (%)' },
-  'supply-mlcc-rev':   { title: 'Monthly Revenue — MLCC (NT$M)' },
-  'supply-mlcc-yoy':   { title: 'YoY Growth — MLCC (%)' },
-  'supply-mlcc-mom':   { title: 'MoM Growth — MLCC (%)' },
+  // ── Supply chain (views: ai-supply-optics / ai-supply-pcb / …) ────────
+  ...Object.fromEntries(
+    [
+      ['optics', 'Optics'], ['fiber', 'Fiber'], ['pcb', 'PCB'], ['mlcc', 'MLCC'],
+      ['cooling', 'Cooling'], ['power', 'Power'], ['equipment', 'Equipment'],
+      ['memory', 'Memory'], ['foundry', 'Foundry'],
+    ].flatMap(([chain, label]) => [
+      [`supply-${chain}-rev`,       { title: `Monthly Revenue — ${label} (NT$M)` }],
+      [`supply-${chain}-total-rev`, { title: `Total Monthly Revenue — ${label} (NT$M)` }],
+      [`supply-${chain}-yoy`,       { title: `YoY Growth — ${label} (%)` }],
+      [`supply-${chain}-mom`,       { title: `MoM Growth — ${label} (%)` }],
+    ])
+  ),
 
   // ── Company · OpenAI / ChatGPT (view: demand-openai) ──────────────────
   'oa-sdk': {

@@ -1,10 +1,11 @@
-import { useMemo, useState, useRef, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Line, Bar } from 'react-chartjs-2';
 import { C, fa } from '../../config/colors';
 import { baseOpts, mkDs, dualAxisOpts, fmtM, GRID, TICK, BORD } from '../../utils/chartHelpers';
 import ChartCard from '../../components/chart/ChartCard';
 import EditableGrid from '../../components/chart/EditableGrid';
 import { useData } from '../../context/DataContext';
+import { useSentimentSearch } from '../../context/SentimentSearchContext';
 import { TickerPanel } from '../options/Options';
 
 /* ── Short Interest Panel ─────────────────────────────────────────────
@@ -377,7 +378,8 @@ const monthLabel = iso =>
   new Date(iso + 'T00:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
 
 // Time-range windows for the per-ticker StockTwits section. `days` measures the
-// trailing window from the latest date; 0 = the full default history.
+// trailing window ending TODAY (so on 07-07 the 1M window is 06-07 → 07-07);
+// 0 = the full default history.
 const ST_RANGES = [
   { id: '1m',  label: '1M',  days: 30 },
   { id: '3m',  label: '3M',  days: 90 },
@@ -385,10 +387,12 @@ const ST_RANGES = [
 ];
 
 // First index of `dates` (sorted ISO, ascending) that falls within the trailing
-// `days` window; slice from it to keep only the most recent window. days=0 → 0.
+// `days` window ending today (UTC); slice from it to keep only the most recent
+// window. days=0 → 0.
 const sliceStart = (dates, days) => {
   if (!days || !dates?.length) return 0;
-  const cutoff = Date.parse(dates[dates.length - 1] + 'T00:00:00Z') - days * 86400000;
+  const today = new Date().toISOString().slice(0, 10);
+  const cutoff = Date.parse(today + 'T00:00:00Z') - days * 86400000;
   let i = 0;
   while (i < dates.length && Date.parse(dates[i] + 'T00:00:00Z') < cutoff) i++;
   return i;
@@ -442,10 +446,10 @@ function sectorScatter(sd, xf, yf, metaf) {
 export default function Sentiment() {
   const { liveData } = useData();
   const sd = liveData?.sentiment;
-  const [input, setInput] = useState('');
-  const [ticker, setTicker] = useState(null);
-  const [range, setRange] = useState('all');
-  const inputRef = useRef(null);
+  const { ticker, search, available } = useSentimentSearch();
+  // Default to the trailing month so the rolling-30-day charts open on the
+  // window their titles promise (e.g. 06-07 → 07-07 on 07-07).
+  const [range, setRange] = useState('1m');
 
   const rangeDays = ST_RANGES.find(r => r.id === range)?.days ?? 0;
 
@@ -538,42 +542,16 @@ export default function Sentiment() {
     };
   }, [v, rangeDays]);
 
-  function search(raw) {
-    const t = (raw ?? input).trim().toUpperCase();
-    if (!t) return;
-    setInput(t);
-    setTicker(t);
-  }
-
   const corrTip = c => ` ${c.raw.ticker}: (${c.parsed.x?.toFixed(2)}, ${c.parsed.y?.toFixed(2)})`;
   const asOf = sd?.asOf ? ` · as of ${sd.asOf}` : '';
-  const available = sd ? Object.keys(sd.tickers) : [];
 
   return (
     <div className="opts-page">
-      {/* Search bar — one ticker isolates its charts; empty = aggregate view */}
-      <form className="opts-search-row" onSubmit={e => { e.preventDefault(); search(); }}>
-        <input
-          ref={inputRef}
-          className="opts-input"
-          value={input}
-          onChange={e => setInput(e.target.value.toUpperCase())}
-          placeholder="Search a ticker — options for any (NVDA, AAPL); sentiment for tracked names (MU, SNDK)…"
-          spellCheck={false}
-          autoComplete="off"
-          autoCapitalize="characters"
-        />
-        <button className="opts-search-btn" type="submit" disabled={!input.trim()}>Search</button>
-        {ticker && (
-          <button type="button" className="opts-search-btn" onClick={() => { setTicker(null); setInput(''); }}>
-            ← Aggregate view
-          </button>
-        )}
-      </form>
-
-      {/* Quick-pick chips for the tracked universe */}
+      {/* Quick-pick chips for the tracked universe — the search input itself
+          lives in the Topbar (see SentimentSearchBar) so it stays visible
+          while this page scrolls. */}
       {available.length > 0 && (
-        <div className="opts-samples" style={{ marginTop: -4, marginBottom: 14 }}>
+        <div className="opts-samples" style={{ marginBottom: 14 }}>
           {available.map(t => (
             <button key={t} className={`opts-sample${t === ticker ? ' active' : ''}`} onClick={() => search(t)}>{t}</button>
           ))}

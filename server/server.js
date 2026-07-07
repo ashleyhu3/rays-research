@@ -10,7 +10,7 @@ const htmlTemplate = require('./htmlTemplate');
 const { chat } = require('./chat');
 const { getOptionsData }             = require('./scrapers/options');
 const { getStockHistory }            = require('./scrapers/stocks');
-const { searchKeyword }              = require('./scrapers/keywordSearch');
+const { keywordRolling }             = require('./stocktwitsStore');
 
 const app   = express();
 const PORT  = process.env.PORT || 3001;
@@ -74,8 +74,9 @@ app.get('/api/epoch-revenue',     cachedRoute('epochRevenue',     s.epochRevenue
 app.get('/api/sentiment',         cachedRoute('sentiment',        s.sentiment));
 app.get('/api/web-traffic',       cachedRoute('webTraffic',       s.webTraffic));
 
-// Keyword frequency search — scans all StockTwits CSVs for whole-word matches,
-// grouped by month. Results cached 1 hour per (lowercased) keyword.
+// Keyword frequency search — whole-word matches across the StockTwits messages
+// in Mongo (committed-CSV fallback for keyless dev), as trailing-30-day counts
+// at monthly anchors. Results cached 1 hour per (lowercased) keyword.
 app.get('/api/sentiment/keyword', async (req, res) => {
   const q = (req.query.q ?? '').trim();
   if (!q)        return res.status(400).json({ error: 'q is required' });
@@ -86,7 +87,7 @@ app.get('/api/sentiment/keyword', async (req, res) => {
   if (cached !== null) return res.json(cached);
 
   try {
-    const data = await searchKeyword(q);
+    const data = await keywordRolling(q);
     cache.set(cacheKey, data, 60 * 60 * 1000);
     res.json(data);
   } catch (e) {
@@ -478,14 +479,15 @@ function parseTickerList(input) {
   return [...seen];
 }
 
-// Whether SMTP is wired up — the UI warns the user if alerts can be stored but
-// not actually delivered yet.
+// Whether email delivery is wired up — the UI warns the user if alerts can be
+// stored but not actually delivered yet.
 app.get('/api/alerts/status', async (_req, res) => {
   const status = await mailer.verify();
-  if (status.error && status.configured) console.warn('[mailer] SMTP verification failed:', status.error);
+  if (status.error && status.configured) console.warn(`[mailer] ${status.provider} verification failed:`, status.error);
   res.json({
     emailConfigured: status.configured,
     emailVerified: status.verified,
+    emailProvider: status.provider,
   });
 });
 

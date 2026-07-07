@@ -1,18 +1,19 @@
 'use strict';
-const fs = require('fs');
 const path = require('path');
 const storage = require('../storage');
+const stocktwitsStore = require('../stocktwitsStore');
 
 /**
  * StockTwits sentiment / posting-volume vs stock-price analysis.
  *
  * Ports the exploratory notebook (Posting Volume vs Stock Price Analysis) into
- * a server scraper: it reads the StockTwits message CSVs collected by
- * stocktwits/Stocktwits-Scraper-main, joins them to daily prices from Massive
+ * a server scraper: it reads per-day StockTwits message buckets from the Mongo
+ * store (stocktwitsStore — `stocktwits_daily`, with a committed-CSV fallback
+ * for keyless local dev), joins them to daily prices from Massive
  * (Yahoo fallback), and computes the same volume↔price metrics — plus a
- * bull/bear sentiment
- * dimension the notebook didn't use (the CSVs carry a self-reported sentiment
- * label per message). The JSON it returns drives the Sentiment dashboard tab.
+ * bull/bear sentiment dimension the notebook didn't use (each message carries
+ * a self-reported sentiment label). The JSON it returns drives the Sentiment
+ * dashboard tab.
  *
  * Metrics per ticker (mirrors the notebook):
  *   - weekly series: first close, post volume, bull/bear share, net sentiment
@@ -23,8 +24,6 @@ const storage = require('../storage');
  * Plus a category-average 30-day rolling correlation (the periodicity chart)
  * and a cross-ticker weekly bull/bear aggregate (the headline sentiment trend).
  */
-
-const DATA_DIR = path.join(__dirname, '..', '..', 'stocktwits', 'Stocktwits-Scraper-main', 'data');
 
 // Categories from the notebook. STX (Seagate) lives in the data dir too — group
 // it with storage/memory so its data isn't wasted.
@@ -39,72 +38,10 @@ for (const [cat, ts] of Object.entries(CATEGORIES)) for (const t of ts) TICKER_C
 
 const ROLL_WINDOW_DAYS = 30; // calendar days
 
-// ── Dependency-free streaming RFC4180 CSV parser ────────────────────────────
-// The `text` column carries embedded commas, quotes and newlines, so a
-// line-based split would mis-parse. This walks the raw bytes and yields one
-// array of fields per record to `onRow`.
-function parseCsv(filePath, onRow) {
-  return new Promise((resolve, reject) => {
-    let field = '';
-    let row = [];
-    let inQuotes = false;
-    let prevQuote = false; // last char was a quote inside a quoted field
-    const stream = fs.createReadStream(filePath, { encoding: 'utf8' });
-    stream.on('data', chunk => {
-      for (let i = 0; i < chunk.length; i++) {
-        const c = chunk[i];
-        if (inQuotes) {
-          if (c === '"') { prevQuote = true; inQuotes = false; }
-          else field += c;
-        } else if (prevQuote) {
-          // We just closed a quote; a second quote is an escaped ".
-          prevQuote = false;
-          if (c === '"') { field += '"'; inQuotes = true; }
-          else if (c === ',') { row.push(field); field = ''; }
-          else if (c === '\n') { row.push(field); onRow(row); row = []; field = ''; }
-          else if (c === '\r') { /* skip */ }
-          else field += c;
-        } else if (c === '"') { inQuotes = true; }
-        else if (c === ',') { row.push(field); field = ''; }
-        else if (c === '\n') { row.push(field); onRow(row); row = []; field = ''; }
-        else if (c === '\r') { /* skip */ }
-        else field += c;
-      }
-    });
-    stream.on('end', () => {
-      if (field.length || row.length) { row.push(field); onRow(row); }
-      resolve();
-    });
-    stream.on('error', reject);
-  });
-}
-
-// Aggregate one ticker CSV into per-UTC-day { count, bull, bear } buckets.
-async function loadTicker(ticker) {
-  const file = path.join(DATA_DIR, `api_tweets_${ticker.toLowerCase()}.csv`);
-  if (!fs.existsSync(file)) return null;
-  let tsIdx = -1, sentIdx = -1, header = true;
-  const days = new Map(); // 'YYYY-MM-DD' -> { count, bull, bear }
-  await parseCsv(file, row => {
-    if (header) {
-      tsIdx   = row.indexOf('timestamp');
-      sentIdx = row.indexOf('sentiment');
-      header = false;
-      return;
-    }
-    const ts = row[tsIdx];
-    if (!ts || ts.length < 10) return;
-    const day = ts.slice(0, 10); // ISO timestamps → UTC date
-    if (day < '2000-01-01' || day > '2100-01-01') return;
-    let d = days.get(day);
-    if (!d) { d = { count: 0, bull: 0, bear: 0 }; days.set(day, d); }
-    d.count++;
-    const s = row[sentIdx];
-    if (s === 'Bullish') d.bull++;
-    else if (s === 'Bearish') d.bear++;
-  });
-  return days.size ? days : null;
-}
+// Per-UTC-day { count, bull, bear } buckets for one ticker, from the Mongo
+// store (`stocktwits_daily`), falling back to the local CSVs when no
+// MONGODB_URI is configured (dev).
+const loadTicker = ticker => stocktwitsStore.getDailyBuckets(ticker);
 
 // ── Daily closes: Massive (Polygon-compatible) primary, Yahoo fallback ───────
 // Massive is our authenticated market-data provider (same key as the options and
@@ -384,13 +321,15 @@ function analyzeTicker(ticker, days, closes) {
       sentNextR: corr(nets, retsNext),
     },
     // Trailing 30 CALENDAR days of daily post count vs price (days that have
-    // both a price close and ≥1 post), anchored to the most recent data date —
-    // the rolling 30-day window. A calendar cutoff (not the last 30 rows) keeps
-    // it a true one-month window instead of 30 trading days ≈ 6 calendar weeks.
+    // both a price close and ≥1 post), anchored to TODAY (UTC) — the rolling
+    // 30-day window, e.g. on 07-07 it spans 06-07 → 07-07. Anchoring to today
+    // (not the most recent data date) keeps the window honest even if a
+    // ticker's data lags; a calendar cutoff (not the last 30 rows) keeps it a
+    // true one-month window instead of 30 trading days ≈ 6 calendar weeks.
     daily30: (() => {
       if (!dRows.length) return { dates: [], price: [], volume: [] };
-      const cutoff = Date.parse(dRows[dRows.length - 1].date + 'T00:00:00Z') - 30 * 86400000;
-      const win = dRows.filter(r => Date.parse(r.date + 'T00:00:00Z') > cutoff);
+      const cutoff = Date.parse(new Date().toISOString().slice(0, 10) + 'T00:00:00Z') - 30 * 86400000;
+      const win = dRows.filter(r => Date.parse(r.date + 'T00:00:00Z') >= cutoff);
       return {
         dates:  win.map(r => r.date),
         price:  win.map(r => (r.close == null ? null : +r.close.toFixed(2))),

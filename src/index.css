@@ -142,6 +142,7 @@ body { font-family: var(--font-b); background: var(--bg); color: var(--text); }
 }
 .nav-trend.up   { color: #34d399; }
 .nav-trend.down { color: #f87171; }
+.nav-trend.flat { color: #94a3b8; }
 
 .sidebar-footer { margin-top: auto; padding: 14px; border-top: 1px solid var(--border); }
 .last-upd { font-size: 10px; color: var(--ter); margin-bottom: 8px; }
@@ -362,6 +363,13 @@ body { font-family: var(--font-b); background: var(--bg); color: var(--text); }
 .ch-src   { font-size: 11px; color: var(--ter); font-family: var(--font-m); text-decoration: none; transition: color .15s; }
 a.ch-src:hover { color: var(--sec); text-decoration: underline; }
 .ch-sub   { font-size: 12px; color: var(--sec); margin-bottom: 12px; line-height: 1.5; }
+
+/* Source attribution row: sits beneath the chart body (replaces the old
+   top-right source link and the subtitle). Shows the source link plus the
+   feed's inherent data lag in parentheses. */
+.ch-source-row   { font-size: 11px; color: var(--ter); font-family: var(--font-m); margin-top: 10px; line-height: 1.5; }
+.ch-source-label { color: var(--sec); }
+.ch-lag          { color: var(--ter); }
 
 /* ── Frequency badges ───────────────────────────────────────────────── */
 .freq-badge {
@@ -867,6 +875,15 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
 .nlink-options.active { background: rgba(16,185,129,.14); color: #10b981; }
 
 .opts-page { padding: 8px 0 48px; }
+
+/* Sentiment page: the ticker search bar lives in the Topbar's title slot
+   (see SentimentSearchBar) instead of scrolling with the page. */
+.topbar-search {
+  display: flex; align-items: center; gap: 8px;
+  flex: 1;
+}
+.topbar-search-input { padding: 7px 14px; font-size: 13px; }
+.topbar-search .opts-search-btn { padding: 7px 16px; font-size: 12px; flex-shrink: 0; }
 
 .opts-search-row {
   display: flex; gap: 8px; padding-bottom: 20px;
