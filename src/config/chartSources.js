@@ -116,6 +116,8 @@ export const CHART_SOURCES = {
   'dram-chips':        { src: 'trendforce.com/price/dram/dram_spot', srcUrl: 'https://www.trendforce.com/price/dram/dram_spot', freq: 'daily', lag: LAG.dram },
   'dram-modules':      { src: 'trendforce.com/price/dram/dram_spot', srcUrl: 'https://www.trendforce.com/price/dram/dram_spot', freq: 'daily', lag: LAG.dram },
   'dram-change':       { src: 'trendforce.com/price/dram/dram_spot', srcUrl: 'https://www.trendforce.com/price/dram/dram_spot', freq: 'daily', lag: LAG.dram },
+  'nand-spot':         { src: 'trendforce.com/price/flash/flash_spot', srcUrl: 'https://www.trendforce.com/price/flash/flash_spot', freq: 'daily', lag: LAG.dram },
+  'tft-lcd-panel':     { src: 'trendforce.com/price/lcd/panel', srcUrl: 'https://www.trendforce.com/price/lcd/panel', freq: 'daily', lag: 'monthly / half-monthly updates' },
 
   // ── Sentiment · StockTwits + Yahoo Finance ────────────────────────────
   'sent-aggregate':    { src: 'stocktwits.com', srcUrl: 'https://stocktwits.com/', freq: 'daily', lag: LAG.sentiment },

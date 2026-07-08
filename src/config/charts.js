@@ -48,6 +48,8 @@ const REGISTRY = [
   { id: 'dram-index',      sectorId: 'infra', subView: 'pricing',     defaultPinned: false },
   { id: 'dram-chips',      sectorId: 'infra', subView: 'pricing',     defaultPinned: false },
   { id: 'dram-modules',    sectorId: 'infra', subView: 'pricing',     defaultPinned: false },
+  { id: 'nand-spot',       sectorId: 'infra', subView: 'pricing',     defaultPinned: false },
+  { id: 'tft-lcd-panel',   sectorId: 'infra', subView: 'pricing',     defaultPinned: false },
   { id: 'cpu-spot-history', sectorId: 'infra', subView: 'pricing',     defaultPinned: false },
   { id: 'tpu-spot-history', sectorId: 'infra', subView: 'pricing',     defaultPinned: false },
   { id: 'dc-capex',        sectorId: 'infra', subView: 'datacenter',  defaultPinned: true  },

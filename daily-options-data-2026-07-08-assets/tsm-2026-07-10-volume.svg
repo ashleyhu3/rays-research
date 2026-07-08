@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" class="volume-chart" viewBox="0 0 1000 250" role="img" aria-label="TSM daily contract volume">
+      <rect x="0" y="0" width="1000" height="250" fill="transparent"></rect>
+      <text x="22" y="18" fill="#8b93a1" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" font-weight="700">DAILY CONTRACT VOLUME - FLAGGED STRIKES</text>
+      <text x="978" y="18" fill="#8b93a1" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" font-weight="700">LAST 10 SESSIONS</text>
+      
+      <rect x="28.69" y="201.00" width="82.22" height="5.00" rx="4" fill="#f3c7c7"></rect>
+      <text x="69.80" y="193.00" text-anchor="middle" fill="#6b7280" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" font-weight="700">234</text>
+      <text x="69.80" y="234" text-anchor="middle" fill="#8b93a1" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16" font-weight="500">6/23</text>
+    
+      <rect x="124.29" y="201.00" width="82.22" height="5.00" rx="4" fill="#f3c7c7"></rect>
+      <text x="165.40" y="193.00" text-anchor="middle" fill="#6b7280" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" font-weight="700">239</text>
+      <text x="165.40" y="234" text-anchor="middle" fill="#8b93a1" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16" font-weight="500">6/24</text>
+    
+      <rect x="219.89" y="201.00" width="82.22" height="5.00" rx="4" fill="#f3c7c7"></rect>
+      <text x="261.00" y="193.00" text-anchor="middle" fill="#6b7280" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" font-weight="700">393</text>
+      <text x="261.00" y="234" text-anchor="middle" fill="#8b93a1" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16" font-weight="500">6/25</text>
+    
+      <rect x="315.49" y="201.00" width="82.22" height="5.00" rx="4" fill="#f3c7c7"></rect>
+      <text x="356.60" y="193.00" text-anchor="middle" fill="#6b7280" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" font-weight="700">665</text>
+      <text x="356.60" y="234" text-anchor="middle" fill="#8b93a1" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16" font-weight="500">6/26</text>
+    
+      <rect x="411.09" y="177.27" width="82.22" height="28.73" rx="4" fill="#f3c7c7"></rect>
+      <text x="452.20" y="169.27" text-anchor="middle" fill="#6b7280" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" font-weight="700">6.1k</text>
+      <text x="452.20" y="234" text-anchor="middle" fill="#8b93a1" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16" font-weight="500">6/29</text>
+    
+      <rect x="506.69" y="196.66" width="82.22" height="9.34" rx="4" fill="#f3c7c7"></rect>
+      <text x="547.80" y="188.66" text-anchor="middle" fill="#6b7280" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" font-weight="700">2.0k</text>
+      <text x="547.80" y="234" text-anchor="middle" fill="#8b93a1" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16" font-weight="500">6/30</text>
+    
+      <rect x="602.29" y="196.92" width="82.22" height="9.08" rx="4" fill="#f3c7c7"></rect>
+      <text x="643.40" y="188.92" text-anchor="middle" fill="#6b7280" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" font-weight="700">1.9k</text>
+      <text x="643.40" y="234" text-anchor="middle" fill="#8b93a1" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16" font-weight="500">7/1</text>
+    
+      <rect x="697.89" y="34.00" width="82.22" height="172.00" rx="4" fill="#f3c7c7"></rect>
+      <text x="739.00" y="26.00" text-anchor="middle" fill="#6b7280" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" font-weight="700">36.4k</text>
+      <text x="739.00" y="234" text-anchor="middle" fill="#8b93a1" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16" font-weight="500">7/2</text>
+    
+      <rect x="793.49" y="169.38" width="82.22" height="36.62" rx="4" fill="#f3c7c7"></rect>
+      <text x="834.60" y="161.38" text-anchor="middle" fill="#6b7280" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" font-weight="700">7.8k</text>
+      <text x="834.60" y="234" text-anchor="middle" fill="#8b93a1" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16" font-weight="500">7/6</text>
+    
+      <rect x="889.09" y="142.88" width="82.22" height="63.12" rx="4" fill="#dc2626"></rect>
+      <text x="930.20" y="134.88" text-anchor="middle" fill="#dc2626" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" font-weight="700">13.4k</text>
+      <text x="930.20" y="234" text-anchor="middle" fill="#dc2626" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16" font-weight="700">7/7</text>
+    
+    </svg>

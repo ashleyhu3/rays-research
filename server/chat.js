@@ -283,6 +283,54 @@ function buildDram() {
   };
 }
 
+function buildTrendforceProducts(key, title, about, detailTitle) {
+  const data = cache.get(key);
+  const products = data?.products ?? [];
+  if (!products.length) return null;
+
+  const lines = products.map(p =>
+    `  ${p.product} (${p.section}): $${p.price} avg${p.changePct != null ? ` | change ${p.changePct >= 0 ? '+' : ''}${p.changePct}%` : ''}`
+  );
+
+  const detail = [];
+  for (const [product, series] of Object.entries(data.history?.series ?? {})) {
+    if (!Array.isArray(series) || series.filter(v => v != null).length < 2) continue;
+    const n = Math.min(10, series.length);
+    const tail = data.history.dates.slice(-n)
+      .map((d, i) => { const v = series.slice(-n)[i]; return v != null ? `${d.slice(5)}: $${v}` : null; })
+      .filter(Boolean).join(' | ');
+    if (tail) detail.push(`  ${product}: ${tail}`);
+  }
+
+  return {
+    id:       key,
+    title,
+    about,
+    source:   'TrendForce',
+    entities: products.map(p => p.product),
+    text:     `### ${title} (TrendForce, as of ${data.asOf})\n${lines.join('\n')}`,
+    detail:   detail.length ? `Recent history — ${detailTitle}:\n${detail.join('\n')}` : null,
+  };
+}
+
+function buildNand() {
+  return buildTrendforceProducts(
+    'nand',
+    'NAND Flash Spot Prices',
+    'NAND flash, wafer, and memory-card spot prices from TrendForce',
+    'NAND prices'
+  );
+}
+
+function buildTftLcd() {
+  return buildTrendforceProducts(
+    'tftLcd',
+    'TFT-LCD Panel Prices',
+    'Large-size and smartphone TFT-LCD panel prices from TrendForce',
+    'TFT-LCD panel prices'
+  );
+}
+
 function buildAws() {
   const aws = cache.get('aws');
   const current = aws?.current ?? {};
@@ -720,6 +768,8 @@ const REGISTRY = [
   { key: 'github',            build: buildGitHub },
   { key: 'gpu',               build: buildGpu },
   { key: 'dram',              build: buildDram },
+  { key: 'nand',              build: buildNand },
+  { key: 'tftLcd',            build: buildTftLcd },
   { key: 'aws',               build: buildAws },
   { key: 'cloudGpu',          build: buildCloudGpu },
   { key: 'openrouter',        build: buildOpenrouter },
@@ -1016,6 +1066,8 @@ const SECTION_TO_CHART = {
   github:        'github',
   gpu:           'gpu',
   dram:          'dram',
+  nand:          'nand',
+  tftLcd:        'tftLcd',
   aws:           'aws-spot',
   cloudGpu:      'cloud-gpu',
   openrouter:    'openrouter',
@@ -1035,7 +1087,7 @@ const SECTION_TO_CHART = {
 // their data, but no chart/source tag is returned for them. Mirrors the `view`
 // fields in SOURCE_META (src/pages/chat/Chat.jsx).
 const NAVIGABLE_CHARTS = new Set([
-  'pypi', 'github', 'gpu', 'dram', 'openrouter', 'openrouter-rankings',
+  'pypi', 'github', 'gpu', 'dram', 'nand', 'tftLcd', 'openrouter', 'openrouter-rankings',
   'electricity', 'ai-supply', 'github-commits', 'docker', 'community', 'hf',
   'mcp', 'sec', 'options',
   // Company-specific charts (mirror the company dashboard pages)

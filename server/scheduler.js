@@ -15,6 +15,8 @@ const scrapers = {
   hn:            () => require('./scrapers/hn').getHNData(),
   openrouterRanks:  () => require('./scrapers/openrouterRankings').getOpenRouterRankings(),
   dram:             () => require('./scrapers/dram').getDramSpot(),
+  nand:             () => require('./scrapers/nand').getNandData(),
+  tftLcd:           () => require('./scrapers/tftLcd').getTftLcdData(),
   npm:              () => require('./scrapers/npm').getNpmHistory(),
   huggingface:      () => require('./scrapers/huggingface').getHuggingFaceData(),
   mcp:              () => require('./scrapers/mcp').getMcpData(),
@@ -44,6 +46,8 @@ const TTL = {
   hn:             1 * 3600000,  // hourly
   openrouterRanks:   6 * 3600000,  // 6-hourly — daily granularity but rankings shift through day
   dram:              6 * 3600000,  // 6-hourly — TrendForce spot sessions update through the trading day
+  nand:              6 * 3600000,  // 6-hourly — TrendForce spot sessions update through the trading day
+  tftLcd:           24 * 3600000,  // daily   — TrendForce panel prices update monthly/half-monthly
   npm:           24 * 3600000,  // daily   — api.npmjs.org reports complete days only
   huggingface:   24 * 3600000,  // daily   — all-time download totals grow slowly
   mcp:           24 * 3600000,  // daily   — repo-creation counts; respects GitHub search quota
@@ -117,10 +121,10 @@ function setup() {
   cron.schedule('0 * * * *', () => refreshAll(['openrouter', 'hn']));
 
   // Every 6 hours: social signals and business data updated throughout the day
-  cron.schedule('0 */6 * * *', () => refreshAll(['docker', 'openrouterRanks', 'dram', 'aws', 'cpu']));
+  cron.schedule('0 */6 * * *', () => refreshAll(['docker', 'openrouterRanks', 'dram', 'nand', 'aws', 'cpu']));
 
   // Daily at 03:00 UTC: aggregate stats whose sources only publish once per day
-  cron.schedule('0 3 * * *', () => refreshAll(['gpu', 'tpu', 'epochRevenue', 'sentiment', 'pypi', 'github', 'eia', 'mops', 'githubCommits', 'npm', 'huggingface', 'mcp', 'sec', 'webTraffic']));
+  cron.schedule('0 3 * * *', () => refreshAll(['gpu', 'tftLcd', 'tpu', 'epochRevenue', 'sentiment', 'pypi', 'github', 'eia', 'mops', 'githubCommits', 'npm', 'huggingface', 'mcp', 'sec', 'webTraffic']));
 
   // Options: warm every 6h, plus once shortly after boot so the RAG has data fast
   cron.schedule('30 */6 * * *', () => warmOptions());

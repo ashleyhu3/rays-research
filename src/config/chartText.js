@@ -218,6 +218,14 @@ export const CHART_TEXT = {
     title: 'Memory Module Spot Price by Model ($)',
     // subtitle is computed in the view
   },
+  'nand-spot': {
+    title: 'NAND Spot Price by Product ($)',
+    // subtitle is computed in the view
+  },
+  'tft-lcd-panel': {
+    title: 'TFT-LCD Panel Price by Product ($)',
+    // subtitle is computed in the view
+  },
   // ── Sentiment (view: sentiment) — StockTwits posting volume & sentiment ─
   // Aggregate (default view)
   'sent-aggregate':    { title: 'StockTwits Sentiment — Bullish vs Bearish (weekly)' },

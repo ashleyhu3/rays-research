@@ -17,6 +17,8 @@ const BLOBS = [
   { name: 'metricsHistory',  file: path.join(DATA_DIR, 'metricsHistory.json') },
   { name: 'gpuHistory',      file: path.join(DATA_DIR, 'gpuHistory.json') },
   { name: 'dramHistory',     file: path.join(DATA_DIR, 'dramHistory.json') },
+  { name: 'nandHistory',     file: path.join(DATA_DIR, 'nandHistory.json') },
+  { name: 'tftLcdHistory',   file: path.join(DATA_DIR, 'tftLcdHistory.json') },
   { name: 'awsHistory',      file: path.join(DATA_DIR, 'awsHistory.json') },
   { name: 'cpuHistory',      file: path.join(DATA_DIR, 'cpuHistory.json') },
   { name: 'tpuHistory',      file: path.join(DATA_DIR, 'tpuHistory.json') },

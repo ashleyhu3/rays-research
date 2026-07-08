@@ -86,7 +86,7 @@ async function fetchJsonSafe(url, ms = 30000) {
 const SLOW_KEYS = new Set(['github-commits']);
 
 async function fetchBackendAll() {
-  const keys = ['pypi', 'gpu', 'github', 'openrouter', 'eia', 'mops', 'github-commits', 'docker', 'hn', 'openrouter-ranks', 'dram', 'aws', 'cpu', 'tpu', 'epoch-revenue', 'sentiment', 'mcp', 'sec', 'huggingface', 'metrics-history', 'web-traffic'];
+  const keys = ['pypi', 'gpu', 'github', 'openrouter', 'eia', 'mops', 'github-commits', 'docker', 'hn', 'openrouter-ranks', 'dram', 'nand', 'tft-lcd', 'aws', 'cpu', 'tpu', 'epoch-revenue', 'sentiment', 'mcp', 'sec', 'huggingface', 'metrics-history', 'web-traffic'];
   const results = await Promise.allSettled(keys.map(k => fetchJsonSafe(`/api/${k}`, SLOW_KEYS.has(k) ? 90000 : 30000)));
   return Object.fromEntries(keys.map((k, i) => [
     k, results[i].status === 'fulfilled' ? results[i].value : null,
@@ -122,6 +122,8 @@ export async function fetchAll() {
     hn:            be.hn               ?? null,
     openrouterRanks:  be['openrouter-ranks']      ?? null,
     dram:             be.dram                     ?? null,
+    nand:             be.nand                     ?? null,
+    tftLcd:           be['tft-lcd']               ?? null,
     aws:              be.aws                      ?? null,
     cpu:              be.cpu                      ?? null,
     tpu:              be.tpu                      ?? null,

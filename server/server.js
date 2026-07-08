@@ -67,6 +67,8 @@ app.get('/api/docker',         cachedRoute('docker',        s.docker));
 app.get('/api/hn',             cachedRoute('hn',            s.hn));
 app.get('/api/openrouter-ranks',  cachedRoute('openrouterRanks',  s.openrouterRanks));
 app.get('/api/dram',              cachedRoute('dram',             s.dram));
+app.get('/api/nand',              cachedRoute('nand',             s.nand));
+app.get('/api/tft-lcd',           cachedRoute('tftLcd',           s.tftLcd));
 app.get('/api/aws',               cachedRoute('aws',              s.aws));
 app.get('/api/cpu',               cachedRoute('cpu',              s.cpu));
 app.get('/api/tpu',               cachedRoute('tpu',              s.tpu));
@@ -600,6 +602,8 @@ const STORAGE_BLOBS = [
   { name: 'metricsHistory', file: path.join(DATA_DIR, 'metricsHistory.json') },
   { name: 'gpuHistory',     file: path.join(DATA_DIR, 'gpuHistory.json') },
   { name: 'dramHistory',    file: path.join(DATA_DIR, 'dramHistory.json') },
+  { name: 'nandHistory',    file: path.join(DATA_DIR, 'nandHistory.json') },
+  { name: 'tftLcdHistory',  file: path.join(DATA_DIR, 'tftLcdHistory.json') },
   { name: 'awsHistory',     file: path.join(DATA_DIR, 'awsHistory.json') },
   // Every history blob a scraper reads/writes MUST be listed here so init()
   // preloads it from Mongo into the cache. An unlisted blob falls back to the
