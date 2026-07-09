@@ -1,6 +1,7 @@
 node_modules/
 dist/
 .env
+emailai/
 
 # All data lives in MongoDB — never commit local data files
 server/data/
