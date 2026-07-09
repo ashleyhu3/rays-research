@@ -1,4 +1,6 @@
 'use strict';
+const fs = require('fs');
+const path = require('path');
 const nodemailer = require('nodemailer');
 
 // Thin wrapper over alert email delivery that degrades gracefully — matching the
@@ -123,21 +125,33 @@ async function verify({ force = false } = {}) {
 
 // Send one email. Resolves to { sent, reason?, messageId? } and never throws for
 // an unconfigured mailer — a genuine SMTP failure still rejects so the caller
-// can log it.
-async function sendMail({ to, subject, text, html }) {
+// can log it. Attachments follow Nodemailer's shape; when using Brevo, cid
+// attachments are sent as inline images and the rest as normal attachments.
+async function sendMail({ to, subject, text, html, attachments = [] }) {
   if (!isConfigured()) {
     console.warn(`[mailer] ${providerName()} not configured — preview only for "${subject}" → ${to}`);
     return { sent: false, reason: `${providerName()} not configured` };
   }
   if (provider() === 'brevo') {
-    return sendBrevoMail({ to, subject, text, html });
+    return sendBrevoMail({ to, subject, text, html, attachments });
   }
-  const info = await getTransport().sendMail({ from: fromAddress(), to, subject, text, html });
+  const info = await getTransport().sendMail({ from: fromAddress(), to, subject, text, html, attachments });
   return { sent: true, messageId: info.messageId };
 }
 
-async function sendBrevoMail({ to, subject, text, html }) {
+async function sendBrevoMail({ to, subject, text, html, attachments = [] }) {
   const from = sender();
+  const { inlineImage, attachment } = brevoAttachments(attachments);
+  const body = {
+    sender: from.name ? { email: from.email, name: from.name } : { email: from.email },
+    to: [{ email: to }],
+    subject,
+    textContent: text,
+    htmlContent: html,
+  };
+  if (inlineImage.length) body.inlineImage = inlineImage;
+  if (attachment.length) body.attachment = attachment;
+
   const response = await fetch(BREVO_ENDPOINT, {
     method: 'POST',
     headers: {
@@ -145,13 +159,7 @@ async function sendBrevoMail({ to, subject, text, html }) {
       'api-key': process.env.BREVO_API_KEY,
       'content-type': 'application/json',
     },
-    body: JSON.stringify({
-      sender: from.name ? { email: from.email, name: from.name } : { email: from.email },
-      to: [{ email: to }],
-      subject,
-      textContent: text,
-      htmlContent: html,
-    }),
+    body: JSON.stringify(body),
   });
 
   const raw = await response.text();
@@ -162,6 +170,33 @@ async function sendBrevoMail({ to, subject, text, html }) {
     throw new Error(`Brevo send failed (${response.status}): ${detail}`);
   }
   return { sent: true, messageId: payload?.messageId || null };
+}
+
+function brevoAttachments(attachments) {
+  const inlineImage = [];
+  const attachment = [];
+
+  for (const item of attachments ?? []) {
+    const encoded = encodeAttachment(item);
+    if (!encoded) continue;
+    if (item.cid) inlineImage.push({ content: encoded.content, name: item.cid });
+    else attachment.push({ content: encoded.content, name: encoded.name });
+  }
+
+  return { inlineImage, attachment };
+}
+
+function encodeAttachment(item) {
+  if (!item) return null;
+  const name = item.filename || (item.path ? path.basename(item.path) : null);
+  if (!name && !item.cid) return null;
+  let raw = item.content;
+  if (raw == null && item.path) raw = fs.readFileSync(item.path);
+  if (raw == null) return null;
+  const content = Buffer.isBuffer(raw)
+    ? raw.toString('base64')
+    : Buffer.from(String(raw)).toString('base64');
+  return { content, name: name || item.cid };
 }
 
 async function verifyBrevo() {

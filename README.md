@@ -68,3 +68,15 @@ signal-dashboard/
 | Shared chart config | All axis tokens (GRID, TICK, BORD), formatters, and option builders live in `chartHelpers.js` |
 | Navigation | Pure React state in `App.jsx`; no router library needed for a single-page dashboard |
 | Styling | Vanilla CSS variables in `index.css`; no CSS-in-JS or Tailwind dependency |
+
+## Daily options report
+
+`npm run options-report:generate` generates `daily-options-data-YYYY-MM-DD.pdf`
+and stores it as the latest report for the Alerts page, replacing the prior
+stored PDF. The GitHub Actions workflow runs it every day at `00:00 UTC`, which
+is `08:00 Asia/Hong_Kong`. The server also schedules the same generation at 8am
+Hong Kong time when it is awake and a Chrome/Chromium binary is available.
+
+Required secrets for the scheduled workflow: `MASSIVE_API_KEY` and
+`MONGODB_URI`. Optional: `OPTIONS_REPORT_TICKERS` defaults to `TSM,ASML`.
+No SMTP or email API account is needed for the Alerts page report.

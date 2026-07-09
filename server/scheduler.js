@@ -142,6 +142,18 @@ function setup() {
       console.error('[alerts] daily cycle failed:', e.message);
     }
   }, { timezone: 'America/New_York' });
+
+  // Daily options report: generate the web-visible report at 8:00am Hong Kong
+  // time. The GitHub workflow runs the same task for sleeping deployments.
+  cron.schedule('0 8 * * *', async () => {
+    try {
+      const { generateAndStoreDailyOptionsPdf } = require('./optionsReportStore');
+      const report = await generateAndStoreDailyOptionsPdf();
+      console.log(`[options-report] generated PDF ${report.date} (${report.tickers.join(', ')}) ${report.size} bytes`);
+    } catch (e) {
+      console.error('[options-report] daily generation failed:', e.message);
+    }
+  }, { timezone: 'Asia/Hong_Kong' });
 }
 
 module.exports = { setup, refreshAll, scrapers, TTL, warmOptions };

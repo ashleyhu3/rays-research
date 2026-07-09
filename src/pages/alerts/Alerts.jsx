@@ -29,6 +29,74 @@ function BellIcon() {
   );
 }
 
+function ReportBlock({ block }) {
+  if (block.type === 'h1') return <h3 className="alerts-report-title">{block.text}</h3>;
+  if (block.type === 'h2') return <h4 className="alerts-report-ticker">{block.text}</h4>;
+  if (block.type === 'h3') return <div className="alerts-report-expiry">{block.text}</div>;
+  if (block.type === 'chart') {
+    return (
+      <figure className="alerts-report-chart">
+        <img src={block.src} alt={block.alt} loading="lazy" />
+      </figure>
+    );
+  }
+  if (block.type === 'missing-chart') {
+    return <div className="alerts-note err">Missing chart asset: {block.text}</div>;
+  }
+  return <p className="alerts-report-copy">{block.text}</p>;
+}
+
+function DailyOptionsReport({ report, pdf, busy, onGenerate }) {
+  const reportDate = pdf?.date || report?.date;
+  return (
+    <section className="alerts-report">
+      <div className="alerts-report-head">
+        <div>
+          <div className="alerts-report-kicker">Daily options report</div>
+          <h3>{pdf ? `PDF report for ${pdf.date}` : 'Latest generated charts'}</h3>
+          {pdf && (
+            <p>
+              {pdf.filename} · updated {new Date(pdf.updatedAt).toLocaleString()}
+            </p>
+          )}
+          {report && (
+            <p>
+              {report.date} · {report.tickers?.join(', ')} · {report.charts} charts · generated{' '}
+              {new Date(report.generatedAt).toLocaleString()}
+            </p>
+          )}
+        </div>
+        <button type="button" className="alerts-btn" onClick={onGenerate} disabled={busy}>
+          {busy ? 'Generating…' : 'Generate now'}
+        </button>
+      </div>
+
+      {pdf ? (
+        <div className="alerts-pdf-body">
+          <iframe
+            className="alerts-pdf-frame"
+            src={pdf.url}
+            title={`Daily options report ${pdf.date}`}
+          />
+          <div className="alerts-pdf-actions">
+            <a href={pdf.url} target="_blank" rel="noreferrer">Open PDF</a>
+          </div>
+        </div>
+      ) : !report ? (
+        <div className="alerts-report-empty">
+          No daily report has been generated yet{reportDate ? ` for ${reportDate}` : ''}.
+        </div>
+      ) : (
+        <div className="alerts-report-body">
+          {report.blocks?.map((block, index) => (
+            <ReportBlock key={`${block.type}-${index}-${block.text || block.filename || ''}`} block={block} />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
 // One row of the today-vs-yesterday preview returned by /check-now.
 function PreviewRow({ row }) {
   const { ticker, today, prev, hasBaseline, call, put, callPct, putPct } = row;
@@ -69,6 +137,9 @@ export default function Alerts() {
   const [busy, setBusy]           = useState(false);
   const [msg, setMsg]             = useState(null);   // { kind: 'ok'|'err', text }
   const [preview, setPreview]     = useState(null);   // result of /check-now
+  const [dailyReport, setDailyReport] = useState(null);
+  const [dailyPdf, setDailyPdf] = useState(null);
+  const [reportBusy, setReportBusy] = useState(false);
 
   // Learn whether email delivery is wired up so we can warn the user upfront.
   useEffect(() => {
@@ -77,6 +148,49 @@ export default function Alerts() {
       .then(setStatus)
       .catch(() => setStatus({ emailConfigured: false, emailProvider: 'Email' }));
   }, []);
+
+  useEffect(() => {
+    loadDailyReport();
+    loadDailyPdf();
+  }, []);
+
+  async function loadDailyReport() {
+    try {
+      const res = await fetch('/api/alerts/daily-options-report');
+      const json = await res.json();
+      if (res.ok) setDailyReport(json.report || null);
+    } catch {
+      setDailyReport(null);
+    }
+  }
+
+  async function loadDailyPdf() {
+    try {
+      const res = await fetch('/api/alerts/daily-options-report/pdf-meta');
+      const json = await res.json();
+      if (res.ok) setDailyPdf(json.pdf || null);
+    } catch {
+      setDailyPdf(null);
+    }
+  }
+
+  async function generateDailyReport() {
+    setReportBusy(true); setMsg(null);
+    try {
+      const res = await fetch('/api/alerts/daily-options-report/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`);
+      setDailyReport(json.report || null);
+      setDailyPdf(json.pdf || null);
+      setMsg({ kind: 'ok', text: `Generated daily options PDF for ${json.pdf?.date || 'today'}.` });
+    } catch (err) {
+      setMsg({ kind: 'err', text: `Daily report generation failed: ${err.message}` });
+    } finally { setReportBusy(false); }
+  }
 
   async function lookup() {
     const e = email.trim().toLowerCase();
@@ -211,6 +325,8 @@ export default function Alerts() {
           Each alert shows yesterday's vs today's call and put volume so you can see the jump at a glance.
         </p>
       </div>
+
+      <DailyOptionsReport report={dailyReport} pdf={dailyPdf} busy={reportBusy} onGenerate={generateDailyReport} />
 
       {status && !status.emailConfigured && (
         <div className="alerts-note warn">

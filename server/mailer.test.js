@@ -85,12 +85,14 @@ test('verifies SMTP and sends with the configured sender', async () => {
     to: 'person@example.com',
     subject: 'Test',
     text: 'Hello',
+    attachments: [{ filename: 'chart.svg', content: '<svg/>', cid: 'chart.svg' }],
   });
 
   assert.equal(transportOptions.secure, true);
   assert.equal(transportOptions.port, 465);
   assert.equal(message.from, 'SIGNAL <alerts@example.com>');
   assert.equal(message.to, 'person@example.com');
+  assert.deepEqual(message.attachments, [{ filename: 'chart.svg', content: '<svg/>', cid: 'chart.svg' }]);
   assert.deepEqual(result, { sent: true, messageId: 'message-123' });
 });
 
@@ -127,6 +129,10 @@ test('sends through Brevo when a transactional API key is configured', async () 
     subject: 'Test',
     text: 'Hello',
     html: '<p>Hello</p>',
+    attachments: [
+      { filename: 'chart.svg', content: '<svg/>', cid: 'chart.svg' },
+      { filename: 'report.txt', content: 'Report body' },
+    ],
   });
 
   const request = requests.find(item => item.url === 'https://api.brevo.com/v3/smtp/email');
@@ -138,6 +144,12 @@ test('sends through Brevo when a transactional API key is configured', async () 
   assert.equal(request.body.subject, 'Test');
   assert.equal(request.body.textContent, 'Hello');
   assert.equal(request.body.htmlContent, '<p>Hello</p>');
+  assert.deepEqual(request.body.inlineImage, [
+    { content: Buffer.from('<svg/>').toString('base64'), name: 'chart.svg' },
+  ]);
+  assert.deepEqual(request.body.attachment, [
+    { content: Buffer.from('Report body').toString('base64'), name: 'report.txt' },
+  ]);
   assert.deepEqual(result, { sent: true, messageId: '<brevo-123@example.com>' });
 });
 

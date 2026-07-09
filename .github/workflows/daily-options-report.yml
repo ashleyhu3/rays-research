@@ -1,0 +1,58 @@
+name: Generate daily options report
+
+# Runs at 08:00 Asia/Hong_Kong every day. Hong Kong is UTC+8 year-round,
+# so 00:00 UTC is stable without daylight-saving adjustments.
+#
+# Required repository secrets:
+#   MASSIVE_API_KEY
+#   MONGODB_URI
+# Optional:
+#   MONGODB_DB
+#   OPTIONS_REPORT_TICKERS
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+    inputs:
+      report_date:
+        description: 'YYYY-MM-DD report date; defaults to the current Hong Kong date'
+        required: false
+      tickers:
+        description: 'Comma-separated tickers; defaults to OPTIONS_REPORT_TICKERS or TSM,ASML'
+        required: false
+
+concurrency:
+  group: daily-options-report
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci --omit=dev
+
+      - name: Install Chrome for PDF rendering
+        id: setup-chrome
+        uses: browser-actions/setup-chrome@v1
+
+      - name: Generate report for Alerts page
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          MONGODB_DB: ${{ secrets.MONGODB_DB }}
+          MASSIVE_API_KEY: ${{ secrets.MASSIVE_API_KEY }}
+          PDF_CHROME_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
+          OPTIONS_REPORT_DATE: ${{ inputs.report_date }}
+          OPTIONS_REPORT_TICKERS: ${{ inputs.tickers || secrets.OPTIONS_REPORT_TICKERS }}
+        run: npm run options-report:generate

@@ -1041,7 +1041,7 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
 .opts-chart-canvas { height: 340px; }
 
 /* ── Options volume alerts page ────────────────────────────────────── */
-.alerts-page { padding: 8px 0 48px; max-width: 780px; }
+.alerts-page { padding: 8px 0 48px; max-width: 1120px; }
 
 .alerts-hero { text-align: center; padding: 28px 20px 22px; color: var(--ter); }
 .alerts-hero-icon { color: #10b981; margin-bottom: 12px; display: flex; justify-content: center; }
@@ -1051,7 +1051,8 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
 .alerts-form {
   display: flex; flex-direction: column; gap: 18px;
   background: var(--bg-card); border: 1px solid var(--border);
-  border-radius: 10px; padding: 22px; margin-top: 8px;
+  border-radius: 8px; padding: 22px; margin: 8px auto 0;
+  max-width: 780px;
 }
 .alerts-field { display: flex; flex-direction: column; gap: 7px; }
 .alerts-label { font-size: 12px; color: var(--ter); }
@@ -1091,6 +1092,7 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
 
 .alerts-note {
   border-radius: 8px; padding: 12px 16px; font-size: 13px; margin-top: 16px; line-height: 1.5;
+  max-width: 780px; margin-left: auto; margin-right: auto;
 }
 .alerts-note.ok   { background: rgba(16,185,129,.1);  border: 1px solid rgba(16,185,129,.25); color: #34d399; }
 .alerts-note.err  { background: rgba(248,113,113,.1); border: 1px solid rgba(248,113,113,.25); color: #f87171; }
@@ -1100,10 +1102,11 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
 .alerts-sub-summary {
   margin-top: 14px; font-size: 12px; color: var(--ter);
   padding: 10px 14px; border: 1px dashed var(--border-hi); border-radius: 8px;
+  max-width: 780px; margin-left: auto; margin-right: auto;
 }
 .alerts-sub-summary strong { color: var(--text); }
 
-.alerts-preview { margin-top: 24px; }
+.alerts-preview { margin: 24px auto 0; max-width: 780px; }
 .alerts-preview-title { font-size: 13px; color: var(--sec); font-weight: 600; margin-bottom: 10px; }
 .alerts-table-wrap { overflow-x: auto; }
 .alerts-table { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -1129,3 +1132,113 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
 }
 .alerts-badge.call { background: #10b981; }
 .alerts-badge.put  { background: #f87171; }
+
+.alerts-report {
+  margin: 18px 0 24px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-card);
+  overflow: hidden;
+}
+.alerts-report-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.alerts-report-kicker {
+  color: var(--ter);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.alerts-report-head h3 {
+  color: var(--text);
+  font-size: 17px;
+  font-weight: 700;
+  margin: 0 0 4px;
+}
+.alerts-report-head p {
+  color: var(--ter);
+  font-size: 12px;
+  margin: 0;
+}
+.alerts-report-empty {
+  color: var(--ter);
+  font-size: 13px;
+  padding: 22px 20px;
+}
+.alerts-report-body {
+  padding: 18px 20px 24px;
+  background: #f8fafc;
+}
+.alerts-report-title {
+  color: #111827;
+  font-size: 20px;
+  margin: 0 0 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e5e7eb;
+}
+.alerts-report-ticker {
+  color: #111827;
+  font-size: 18px;
+  margin: 26px 0 8px;
+}
+.alerts-report-expiry {
+  color: #4b5563;
+  font-size: 13px;
+  font-weight: 700;
+  margin: 20px 0 8px;
+}
+.alerts-report-copy {
+  color: #4b5563;
+  font-size: 13px;
+}
+.alerts-report-chart {
+  margin: 0 0 12px;
+  background: #ffffff;
+}
+.alerts-report-chart img {
+  display: block;
+  width: 100%;
+  max-width: 900px;
+  height: auto;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+}
+.alerts-pdf-body {
+  padding: 16px;
+  background: #0f1117;
+}
+.alerts-pdf-frame {
+  display: block;
+  width: 100%;
+  height: min(78vh, 920px);
+  min-height: 620px;
+  border: 1px solid var(--border-hi);
+  border-radius: 6px;
+  background: #ffffff;
+}
+.alerts-pdf-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 10px;
+}
+.alerts-pdf-actions a {
+  color: #10b981;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.alerts-pdf-actions a:hover { text-decoration: underline; }
+
+@media (max-width: 760px) {
+  .alerts-report-head { flex-direction: column; }
+  .alerts-report-body { padding: 14px 12px 18px; overflow-x: auto; }
+  .alerts-report-chart img { min-width: 760px; }
+  .alerts-pdf-frame { min-height: 520px; }
+}

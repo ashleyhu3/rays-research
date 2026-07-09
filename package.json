@@ -34,6 +34,8 @@
     "db:seed:dc": "node --env-file=.env server/scripts/seedDcBuildouts.js",
     "collect": "node --env-file=.env server/scripts/collect.js",
     "alerts:run": "node --env-file-if-exists=.env server/scripts/runAlerts.js",
+    "options-report:generate": "node --env-file-if-exists=.env server/scripts/generateAndStoreDailyOptionsReport.js",
+    "options-report:send": "node --env-file-if-exists=.env server/scripts/sendDailyOptionsReport.js",
     "test:transcripts": "node --test server/transcripts/*.test.js server/transcripts/*.test.mjs",
     "test:alerts": "node --test server/alertsEngine.test.js server/mailer.test.js"
   },

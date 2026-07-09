@@ -902,25 +902,41 @@ async function fetchTickerReport(ticker, reportDate) {
   };
 }
 
-async function main() {
-  const args = parseArgs(process.argv);
-  const outPath = path.resolve(args.out ?? `daily-options-data-${args.date}.html`);
-  const format = args.format ?? (path.extname(outPath).toLowerCase() === '.md' ? 'md' : 'html');
-  const tickers = [];
+async function generateDailyOptionsReport({ date = today(), tickers = DEFAULT_TICKERS, out = null, format = null } = {}) {
+  const outPath = path.resolve(out ?? `daily-options-data-${date}.html`);
+  const outputFormat = format ?? (path.extname(outPath).toLowerCase() === '.md' ? 'md' : 'html');
+  const tickerReports = [];
 
-  for (const ticker of args.tickers) {
-    tickers.push(await fetchTickerReport(ticker, args.date));
+  for (const ticker of tickers) {
+    tickerReports.push(await fetchTickerReport(ticker, date));
   }
 
-  const report = { date: args.date, tickers };
-  const content = format === 'md'
+  const report = { date, tickers: tickerReports };
+  const content = outputFormat === 'md'
     ? renderMarkdown(report, outPath)
     : renderHtml(report);
   fs.writeFileSync(outPath, content);
-  console.log(outPath);
+
+  return { outPath, format: outputFormat, report, content };
 }
 
-main().catch(error => {
-  console.error(error.stack || error.message);
-  process.exit(1);
-});
+async function main() {
+  const args = parseArgs(process.argv);
+  const result = await generateDailyOptionsReport(args);
+  console.log(result.outPath);
+}
+
+if (require.main === module) {
+  main().catch(error => {
+    console.error(error.stack || error.message);
+    process.exit(1);
+  });
+}
+
+module.exports = {
+  DEFAULT_TICKERS,
+  generateDailyOptionsReport,
+  renderHtml,
+  renderMarkdown,
+  today,
+};

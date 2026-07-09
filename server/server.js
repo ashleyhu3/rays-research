@@ -467,6 +467,7 @@ app.get('/api/options/:ticker', async (req, res) => {
 const alertsStore  = require('./alertsStore');
 const alertsEngine = require('./alertsEngine');
 const mailer       = require('./mailer');
+const optionsReportStore = require('./optionsReportStore');
 
 const EMAIL_RE  = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const TICKER_RE = /^[A-Z0-9.^=-]{1,10}$/;
@@ -580,6 +581,88 @@ app.post('/api/alerts/test-email', async (req, res) => {
   }
 });
 
+app.get('/api/alerts/daily-options-report', (_req, res) => {
+  const report = optionsReportStore.readLatestDailyOptionsReport();
+  res.json({ report });
+});
+
+function dailyOptionsPdf(date = optionsReportStore.dateInTimeZone()) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(date || ''))) return null;
+  const stored = optionsReportStore.readLatestDailyOptionsPdf();
+  if (stored?.date === date && stored?.base64) {
+    return {
+      ...optionsReportStore.pdfMeta(stored),
+      source: 'storage',
+      buffer: Buffer.from(stored.base64, 'base64'),
+      contentType: stored.contentType || 'application/pdf',
+    };
+  }
+
+  const filename = `daily-options-data-${date}.pdf`;
+  const file = path.join(__dirname, '..', filename);
+  try {
+    const stat = require('fs').statSync(file);
+    if (!stat.isFile()) return null;
+    return {
+      date,
+      filename,
+      file,
+      size: stat.size,
+      updatedAt: stat.mtime.toISOString(),
+      url: `/api/alerts/daily-options-report/pdf?date=${encodeURIComponent(date)}`,
+      source: 'file',
+    };
+  } catch {
+    return null;
+  }
+}
+
+app.get('/api/alerts/daily-options-report/pdf-meta', (req, res) => {
+  const date = req.query.date || optionsReportStore.dateInTimeZone();
+  const pdf = dailyOptionsPdf(date);
+  res.json({ pdf: pdf && {
+    date: pdf.date,
+    filename: pdf.filename,
+    size: pdf.size,
+    updatedAt: pdf.updatedAt,
+    url: pdf.url,
+  } });
+});
+
+app.get('/api/alerts/daily-options-report/pdf', (req, res) => {
+  const date = req.query.date || optionsReportStore.dateInTimeZone();
+  const pdf = dailyOptionsPdf(date);
+  if (!pdf) return res.status(404).json({ error: `No PDF report found for ${date}.` });
+  if (pdf.source === 'storage') {
+    res
+      .set({
+        'Content-Type': pdf.contentType,
+        'Content-Disposition': `inline; filename="${pdf.filename}"`,
+      })
+      .send(pdf.buffer);
+    return;
+  }
+  res.sendFile(pdf.file, {
+    headers: {
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `inline; filename="${pdf.filename}"`,
+    },
+  });
+});
+
+app.post('/api/alerts/daily-options-report/generate', async (req, res) => {
+  try {
+    const pdf = await optionsReportStore.generateAndStoreDailyOptionsPdf({
+      date: req.body?.date,
+      tickers: req.body?.tickers,
+    });
+    res.json({ pdf, report: optionsReportStore.readLatestDailyOptionsReport() });
+  } catch (e) {
+    console.error('[options-report:generate]', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.post('/api/chat', async (req, res) => {
   const { message, history } = req.body ?? {};
   if (!message || typeof message !== 'string') {
@@ -619,6 +702,7 @@ const STORAGE_BLOBS = [
   { name: 'sentimentData',  file: path.join(DATA_DIR, 'sentiment.json') },
   // Options-volume email alerts: subscriptions + rolling per-ticker daily volume.
   { name: 'optionsAlerts',  file: path.join(DATA_DIR, 'optionsAlerts.json') },
+  { name: 'dailyOptionsReport', file: path.join(DATA_DIR, 'dailyOptionsReport.json') },
   // Latest scrape per source — loaded into the request cache on boot for an
   // instant first paint instead of blocking on live re-scrapes.
   { name: 'latestSnapshots', file: path.join(DATA_DIR, 'latestSnapshots.json') },
