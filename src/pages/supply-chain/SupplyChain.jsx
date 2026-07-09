@@ -13,13 +13,14 @@ const ALL_COMPANIES = [
   { id: '3081', ticker: '3081TT', group: 'optics', exchange: 'tpex', name: '聯亞光電' },
   { id: '3363', ticker: '3363TT', group: 'optics', exchange: 'tpex', name: '品興'    },
   { id: '3163', ticker: '3163TT', group: 'optics', exchange: 'tpex', name: '波若威'  },
-  { id: '2383', ticker: '2383TT', group: 'pcb',    exchange: 'twse', name: '台光電'   },
+  { id: '2383', ticker: '2383TT', group: 'ccl',    exchange: 'twse', name: '台光電'   },
+  { id: '6274', ticker: '6274TT', group: 'ccl',    exchange: 'tpex', name: '台燿科技' },
+  { id: '8358', ticker: '8358TT', group: 'ccl',    exchange: 'tpex', name: '金像電子' },
   { id: '2368', ticker: '2368TT', group: 'pcb',    exchange: 'twse', name: '金像電'   },
-  { id: '3037', ticker: '3037TT', group: 'pcb',    exchange: 'twse', name: '欣興電子' },
-  { id: '8046', ticker: '8046TT', group: 'pcb',    exchange: 'twse', name: '南電'     },
   { id: '4958', ticker: '4958TT', group: 'pcb',    exchange: 'twse', name: '臻鼎-KY'  },
-  { id: '6274', ticker: '6274TT', group: 'pcb',    exchange: 'tpex', name: '台燿科技' },
-  { id: '8358', ticker: '8358TT', group: 'pcb',    exchange: 'tpex', name: '金像電子' },
+  { id: '8021', ticker: '8021TT', group: 'pcb',    exchange: 'twse', name: '尖點'     },
+  { id: '3037', ticker: '3037TT', group: 'abf',    exchange: 'twse', name: '欣興電子' },
+  { id: '8046', ticker: '8046TT', group: 'abf',    exchange: 'twse', name: '南電'     },
   { id: '2327', ticker: '2327TT', group: 'mlcc',   exchange: 'twse', name: '國巨'    },
   { id: '2492', ticker: '2492TT', group: 'mlcc',   exchange: 'twse', name: '華新科'   },
   { id: '3026', ticker: '3026TT', group: 'mlcc',   exchange: 'twse', name: '禾伸堂'   },
@@ -27,16 +28,20 @@ const ALL_COMPANIES = [
 
 const OPTICS = ALL_COMPANIES.filter(c => c.group === 'optics');
 const FIBER  = ALL_COMPANIES.filter(c => c.group === 'fiber');
+const CCL    = ALL_COMPANIES.filter(c => c.group === 'ccl');
 const PCB    = ALL_COMPANIES.filter(c => c.group === 'pcb');
+const ABF    = ALL_COMPANIES.filter(c => c.group === 'abf');
 const MLCC   = ALL_COMPANIES.filter(c => c.group === 'mlcc');
 
 const OPTICS_COLORS = [C.teal, C.anthropic, C.red, C.orange];
 const FIBER_COLORS  = [C.xiaomi];
-const PCB_COLORS    = [C.openai, C.deepseek, C.google, C.mistral, C.zhipu, C.perplexity, C.kimi];
+const CCL_COLORS    = [C.openai, C.deepseek, C.google];
+const PCB_COLORS    = [C.mistral, C.zhipu, C.perplexity];
+const ABF_COLORS    = [C.kimi, C.anthropic];
 const MLCC_COLORS   = [C.minimax, C.baidu, C.qwen];
 
-const GROUP_COLORS = { optics: OPTICS_COLORS, fiber: FIBER_COLORS, pcb: PCB_COLORS, mlcc: MLCC_COLORS };
-const GROUP_LABEL  = { optics: 'Optics', fiber: 'Fiber', pcb: 'PCB', mlcc: 'MLCC' };
+const GROUP_COLORS = { optics: OPTICS_COLORS, fiber: FIBER_COLORS, ccl: CCL_COLORS, pcb: PCB_COLORS, abf: ABF_COLORS, mlcc: MLCC_COLORS };
+const GROUP_LABEL  = { optics: 'Optics', fiber: 'Fiber', ccl: 'CCL', pcb: 'PCB', abf: 'ABF', mlcc: 'MLCC' };
 
 // Per-company colour = its position within its own group's palette. Derived
 // from ALL_COMPANIES so the overview legend/datasets stay aligned regardless of
@@ -110,19 +115,46 @@ function buildMomDatasets(companies, colors, periods) {
     });
 }
 
-const revOpts = baseOpts(v => {
+const revFmt = v => {
   if (v == null) return '—';
   if (Math.abs(v) >= 1000) return `NT$${(v / 1000).toFixed(1)}B`;
   return `NT$${v.toFixed(0)}M`;
-});
+};
 
-const pctOpts = {
-  ...baseOpts(v => `${v != null ? v.toFixed(1) : '—'}%`),
+const pctFmt = v => `${v != null ? v.toFixed(1) : '—'}%`;
+
+function withPointValueLabels(opts, yFmt) {
+  return {
+    ...opts,
+    layout: {
+      ...(opts.layout ?? {}),
+      padding: {
+        top: 18,
+        right: 28,
+        bottom: 4,
+        left: 4,
+        ...(opts.layout?.padding ?? {}),
+      },
+    },
+    plugins: {
+      ...opts.plugins,
+      pointValueLabels: {
+        display: true,
+        formatter: yFmt,
+      },
+    },
+  };
+}
+
+const revOpts = withPointValueLabels(baseOpts(revFmt), revFmt);
+
+const pctOpts = withPointValueLabels({
+  ...baseOpts(pctFmt),
   scales: {
     x: { grid: GRID, ticks: { ...TICK, maxTicksLimit: 8, autoSkip: true }, border: BORD },
     y: { grid: GRID, ticks: { ...TICK, callback: v => `${v}%` }, border: BORD, beginAtZero: false },
   },
-};
+}, pctFmt);
 
 
 // ── Shared data hook ─────────────────────────────────────────────────────
@@ -133,10 +165,12 @@ function useSupplyData(months) {
   const all    = useMemo(() => mergeCompanyData(ALL_COMPANIES, liveCompanies), [liveCompanies]);
   const optics = useMemo(() => mergeCompanyData(OPTICS, liveCompanies), [liveCompanies]);
   const fiber  = useMemo(() => mergeCompanyData(FIBER,  liveCompanies), [liveCompanies]);
+  const ccl    = useMemo(() => mergeCompanyData(CCL,    liveCompanies), [liveCompanies]);
   const pcb    = useMemo(() => mergeCompanyData(PCB,    liveCompanies), [liveCompanies]);
+  const abf    = useMemo(() => mergeCompanyData(ABF,    liveCompanies), [liveCompanies]);
   const mlcc   = useMemo(() => mergeCompanyData(MLCC,   liveCompanies), [liveCompanies]);
   const hasLive = all.some(c => c.monthly.length > 0);
-  return { all, optics, fiber, pcb, mlcc, hasLive, tableMode, n: months };
+  return { all, optics, fiber, ccl, pcb, abf, mlcc, hasLive, tableMode, n: months };
 }
 
 function NoData() {
@@ -296,32 +330,33 @@ export function AISupplyOptics({ months = 12 }) {
   );
 }
 
-// ── Page 3: PCB supply chain ─────────────────────────────────────────────
-export function AISupplyPCB({ months = 12 }) {
-  const { pcb, hasLive, tableMode, n } = useSupplyData(months);
+function SupplySegmentPage({ months, dataKey, staticCompanies, colors, viewId, chartPrefix }) {
+  const supply = useSupplyData(months);
+  const companies = supply[dataKey];
+  const { hasLive, tableMode, n } = supply;
 
-  const periods = useMemo(() => buildPeriods(pcb, n), [pcb, n]);
+  const periods = useMemo(() => buildPeriods(companies, n), [companies, n]);
 
-  const revData = useMemo(() => ({ labels: periods, datasets: buildRevenueDatasets(pcb, PCB_COLORS, periods) }), [pcb, periods]);
-  const yoyData = useMemo(() => ({ labels: periods, datasets: buildYoyDatasets(pcb, PCB_COLORS, periods) }), [pcb, periods]);
-  const momData = useMemo(() => ({ labels: periods, datasets: buildMomDatasets(pcb, PCB_COLORS, periods) }), [pcb, periods]);
+  const revData = useMemo(() => ({ labels: periods, datasets: buildRevenueDatasets(companies, colors, periods) }), [companies, colors, periods]);
+  const yoyData = useMemo(() => ({ labels: periods, datasets: buildYoyDatasets(companies, colors, periods) }), [companies, colors, periods]);
+  const momData = useMemo(() => ({ labels: periods, datasets: buildMomDatasets(companies, colors, periods) }), [companies, colors, periods]);
 
-  const legend   = PCB.map((c, i) => [`${c.ticker} ${c.name}`, PCB_COLORS[i], goodInfoUrl(c.id)]);
-  const colLinks = PCB.map(c => goodInfoUrl(c.id));
+  const legend   = staticCompanies.map((c, i) => [`${c.ticker} ${c.name}`, colors[i], goodInfoUrl(c.id)]);
+  const colLinks = staticCompanies.map(c => goodInfoUrl(c.id));
 
   return (
-    <EditableGrid viewId="ai-supply-pcb">
-      <ChartCard chartId="supply-pcb-yoy"
+    <EditableGrid viewId={viewId}>
+      <ChartCard chartId={`${chartPrefix}-yoy`}
         legend={legend} colLinks={colLinks} height={360} isNew span2={tableMode} colorPct clean>
         {hasLive && yoyData.datasets.length > 0 ? <Line data={yoyData} options={pctOpts} /> : <NoData />}
       </ChartCard>
 
-      <ChartCard chartId="supply-pcb-mom"
+      <ChartCard chartId={`${chartPrefix}-mom`}
         legend={legend} colLinks={colLinks} height={360} isNew span2={tableMode} colorPct clean>
         {hasLive && momData.datasets.length > 0 ? <Line data={momData} options={pctOpts} /> : <NoData />}
       </ChartCard>
 
-      <ChartCard chartId="supply-pcb-rev"
+      <ChartCard chartId={`${chartPrefix}-rev`}
         legend={legend} colLinks={colLinks} height={360} span2 isNew clean>
         {hasLive && revData.datasets.length > 0 ? <Line data={revData} options={revOpts} /> : <NoData />}
       </ChartCard>
@@ -329,7 +364,49 @@ export function AISupplyPCB({ months = 12 }) {
   );
 }
 
-// ── Page 4: MLCC supply chain ────────────────────────────────────────────
+// ── Page 3: CCL supply chain ─────────────────────────────────────────────
+export function AISupplyCCL({ months = 12 }) {
+  return (
+    <SupplySegmentPage
+      months={months}
+      dataKey="ccl"
+      staticCompanies={CCL}
+      colors={CCL_COLORS}
+      viewId="ai-supply-ccl"
+      chartPrefix="supply-ccl"
+    />
+  );
+}
+
+// ── Page 4: PCB supply chain ─────────────────────────────────────────────
+export function AISupplyPCB({ months = 12 }) {
+  return (
+    <SupplySegmentPage
+      months={months}
+      dataKey="pcb"
+      staticCompanies={PCB}
+      colors={PCB_COLORS}
+      viewId="ai-supply-pcb"
+      chartPrefix="supply-pcb"
+    />
+  );
+}
+
+// ── Page 5: ABF supply chain ─────────────────────────────────────────────
+export function AISupplyABF({ months = 12 }) {
+  return (
+    <SupplySegmentPage
+      months={months}
+      dataKey="abf"
+      staticCompanies={ABF}
+      colors={ABF_COLORS}
+      viewId="ai-supply-abf"
+      chartPrefix="supply-abf"
+    />
+  );
+}
+
+// ── Page 6: MLCC supply chain ────────────────────────────────────────────
 export function AISupplyMLCC({ months = 12 }) {
   const { mlcc, hasLive, tableMode, n } = useSupplyData(months);
 
@@ -362,7 +439,7 @@ export function AISupplyMLCC({ months = 12 }) {
   );
 }
 
-// ── Page 5: Fiber supply chain ───────────────────────────────────────────
+// ── Page 7: Fiber supply chain ───────────────────────────────────────────
 export function AISupplyFiber({ months = 12 }) {
   const { fiber, hasLive, tableMode, n } = useSupplyData(months);
 

@@ -29,7 +29,14 @@ import MarketSignals    from './pages/market-signals/MarketSignals';
 import DemandGeneral    from './pages/market-signals/InfrastructureOss';
 import DemandOpenRouter from './pages/market-signals/OpenRouter';
 // Supply chain
-import AISupply, { AISupplyOptics, AISupplyPCB, AISupplyMLCC, AISupplyFiber } from './pages/supply-chain/SupplyChain';
+import AISupply, {
+  AISupplyOptics,
+  AISupplyCCL,
+  AISupplyPCB,
+  AISupplyABF,
+  AISupplyMLCC,
+  AISupplyFiber,
+} from './pages/supply-chain/SupplyChain';
 import DcTimelines, {
   DcCapacity,
   DcCoAWS, DcCoGoogle, DcCoMicrosoft, DcCoOracle, DcCoOpenAI, DcCoNebius, DcCoMeta,
@@ -73,7 +80,9 @@ const VIEW_COMPONENTS = {
   'ai-supply':        AISupply,
   'ai-supply-optics': AISupplyOptics,
   'ai-supply-fiber':  AISupplyFiber,
+  'ai-supply-ccl':    AISupplyCCL,
   'ai-supply-pcb':    AISupplyPCB,
+  'ai-supply-abf':    AISupplyABF,
   'ai-supply-mlcc':   AISupplyMLCC,
   'dc-capacity':      DcCapacity,
   'dc-timelines':     DcTimelines,

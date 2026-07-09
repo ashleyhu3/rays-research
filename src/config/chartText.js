@@ -232,7 +232,7 @@ export const CHART_TEXT = {
   'sent-tk-leadlag':   { title: 'Daily Post Count vs Next-Day Return' },
   'sent-tk-rolling':   { title: 'Rolling 20-Day Correlations' },
 
-  // ── Supply chain (views: ai-supply / ai-supply-optics / ai-supply-pcb) ─
+  // ── Supply chain ───────────────────────────────────────────────────────
   'supply-all-rev':    { title: 'Monthly Revenue — All Companies (NT$M)' },
   'supply-all-yoy':    { title: 'YoY Growth — All Companies (%)' },
   'supply-all-mom':    { title: 'MoM Growth — All Companies (%)' },
@@ -243,9 +243,15 @@ export const CHART_TEXT = {
   'supply-fiber-rev':  { title: 'Monthly Revenue — Fiber (NT$M)' },
   'supply-fiber-yoy':  { title: 'YoY Growth — Fiber (%)' },
   'supply-fiber-mom':  { title: 'MoM Growth — Fiber (%)' },
+  'supply-ccl-rev':    { title: 'Monthly Revenue — CCL (NT$M)' },
+  'supply-ccl-yoy':    { title: 'YoY Growth — CCL (%)' },
+  'supply-ccl-mom':    { title: 'MoM Growth — CCL (%)' },
   'supply-pcb-rev':    { title: 'Monthly Revenue — PCB (NT$M)' },
   'supply-pcb-yoy':    { title: 'YoY Growth — PCB (%)' },
   'supply-pcb-mom':    { title: 'MoM Growth — PCB (%)' },
+  'supply-abf-rev':    { title: 'Monthly Revenue — ABF (NT$M)' },
+  'supply-abf-yoy':    { title: 'YoY Growth — ABF (%)' },
+  'supply-abf-mom':    { title: 'MoM Growth — ABF (%)' },
   'supply-mlcc-rev':   { title: 'Monthly Revenue — MLCC (NT$M)' },
   'supply-mlcc-yoy':   { title: 'YoY Growth — MLCC (%)' },
   'supply-mlcc-mom':   { title: 'MoM Growth — MLCC (%)' },
