@@ -581,31 +581,28 @@ app.post('/api/alerts/test-email', async (req, res) => {
   }
 });
 
-app.get('/api/alerts/daily-options-report', (_req, res) => {
-  const report = optionsReportStore.readLatestDailyOptionsReport();
-  res.json({ report });
+app.get('/api/alerts/daily-options-report', (req, res) => {
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.date || '')) ? req.query.date : null;
+  const report = optionsReportStore.readDailyReport(date);
+  res.json({ report, availableDates: optionsReportStore.readAvailableReportDates() });
 });
 
-function dailyOptionsPdf(date = optionsReportStore.dateInTimeZone()) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(date || ''))) return null;
-  const stored = optionsReportStore.readLatestDailyOptionsPdf();
-  if (stored?.date === date && stored?.base64) {
-    return {
-      ...optionsReportStore.pdfMeta(stored),
-      source: 'storage',
-      buffer: Buffer.from(stored.base64, 'base64'),
-      contentType: stored.contentType || 'application/pdf',
-    };
-  }
+function storedToPdf(stored) {
+  return {
+    ...optionsReportStore.pdfMeta(stored),
+    source: 'storage',
+    buffer: Buffer.from(stored.base64, 'base64'),
+    contentType: stored.contentType || 'application/pdf',
+  };
+}
 
-  const filename = `daily-options-data-${date}.pdf`;
-  const file = path.join(__dirname, '..', filename);
+function fileToPdf(date, file) {
   try {
     const stat = require('fs').statSync(file);
     if (!stat.isFile()) return null;
     return {
       date,
-      filename,
+      filename: path.basename(file),
       file,
       size: stat.size,
       updatedAt: stat.mtime.toISOString(),
@@ -617,9 +614,38 @@ function dailyOptionsPdf(date = optionsReportStore.dateInTimeZone()) {
   }
 }
 
+// Newest committed daily-options-data-YYYY-MM-DD.pdf in the repo root, if any.
+function latestDailyOptionsFile() {
+  const dir = path.join(__dirname, '..');
+  let best = null;
+  try {
+    for (const name of require('fs').readdirSync(dir)) {
+      const m = name.match(/^daily-options-data-(\d{4}-\d{2}-\d{2})\.pdf$/);
+      if (m && (!best || m[1] > best.date)) best = { date: m[1], file: path.join(dir, name) };
+    }
+  } catch {}
+  return best;
+}
+
+// Resolve the PDF to serve. With no `date`, return the most recent report we
+// have — the stored blob first, then the newest committed daily-options file —
+// so the page always shows the latest report even before today's run lands.
+function dailyOptionsPdf(date) {
+  const stored = optionsReportStore.readLatestDailyOptionsPdf();
+
+  if (!date) {
+    if (stored?.base64) return storedToPdf(stored);
+    const latest = latestDailyOptionsFile();
+    return latest ? fileToPdf(latest.date, latest.file) : null;
+  }
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(date))) return null;
+  if (stored?.date === date && stored?.base64) return storedToPdf(stored);
+  return fileToPdf(date, path.join(__dirname, '..', `daily-options-data-${date}.pdf`));
+}
+
 app.get('/api/alerts/daily-options-report/pdf-meta', (req, res) => {
-  const date = req.query.date || optionsReportStore.dateInTimeZone();
-  const pdf = dailyOptionsPdf(date);
+  const pdf = dailyOptionsPdf(req.query.date);
   res.json({ pdf: pdf && {
     date: pdf.date,
     filename: pdf.filename,
@@ -630,9 +656,8 @@ app.get('/api/alerts/daily-options-report/pdf-meta', (req, res) => {
 });
 
 app.get('/api/alerts/daily-options-report/pdf', (req, res) => {
-  const date = req.query.date || optionsReportStore.dateInTimeZone();
-  const pdf = dailyOptionsPdf(date);
-  if (!pdf) return res.status(404).json({ error: `No PDF report found for ${date}.` });
+  const pdf = dailyOptionsPdf(req.query.date);
+  if (!pdf) return res.status(404).json({ error: `No PDF report found${req.query.date ? ` for ${req.query.date}` : ''}.` });
   if (pdf.source === 'storage') {
     res
       .set({
@@ -652,11 +677,11 @@ app.get('/api/alerts/daily-options-report/pdf', (req, res) => {
 
 app.post('/api/alerts/daily-options-report/generate', async (req, res) => {
   try {
-    const pdf = await optionsReportStore.generateAndStoreDailyOptionsPdf({
+    const meta = await optionsReportStore.generateAndStoreDailyOptions({
       date: req.body?.date,
       tickers: req.body?.tickers,
     });
-    res.json({ pdf, report: optionsReportStore.readLatestDailyOptionsReport() });
+    res.json({ meta, report: optionsReportStore.readDailyReport(meta.date) });
   } catch (e) {
     console.error('[options-report:generate]', e.message);
     res.status(500).json({ error: e.message });

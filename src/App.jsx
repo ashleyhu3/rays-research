@@ -34,6 +34,7 @@ import DemandOpenRouter from './pages/market-signals/OpenRouter';
 import {
   AISupplyOptics, AISupplyPCB, AISupplyMLCC, AISupplyFiber,
   AISupplyCooling, AISupplyPower, AISupplyEquipment, AISupplyMemory, AISupplyFoundry,
+  AISupplyCPU, AISupplyODM,
 } from './pages/supply-chain/SupplyChain';
 import DcTimelines, {
   DcCapacity,
@@ -43,7 +44,8 @@ import DcTimelines, {
 import Options from './pages/options/Options';
 import { PricingMemory, PricingGPU, PricingCPU, PricingTPU } from './pages/pricing/Pricing';
 import Sentiment from './pages/sentiment/Sentiment';
-import Alerts from './pages/alerts/Alerts';
+import Alerts, { OptionsReportTitle, OptionsReportControls } from './pages/alerts/Alerts';
+import { OptionsReportProvider } from './context/OptionsReportContext';
 import DataValidity from './pages/data-validity/DataValidity';
 import Transcripts from './pages/transcripts/Transcripts';
 // Source-specific signal pages
@@ -88,6 +90,8 @@ const VIEW_COMPONENTS = {
   'ai-supply-equipment': AISupplyEquipment,
   'ai-supply-memory':    AISupplyMemory,
   'ai-supply-foundry':   AISupplyFoundry,
+  'ai-supply-cpu':       AISupplyCPU,
+  'ai-supply-odm':       AISupplyODM,
   'dc-capacity':      DcCapacity,
   'dc-timelines':     DcTimelines,
   'dc-co-aws':        DcCoAWS,
@@ -138,6 +142,7 @@ export default function App() {
   // Check if this is a sector overview page
   const sectorId = SECTOR_OVERVIEW_IDS[currentView] ?? null;
   const ViewComponent = sectorId ? null : VIEW_COMPONENTS[currentView];
+  const isAlerts = currentView === 'alerts';
   const showSidebar = currentView !== 'options' && currentView !== 'chat' && currentView !== 'sentiment' && currentView !== 'sources' && currentView !== 'transcripts' && currentView !== 'alerts';
 
   return (
@@ -145,6 +150,7 @@ export default function App() {
       <UIProvider>
         <LayoutProvider>
         <SentimentSearchProvider>
+        <OptionsReportProvider>
         <Navbar onNavigate={setCurrentView} currentView={currentView} />
         <div className="app-body">
           {showSidebar && <Sidebar currentView={currentView} onNavigate={setCurrentView} mode={mode} />}
@@ -152,9 +158,14 @@ export default function App() {
             {currentView !== 'chat' && (
               <Topbar
                 title={meta.title}
-                titleContent={currentView === 'sentiment' ? <SentimentSearchBar /> : undefined}
-                weeks={mode === 'demand' || mode === 'pricing' ? weeks : undefined}
-                onWeeksChange={mode === 'demand' || mode === 'pricing' ? setWeeks : undefined}
+                titleContent={
+                  isAlerts ? <OptionsReportTitle />
+                  : currentView === 'sentiment' ? <SentimentSearchBar />
+                  : undefined
+                }
+                rightContent={isAlerts ? <OptionsReportControls /> : undefined}
+                weeks={!isAlerts && (mode === 'demand' || mode === 'pricing') ? weeks : undefined}
+                onWeeksChange={!isAlerts && (mode === 'demand' || mode === 'pricing') ? setWeeks : undefined}
                 months={mode === 'supply' ? months : undefined}
                 onMonthsChange={mode === 'supply' ? setMonths : undefined}
                 sectorId={sectorId}
@@ -172,6 +183,7 @@ export default function App() {
             </div>
           </main>
         </div>
+        </OptionsReportProvider>
         </SentimentSearchProvider>
         </LayoutProvider>
       </UIProvider>

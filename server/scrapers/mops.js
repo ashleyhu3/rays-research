@@ -55,6 +55,15 @@ const ALL_COMPANIES = [
   { id: '2330', ticker: '2330TT', group: 'foundry', exchange: 'twse', name: '台積電'   },
   { id: '2303', ticker: '2303TT', group: 'foundry', exchange: 'twse', name: '聯電'     },
   { id: '5347', ticker: '5347TT', group: 'foundry', exchange: 'tpex', name: '世界先進' },
+  // CPU supply chain — CPU socket connectors, BMC controllers, HDI boards
+  { id: '3533', ticker: '3533TT', group: 'cpu', exchange: 'twse', name: '嘉澤' },
+  { id: '5274', ticker: '5274TT', group: 'cpu', exchange: 'tpex', name: '信驊' },
+  { id: '3044', ticker: '3044TT', group: 'cpu', exchange: 'twse', name: '健鼎' },
+  // ODM supply chain — AI server ODMs / system assemblers
+  { id: '2317', ticker: '2317TT', group: 'odm', exchange: 'twse', name: '鴻海' },
+  { id: '2382', ticker: '2382TT', group: 'odm', exchange: 'twse', name: '廣達' },
+  { id: '3231', ticker: '3231TT', group: 'odm', exchange: 'twse', name: '緯創' },
+  { id: '6669', ticker: '6669TT', group: 'odm', exchange: 'twse', name: '緯穎' },
 ];
 
 function mopsUrl(coId, exchange) {

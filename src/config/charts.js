@@ -74,7 +74,7 @@ const REGISTRY = [
   { id: 'cn-bench',   sectorId: 'tokens', subView: 'chinese', defaultPinned: false },
 
   // ── Supply chain ───────────────────────────────────────────────────
-  ...['optics', 'fiber', 'pcb', 'mlcc', 'cooling', 'power', 'equipment', 'memory', 'foundry'].flatMap(chain => [
+  ...['optics', 'fiber', 'pcb', 'mlcc', 'cooling', 'power', 'equipment', 'memory', 'foundry', 'cpu', 'odm'].flatMap(chain => [
     { id: `supply-${chain}-rev`,       sectorId: 'supply', subView: `ai-supply-${chain}`, defaultPinned: true  },
     { id: `supply-${chain}-total-rev`, sectorId: 'supply', subView: `ai-supply-${chain}`, defaultPinned: false },
     { id: `supply-${chain}-yoy`,       sectorId: 'supply', subView: `ai-supply-${chain}`, defaultPinned: false },

@@ -370,8 +370,8 @@ function buildVolumeChartSvg(chart) {
     const shouldLabel = true;
     return `
       <rect x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${barWidth.toFixed(2)}" height="${barHeight.toFixed(2)}" rx="4" fill="${isToday ? color : softColor}"></rect>
-      ${shouldLabel ? `<text x="${(x + barWidth / 2).toFixed(2)}" y="${(y - 8).toFixed(2)}" text-anchor="middle" fill="${isToday ? color : '#6b7280'}" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" font-weight="700">${fmtShort(value)}</text>` : ''}
-      <text x="${(x + barWidth / 2).toFixed(2)}" y="${height - 16}" text-anchor="middle" fill="${isToday ? color : '#8b93a1'}" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16" font-weight="${isToday ? '700' : '500'}">${fmtDateShort(row.date)}</text>
+      ${shouldLabel ? `<text x="${(x + barWidth / 2).toFixed(2)}" y="${(y - 9).toFixed(2)}" text-anchor="middle" fill="${isToday ? color : '#6b7280'}" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18" font-weight="800">${fmtShort(value)}</text>` : ''}
+      <text x="${(x + barWidth / 2).toFixed(2)}" y="${height - 16}" text-anchor="middle" fill="${isToday ? color : '#8b93a1'}" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" font-weight="${isToday ? '700' : '500'}">${fmtDateShort(row.date)}</text>
     `;
   }).join('');
 
@@ -933,8 +933,53 @@ if (require.main === module) {
   });
 }
 
+// One contract row as pre-formatted display strings (the web app renders these
+// verbatim, mirroring the PDF/email table exactly — no client-side math).
+function structuredContractRow(row) {
+  return {
+    side: row.side,
+    strike: fmtUsd(row.strike),
+    today: fmtNum(row.todayVolume),
+    yesterday: fmtNum(row.yesterdayVolume),
+    dod: fmtDeltaPct(row.todayVolume, row.yesterdayVolume),
+    fiveDay: fmtX(row.fiveDayMultiple),
+    volOi: fmtX(row.openInterest ? row.todayVolume / row.openInterest : null),
+    iv: fmtIv(row.impliedVolatility),
+    money: row.inTheMoney ? 'ITM' : 'OTM',
+  };
+}
+
+// Build a self-contained JSON payload (titles + embedded SVG charts + formatted
+// table cells) so the web app can render the report natively — no PDF, no
+// external asset files — and it persists cheaply in Mongo, keyed by date.
+function buildStructuredReport(report, { generatedAt = new Date().toISOString(), timeZone = null } = {}) {
+  return {
+    date: report.date,
+    generatedAt,
+    timeZone,
+    tickers: (report.tickers ?? []).map(tickerReport => {
+      const nearest = tickerReport.expirations?.[0];
+      return {
+        ticker: tickerReport.ticker,
+        priceText: fmtUsd(nearest?.price),
+        change: fmtChange(nearest?.priceChange, nearest?.changePct),
+        priceChange: nearest?.priceChange ?? null,
+        expirations: (tickerReport.expirations ?? []).map(exp => ({
+          selectedDate: exp.selectedDate,
+          expiryLabel: fmtExpiry(exp.selectedDate),
+          callChartSvg: buildVolumeChartSvg(exp.volumeCharts?.call).trim(),
+          putChartSvg: buildVolumeChartSvg(exp.volumeCharts?.put).trim(),
+          tableCalls: (exp.tableCalls ?? []).map(structuredContractRow),
+          tablePuts: (exp.tablePuts ?? []).map(structuredContractRow),
+        })),
+      };
+    }),
+  };
+}
+
 module.exports = {
   DEFAULT_TICKERS,
+  buildStructuredReport,
   generateDailyOptionsReport,
   renderHtml,
   renderMarkdown,

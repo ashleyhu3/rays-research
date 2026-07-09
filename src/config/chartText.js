@@ -246,7 +246,7 @@ export const CHART_TEXT = {
     [
       ['optics', 'Optics'], ['fiber', 'Fiber'], ['pcb', 'PCB'], ['mlcc', 'MLCC'],
       ['cooling', 'Cooling'], ['power', 'Power'], ['equipment', 'Equipment'],
-      ['memory', 'Memory'], ['foundry', 'Foundry'],
+      ['memory', 'Memory'], ['foundry', 'Foundry'], ['cpu', 'CPU'], ['odm', 'ODM'],
     ].flatMap(([chain, label]) => [
       [`supply-${chain}-rev`,       { title: `Monthly Revenue — ${label} (NT$M)` }],
       [`supply-${chain}-total-rev`, { title: `Total Monthly Revenue — ${label} (NT$M)` }],

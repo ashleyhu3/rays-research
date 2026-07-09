@@ -1,13 +1,14 @@
 import { useMemo } from 'react';
-import { Bar, Scatter } from 'react-chartjs-2';
+import { Bar } from 'react-chartjs-2';
 import { C } from '../../config/colors';
 import { trend } from '../../utils/dataGenerators';
 import { wkLabels } from '../../utils/labels';
-import { stackedOpts, mkBar, fmtM, fmtK, GRID, TICK, BORD } from '../../utils/chartHelpers';
+import { stackedOpts, mkBar, fmtM, fmtK } from '../../utils/chartHelpers';
 import { buildCompanyPriceBar, pricingBarOpts } from '../../utils/modelPricing';
 import { orComboCard } from '../../components/chart/OrGrowthCards';
 import { metricTrendCard } from '../../components/chart/MetricTrendCard';
 import ChartCard from '../../components/chart/ChartCard';
+import ArrTrajectoryCard from '../../components/chart/ArrTrajectoryCard';
 import EditableGrid from '../../components/chart/EditableGrid';
 import { useData } from '../../context/DataContext';
 
@@ -21,27 +22,6 @@ function npmSlice(ld, pkg, W, a, b) {
   const arr = ld?.npm?.[pkg];
   return arr?.length >= W ? arr.slice(-W) : trend(a, b, W, 0.06);
 }
-
-const singleRevenueOpts = (color) => ({
-  responsive: true,
-  maintainAspectRatio: false,
-  animation: false,
-  plugins: {
-    legend: { display: false },
-    tooltip: {
-      callbacks: {
-        label: ctx => {
-          const date = new Date(ctx.raw.x).toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
-          return `$${ctx.raw.y.toFixed(1)}B ARR (${date})`;
-        },
-      },
-    },
-  },
-  scales: {
-    x: { type: 'linear', ticks: { ...TICK, maxTicksLimit: 6, callback: v => new Date(v).toLocaleDateString('en-US', { month: 'short', year: '2-digit', timeZone: 'UTC' }) }, grid: GRID, border: BORD },
-    y: { grid: GRID, ticks: { ...TICK, callback: v => `$${v}B` }, border: BORD, beginAtZero: true },
-  },
-});
 
 export default function DemandAnthropic({ weeks: W }) {
   const { liveData: ld } = useData();
@@ -64,24 +44,7 @@ export default function DemandAnthropic({ weeks: W }) {
   // Per-model input price bar (earliest → latest release)
   const priceBar = useMemo(() => buildCompanyPriceBar(ld, 'Anthropic'), [ld]);
 
-  const antRevData = useMemo(() => {
-    const pts = ld?.epochRevenue?.series?.['Anthropic'] ?? [];
-    if (pts.length === 0) return null;
-    return {
-      datasets: [{
-        label: 'Anthropic ARR',
-        data: pts.map(p => ({ x: new Date(p.date + 'T00:00:00Z').getTime(), y: p.value })),
-        borderColor: C.anthropic,
-        backgroundColor: C.anthropic,
-        pointBackgroundColor: C.anthropic,
-        showLine: true,
-        borderWidth: 2,
-        pointRadius: 5,
-        pointHoverRadius: 7,
-        tension: 0,
-      }],
-    };
-  }, [ld?.epochRevenue]); // eslint-disable-line react-hooks/exhaustive-deps
+  const arrSeries = ld?.epochRevenue?.series?.['Anthropic'];
 
   return (
     <EditableGrid viewId="demand-anthropic">
@@ -124,13 +87,15 @@ export default function DemandAnthropic({ weeks: W }) {
         <Bar data={priceBar.data} options={pricingBarOpts} />
       </ChartCard>
 
-      {antRevData && (
-        <ChartCard
-          chartId="ant-revenue"
-          height={240} span2
-        >
-          <Scatter data={antRevData} options={singleRevenueOpts(C.anthropic)} />
-        </ChartCard>
+      {arrSeries?.length > 1 && (
+        <ArrTrajectoryCard
+          chartId="an-arr"
+          series={arrSeries}
+          color={C.anthropic}
+          name="Anthropic"
+          height={300}
+          defaultFull
+        />
       )}
 
       {metricTrendCard({

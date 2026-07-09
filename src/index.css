@@ -371,6 +371,40 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
 .ch-source-label { color: var(--sec); }
 .ch-lag          { color: var(--ter); }
 
+/* ── ArrTrajectoryCard — live estimated-ARR tile + trajectory chart ──── */
+.arr-hero { margin: 4px 0 12px; }
+.arr-ticker {
+  font-family: var(--font-m); font-weight: 600;
+  font-size: clamp(26px, 3.6vw, 40px); line-height: 1;
+  letter-spacing: -.01em; font-variant-numeric: tabular-nums;
+}
+.arr-sub { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
+.arr-yoy {
+  font-family: var(--font-m); font-size: 11px; font-weight: 600;
+  padding: 2px 8px; border-radius: 999px; white-space: nowrap;
+}
+.arr-yoy.up { background: rgba(63,185,80,.14);  border: 1px solid rgba(63,185,80,.3); }
+.arr-yoy.dn { background: rgba(248,113,113,.14); border: 1px solid rgba(248,113,113,.3); }
+.arr-detail { font-family: var(--font-m); font-size: 12px; color: var(--sec); }
+.arr-dot    { color: var(--ter); margin: 0 6px; }
+
+.arr-chart-wrap { position: relative; }
+.arr-log-btn {
+  position: absolute; top: 0; right: 0; z-index: 2;
+  font-family: var(--font-m); font-size: 10px; text-transform: uppercase; letter-spacing: .06em;
+  color: var(--ter); background: var(--bg-card);
+  border: 1px solid var(--border); border-radius: 5px; padding: 2px 8px; cursor: pointer;
+  transition: color .15s, border-color .15s;
+}
+.arr-log-btn:hover { color: var(--sec); border-color: var(--border-hi); }
+
+.arr-legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 12px; }
+.arr-leg { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--ter); font-family: var(--font-b); }
+.arr-leg-line { width: 16px; height: 0; border-top: 2.5px solid; border-radius: 2px; }
+.arr-leg-line.arr-leg-dash { border-top-style: dashed; background: none !important; }
+.arr-leg-band { width: 16px; height: 10px; border-radius: 2px; }
+.arr-leg-diamond { width: 9px; height: 9px; transform: rotate(45deg); border-radius: 1px; }
+
 /* ── Frequency badges ───────────────────────────────────────────────── */
 .freq-badge {
   font-size: 9px; padding: 2px 6px; border-radius: 3px;
@@ -1041,7 +1075,7 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
 .opts-chart-canvas { height: 340px; }
 
 /* ── Options volume alerts page ────────────────────────────────────── */
-.alerts-page { padding: 8px 0 48px; max-width: 1120px; }
+.alerts-page { padding: 4px 0 40px; }
 
 .alerts-hero { text-align: center; padding: 28px 20px 22px; color: var(--ter); }
 .alerts-hero-icon { color: #10b981; margin-bottom: 12px; display: flex; justify-content: center; }
@@ -1133,112 +1167,104 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
 .alerts-badge.call { background: #10b981; }
 .alerts-badge.put  { background: #f87171; }
 
-.alerts-report {
-  margin: 18px 0 24px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--bg-card);
-  overflow: hidden;
-}
-.alerts-report-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 18px 20px;
-  border-bottom: 1px solid var(--border);
-}
-.alerts-report-kicker {
-  color: var(--ter);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: .12em;
-  text-transform: uppercase;
-  margin-bottom: 6px;
-}
-.alerts-report-head h3 {
-  color: var(--text);
-  font-size: 17px;
-  font-weight: 700;
-  margin: 0 0 4px;
-}
-.alerts-report-head p {
-  color: var(--ter);
-  font-size: 12px;
-  margin: 0;
-}
-.alerts-report-empty {
-  color: var(--ter);
-  font-size: 13px;
-  padding: 22px 20px;
-}
-.alerts-report-body {
-  padding: 18px 20px 24px;
-  background: #f8fafc;
-}
-.alerts-report-title {
-  color: #111827;
-  font-size: 20px;
-  margin: 0 0 16px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #e5e7eb;
-}
-.alerts-report-ticker {
-  color: #111827;
-  font-size: 18px;
-  margin: 26px 0 8px;
-}
-.alerts-report-expiry {
-  color: #4b5563;
-  font-size: 13px;
-  font-weight: 700;
-  margin: 20px 0 8px;
-}
-.alerts-report-copy {
-  color: #4b5563;
-  font-size: 13px;
-}
-.alerts-report-chart {
-  margin: 0 0 12px;
-  background: #ffffff;
-}
-.alerts-report-chart img {
-  display: block;
-  width: 100%;
-  max-width: 900px;
-  height: auto;
-  border: 1px solid #e5e7eb;
-  background: #ffffff;
-}
-.alerts-pdf-body {
-  padding: 16px;
-  background: #0f1117;
-}
-.alerts-pdf-frame {
-  display: block;
-  width: 100%;
-  height: min(78vh, 920px);
-  min-height: 620px;
-  border: 1px solid var(--border-hi);
-  border-radius: 6px;
-  background: #ffffff;
-}
-.alerts-pdf-actions {
-  display: flex;
-  justify-content: flex-end;
-  padding-top: 10px;
-}
-.alerts-pdf-actions a {
-  color: #10b981;
-  font-size: 12px;
-  font-weight: 700;
-  text-decoration: none;
-}
-.alerts-pdf-actions a:hover { text-decoration: underline; }
+/* Daily options report — rendered natively (charts + tables). On screen it uses
+   the site's dark theme; the downloaded PDF (print) reverts to the white "paper"
+   look of the source template. */
+.or-status { color: var(--ter); font-size: 13px; text-align: center; padding: 44px 10px; }
 
-@media (max-width: 760px) {
-  .alerts-report-head { flex-direction: column; }
-  .alerts-report-body { padding: 14px 12px 18px; overflow-x: auto; }
-  .alerts-report-chart img { min-width: 760px; }
-  .alerts-pdf-frame { min-height: 520px; }
+.or-report { display: flex; flex-direction: column; gap: 22px; }
+
+.or-ticker {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 16px 20px 20px; overflow: hidden;
+}
+.or-ticker-head {
+  display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+  border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 2px;
+}
+.or-ticker-head h3 {
+  font-family: var(--font-b); font-weight: 600; letter-spacing: -.01em;
+  font-size: 20px; color: var(--text); margin: 0;
+}
+.or-ticker-price {
+  display: flex; gap: 10px; align-items: baseline;
+  font-family: var(--font-b); font-size: 14px; color: var(--sec);
+  font-variant-numeric: tabular-nums;
+}
+.or-ticker-price .up   { color: #3fb950; }
+.or-ticker-price .down { color: #f87171; }
+
+.or-expiry { margin-top: 20px; }
+.or-expiry-label {
+  font-size: 15px; font-weight: 600; letter-spacing: -.01em;
+  color: var(--text); border-bottom: 1px solid var(--border-hi); padding-bottom: 8px; margin: 0 0 14px;
+}
+.or-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; }
+.or-col { min-width: 0; }
+.or-chart { margin-bottom: 8px; }
+.or-chart svg { width: 100%; height: auto; display: block; }
+.or-chart .empty-chart {
+  color: var(--ter); font-size: 12px; text-align: center; padding: 26px;
+  border: 1px dashed var(--border); border-radius: 6px;
+}
+
+.or-c-call { color: #3fb950; }
+.or-c-put  { color: #f87171; }
+.or-table-wrap { overflow-x: auto; }
+.or-table {
+  width: 100%; border-collapse: collapse; font-family: var(--font-b); font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.or-table th {
+  text-align: right; padding: 9px 10px; color: var(--ter); font-weight: 600;
+  font-size: 11px; text-transform: uppercase; letter-spacing: .04em;
+  border-bottom: 1px solid var(--border-hi); white-space: nowrap;
+}
+.or-table td { text-align: right; padding: 10px; border-bottom: 1px solid var(--border); color: var(--sec); white-space: nowrap; }
+.or-table th:first-child, .or-table td:first-child,
+.or-table th:nth-child(2), .or-table td:nth-child(2) { text-align: left; }
+.or-table tr:last-child td { border-bottom: none; }
+.or-table td.or-empty { text-align: center; color: var(--ter); }
+.or-side-cell { font-weight: 600; letter-spacing: .03em; }
+.or-strike { color: var(--text); font-weight: 600; }
+
+/* Topbar title block: report date is the prominent heading, "Daily Options
+   Report" a small label beside it. */
+.topbar .or-title { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; min-width: 0; }
+.topbar .or-title-date {
+  font-family: var(--font-b); font-weight: 600; font-size: 19px; letter-spacing: -.01em;
+  color: var(--text); font-variant-numeric: tabular-nums; margin: 0;
+}
+.topbar .or-title-label {
+  font-family: var(--font-b); font-size: 10px; font-weight: 600; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--ter); white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .or-cols { grid-template-columns: 1fr; gap: 18px; }
+}
+
+/* Download PDF = print only the report, reverting to the white template look. */
+@media print {
+  body * { visibility: hidden !important; }
+  .alerts-page, .alerts-page * { visibility: visible !important; }
+  .alerts-page { position: absolute; left: 0; top: 0; width: 100%; max-width: none; margin: 0; padding: 0; }
+
+  .or-report { gap: 26px; }
+  .or-ticker { background: #fff !important; border: none !important; border-radius: 0; padding: 0; overflow: visible; }
+  .or-ticker-head { border-bottom: 2px solid #111827 !important; }
+  .or-ticker-head h3 {
+    font-family: Inter, ui-sans-serif, system-ui, sans-serif !important;
+    font-weight: 600 !important; font-size: 20px !important; letter-spacing: -.01em !important; color: #111827 !important;
+  }
+  .or-ticker-price { color: #374151 !important; }
+  .or-ticker-price .up   { color: #059669 !important; }
+  .or-ticker-price .down { color: #dc2626 !important; }
+  .or-expiry { break-inside: avoid; }
+  .or-expiry-label { color: #111827 !important; border-bottom: 1px solid #e5e7eb !important; }
+  .or-cols { grid-template-columns: 1fr 1fr !important; }
+  .or-c-call { color: #059669 !important; }
+  .or-c-put  { color: #dc2626 !important; }
+  .or-table th { color: #6b7280 !important; border-bottom: 1px solid #e5e7eb !important; }
+  .or-table td, .or-table tr:last-child td { color: #374151 !important; border-bottom: 1px solid #f3f4f6 !important; }
 }

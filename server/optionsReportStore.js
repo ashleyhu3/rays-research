@@ -8,6 +8,7 @@ const { pathToFileURL } = require('url');
 const storage = require('./storage');
 const {
   DEFAULT_TICKERS,
+  buildStructuredReport,
   generateDailyOptionsReport,
 } = require('./scripts/generateDailyOptionsReport');
 
@@ -16,6 +17,10 @@ const BLOB = {
   file: path.join(__dirname, 'data', 'dailyOptionsReport.json'),
 };
 const DEFAULT_TIME_ZONE = 'Asia/Hong_Kong';
+// Keep a rolling archive of past daily reports in Mongo so the daily job only
+// scrapes today and prior days are reused/served straight from storage. Capped
+// so the single blob document stays well under Mongo's 16MB limit.
+const MAX_ARCHIVE_DAYS = 90;
 
 function dateInTimeZone(date = new Date(), timeZone = DEFAULT_TIME_ZONE) {
   const parts = new Intl.DateTimeFormat('en-US', {
@@ -53,6 +58,38 @@ function writeLatestDailyOptionsReport(report) {
     latest: report,
     updatedAt: report.generatedAt,
   });
+}
+
+// Store one day's structured report as `latest` and in the per-date archive,
+// pruning to the most recent MAX_ARCHIVE_DAYS so prior days stay reusable.
+function writeDailyReport(payload) {
+  const current = storage.read(BLOB.name, BLOB.file);
+  const byDate = { ...(current.byDate || {}) };
+  byDate[payload.date] = payload;
+  for (const date of Object.keys(byDate).sort().slice(0, -MAX_ARCHIVE_DAYS)) {
+    delete byDate[date];
+  }
+  storage.write(BLOB.name, BLOB.file, {
+    ...current,
+    latest: payload,
+    byDate,
+    updatedAt: payload.generatedAt,
+  });
+}
+
+// Read a specific date's archived report, or the latest when no date is given.
+function readDailyReport(date) {
+  const blob = storage.read(BLOB.name, BLOB.file);
+  if (date) return blob.byDate?.[date] || (blob.latest?.date === date ? blob.latest : null);
+  return blob.latest || null;
+}
+
+// Newest-first list of dates we have a stored report for.
+function readAvailableReportDates() {
+  const blob = storage.read(BLOB.name, BLOB.file);
+  const dates = new Set(Object.keys(blob.byDate || {}));
+  if (blob.latest?.date) dates.add(blob.latest.date);
+  return [...dates].sort().reverse();
 }
 
 function readLatestDailyOptionsPdf() {
@@ -134,6 +171,35 @@ async function generateAndStoreDailyOptionsReport(options = {}) {
   return {
     ...payload,
     outPath: generated.outPath,
+  };
+}
+
+// The daily job: scrape today's options data from Massive once, build the
+// self-contained structured payload, and persist it (latest + per-date archive)
+// in Mongo. No PDF/Chrome — the web app renders the payload natively.
+async function generateAndStoreDailyOptions(options = {}) {
+  const timeZone = options.timeZone || process.env.OPTIONS_REPORT_TIMEZONE || DEFAULT_TIME_ZONE;
+  const date = options.date || process.env.OPTIONS_REPORT_DATE || dateInTimeZone(new Date(), timeZone);
+  const tickers = normalizeTickers(options.tickers || process.env.OPTIONS_REPORT_TICKERS);
+  const outDir = path.resolve(options.outDir || reportOutputDir());
+  fs.mkdirSync(outDir, { recursive: true });
+
+  const generatedAt = new Date().toISOString();
+  const generated = await generateDailyOptionsReport({
+    date,
+    tickers,
+    out: path.join(outDir, `daily-options-data-${date}.html`),
+    format: 'html',
+  });
+  const payload = buildStructuredReport(generated.report, { generatedAt, timeZone });
+  writeDailyReport(payload);
+
+  return {
+    date: payload.date,
+    generatedAt,
+    timeZone,
+    tickers: payload.tickers.map(item => item.ticker),
+    charts: payload.tickers.reduce((sum, item) => sum + item.expirations.length * 2, 0),
   };
 }
 
@@ -249,11 +315,15 @@ module.exports = {
   DEFAULT_TIME_ZONE,
   buildReportPayload,
   dateInTimeZone,
+  generateAndStoreDailyOptions,
   generateAndStoreDailyOptionsReport,
   generateAndStoreDailyOptionsPdf,
   normalizeTickers,
   pdfMeta,
+  readAvailableReportDates,
+  readDailyReport,
   readLatestDailyOptionsReport,
   readLatestDailyOptionsPdf,
   renderHtmlToPdf,
+  writeDailyReport,
 };

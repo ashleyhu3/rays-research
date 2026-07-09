@@ -8,6 +8,7 @@ import { buildCompanyPriceBar, pricingBarOpts } from '../../utils/modelPricing';
 import { orComboCard } from '../../components/chart/OrGrowthCards';
 import { metricTrendCard } from '../../components/chart/MetricTrendCard';
 import ChartCard from '../../components/chart/ChartCard';
+import ArrTrajectoryCard from '../../components/chart/ArrTrajectoryCard';
 import EditableGrid from '../../components/chart/EditableGrid';
 import { useData } from '../../context/DataContext';
 
@@ -42,6 +43,8 @@ export default function DemandGoogle({ weeks: W }) {
 
   // Per-model input price bar (earliest → latest release)
   const priceBar = useMemo(() => buildCompanyPriceBar(ld, 'Google'), [ld]);
+
+  const arrSeries = ld?.epochRevenue?.series?.['Google'];
 
   return (
     <EditableGrid viewId="demand-google">
@@ -83,6 +86,17 @@ export default function DemandGoogle({ weeks: W }) {
       >
         <Bar data={priceBar.data} options={pricingBarOpts} />
       </ChartCard>
+
+      {arrSeries?.length > 1 && (
+        <ArrTrajectoryCard
+          chartId="goo-arr"
+          series={arrSeries}
+          color={C.google}
+          name="Google"
+          height={300}
+          defaultFull
+        />
+      )}
 
       {metricTrendCard({
         chartId: 'goo-hf',

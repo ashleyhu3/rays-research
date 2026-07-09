@@ -40,6 +40,7 @@ function TableIcon() {
 const SUPPLY_VIEWS  = new Set([
   'ai-supply-optics', 'ai-supply-fiber', 'ai-supply-pcb', 'ai-supply-mlcc',
   'ai-supply-cooling', 'ai-supply-power', 'ai-supply-equipment', 'ai-supply-memory', 'ai-supply-foundry',
+  'ai-supply-cpu', 'ai-supply-odm',
 ]);
 const INFRA_VIEWS   = new Set([
   'dc-capacity', 'dc-timelines',

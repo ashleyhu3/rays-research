@@ -1,7 +1,8 @@
 name: Generate daily options report
 
-# Runs at 08:00 Asia/Hong_Kong every day. Hong Kong is UTC+8 year-round,
-# so 00:00 UTC is stable without daylight-saving adjustments.
+# Runs at 07:45 Asia/Hong_Kong every day. Hong Kong is UTC+8 year-round, so
+# 07:45 HKT is 23:45 UTC the previous day — stable without daylight-saving
+# adjustments. GitHub Actions cron is always UTC.
 #
 # Required repository secrets:
 #   MASSIVE_API_KEY
@@ -12,7 +13,7 @@ name: Generate daily options report
 
 on:
   schedule:
-    - cron: '0 0 * * *'
+    - cron: '45 23 * * *'
   workflow_dispatch:
     inputs:
       report_date:
@@ -43,16 +44,11 @@ jobs:
       - name: Install dependencies
         run: npm ci --omit=dev
 
-      - name: Install Chrome for PDF rendering
-        id: setup-chrome
-        uses: browser-actions/setup-chrome@v1
-
-      - name: Generate report for Alerts page
+      - name: Scrape Massive and store the daily report
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           MONGODB_DB: ${{ secrets.MONGODB_DB }}
           MASSIVE_API_KEY: ${{ secrets.MASSIVE_API_KEY }}
-          PDF_CHROME_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
           OPTIONS_REPORT_DATE: ${{ inputs.report_date }}
           OPTIONS_REPORT_TICKERS: ${{ inputs.tickers || secrets.OPTIONS_REPORT_TICKERS }}
         run: npm run options-report:generate

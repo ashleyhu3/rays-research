@@ -3,7 +3,7 @@
 const storage = require('../storage');
 const {
   BLOB,
-  generateAndStoreDailyOptionsPdf,
+  generateAndStoreDailyOptions,
 } = require('../optionsReportStore');
 
 function parseArgs(argv) {
@@ -26,14 +26,13 @@ function parseArgs(argv) {
 
 async function main() {
   await storage.init([BLOB]);
-  const result = await generateAndStoreDailyOptionsPdf(parseArgs(process.argv));
+  const result = await generateAndStoreDailyOptions(parseArgs(process.argv));
   await storage.flush();
   console.log(JSON.stringify({
     date: result.date,
     tickers: result.tickers,
-    size: result.size,
-    updatedAt: result.updatedAt,
-    outPath: result.outPath,
+    charts: result.charts,
+    generatedAt: result.generatedAt,
   }, null, 2));
 }
 
