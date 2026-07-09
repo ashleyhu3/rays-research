@@ -142,6 +142,7 @@ body { font-family: var(--font-b); background: var(--bg); color: var(--text); }
 }
 .nav-trend.up   { color: #34d399; }
 .nav-trend.down { color: #f87171; }
+.nav-trend.flat { color: #94a3b8; }
 
 .sidebar-footer { margin-top: auto; padding: 14px; border-top: 1px solid var(--border); }
 .last-upd { font-size: 10px; color: var(--ter); margin-bottom: 8px; }
@@ -362,6 +363,47 @@ body { font-family: var(--font-b); background: var(--bg); color: var(--text); }
 .ch-src   { font-size: 11px; color: var(--ter); font-family: var(--font-m); text-decoration: none; transition: color .15s; }
 a.ch-src:hover { color: var(--sec); text-decoration: underline; }
 .ch-sub   { font-size: 12px; color: var(--sec); margin-bottom: 12px; line-height: 1.5; }
+
+/* Source attribution row: sits beneath the chart body (replaces the old
+   top-right source link and the subtitle). Shows the source link plus the
+   feed's inherent data lag in parentheses. */
+.ch-source-row   { font-size: 11px; color: var(--ter); font-family: var(--font-m); margin-top: 10px; line-height: 1.5; }
+.ch-source-label { color: var(--sec); }
+.ch-lag          { color: var(--ter); }
+
+/* ── ArrTrajectoryCard — live estimated-ARR tile + trajectory chart ──── */
+.arr-hero { margin: 4px 0 12px; }
+.arr-ticker {
+  font-family: var(--font-m); font-weight: 600;
+  font-size: clamp(26px, 3.6vw, 40px); line-height: 1;
+  letter-spacing: -.01em; font-variant-numeric: tabular-nums;
+}
+.arr-sub { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
+.arr-yoy {
+  font-family: var(--font-m); font-size: 11px; font-weight: 600;
+  padding: 2px 8px; border-radius: 999px; white-space: nowrap;
+}
+.arr-yoy.up { background: rgba(63,185,80,.14);  border: 1px solid rgba(63,185,80,.3); }
+.arr-yoy.dn { background: rgba(248,113,113,.14); border: 1px solid rgba(248,113,113,.3); }
+.arr-detail { font-family: var(--font-m); font-size: 12px; color: var(--sec); }
+.arr-dot    { color: var(--ter); margin: 0 6px; }
+
+.arr-chart-wrap { position: relative; }
+.arr-log-btn {
+  position: absolute; top: 0; right: 0; z-index: 2;
+  font-family: var(--font-m); font-size: 10px; text-transform: uppercase; letter-spacing: .06em;
+  color: var(--ter); background: var(--bg-card);
+  border: 1px solid var(--border); border-radius: 5px; padding: 2px 8px; cursor: pointer;
+  transition: color .15s, border-color .15s;
+}
+.arr-log-btn:hover { color: var(--sec); border-color: var(--border-hi); }
+
+.arr-legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 12px; }
+.arr-leg { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--ter); font-family: var(--font-b); }
+.arr-leg-line { width: 16px; height: 0; border-top: 2.5px solid; border-radius: 2px; }
+.arr-leg-line.arr-leg-dash { border-top-style: dashed; background: none !important; }
+.arr-leg-band { width: 16px; height: 10px; border-radius: 2px; }
+.arr-leg-diamond { width: 9px; height: 9px; transform: rotate(45deg); border-radius: 1px; }
 
 /* ── Frequency badges ───────────────────────────────────────────────── */
 .freq-badge {
@@ -868,6 +910,15 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
 
 .opts-page { padding: 8px 0 48px; }
 
+/* Sentiment page: the ticker search bar lives in the Topbar's title slot
+   (see SentimentSearchBar) instead of scrolling with the page. */
+.topbar-search {
+  display: flex; align-items: center; gap: 8px;
+  flex: 1;
+}
+.topbar-search-input { padding: 7px 14px; font-size: 13px; }
+.topbar-search .opts-search-btn { padding: 7px 16px; font-size: 12px; flex-shrink: 0; }
+
 .opts-search-row {
   display: flex; gap: 8px; padding-bottom: 20px;
 }
@@ -1020,4 +1071,200 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
 .opts-chart-toggle-btn:hover { color: var(--text); }
 .opts-chart-toggle-btn.calls.active { background: rgba(16,185,129,.14); color: #10b981; }
 .opts-chart-toggle-btn.puts.active  { background: rgba(248,113,113,.14); color: #f87171; }
+.opts-chart-toggle-btn.active       { background: rgba(255,255,255,.10); color: var(--text); }
 .opts-chart-canvas { height: 340px; }
+
+/* ── Options volume alerts page ────────────────────────────────────── */
+.alerts-page { padding: 4px 0 40px; }
+
+.alerts-hero { text-align: center; padding: 28px 20px 22px; color: var(--ter); }
+.alerts-hero-icon { color: #10b981; margin-bottom: 12px; display: flex; justify-content: center; }
+.alerts-hero h2 { color: var(--text); font-size: 22px; font-weight: 600; margin-bottom: 8px; }
+.alerts-hero p  { font-size: 13px; max-width: 520px; margin: 0 auto; line-height: 1.55; }
+
+.alerts-form {
+  display: flex; flex-direction: column; gap: 18px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 8px; padding: 22px; margin: 8px auto 0;
+  max-width: 780px;
+}
+.alerts-field { display: flex; flex-direction: column; gap: 7px; }
+.alerts-label { font-size: 12px; color: var(--ter); }
+.alerts-label strong { color: #10b981; font-weight: 600; }
+
+.alerts-input {
+  background: var(--bg); border: 1px solid var(--border-hi); border-radius: 8px;
+  color: var(--text); padding: 10px 14px; font-size: 14px; font-family: inherit;
+  transition: border-color .15s; width: 100%;
+}
+.alerts-input::placeholder { color: var(--ter); }
+.alerts-input:focus { outline: none; border-color: #10b981; }
+
+.alerts-email-row { display: flex; gap: 8px; }
+.alerts-email-row .alerts-input { flex: 1; }
+
+.alerts-range { width: 100%; accent-color: #10b981; }
+.alerts-number {
+  width: 180px; background: var(--bg); border: 1px solid var(--border-hi);
+  border-radius: 8px; color: var(--text); padding: 9px 12px;
+  font-size: 14px; font-family: inherit;
+}
+.alerts-number:focus { outline: none; border-color: #10b981; }
+
+.alerts-actions { display: flex; gap: 8px; flex-wrap: wrap; padding-top: 4px; }
+.alerts-btn {
+  background: var(--bg); border: 1px solid var(--border-hi); border-radius: 8px;
+  color: var(--sec); padding: 9px 18px; font-weight: 600; cursor: pointer;
+  font-size: 13px; font-family: inherit; transition: border-color .15s, color .15s, opacity .15s;
+}
+.alerts-btn:hover:not(:disabled) { border-color: #10b981; color: #10b981; }
+.alerts-btn:disabled { opacity: .4; cursor: not-allowed; }
+.alerts-btn.primary { background: #10b981; color: #0a0d12; border-color: #10b981; }
+.alerts-btn.primary:hover:not(:disabled) { opacity: .88; color: #0a0d12; }
+.alerts-btn.ghost { padding: 9px 14px; }
+.alerts-btn.danger:hover:not(:disabled) { border-color: #f87171; color: #f87171; }
+
+.alerts-note {
+  border-radius: 8px; padding: 12px 16px; font-size: 13px; margin-top: 16px; line-height: 1.5;
+  max-width: 780px; margin-left: auto; margin-right: auto;
+}
+.alerts-note.ok   { background: rgba(16,185,129,.1);  border: 1px solid rgba(16,185,129,.25); color: #34d399; }
+.alerts-note.err  { background: rgba(248,113,113,.1); border: 1px solid rgba(248,113,113,.25); color: #f87171; }
+.alerts-note.warn { background: rgba(232,197,71,.08); border: 1px solid rgba(232,197,71,.25); color: var(--accent); }
+.alerts-note strong { color: inherit; font-weight: 700; }
+
+.alerts-sub-summary {
+  margin-top: 14px; font-size: 12px; color: var(--ter);
+  padding: 10px 14px; border: 1px dashed var(--border-hi); border-radius: 8px;
+  max-width: 780px; margin-left: auto; margin-right: auto;
+}
+.alerts-sub-summary strong { color: var(--text); }
+
+.alerts-preview { margin: 24px auto 0; max-width: 780px; }
+.alerts-preview-title { font-size: 13px; color: var(--sec); font-weight: 600; margin-bottom: 10px; }
+.alerts-table-wrap { overflow-x: auto; }
+.alerts-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.alerts-table th {
+  text-align: left; padding: 8px 12px; color: var(--ter);
+  font-size: 10px; text-transform: uppercase; letter-spacing: .05em;
+  border-bottom: 1px solid var(--border-hi); white-space: nowrap;
+}
+.alerts-table td { padding: 11px 12px; border-bottom: 1px solid var(--border); color: var(--sec); }
+.alerts-tk { font-weight: 700; color: var(--text); font-size: 15px; }
+.alerts-tk-price { font-weight: 400; color: var(--ter); font-size: 11px; }
+.alerts-dim { color: var(--ter); }
+.alerts-arrow { color: var(--border-hi); }
+.alerts-now { color: var(--text); font-weight: 600; }
+.alerts-pct { color: var(--ter); }
+.alerts-pct.up { color: #10b981; font-weight: 700; }
+.alerts-pct.dn { color: #f87171; font-weight: 700; }
+.alerts-surge-cell { background: rgba(16,185,129,.05); }
+.alerts-baseline { color: var(--ter); font-size: 11px; white-space: nowrap; }
+.alerts-badge {
+  font-size: 9px; font-weight: 700; padding: 1px 6px; border-radius: 4px;
+  margin-left: 8px; color: #0a0d12; vertical-align: middle;
+}
+.alerts-badge.call { background: #10b981; }
+.alerts-badge.put  { background: #f87171; }
+
+/* Daily options report — rendered natively (charts + tables). On screen it uses
+   the site's dark theme; the downloaded PDF (print) reverts to the white "paper"
+   look of the source template. */
+.or-status { color: var(--ter); font-size: 13px; text-align: center; padding: 44px 10px; }
+
+.or-report { display: flex; flex-direction: column; gap: 22px; }
+
+.or-ticker {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 16px 20px 20px; overflow: hidden;
+}
+.or-ticker-head {
+  display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+  border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 2px;
+}
+.or-ticker-head h3 {
+  font-family: var(--font-b); font-weight: 600; letter-spacing: -.01em;
+  font-size: 20px; color: var(--text); margin: 0;
+}
+.or-ticker-price {
+  display: flex; gap: 10px; align-items: baseline;
+  font-family: var(--font-b); font-size: 14px; color: var(--sec);
+  font-variant-numeric: tabular-nums;
+}
+.or-ticker-price .up   { color: #3fb950; }
+.or-ticker-price .down { color: #f87171; }
+
+.or-expiry { margin-top: 20px; }
+.or-expiry-label {
+  font-size: 15px; font-weight: 600; letter-spacing: -.01em;
+  color: var(--text); border-bottom: 1px solid var(--border-hi); padding-bottom: 8px; margin: 0 0 14px;
+}
+.or-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; }
+.or-col { min-width: 0; }
+.or-chart { margin-bottom: 8px; }
+.or-chart svg { width: 100%; height: auto; display: block; }
+.or-chart .empty-chart {
+  color: var(--ter); font-size: 12px; text-align: center; padding: 26px;
+  border: 1px dashed var(--border); border-radius: 6px;
+}
+
+.or-c-call { color: #3fb950; }
+.or-c-put  { color: #f87171; }
+.or-table-wrap { overflow-x: auto; }
+.or-table {
+  width: 100%; border-collapse: collapse; font-family: var(--font-b); font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.or-table th {
+  text-align: right; padding: 9px 10px; color: var(--ter); font-weight: 600;
+  font-size: 11px; text-transform: uppercase; letter-spacing: .04em;
+  border-bottom: 1px solid var(--border-hi); white-space: nowrap;
+}
+.or-table td { text-align: right; padding: 10px; border-bottom: 1px solid var(--border); color: var(--sec); white-space: nowrap; }
+.or-table th:first-child, .or-table td:first-child,
+.or-table th:nth-child(2), .or-table td:nth-child(2) { text-align: left; }
+.or-table tr:last-child td { border-bottom: none; }
+.or-table td.or-empty { text-align: center; color: var(--ter); }
+.or-side-cell { font-weight: 600; letter-spacing: .03em; }
+.or-strike { color: var(--text); font-weight: 600; }
+
+/* Topbar title block: report date is the prominent heading, "Daily Options
+   Report" a small label beside it. */
+.topbar .or-title { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; min-width: 0; }
+.topbar .or-title-date {
+  font-family: var(--font-b); font-weight: 600; font-size: 19px; letter-spacing: -.01em;
+  color: var(--text); font-variant-numeric: tabular-nums; margin: 0;
+}
+.topbar .or-title-label {
+  font-family: var(--font-b); font-size: 10px; font-weight: 600; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--ter); white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .or-cols { grid-template-columns: 1fr; gap: 18px; }
+}
+
+/* Download PDF = print only the report, reverting to the white template look. */
+@media print {
+  body * { visibility: hidden !important; }
+  .alerts-page, .alerts-page * { visibility: visible !important; }
+  .alerts-page { position: absolute; left: 0; top: 0; width: 100%; max-width: none; margin: 0; padding: 0; }
+
+  .or-report { gap: 26px; }
+  .or-ticker { background: #fff !important; border: none !important; border-radius: 0; padding: 0; overflow: visible; }
+  .or-ticker-head { border-bottom: 2px solid #111827 !important; }
+  .or-ticker-head h3 {
+    font-family: Inter, ui-sans-serif, system-ui, sans-serif !important;
+    font-weight: 600 !important; font-size: 20px !important; letter-spacing: -.01em !important; color: #111827 !important;
+  }
+  .or-ticker-price { color: #374151 !important; }
+  .or-ticker-price .up   { color: #059669 !important; }
+  .or-ticker-price .down { color: #dc2626 !important; }
+  .or-expiry { break-inside: avoid; }
+  .or-expiry-label { color: #111827 !important; border-bottom: 1px solid #e5e7eb !important; }
+  .or-cols { grid-template-columns: 1fr 1fr !important; }
+  .or-c-call { color: #059669 !important; }
+  .or-c-put  { color: #dc2626 !important; }
+  .or-table th { color: #6b7280 !important; border-bottom: 1px solid #e5e7eb !important; }
+  .or-table td, .or-table tr:last-child td { color: #374151 !important; border-bottom: 1px solid #f3f4f6 !important; }
+}

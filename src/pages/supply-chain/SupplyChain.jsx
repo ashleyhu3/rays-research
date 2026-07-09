@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import { Line } from 'react-chartjs-2';
-import { C } from '../../config/colors';
 import { baseOpts, mkDs, GRID, TICK, BORD } from '../../utils/chartHelpers';
 import ChartCard from '../../components/chart/ChartCard';
 import EditableGrid from '../../components/chart/EditableGrid';
@@ -9,54 +8,117 @@ import { useUI } from '../../context/UIContext';
 
 // ── Static company list (mirrors server/scrapers/mops.js) ────────────────
 const ALL_COMPANIES = [
-  { id: '6442', ticker: '6442TT', group: 'fiber',  exchange: 'twse', name: '光聖'    },
+  // Fiber
+  { id: '6442', ticker: '6442TT', group: 'fiber', exchange: 'twse', name: '光聖'    },
+  // Optics
   { id: '3081', ticker: '3081TT', group: 'optics', exchange: 'tpex', name: '聯亞光電' },
-  { id: '3363', ticker: '3363TT', group: 'optics', exchange: 'tpex', name: '品興'    },
+  { id: '3363', ticker: '3363TT', group: 'optics', exchange: 'tpex', name: '上詮'    },
   { id: '3163', ticker: '3163TT', group: 'optics', exchange: 'tpex', name: '波若威'  },
-  { id: '2383', ticker: '2383TT', group: 'ccl',    exchange: 'twse', name: '台光電'   },
-  { id: '6274', ticker: '6274TT', group: 'ccl',    exchange: 'tpex', name: '台燿科技' },
-  { id: '8358', ticker: '8358TT', group: 'ccl',    exchange: 'tpex', name: '金像電子' },
-  { id: '2368', ticker: '2368TT', group: 'pcb',    exchange: 'twse', name: '金像電'   },
-  { id: '4958', ticker: '4958TT', group: 'pcb',    exchange: 'twse', name: '臻鼎-KY'  },
-  { id: '8021', ticker: '8021TT', group: 'pcb',    exchange: 'twse', name: '尖點'     },
-  { id: '3037', ticker: '3037TT', group: 'abf',    exchange: 'twse', name: '欣興電子' },
-  { id: '8046', ticker: '8046TT', group: 'abf',    exchange: 'twse', name: '南電'     },
-  { id: '2327', ticker: '2327TT', group: 'mlcc',   exchange: 'twse', name: '國巨'    },
-  { id: '2492', ticker: '2492TT', group: 'mlcc',   exchange: 'twse', name: '華新科'   },
-  { id: '3026', ticker: '3026TT', group: 'mlcc',   exchange: 'twse', name: '禾伸堂'   },
+  // PCB
+  { id: '2383', ticker: '2383TT', group: 'pcb', exchange: 'twse', name: '台光電'   },
+  { id: '2368', ticker: '2368TT', group: 'pcb', exchange: 'twse', name: '金像電'   },
+  { id: '3037', ticker: '3037TT', group: 'pcb', exchange: 'twse', name: '欣興電子' },
+  { id: '8046', ticker: '8046TT', group: 'pcb', exchange: 'twse', name: '南電'     },
+  { id: '4958', ticker: '4958TT', group: 'pcb', exchange: 'twse', name: '臻鼎-KY'  },
+  { id: '6274', ticker: '6274TT', group: 'pcb', exchange: 'tpex', name: '台燿科技' },
+  { id: '8358', ticker: '8358TT', group: 'pcb', exchange: 'tpex', name: '金居'     },
+  // MLCC
+  { id: '2327', ticker: '2327TT', group: 'mlcc', exchange: 'twse', name: '國巨'   },
+  { id: '2492', ticker: '2492TT', group: 'mlcc', exchange: 'twse', name: '華新科'  },
+  { id: '3026', ticker: '3026TT', group: 'mlcc', exchange: 'twse', name: '禾伸堂'  },
+  // Cooling
+  { id: '3017', ticker: '3017TT', group: 'cooling', exchange: 'twse', name: '奇鋐'   },
+  { id: '3653', ticker: '3653TT', group: 'cooling', exchange: 'twse', name: '健策'   },
+  { id: '3324', ticker: '3324TT', group: 'cooling', exchange: 'tpex', name: '雙鴻'   },
+  { id: '8996', ticker: '8996TT', group: 'cooling', exchange: 'twse', name: '高力'   },
+  // Power
+  { id: '2308', ticker: '2308TT', group: 'power', exchange: 'twse', name: '台達電'   },
+  { id: '2301', ticker: '2301TT', group: 'power', exchange: 'twse', name: '光寶科'   },
+  { id: '6415', ticker: '6415TT', group: 'power', exchange: 'twse', name: '矽力-KY'  },
+  { id: '3665', ticker: '3665TT', group: 'power', exchange: 'twse', name: '貿聯-KY'  },
+  // Equipment
+  { id: '3131', ticker: '3131TT', group: 'equipment', exchange: 'tpex',     name: '弘塑' },
+  { id: '6187', ticker: '6187TT', group: 'equipment', exchange: 'tpex',     name: '萬潤' },
+  { id: '2467', ticker: '2467TT', group: 'equipment', exchange: 'twse',     name: '志聖' },
+  { id: '3583', ticker: '3583TT', group: 'equipment', exchange: 'twse',     name: '辛耘' },
+  { id: '7769', ticker: '7769TT', group: 'equipment', exchange: 'emerging', name: '鴻勁' },
+  { id: '2360', ticker: '2360TT', group: 'equipment', exchange: 'twse',     name: '致茂' },
+  // Memory
+  { id: '2408', ticker: '2408TT', group: 'memory', exchange: 'twse', name: '南亞科' },
+  { id: '2337', ticker: '2337TT', group: 'memory', exchange: 'twse', name: '旺宏'   },
+  { id: '8299', ticker: '8299TT', group: 'memory', exchange: 'tpex', name: '群聯'   },
+  { id: '2344', ticker: '2344TT', group: 'memory', exchange: 'twse', name: '華邦電' },
+  // Foundry
+  { id: '2330', ticker: '2330TT', group: 'foundry', exchange: 'twse', name: '台積電'   },
+  { id: '2303', ticker: '2303TT', group: 'foundry', exchange: 'twse', name: '聯電'     },
+  { id: '5347', ticker: '5347TT', group: 'foundry', exchange: 'tpex', name: '世界先進' },
+  // CPU
+  { id: '3533', ticker: '3533TT', group: 'cpu', exchange: 'twse', name: '嘉澤' },
+  { id: '5274', ticker: '5274TT', group: 'cpu', exchange: 'tpex', name: '信驊' },
+  { id: '3044', ticker: '3044TT', group: 'cpu', exchange: 'twse', name: '健鼎' },
+  // ODM
+  { id: '2317', ticker: '2317TT', group: 'odm', exchange: 'twse', name: '鴻海' },
+  { id: '2382', ticker: '2382TT', group: 'odm', exchange: 'twse', name: '廣達' },
+  { id: '3231', ticker: '3231TT', group: 'odm', exchange: 'twse', name: '緯創' },
+  { id: '6669', ticker: '6669TT', group: 'odm', exchange: 'twse', name: '緯穎' },
 ];
 
-const OPTICS = ALL_COMPANIES.filter(c => c.group === 'optics');
-const FIBER  = ALL_COMPANIES.filter(c => c.group === 'fiber');
-const CCL    = ALL_COMPANIES.filter(c => c.group === 'ccl');
-const PCB    = ALL_COMPANIES.filter(c => c.group === 'pcb');
-const ABF    = ALL_COMPANIES.filter(c => c.group === 'abf');
-const MLCC   = ALL_COMPANIES.filter(c => c.group === 'mlcc');
-
-const OPTICS_COLORS = [C.teal, C.anthropic, C.red, C.orange];
-const FIBER_COLORS  = [C.xiaomi];
-const CCL_COLORS    = [C.openai, C.deepseek, C.google];
-const PCB_COLORS    = [C.mistral, C.zhipu, C.perplexity];
-const ABF_COLORS    = [C.kimi, C.anthropic];
-const MLCC_COLORS   = [C.minimax, C.baidu, C.qwen];
-
-const GROUP_COLORS = { optics: OPTICS_COLORS, fiber: FIBER_COLORS, ccl: CCL_COLORS, pcb: PCB_COLORS, abf: ABF_COLORS, mlcc: MLCC_COLORS };
-const GROUP_LABEL  = { optics: 'Optics', fiber: 'Fiber', ccl: 'CCL', pcb: 'PCB', abf: 'ABF', mlcc: 'MLCC' };
-
-// Per-company colour = its position within its own group's palette. Derived
-// from ALL_COMPANIES so the overview legend/datasets stay aligned regardless of
-// how many companies each group has.
-const _groupIdx = {};
-const ALL_COLORS = ALL_COMPANIES.map(c => {
-  const pal = GROUP_COLORS[c.group] ?? [C.slate];
-  const i = (_groupIdx[c.group] = (_groupIdx[c.group] ?? 0));
-  _groupIdx[c.group]++;
-  return pal[i % pal.length];
-});
+/**
+ * One entry per supply-chain tab. Each palette is hand-picked so that lines
+ * sharing a chart sit far apart on the hue wheel — no two similar colours on
+ * the same graph.
+ */
+const CHAINS = {
+  optics: {
+    label: 'Optics',
+    colors: ['#f87171', '#38bdf8', '#fbbf24'],
+  },
+  fiber: {
+    label: 'Fiber',
+    colors: ['#f43f5e'],
+  },
+  pcb: {
+    label: 'PCB',
+    colors: ['#ef4444', '#f97316', '#facc15', '#4ade80', '#22d3ee', '#818cf8', '#fca5c1'],
+  },
+  mlcc: {
+    label: 'MLCC',
+    colors: ['#34d399', '#c084fc', '#fb923c'],
+  },
+  cooling: {
+    label: 'Cooling',
+    colors: ['#f87171', '#fbbf24', '#4ade80', '#60a5fa'],
+  },
+  power: {
+    label: 'Power',
+    colors: ['#fb923c', '#22d3ee', '#e879f9', '#a3e635'],
+  },
+  equipment: {
+    label: 'Equipment',
+    colors: ['#f87171', '#fbbf24', '#4ade80', '#22d3ee', '#818cf8', '#f472b6'],
+  },
+  memory: {
+    label: 'Memory',
+    colors: ['#fbbf24', '#34d399', '#60a5fa', '#fb7185'],
+  },
+  foundry: {
+    label: 'Foundry',
+    colors: ['#38bdf8', '#fb923c', '#4ade80'],
+  },
+  cpu: {
+    label: 'CPU',
+    colors: ['#38bdf8', '#fb923c', '#a3e635'],
+  },
+  odm: {
+    label: 'ODM',
+    colors: ['#f87171', '#fbbf24', '#34d399', '#818cf8'],
+  },
+};
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 function mopsUrl(coId, exchange) {
-  return `https://mops.twse.com.tw/mops/web/t05st10_ifrs?co_id=${coId}&TYPEK=${exchange === 'twse' ? 'sii' : 'otc'}&isnew=false`;
+  const typek = exchange === 'twse' ? 'sii' : exchange === 'emerging' ? 'rotc' : 'otc';
+  return `https://mops.twse.com.tw/mops/web/t05st10_ifrs?co_id=${coId}&TYPEK=${typek}&isnew=false`;
 }
 
 function goodInfoUrl(coId) {
@@ -66,7 +128,8 @@ function goodInfoUrl(coId) {
 function mergeCompanyData(staticList, liveCompanies) {
   return staticList.map(c => {
     const live = liveCompanies?.[c.id];
-    return { ...c, name: live?.name || c.name, srcUrl: live?.srcUrl || mopsUrl(c.id, c.exchange), monthly: live?.monthly ?? [] };
+    // Static name wins — cached server snapshots may carry stale names.
+    return { ...c, srcUrl: live?.srcUrl || mopsUrl(c.id, c.exchange), monthly: live?.monthly ?? [] };
   });
 }
 
@@ -76,102 +139,51 @@ function buildPeriods(companies, n) {
   return [...all].sort().slice(-n);
 }
 
-function buildRevenueDatasets(companies, colors, periods) {
+// Colour is assigned by the company's position in the full chain list (before
+// dropping empty series) so lines always match the legend swatches.
+function buildMetricDatasets(companies, colors, periods, metric) {
   return companies
-    .filter(c => c.monthly.length > 0)
-    .map((c, i) => {
-      const byP = Object.fromEntries(c.monthly.map(r => [r.period, r.revenue]));
-      return mkDs(`${c.ticker} ${c.name}`, colors[i % colors.length], periods.map(p => byP[p] ?? null));
+    .map((c, i) => ({ c, color: colors[i % colors.length] }))
+    .filter(({ c }) => c.monthly.some(r => r[metric] != null))
+    .map(({ c, color }) => {
+      const byP = Object.fromEntries(c.monthly.map(r => [r.period, r[metric]]));
+      return mkDs(`${c.ticker} ${c.name}`, color, periods.map(p => byP[p] ?? null));
     });
 }
 
-function buildYoyDatasets(companies, colors, periods) {
-  return companies
-    .filter(c => c.monthly.some(r => r.yoy != null))
-    .map((c, i) => {
-      const byP = Object.fromEntries(c.monthly.map(r => [r.period, r.yoy]));
-      return mkDs(`${c.ticker} ${c.name}`, colors[i % colors.length], periods.map(p => byP[p] ?? null));
-    });
-}
-
+// A period only gets a total once every company that had started reporting by
+// then has a value for it — otherwise the trailing month (where only some
+// companies have reported yet) shows a bogus cliff. Companies listed later
+// (e.g. recent IPOs) don't block the earlier periods they predate.
 function buildTotalRevenueDataset(companies, periods) {
+  const reporting = companies
+    .filter(c => c.monthly.length > 0)
+    .map(c => ({ first: c.monthly[0].period, byP: Object.fromEntries(c.monthly.map(r => [r.period, r.revenue])) }));
   const data = periods.map(p => {
     let total = 0, hasAny = false;
-    companies.forEach(c => {
-      const v = c.monthly.find(r => r.period === p)?.revenue;
+    for (const { first, byP } of reporting) {
+      const v = byP[p];
       if (v != null) { total += v; hasAny = true; }
-    });
+      else if (p >= first) return null; // started reporting but missing this month
+    }
     return hasAny ? parseFloat(total.toFixed(2)) : null;
   });
   return mkDs('Total revenue', '#e2e8f0', data, true);
 }
 
-function buildMomDatasets(companies, colors, periods) {
-  return companies
-    .filter(c => c.monthly.some(r => r.mom != null))
-    .map((c, i) => {
-      const byP = Object.fromEntries(c.monthly.map(r => [r.period, r.mom]));
-      return mkDs(`${c.ticker} ${c.name}`, colors[i % colors.length], periods.map(p => byP[p] ?? null));
-    });
-}
-
-const revFmt = v => {
+const revOpts = baseOpts(v => {
   if (v == null) return '—';
   if (Math.abs(v) >= 1000) return `NT$${(v / 1000).toFixed(1)}B`;
   return `NT$${v.toFixed(0)}M`;
-};
+});
 
-const pctFmt = v => `${v != null ? v.toFixed(1) : '—'}%`;
-
-function withPointValueLabels(opts, yFmt) {
-  return {
-    ...opts,
-    layout: {
-      ...(opts.layout ?? {}),
-      padding: {
-        top: 18,
-        right: 28,
-        bottom: 4,
-        left: 4,
-        ...(opts.layout?.padding ?? {}),
-      },
-    },
-    plugins: {
-      ...opts.plugins,
-      pointValueLabels: {
-        display: true,
-        formatter: yFmt,
-      },
-    },
-  };
-}
-
-const revOpts = withPointValueLabels(baseOpts(revFmt), revFmt);
-
-const pctOpts = withPointValueLabels({
-  ...baseOpts(pctFmt),
+const pctOpts = {
+  ...baseOpts(v => `${v != null ? v.toFixed(1) : '—'}%`),
   scales: {
     x: { grid: GRID, ticks: { ...TICK, maxTicksLimit: 8, autoSkip: true }, border: BORD },
     y: { grid: GRID, ticks: { ...TICK, callback: v => `${v}%` }, border: BORD, beginAtZero: false },
   },
-}, pctFmt);
-
-
-// ── Shared data hook ─────────────────────────────────────────────────────
-function useSupplyData(months) {
-  const { liveData } = useData();
-  const { tableMode } = useUI();
-  const liveCompanies = liveData?.mops?.companies ?? null;
-  const all    = useMemo(() => mergeCompanyData(ALL_COMPANIES, liveCompanies), [liveCompanies]);
-  const optics = useMemo(() => mergeCompanyData(OPTICS, liveCompanies), [liveCompanies]);
-  const fiber  = useMemo(() => mergeCompanyData(FIBER,  liveCompanies), [liveCompanies]);
-  const ccl    = useMemo(() => mergeCompanyData(CCL,    liveCompanies), [liveCompanies]);
-  const pcb    = useMemo(() => mergeCompanyData(PCB,    liveCompanies), [liveCompanies]);
-  const abf    = useMemo(() => mergeCompanyData(ABF,    liveCompanies), [liveCompanies]);
-  const mlcc   = useMemo(() => mergeCompanyData(MLCC,   liveCompanies), [liveCompanies]);
-  const hasLive = all.some(c => c.monthly.length > 0);
-  return { all, optics, fiber, ccl, pcb, abf, mlcc, hasLive, tableMode, n: months };
-}
+};
 
 function NoData() {
   return (
@@ -181,14 +193,12 @@ function NoData() {
   );
 }
 
-// ── Company directory (used on Overview page) ────────────────────────────
-function CompanyDirectory({ companies }) {
-  const all = companies;
-
+// ── Company directory (per supply chain) ─────────────────────────────────
+function CompanyDirectory({ companies, label }) {
   return (
     <div className="cbox span2">
       <div className="ch-head">
-        <div className="ch-title">Company directory — AI supply chain</div>
+        <div className="ch-title">Company directory — {label} supply chain</div>
         <div className="ch-meta">
           <a className="ch-src" href="https://mops.twse.com.tw/" target="_blank" rel="noopener noreferrer">mops.twse.com.tw</a>
         </div>
@@ -198,12 +208,12 @@ function CompanyDirectory({ companies }) {
         <table className="ch-table" style={{ fontSize: 13 }}>
           <thead>
             <tr>
-              <th>Ticker</th><th>Company</th><th>Group</th>
+              <th>Ticker</th><th>Company</th>
               <th>Latest rev (NT$M)</th><th>YoY (%)</th><th>MoM (%)</th>
             </tr>
           </thead>
           <tbody>
-            {all.map(c => {
+            {companies.map(c => {
               const last = c.monthly.at(-1);
               return (
                 <tr key={c.ticker}>
@@ -213,9 +223,6 @@ function CompanyDirectory({ companies }) {
                       style={{ color: 'var(--text)', textDecoration: 'underline', textDecorationColor: 'rgba(255,255,255,.25)' }}>
                       {c.name}
                     </a>
-                  </td>
-                  <td style={{ color: 'var(--ter)', textTransform: 'uppercase', fontSize: 11, letterSpacing: '.06em' }}>
-                    {GROUP_LABEL[c.group] ?? c.group}
                   </td>
                   <td>{last ? last.revenue.toLocaleString(undefined, { maximumFractionDigits: 1 }) : '—'}</td>
                   <td style={{ color: last?.yoy > 0 ? '#4ade80' : last?.yoy < 0 ? '#f87171' : 'inherit' }}>
@@ -234,240 +241,72 @@ function CompanyDirectory({ companies }) {
   );
 }
 
-// ── Page 1: Overview ─────────────────────────────────────────────────────
-export default function AISupplyOverview({ months = 12 }) {
-  const { all, hasLive, tableMode, n } = useSupplyData(months);
+// ── Generic supply-chain page ────────────────────────────────────────────
+function SupplyChainPage({ chain, months = 12 }) {
+  const { label, colors } = CHAINS[chain];
+  const { liveData } = useData();
+  const { tableMode } = useUI();
+  const liveCompanies = liveData?.mops?.companies ?? null;
 
-  const allCompanies = all;
-  const allPeriods   = useMemo(() => buildPeriods(allCompanies, n), [allCompanies, n]);
+  const staticList = useMemo(() => ALL_COMPANIES.filter(c => c.group === chain), [chain]);
+  const companies  = useMemo(() => mergeCompanyData(staticList, liveCompanies), [staticList, liveCompanies]);
+  const hasLive    = companies.some(c => c.monthly.length > 0);
 
-  const allRevData = useMemo(() => ({
-    labels: allPeriods,
-    datasets: buildRevenueDatasets(allCompanies, ALL_COLORS, allPeriods),
-  }), [allCompanies, allPeriods]);
+  const periods = useMemo(() => buildPeriods(companies, months), [companies, months]);
+
+  const revData = useMemo(() => ({ labels: periods, datasets: buildMetricDatasets(companies, colors, periods, 'revenue') }), [companies, colors, periods]);
+  const yoyData = useMemo(() => ({ labels: periods, datasets: buildMetricDatasets(companies, colors, periods, 'yoy') }), [companies, colors, periods]);
+  const momData = useMemo(() => ({ labels: periods, datasets: buildMetricDatasets(companies, colors, periods, 'mom') }), [companies, colors, periods]);
 
   const totalRevData = useMemo(() => ({
-    labels: allPeriods,
-    datasets: [buildTotalRevenueDataset(allCompanies, allPeriods)],
-  }), [allCompanies, allPeriods]);
+    labels: periods,
+    datasets: [buildTotalRevenueDataset(companies, periods)],
+  }), [companies, periods]);
 
-  const allYoyData = useMemo(() => ({
-    labels: allPeriods,
-    datasets: buildYoyDatasets(allCompanies, ALL_COLORS, allPeriods),
-  }), [allCompanies, allPeriods]);
-
-  const allMomData = useMemo(() => ({
-    labels: allPeriods,
-    datasets: buildMomDatasets(allCompanies, ALL_COLORS, allPeriods),
-  }), [allCompanies, allPeriods]);
-
-  const allLegend   = ALL_COMPANIES.map((c, i) => [`${c.ticker} ${c.name}`, ALL_COLORS[i], goodInfoUrl(c.id)]);
-  const allColLinks = ALL_COMPANIES.map(c => goodInfoUrl(c.id));
+  const legend   = staticList.map((c, i) => [`${c.ticker} ${c.name}`, colors[i % colors.length], goodInfoUrl(c.id)]);
+  const colLinks = staticList.map(c => goodInfoUrl(c.id));
 
   return (
     <>
-      <EditableGrid viewId="ai-supply">
-        <ChartCard chartId="supply-all-yoy"
-          legend={allLegend} colLinks={allColLinks} height={360} isNew span2={tableMode} colorPct clean>
-          {hasLive && allYoyData.datasets.length > 0 ? <Line data={allYoyData} options={pctOpts} /> : <NoData />}
+      <EditableGrid viewId={`ai-supply-${chain}`}>
+        <ChartCard chartId={`supply-${chain}-yoy`}
+          legend={legend} colLinks={colLinks} height={360} isNew span2={tableMode} colorPct clean>
+          {hasLive && yoyData.datasets.length > 0 ? <Line data={yoyData} options={pctOpts} /> : <NoData />}
         </ChartCard>
 
-        <ChartCard chartId="supply-all-mom"
-          legend={allLegend} colLinks={allColLinks} height={360} isNew span2={tableMode} colorPct clean>
-          {hasLive && allMomData.datasets.length > 0 ? <Line data={allMomData} options={pctOpts} /> : <NoData />}
+        <ChartCard chartId={`supply-${chain}-mom`}
+          legend={legend} colLinks={colLinks} height={360} isNew span2={tableMode} colorPct clean>
+          {hasLive && momData.datasets.length > 0 ? <Line data={momData} options={pctOpts} /> : <NoData />}
         </ChartCard>
 
         {!tableMode && (
-          <ChartCard chartId="supply-total-rev"
+          <ChartCard chartId={`supply-${chain}-total-rev`}
             height={300} span2 isNew clean>
             {hasLive && totalRevData.datasets[0]?.data.some(v => v != null) ? <Line data={totalRevData} options={revOpts} /> : <NoData />}
           </ChartCard>
         )}
 
-        <ChartCard chartId="supply-all-rev"
-          legend={allLegend} colLinks={allColLinks} height={360} span2 isNew clean>
-          {hasLive && allRevData.datasets.length > 0 ? <Line data={allRevData} options={revOpts} /> : <NoData />}
+        <ChartCard chartId={`supply-${chain}-rev`}
+          legend={legend} colLinks={colLinks} height={360} span2 isNew clean>
+          {hasLive && revData.datasets.length > 0 ? <Line data={revData} options={revOpts} /> : <NoData />}
         </ChartCard>
       </EditableGrid>
 
       <div className="cgrid">
-        <CompanyDirectory companies={all} />
+        <CompanyDirectory companies={companies} label={label} />
       </div>
     </>
   );
 }
 
-// ── Page 2: Optics supply chain ──────────────────────────────────────────
-export function AISupplyOptics({ months = 12 }) {
-  const { optics, hasLive, tableMode, n } = useSupplyData(months);
-
-  const periods = useMemo(() => buildPeriods(optics, n), [optics, n]);
-
-  const revData = useMemo(() => ({ labels: periods, datasets: buildRevenueDatasets(optics, OPTICS_COLORS, periods) }), [optics, periods]);
-  const yoyData = useMemo(() => ({ labels: periods, datasets: buildYoyDatasets(optics, OPTICS_COLORS, periods) }), [optics, periods]);
-  const momData = useMemo(() => ({ labels: periods, datasets: buildMomDatasets(optics, OPTICS_COLORS, periods) }), [optics, periods]);
-
-  const legend   = OPTICS.map((c, i) => [`${c.ticker} ${c.name}`, OPTICS_COLORS[i], goodInfoUrl(c.id)]);
-  const colLinks = OPTICS.map(c => goodInfoUrl(c.id));
-
-  return (
-    <EditableGrid viewId="ai-supply-optics">
-      <ChartCard chartId="supply-optics-yoy"
-        legend={legend} colLinks={colLinks} height={360} isNew span2={tableMode} colorPct clean>
-        {hasLive && yoyData.datasets.length > 0 ? <Line data={yoyData} options={pctOpts} /> : <NoData />}
-      </ChartCard>
-
-      <ChartCard chartId="supply-optics-mom"
-        legend={legend} colLinks={colLinks} height={360} isNew span2={tableMode} colorPct clean>
-        {hasLive && momData.datasets.length > 0 ? <Line data={momData} options={pctOpts} /> : <NoData />}
-      </ChartCard>
-
-      <ChartCard chartId="supply-optics-rev"
-        legend={legend} colLinks={colLinks} height={360} span2 isNew clean>
-        {hasLive && revData.datasets.length > 0 ? <Line data={revData} options={revOpts} /> : <NoData />}
-      </ChartCard>
-    </EditableGrid>
-  );
-}
-
-function SupplySegmentPage({ months, dataKey, staticCompanies, colors, viewId, chartPrefix }) {
-  const supply = useSupplyData(months);
-  const companies = supply[dataKey];
-  const { hasLive, tableMode, n } = supply;
-
-  const periods = useMemo(() => buildPeriods(companies, n), [companies, n]);
-
-  const revData = useMemo(() => ({ labels: periods, datasets: buildRevenueDatasets(companies, colors, periods) }), [companies, colors, periods]);
-  const yoyData = useMemo(() => ({ labels: periods, datasets: buildYoyDatasets(companies, colors, periods) }), [companies, colors, periods]);
-  const momData = useMemo(() => ({ labels: periods, datasets: buildMomDatasets(companies, colors, periods) }), [companies, colors, periods]);
-
-  const legend   = staticCompanies.map((c, i) => [`${c.ticker} ${c.name}`, colors[i], goodInfoUrl(c.id)]);
-  const colLinks = staticCompanies.map(c => goodInfoUrl(c.id));
-
-  return (
-    <EditableGrid viewId={viewId}>
-      <ChartCard chartId={`${chartPrefix}-yoy`}
-        legend={legend} colLinks={colLinks} height={360} isNew span2={tableMode} colorPct clean>
-        {hasLive && yoyData.datasets.length > 0 ? <Line data={yoyData} options={pctOpts} /> : <NoData />}
-      </ChartCard>
-
-      <ChartCard chartId={`${chartPrefix}-mom`}
-        legend={legend} colLinks={colLinks} height={360} isNew span2={tableMode} colorPct clean>
-        {hasLive && momData.datasets.length > 0 ? <Line data={momData} options={pctOpts} /> : <NoData />}
-      </ChartCard>
-
-      <ChartCard chartId={`${chartPrefix}-rev`}
-        legend={legend} colLinks={colLinks} height={360} span2 isNew clean>
-        {hasLive && revData.datasets.length > 0 ? <Line data={revData} options={revOpts} /> : <NoData />}
-      </ChartCard>
-    </EditableGrid>
-  );
-}
-
-// ── Page 3: CCL supply chain ─────────────────────────────────────────────
-export function AISupplyCCL({ months = 12 }) {
-  return (
-    <SupplySegmentPage
-      months={months}
-      dataKey="ccl"
-      staticCompanies={CCL}
-      colors={CCL_COLORS}
-      viewId="ai-supply-ccl"
-      chartPrefix="supply-ccl"
-    />
-  );
-}
-
-// ── Page 4: PCB supply chain ─────────────────────────────────────────────
-export function AISupplyPCB({ months = 12 }) {
-  return (
-    <SupplySegmentPage
-      months={months}
-      dataKey="pcb"
-      staticCompanies={PCB}
-      colors={PCB_COLORS}
-      viewId="ai-supply-pcb"
-      chartPrefix="supply-pcb"
-    />
-  );
-}
-
-// ── Page 5: ABF supply chain ─────────────────────────────────────────────
-export function AISupplyABF({ months = 12 }) {
-  return (
-    <SupplySegmentPage
-      months={months}
-      dataKey="abf"
-      staticCompanies={ABF}
-      colors={ABF_COLORS}
-      viewId="ai-supply-abf"
-      chartPrefix="supply-abf"
-    />
-  );
-}
-
-// ── Page 6: MLCC supply chain ────────────────────────────────────────────
-export function AISupplyMLCC({ months = 12 }) {
-  const { mlcc, hasLive, tableMode, n } = useSupplyData(months);
-
-  const periods = useMemo(() => buildPeriods(mlcc, n), [mlcc, n]);
-
-  const revData = useMemo(() => ({ labels: periods, datasets: buildRevenueDatasets(mlcc, MLCC_COLORS, periods) }), [mlcc, periods]);
-  const yoyData = useMemo(() => ({ labels: periods, datasets: buildYoyDatasets(mlcc, MLCC_COLORS, periods) }), [mlcc, periods]);
-  const momData = useMemo(() => ({ labels: periods, datasets: buildMomDatasets(mlcc, MLCC_COLORS, periods) }), [mlcc, periods]);
-
-  const legend   = MLCC.map((c, i) => [`${c.ticker} ${c.name}`, MLCC_COLORS[i], goodInfoUrl(c.id)]);
-  const colLinks = MLCC.map(c => goodInfoUrl(c.id));
-
-  return (
-    <EditableGrid viewId="ai-supply-mlcc">
-      <ChartCard chartId="supply-mlcc-yoy"
-        legend={legend} colLinks={colLinks} height={360} isNew span2={tableMode} colorPct clean>
-        {hasLive && yoyData.datasets.length > 0 ? <Line data={yoyData} options={pctOpts} /> : <NoData />}
-      </ChartCard>
-
-      <ChartCard chartId="supply-mlcc-mom"
-        legend={legend} colLinks={colLinks} height={360} isNew span2={tableMode} colorPct clean>
-        {hasLive && momData.datasets.length > 0 ? <Line data={momData} options={pctOpts} /> : <NoData />}
-      </ChartCard>
-
-      <ChartCard chartId="supply-mlcc-rev"
-        legend={legend} colLinks={colLinks} height={360} span2 isNew clean>
-        {hasLive && revData.datasets.length > 0 ? <Line data={revData} options={revOpts} /> : <NoData />}
-      </ChartCard>
-    </EditableGrid>
-  );
-}
-
-// ── Page 7: Fiber supply chain ───────────────────────────────────────────
-export function AISupplyFiber({ months = 12 }) {
-  const { fiber, hasLive, tableMode, n } = useSupplyData(months);
-
-  const periods = useMemo(() => buildPeriods(fiber, n), [fiber, n]);
-
-  const revData = useMemo(() => ({ labels: periods, datasets: buildRevenueDatasets(fiber, FIBER_COLORS, periods) }), [fiber, periods]);
-  const yoyData = useMemo(() => ({ labels: periods, datasets: buildYoyDatasets(fiber, FIBER_COLORS, periods) }), [fiber, periods]);
-  const momData = useMemo(() => ({ labels: periods, datasets: buildMomDatasets(fiber, FIBER_COLORS, periods) }), [fiber, periods]);
-
-  const legend   = FIBER.map((c, i) => [`${c.ticker} ${c.name}`, FIBER_COLORS[i], goodInfoUrl(c.id)]);
-  const colLinks = FIBER.map(c => goodInfoUrl(c.id));
-
-  return (
-    <EditableGrid viewId="ai-supply-fiber">
-      <ChartCard chartId="supply-fiber-yoy"
-        legend={legend} colLinks={colLinks} height={360} isNew span2={tableMode} colorPct clean>
-        {hasLive && yoyData.datasets.length > 0 ? <Line data={yoyData} options={pctOpts} /> : <NoData />}
-      </ChartCard>
-
-      <ChartCard chartId="supply-fiber-mom"
-        legend={legend} colLinks={colLinks} height={360} isNew span2={tableMode} colorPct clean>
-        {hasLive && momData.datasets.length > 0 ? <Line data={momData} options={pctOpts} /> : <NoData />}
-      </ChartCard>
-
-      <ChartCard chartId="supply-fiber-rev"
-        legend={legend} colLinks={colLinks} height={360} span2 isNew clean>
-        {hasLive && revData.datasets.length > 0 ? <Line data={revData} options={revOpts} /> : <NoData />}
-      </ChartCard>
-    </EditableGrid>
-  );
-}
+export function AISupplyOptics(props)    { return <SupplyChainPage chain="optics"    {...props} />; }
+export function AISupplyFiber(props)     { return <SupplyChainPage chain="fiber"     {...props} />; }
+export function AISupplyPCB(props)       { return <SupplyChainPage chain="pcb"       {...props} />; }
+export function AISupplyMLCC(props)      { return <SupplyChainPage chain="mlcc"      {...props} />; }
+export function AISupplyCooling(props)   { return <SupplyChainPage chain="cooling"   {...props} />; }
+export function AISupplyPower(props)     { return <SupplyChainPage chain="power"     {...props} />; }
+export function AISupplyEquipment(props) { return <SupplyChainPage chain="equipment" {...props} />; }
+export function AISupplyMemory(props)    { return <SupplyChainPage chain="memory"    {...props} />; }
+export function AISupplyFoundry(props)   { return <SupplyChainPage chain="foundry"   {...props} />; }
+export function AISupplyCPU(props)        { return <SupplyChainPage chain="cpu"        {...props} />; }
+export function AISupplyODM(props)        { return <SupplyChainPage chain="odm"        {...props} />; }

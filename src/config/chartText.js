@@ -218,6 +218,14 @@ export const CHART_TEXT = {
     title: 'Memory Module Spot Price by Model ($)',
     // subtitle is computed in the view
   },
+  'nand-spot': {
+    title: 'NAND Spot Price by Product ($)',
+    // subtitle is computed in the view
+  },
+  'tft-lcd-panel': {
+    title: 'TFT-LCD Panel Price by Product ($)',
+    // subtitle is computed in the view
+  },
   // ── Sentiment (view: sentiment) — StockTwits posting volume & sentiment ─
   // Aggregate (default view)
   'sent-aggregate':    { title: 'StockTwits Sentiment — Bullish vs Bearish (weekly)' },
@@ -228,33 +236,24 @@ export const CHART_TEXT = {
   'sent-significance': { title: 'Volume → Next-Day Return — Statistical Significance' },
   // Per-ticker (search view)
   'sent-tk-weekly-vp': { title: 'Weekly Posting Volume vs Price' },
+  'sent-tk-weekly-logvp': { title: 'Weekly Posting Volume vs Price (log–log)' },
   'sent-tk-sentiment': { title: 'Bullish vs Bearish (weekly)' },
   'sent-tk-leadlag':   { title: 'Daily Post Count vs Next-Day Return' },
   'sent-tk-rolling':   { title: 'Rolling 20-Day Correlations' },
 
-  // ── Supply chain ───────────────────────────────────────────────────────
-  'supply-all-rev':    { title: 'Monthly Revenue — All Companies (NT$M)' },
-  'supply-all-yoy':    { title: 'YoY Growth — All Companies (%)' },
-  'supply-all-mom':    { title: 'MoM Growth — All Companies (%)' },
-  'supply-total-rev':  { title: 'Total Monthly Revenue — All Companies (NT$M)' },
-  'supply-optics-rev': { title: 'Monthly Revenue — Optics (NT$M)' },
-  'supply-optics-yoy': { title: 'YoY Growth — Optics (%)' },
-  'supply-optics-mom': { title: 'MoM Growth — Optics (%)' },
-  'supply-fiber-rev':  { title: 'Monthly Revenue — Fiber (NT$M)' },
-  'supply-fiber-yoy':  { title: 'YoY Growth — Fiber (%)' },
-  'supply-fiber-mom':  { title: 'MoM Growth — Fiber (%)' },
-  'supply-ccl-rev':    { title: 'Monthly Revenue — CCL (NT$M)' },
-  'supply-ccl-yoy':    { title: 'YoY Growth — CCL (%)' },
-  'supply-ccl-mom':    { title: 'MoM Growth — CCL (%)' },
-  'supply-pcb-rev':    { title: 'Monthly Revenue — PCB (NT$M)' },
-  'supply-pcb-yoy':    { title: 'YoY Growth — PCB (%)' },
-  'supply-pcb-mom':    { title: 'MoM Growth — PCB (%)' },
-  'supply-abf-rev':    { title: 'Monthly Revenue — ABF (NT$M)' },
-  'supply-abf-yoy':    { title: 'YoY Growth — ABF (%)' },
-  'supply-abf-mom':    { title: 'MoM Growth — ABF (%)' },
-  'supply-mlcc-rev':   { title: 'Monthly Revenue — MLCC (NT$M)' },
-  'supply-mlcc-yoy':   { title: 'YoY Growth — MLCC (%)' },
-  'supply-mlcc-mom':   { title: 'MoM Growth — MLCC (%)' },
+  // ── Supply chain (views: ai-supply-optics / ai-supply-pcb / …) ────────
+  ...Object.fromEntries(
+    [
+      ['optics', 'Optics'], ['fiber', 'Fiber'], ['pcb', 'PCB'], ['mlcc', 'MLCC'],
+      ['cooling', 'Cooling'], ['power', 'Power'], ['equipment', 'Equipment'],
+      ['memory', 'Memory'], ['foundry', 'Foundry'], ['cpu', 'CPU'], ['odm', 'ODM'],
+    ].flatMap(([chain, label]) => [
+      [`supply-${chain}-rev`,       { title: `Monthly Revenue — ${label} (NT$M)` }],
+      [`supply-${chain}-total-rev`, { title: `Total Monthly Revenue — ${label} (NT$M)` }],
+      [`supply-${chain}-yoy`,       { title: `YoY Growth — ${label} (%)` }],
+      [`supply-${chain}-mom`,       { title: `MoM Growth — ${label} (%)` }],
+    ])
+  ),
 
   // ── Company · OpenAI / ChatGPT (view: demand-openai) ──────────────────
   'oa-sdk': {

@@ -10,7 +10,7 @@ const htmlTemplate = require('./htmlTemplate');
 const { chat } = require('./chat');
 const { getOptionsData }             = require('./scrapers/options');
 const { getStockHistory }            = require('./scrapers/stocks');
-const { searchKeyword }              = require('./scrapers/keywordSearch');
+const { keywordRolling }             = require('./stocktwitsStore');
 
 const app   = express();
 const PORT  = process.env.PORT || 3001;
@@ -67,6 +67,8 @@ app.get('/api/docker',         cachedRoute('docker',        s.docker));
 app.get('/api/hn',             cachedRoute('hn',            s.hn));
 app.get('/api/openrouter-ranks',  cachedRoute('openrouterRanks',  s.openrouterRanks));
 app.get('/api/dram',              cachedRoute('dram',             s.dram));
+app.get('/api/nand',              cachedRoute('nand',             s.nand));
+app.get('/api/tft-lcd',           cachedRoute('tftLcd',           s.tftLcd));
 app.get('/api/aws',               cachedRoute('aws',              s.aws));
 app.get('/api/cpu',               cachedRoute('cpu',              s.cpu));
 app.get('/api/tpu',               cachedRoute('tpu',              s.tpu));
@@ -74,8 +76,9 @@ app.get('/api/epoch-revenue',     cachedRoute('epochRevenue',     s.epochRevenue
 app.get('/api/sentiment',         cachedRoute('sentiment',        s.sentiment));
 app.get('/api/web-traffic',       cachedRoute('webTraffic',       s.webTraffic));
 
-// Keyword frequency search — scans all StockTwits CSVs for whole-word matches,
-// grouped by month. Results cached 1 hour per (lowercased) keyword.
+// Keyword frequency search — whole-word matches across the StockTwits messages
+// in Mongo (committed-CSV fallback for keyless dev), as trailing-30-day counts
+// at monthly anchors. Results cached 1 hour per (lowercased) keyword.
 app.get('/api/sentiment/keyword', async (req, res) => {
   const q = (req.query.q ?? '').trim();
   if (!q)        return res.status(400).json({ error: 'q is required' });
@@ -86,7 +89,7 @@ app.get('/api/sentiment/keyword', async (req, res) => {
   if (cached !== null) return res.json(cached);
 
   try {
-    const data = await searchKeyword(q);
+    const data = await keywordRolling(q);
     cache.set(cacheKey, data, 60 * 60 * 1000);
     res.json(data);
   } catch (e) {
@@ -460,6 +463,231 @@ app.get('/api/options/:ticker', async (req, res) => {
   }
 });
 
+/* ── Options-volume email alerts ─────────────────────────────────────── */
+const alertsStore  = require('./alertsStore');
+const alertsEngine = require('./alertsEngine');
+const mailer       = require('./mailer');
+const optionsReportStore = require('./optionsReportStore');
+
+const EMAIL_RE  = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const TICKER_RE = /^[A-Z0-9.^=-]{1,10}$/;
+
+function parseTickerList(input) {
+  const raw = Array.isArray(input) ? input : String(input ?? '').split(/[,\s]+/);
+  const seen = new Set();
+  for (const t of raw) {
+    const sym = String(t).trim().toUpperCase();
+    if (sym && TICKER_RE.test(sym)) seen.add(sym);
+  }
+  return [...seen];
+}
+
+// Whether email delivery is wired up — the UI warns the user if alerts can be
+// stored but not actually delivered yet.
+app.get('/api/alerts/status', async (_req, res) => {
+  const status = await mailer.verify();
+  if (status.error && status.configured) console.warn(`[mailer] ${status.provider} verification failed:`, status.error);
+  res.json({
+    emailConfigured: status.configured,
+    emailVerified: status.verified,
+    emailProvider: status.provider,
+  });
+});
+
+// Create/update a subscription (upsert by email).
+app.post('/api/alerts/subscribe', (req, res) => {
+  const { email, tickers, threshold, minVolume } = req.body ?? {};
+  const cleanEmail = String(email ?? '').trim().toLowerCase();
+  if (!EMAIL_RE.test(cleanEmail)) return res.status(400).json({ error: 'A valid email is required.' });
+
+  const cleanTickers = parseTickerList(tickers);
+  if (!cleanTickers.length) return res.status(400).json({ error: 'Enter at least one valid ticker.' });
+  if (cleanTickers.length > 40) return res.status(400).json({ error: 'Too many tickers (max 40).' });
+
+  const thr = threshold != null ? Number(threshold) : undefined;
+  if (thr != null && (!Number.isFinite(thr) || thr < 0.05 || thr > 20))
+    return res.status(400).json({ error: 'Threshold must be between 0.05 and 20 (as a fraction, e.g. 0.5 = +50%).' });
+  const minV = minVolume != null ? Number(minVolume) : undefined;
+  if (minV != null && (!Number.isFinite(minV) || minV < 0))
+    return res.status(400).json({ error: 'Minimum volume must be a non-negative number.' });
+
+  const record = alertsStore.upsertSubscription({ email: cleanEmail, tickers: cleanTickers, threshold: thr, minVolume: minV });
+  res.json({ ok: true, subscription: record, emailConfigured: mailer.isConfigured() });
+});
+
+// Look up an existing subscription by email.
+app.get('/api/alerts/subscription', (req, res) => {
+  const email = String(req.query.email ?? '').trim().toLowerCase();
+  if (!EMAIL_RE.test(email)) return res.status(400).json({ error: 'A valid email is required.' });
+  const sub = alertsStore.getSubscription(email);
+  if (!sub) return res.status(404).json({ error: 'No subscription found for that email.' });
+  res.json({ subscription: sub });
+});
+
+// Remove a subscription.
+app.post('/api/alerts/unsubscribe', (req, res) => {
+  const email = String(req.body?.email ?? '').trim().toLowerCase();
+  if (!EMAIL_RE.test(email)) return res.status(400).json({ error: 'A valid email is required.' });
+  const removed = alertsStore.removeSubscription(email);
+  if (!removed) return res.status(404).json({ error: 'No subscription found for that email.' });
+  res.json({ ok: true });
+});
+
+// Run the alert cycle now for one subscriber — evaluates today vs yesterday and
+// (if anything triggered) sends the email. Returns the full per-ticker preview.
+app.post('/api/alerts/check-now', async (req, res) => {
+  const email = String(req.body?.email ?? '').trim().toLowerCase();
+  if (!EMAIL_RE.test(email)) return res.status(400).json({ error: 'A valid email is required.' });
+  if (!alertsStore.getSubscription(email)) return res.status(404).json({ error: 'No subscription found for that email. Subscribe first.' });
+  try {
+    const result = await alertsEngine.run({ onlyEmail: email });
+    const notification = result.notifications[0] ?? { email, rows: [], triggeredTickers: [], sent: false };
+    res.json({
+      ...notification,
+      errors: result.errors,
+      emailConfigured: result.emailConfigured,
+    });
+  } catch (e) {
+    console.error('[alerts:check-now]', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Send a fixed delivery-test message to an existing subscriber. This makes SMTP
+// setup verifiable without waiting for a second trading day and a real surge.
+// Keep a small in-memory cooldown so the public endpoint cannot be hammered.
+const testEmailSentAt = new Map();
+app.post('/api/alerts/test-email', async (req, res) => {
+  const email = String(req.body?.email ?? '').trim().toLowerCase();
+  if (!EMAIL_RE.test(email)) return res.status(400).json({ error: 'A valid email is required.' });
+  if (!alertsStore.getSubscription(email)) {
+    return res.status(404).json({ error: 'No subscription found for that email. Subscribe first.' });
+  }
+  if (!mailer.isConfigured()) {
+    return res.status(503).json({ error: 'Email delivery is not configured on the server.' });
+  }
+  const previous = testEmailSentAt.get(email) || 0;
+  if (Date.now() - previous < 60_000) {
+    return res.status(429).json({ error: 'Please wait a minute before sending another test email.' });
+  }
+  try {
+    const result = await alertsEngine.sendTestEmail(email);
+    if (!result.sent) return res.status(503).json({ error: result.reason || 'Email delivery is unavailable.' });
+    testEmailSentAt.set(email, Date.now());
+    res.json({ ok: true, sent: true });
+  } catch (e) {
+    console.error('[alerts:test-email]', e.message);
+    res.status(502).json({ error: 'The mail server rejected the test email. Check the server logs and SMTP settings.' });
+  }
+});
+
+app.get('/api/alerts/daily-options-report', (req, res) => {
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.date || '')) ? req.query.date : null;
+  const report = optionsReportStore.readDailyReport(date);
+  res.json({ report, availableDates: optionsReportStore.readAvailableReportDates() });
+});
+
+function storedToPdf(stored) {
+  return {
+    ...optionsReportStore.pdfMeta(stored),
+    source: 'storage',
+    buffer: Buffer.from(stored.base64, 'base64'),
+    contentType: stored.contentType || 'application/pdf',
+  };
+}
+
+function fileToPdf(date, file) {
+  try {
+    const stat = require('fs').statSync(file);
+    if (!stat.isFile()) return null;
+    return {
+      date,
+      filename: path.basename(file),
+      file,
+      size: stat.size,
+      updatedAt: stat.mtime.toISOString(),
+      url: `/api/alerts/daily-options-report/pdf?date=${encodeURIComponent(date)}`,
+      source: 'file',
+    };
+  } catch {
+    return null;
+  }
+}
+
+// Newest committed daily-options-data-YYYY-MM-DD.pdf in the repo root, if any.
+function latestDailyOptionsFile() {
+  const dir = path.join(__dirname, '..');
+  let best = null;
+  try {
+    for (const name of require('fs').readdirSync(dir)) {
+      const m = name.match(/^daily-options-data-(\d{4}-\d{2}-\d{2})\.pdf$/);
+      if (m && (!best || m[1] > best.date)) best = { date: m[1], file: path.join(dir, name) };
+    }
+  } catch {}
+  return best;
+}
+
+// Resolve the PDF to serve. With no `date`, return the most recent report we
+// have — the stored blob first, then the newest committed daily-options file —
+// so the page always shows the latest report even before today's run lands.
+function dailyOptionsPdf(date) {
+  const stored = optionsReportStore.readLatestDailyOptionsPdf();
+
+  if (!date) {
+    if (stored?.base64) return storedToPdf(stored);
+    const latest = latestDailyOptionsFile();
+    return latest ? fileToPdf(latest.date, latest.file) : null;
+  }
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(date))) return null;
+  if (stored?.date === date && stored?.base64) return storedToPdf(stored);
+  return fileToPdf(date, path.join(__dirname, '..', `daily-options-data-${date}.pdf`));
+}
+
+app.get('/api/alerts/daily-options-report/pdf-meta', (req, res) => {
+  const pdf = dailyOptionsPdf(req.query.date);
+  res.json({ pdf: pdf && {
+    date: pdf.date,
+    filename: pdf.filename,
+    size: pdf.size,
+    updatedAt: pdf.updatedAt,
+    url: pdf.url,
+  } });
+});
+
+app.get('/api/alerts/daily-options-report/pdf', (req, res) => {
+  const pdf = dailyOptionsPdf(req.query.date);
+  if (!pdf) return res.status(404).json({ error: `No PDF report found${req.query.date ? ` for ${req.query.date}` : ''}.` });
+  if (pdf.source === 'storage') {
+    res
+      .set({
+        'Content-Type': pdf.contentType,
+        'Content-Disposition': `inline; filename="${pdf.filename}"`,
+      })
+      .send(pdf.buffer);
+    return;
+  }
+  res.sendFile(pdf.file, {
+    headers: {
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `inline; filename="${pdf.filename}"`,
+    },
+  });
+});
+
+app.post('/api/alerts/daily-options-report/generate', async (req, res) => {
+  try {
+    const meta = await optionsReportStore.generateAndStoreDailyOptions({
+      date: req.body?.date,
+      tickers: req.body?.tickers,
+    });
+    res.json({ meta, report: optionsReportStore.readDailyReport(meta.date) });
+  } catch (e) {
+    console.error('[options-report:generate]', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.post('/api/chat', async (req, res) => {
   const { message, history } = req.body ?? {};
   if (!message || typeof message !== 'string') {
@@ -482,6 +710,8 @@ const STORAGE_BLOBS = [
   { name: 'metricsHistory', file: path.join(DATA_DIR, 'metricsHistory.json') },
   { name: 'gpuHistory',     file: path.join(DATA_DIR, 'gpuHistory.json') },
   { name: 'dramHistory',    file: path.join(DATA_DIR, 'dramHistory.json') },
+  { name: 'nandHistory',    file: path.join(DATA_DIR, 'nandHistory.json') },
+  { name: 'tftLcdHistory',  file: path.join(DATA_DIR, 'tftLcdHistory.json') },
   { name: 'awsHistory',     file: path.join(DATA_DIR, 'awsHistory.json') },
   // Every history blob a scraper reads/writes MUST be listed here so init()
   // preloads it from Mongo into the cache. An unlisted blob falls back to the
@@ -495,6 +725,9 @@ const STORAGE_BLOBS = [
   { name: 'optionsOI',      file: path.join(DATA_DIR, 'optionsOI.json') },
   { name: 'shortInterestHistory', file: path.join(DATA_DIR, 'shortInterestHistory.json') },
   { name: 'sentimentData',  file: path.join(DATA_DIR, 'sentiment.json') },
+  // Options-volume email alerts: subscriptions + rolling per-ticker daily volume.
+  { name: 'optionsAlerts',  file: path.join(DATA_DIR, 'optionsAlerts.json') },
+  { name: 'dailyOptionsReport', file: path.join(DATA_DIR, 'dailyOptionsReport.json') },
   // Latest scrape per source — loaded into the request cache on boot for an
   // instant first paint instead of blocking on live re-scrapes.
   { name: 'latestSnapshots', file: path.join(DATA_DIR, 'latestSnapshots.json') },

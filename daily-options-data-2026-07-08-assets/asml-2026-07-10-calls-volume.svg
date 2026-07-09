@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="354" viewBox="0 0 900 354" role="img" aria-label="ASML call option volume and table">
+    <rect width="900" height="354" fill="#ffffff"></rect>
+    
+      <rect x="27.99" y="112.11" width="73.62" height="39.89" rx="4" fill="#bfe8d8"></rect>
+      <text x="64.80" y="104.11" text-anchor="middle" fill="#6b7280" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" font-weight="700">241</text>
+      <text x="64.80" y="174" text-anchor="middle" fill="#8b93a1" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16" font-weight="500">6/24</text>
+    
+      <rect x="113.59" y="147.00" width="73.62" height="5.00" rx="4" fill="#bfe8d8"></rect>
+      <text x="150.40" y="139.00" text-anchor="middle" fill="#6b7280" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" font-weight="700">27</text>
+      <text x="150.40" y="174" text-anchor="middle" fill="#8b93a1" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16" font-weight="500">6/25</text>
+    
+      <rect x="199.19" y="144.72" width="73.62" height="7.28" rx="4" fill="#bfe8d8"></rect>
+      <text x="236.00" y="136.72" text-anchor="middle" fill="#6b7280" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" font-weight="700">44</text>
+      <text x="236.00" y="174" text-anchor="middle" fill="#8b93a1" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16" font-weight="500">6/26</text>
+    
+      <rect x="284.79" y="40.26" width="73.62" height="111.74" rx="4" fill="#bfe8d8"></rect>
+      <text x="321.60" y="32.26" text-anchor="middle" fill="#6b7280" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" font-weight="700">675</text>
+      <text x="321.60" y="174" text-anchor="middle" fill="#8b93a1" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16" font-weight="500">6/29</text>
+    
+      <rect x="370.39" y="82.14" width="73.62" height="69.86" rx="4" fill="#bfe8d8"></rect>
+      <text x="407.20" y="74.14" text-anchor="middle" fill="#6b7280" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" font-weight="700">422</text>
+      <text x="407.20" y="174" text-anchor="middle" fill="#8b93a1" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16" font-weight="500">6/30</text>
+    
+      <rect x="455.99" y="120.05" width="73.62" height="31.95" rx="4" fill="#bfe8d8"></rect>
+      <text x="492.80" y="112.05" text-anchor="middle" fill="#6b7280" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" font-weight="700">193</text>
+      <text x="492.80" y="174" text-anchor="middle" fill="#8b93a1" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16" font-weight="500">7/1</text>
+    
+      <rect x="541.59" y="111.94" width="73.62" height="40.06" rx="4" fill="#bfe8d8"></rect>
+      <text x="578.40" y="103.94" text-anchor="middle" fill="#6b7280" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" font-weight="700">242</text>
+      <text x="578.40" y="174" text-anchor="middle" fill="#8b93a1" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16" font-weight="500">7/2</text>
+    
+      <rect x="627.19" y="79.33" width="73.62" height="72.67" rx="4" fill="#bfe8d8"></rect>
+      <text x="664.00" y="71.33" text-anchor="middle" fill="#6b7280" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" font-weight="700">439</text>
+      <text x="664.00" y="174" text-anchor="middle" fill="#8b93a1" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16" font-weight="500">7/6</text>
+    
+      <rect x="712.79" y="60.96" width="73.62" height="91.04" rx="4" fill="#bfe8d8"></rect>
+      <text x="749.60" y="52.96" text-anchor="middle" fill="#6b7280" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" font-weight="700">550</text>
+      <text x="749.60" y="174" text-anchor="middle" fill="#8b93a1" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16" font-weight="500">7/7</text>
+    
+      <rect x="798.39" y="30.00" width="73.62" height="122.00" rx="4" fill="#059669"></rect>
+      <text x="835.20" y="22.00" text-anchor="middle" fill="#059669" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" font-weight="700">737</text>
+      <text x="835.20" y="174" text-anchor="middle" fill="#059669" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16" font-weight="700">7/8</text>
+    
+    <rect x="0" y="208" width="900" height="134" fill="#ffffff"></rect>
+    <line x1="0" y1="208" x2="900" y2="208" stroke="#d1d5db"></line>
+    <text x="10.00" y="229" text-anchor="start" fill="#6b7280" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="700">Type</text><text x="182.00" y="229" text-anchor="end" fill="#6b7280" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="700">Strike</text><text x="294.00" y="229" text-anchor="end" fill="#6b7280" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="700">Today</text><text x="406.00" y="229" text-anchor="end" fill="#6b7280" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="700">Yest.</text><text x="511.00" y="229" text-anchor="end" fill="#6b7280" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="700">Delta DoD</text><text x="616.00" y="229" text-anchor="end" fill="#6b7280" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="700">x5D Avg</text><text x="721.00" y="229" text-anchor="end" fill="#6b7280" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="700">Vol/OI</text><text x="806.00" y="229" text-anchor="end" fill="#6b7280" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="700">IV</text><text x="858.00" y="229" text-anchor="middle" fill="#6b7280" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="700">Money</text>
+    
+      <line x1="0" y1="240" x2="900" y2="240" stroke="#e5e7eb"></line>
+      <text x="10.00" y="262" text-anchor="start" fill="#059669" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="800">CALL</text><text x="182.00" y="262" text-anchor="end" fill="#374151" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="500">$1900.00</text><text x="294.00" y="262" text-anchor="end" fill="#374151" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="500">294</text><text x="406.00" y="262" text-anchor="end" fill="#374151" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="500">294</text><text x="511.00" y="262" text-anchor="end" fill="#374151" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="500">+0%</text><text x="616.00" y="262" text-anchor="end" fill="#374151" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="500">1.4x</text><text x="721.00" y="262" text-anchor="end" fill="#374151" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="500">0.6x</text><text x="806.00" y="262" text-anchor="end" fill="#374151" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="500">81.8%</text><text x="858.00" y="262" text-anchor="middle" fill="#374151" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="500">OTM</text>
+    
+      <line x1="0" y1="274" x2="900" y2="274" stroke="#e5e7eb"></line>
+      <text x="10.00" y="296" text-anchor="start" fill="#059669" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="800">CALL</text><text x="182.00" y="296" text-anchor="end" fill="#374151" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="500">$1800.00</text><text x="294.00" y="296" text-anchor="end" fill="#374151" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="500">256</text><text x="406.00" y="296" text-anchor="end" fill="#374151" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="500">256</text><text x="511.00" y="296" text-anchor="end" fill="#374151" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="500">+0%</text><text x="616.00" y="296" text-anchor="end" fill="#374151" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="500">3.2x</text><text x="721.00" y="296" text-anchor="end" fill="#374151" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="500">3.9x</text><text x="806.00" y="296" text-anchor="end" fill="#374151" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="500">82.6%</text><text x="858.00" y="296" text-anchor="middle" fill="#374151" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="500">OTM</text>
+    
+      <line x1="0" y1="308" x2="900" y2="308" stroke="#e5e7eb"></line>
+      <text x="10.00" y="330" text-anchor="start" fill="#059669" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="800">CALL</text><text x="182.00" y="330" text-anchor="end" fill="#374151" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="500">$2600.00</text><text x="294.00" y="330" text-anchor="end" fill="#374151" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="500">187</text><text x="406.00" y="330" text-anchor="end" fill="#374151" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="500">0</text><text x="511.00" y="330" text-anchor="end" fill="#374151" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="500">-</text><text x="616.00" y="330" text-anchor="end" fill="#374151" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="500">2.2x</text><text x="721.00" y="330" text-anchor="end" fill="#374151" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="500">0.8x</text><text x="806.00" y="330" text-anchor="end" fill="#374151" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="500">179.9%</text><text x="858.00" y="330" text-anchor="middle" fill="#374151" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="500">OTM</text>
+    
+    <line x1="0" y1="342" x2="900" y2="342" stroke="#e5e7eb"></line>
+  </svg>

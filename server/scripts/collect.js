@@ -22,6 +22,8 @@ const BLOBS = [
   { name: 'metricsHistory',  file: path.join(DATA_DIR, 'metricsHistory.json') },
   { name: 'gpuHistory',      file: path.join(DATA_DIR, 'gpuHistory.json') },
   { name: 'dramHistory',     file: path.join(DATA_DIR, 'dramHistory.json') },
+  { name: 'nandHistory',     file: path.join(DATA_DIR, 'nandHistory.json') },
+  { name: 'tftLcdHistory',   file: path.join(DATA_DIR, 'tftLcdHistory.json') },
   { name: 'awsHistory',      file: path.join(DATA_DIR, 'awsHistory.json') },
   { name: 'cpuHistory',      file: path.join(DATA_DIR, 'cpuHistory.json') },
   { name: 'tpuHistory',      file: path.join(DATA_DIR, 'tpuHistory.json') },
@@ -43,6 +45,12 @@ async function main() {
     ? process.env.COLLECT_KEYS.split(',').map(k => k.trim()).filter(k => all.includes(k))
     : all;
   console.log(`[collect] running ${keys.length} scrapers…`);
+
+  // The sentiment scraper self-serves a cached snapshot for up to 3 days; this
+  // always-on collector is the reliable daily-refresh path, so force it to do a
+  // real recompute each run (otherwise the snapshot advances only every ~4 days).
+  process.env.SENTIMENT_FORCE = '1';
+
   await scheduler.refreshAll(keys);   // runs each scraper, snapshots history via storage
 
   await storage.flush();              // ensure all Mongo upserts land before exit

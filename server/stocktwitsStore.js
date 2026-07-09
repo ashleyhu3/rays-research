@@ -76,6 +76,8 @@ function rollingFromDayCounts(dayCounts) {
 // ── Dependency-free streaming RFC4180 CSV parser ────────────────────────────
 // The `text` column carries embedded commas, quotes and newlines, so a
 // line-based split would mis-parse. Yields one array of fields per record.
+// When `onRow` returns a promise (a batch flush), the stream is paused until
+// it settles, so writes are backpressured instead of piling up in memory.
 function parseCsv(filePath, onRow) {
   return new Promise((resolve, reject) => {
     let field = '';
@@ -83,6 +85,13 @@ function parseCsv(filePath, onRow) {
     let inQuotes = false;
     let prevQuote = false;
     const stream = fs.createReadStream(filePath, { encoding: 'utf8' });
+    const emitRow = r => {
+      const p = onRow(r);
+      if (p && typeof p.then === 'function') {
+        stream.pause();
+        p.then(() => stream.resume(), reject);
+      }
+    };
     stream.on('data', chunk => {
       for (let i = 0; i < chunk.length; i++) {
         const c = chunk[i];
@@ -93,18 +102,18 @@ function parseCsv(filePath, onRow) {
           prevQuote = false;
           if (c === '"') { field += '"'; inQuotes = true; }
           else if (c === ',') { row.push(field); field = ''; }
-          else if (c === '\n') { row.push(field); onRow(row); row = []; field = ''; }
+          else if (c === '\n') { row.push(field); emitRow(row); row = []; field = ''; }
           else if (c === '\r') { /* skip */ }
           else field += c;
         } else if (c === '"') { inQuotes = true; }
         else if (c === ',') { row.push(field); field = ''; }
-        else if (c === '\n') { row.push(field); onRow(row); row = []; field = ''; }
+        else if (c === '\n') { row.push(field); emitRow(row); row = []; field = ''; }
         else if (c === '\r') { /* skip */ }
         else field += c;
       }
     });
     stream.on('end', () => {
-      if (field.length || row.length) { row.push(field); onRow(row); }
+      if (field.length || row.length) { row.push(field); emitRow(row); }
       resolve();
     });
     stream.on('error', reject);
@@ -288,10 +297,13 @@ async function ingestCsv(file) {
   const touched = new Map(); // symbol -> Set(date)
   const flush = async () => {
     if (!batch.length) return;
+    // Snapshot + clear BEFORE awaiting: the CSV stream pauses on the returned
+    // promise, but rows already buffered keep arriving — clearing up front
+    // keeps batches bounded and never re-sends docs.
     const ops = batch.map(d => ({ updateOne: { filter: { _id: d._id }, update: { $set: d }, upsert: true } }));
+    batch = [];
     const r = await c.messages.bulkWrite(ops, { ordered: false });
     inserted += (r.upsertedCount || 0);
-    batch = [];
   };
   await parseCsv(file, row => {
     if (header) {
@@ -330,10 +342,11 @@ async function migrateCsvDir() {
     const rollup = new Map(); // date -> {count,bull,bear}  (ALL history)
     const flush = async () => {
       if (!batch.length) return;
+      // Snapshot + clear BEFORE awaiting (see ingestCsv.flush).
       const ops = batch.map(d => ({ updateOne: { filter: { _id: d._id }, update: { $set: d }, upsert: true } }));
+      batch = [];
       const r = await c.messages.bulkWrite(ops, { ordered: false });
       inserted += (r.upsertedCount || 0);
-      batch = [];
     };
     await parseCsv(file, row => {
       if (header) {
@@ -377,11 +390,18 @@ async function prune() {
   return r.deletedCount || 0;
 }
 
-// Write minimal one-row "resume stub" CSVs (latest message per ticker) into a
+// Write one-row "resume stub" CSVs (latest message per ticker) into a
 // directory, so the Python collector's incremental logic — which reads the
-// newest committed timestamp to know where to resume — works without the full
+// newest stored timestamp to know where to resume — works without the full
 // CSVs living in the repo. Tickers with no Mongo data are skipped (the Python
-// collector then full-scrapes them from its default start).
+// collector then full-scrapes them from its default start). The stub carries
+// the real message fields (not blanks): the scraper's dedupe keeps the first
+// occurrence of a message_id, so a blank stub row would survive the merge and
+// then blank out the stored message on re-ingest.
+const csvEscape = v => {
+  const s = String(v ?? '');
+  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+};
 async function writeResumeStubs(outDir, tickers) {
   const c = await getColls();
   if (!c) throw new Error('MONGODB_URI not set');
@@ -393,7 +413,10 @@ async function writeResumeStubs(outDir, tickers) {
     const [latest] = await c.messages.find({ symbol }).sort({ ts: -1 }).limit(1).toArray();
     if (!latest) continue;
     const iso = latest.ts.toISOString().replace(/\.\d+Z$/, 'Z');
-    const row = [symbol, '', 0, '', iso, latest.sentiment || 'Neutral', 0, '', latest._id, ''].join(',');
+    const row = [
+      symbol, latest.username, latest.user_followers ?? 0, latest.text, iso,
+      latest.sentiment || 'Neutral', latest.reshared_count ?? 0, latest.link, latest._id, '',
+    ].map(csvEscape).join(',');
     fs.writeFileSync(path.join(outDir, `api_tweets_${symbol.toLowerCase()}.csv`), header + row + '\n');
     written.push(symbol);
   }

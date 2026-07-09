@@ -20,7 +20,7 @@ function fmtCell(v) {
 
 export default function ChartCard({
   chartId,
-  title, src, srcUrl, freq, subtitle, legend, insight, srcNote,
+  title, src, srcUrl, freq, lag, legend, insight, srcNote,
   isNew, span2, height = 200, children,
   transposed = false, rowLinks = [], colLinks = [], colorPct = false, clean = false,
 }) {
@@ -33,7 +33,7 @@ export default function ChartCard({
   src      = src      ?? meta.src;
   srcUrl   = srcUrl   ?? meta.srcUrl;
   freq     = freq     ?? meta.freq;
-  subtitle = subtitle ?? meta.subtitle;
+  lag      = lag      ?? meta.lag;
   insight  = insight  ?? meta.insight;
   srcNote  = srcNote  ?? meta.srcNote;
 
@@ -195,6 +195,18 @@ export default function ChartCard({
     )
   );
 
+  // Source attribution + inherent data lag, shown as a row beneath the chart
+  // body (replaces the old top-right source link and the description subtitle).
+  const sourceRow = src && (
+    <div className="ch-source-row">
+      <span className="ch-source-label">Source:</span>{' '}
+      {srcUrl
+        ? <a className="ch-src" href={srcUrl} target="_blank" rel="noopener noreferrer">{src}</a>
+        : <span className="ch-src">{src}</span>}
+      {lag && <span className="ch-lag"> ({lag})</span>}
+    </div>
+  );
+
   return (
     <div className={cls}>
       {clean ? (
@@ -215,29 +227,24 @@ export default function ChartCard({
             <div className="ch-meta">
               {seriesFilter}
               {freq && <span className={`freq-badge freq-${freq}`}>{freq}</span>}
-              {src && (
-                srcUrl
-                  ? <a className="ch-src" href={srcUrl} target="_blank" rel="noopener noreferrer">{src}</a>
-                  : <span className="ch-src">{src}</span>
-              )}
               <ExpandButton onClick={() => setExpanded(true)} />
             </div>
           </div>
-          {subtitle && <div className="ch-sub">{subtitle}</div>}
           {legend && <InlineLegend items={legend} />}
         </>
       )}
 
       {renderBody(height)}
 
+      {sourceRow}
       {insight && <InsightBox html={insight} />}
       {srcNote && <div className="src-note">{srcNote}</div>}
 
       {expanded && (
         <ChartModal title={title} onClose={() => setExpanded(false)}>
-          {subtitle && <div className="ch-sub">{subtitle}</div>}
           {legend && <InlineLegend items={legend} />}
           <div className="ch-modal-chart">{renderBody('100%')}</div>
+          {sourceRow}
           {insight && <InsightBox html={insight} />}
         </ChartModal>
       )}

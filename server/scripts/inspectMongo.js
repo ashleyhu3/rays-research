@@ -10,7 +10,7 @@
  */
 'use strict';
 
-const BLOBS = ['metricsHistory', 'gpuHistory', 'dramHistory', 'awsHistory', 'cloudGpuHistory'];
+const BLOBS = ['metricsHistory', 'gpuHistory', 'dramHistory', 'nandHistory', 'tftLcdHistory', 'awsHistory', 'cloudGpuHistory'];
 const COLLECTION = 'blobs';
 
 async function main() {

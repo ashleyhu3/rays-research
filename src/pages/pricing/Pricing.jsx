@@ -10,6 +10,8 @@ import { useData } from '../../context/DataContext';
 const DRAM_PALETTE = [C.teal, C.openai, C.anthropic, C.google, C.minimax, C.kimi, C.deepseek, C.perplexity, C.red, C.slate];
 
 const DRAM_METHOD = 'Per model: session average × (1 + session change), averaged across all listed variants (speed grades, eTT, organization). One point per scraped day.';
+const NAND_METHOD = 'TrendForce NAND flash, wafer, and memory-card spot tables. Variants are collapsed to model keys, each row uses session average × (1 + session change), then same-model rows are averaged; gaps are forward-filled.';
+const TFT_LCD_METHOD = 'TrendForce large-size and smartphone TFT-LCD panel average prices. Gaps are forward-filled until the next posted panel-price update.';
 
 function dramDayLabel(isoDate) {
   return new Date(isoDate + 'T00:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
@@ -38,6 +40,21 @@ function dramLineData(models, history) {
 }
 
 const dramLegend = models => models.map((m, i) => [m.model, DRAM_PALETTE[i % DRAM_PALETTE.length]]);
+
+function trendforceProductData(products, history) {
+  return {
+    labels: history.dates.map(dramDayLabel),
+    datasets: products.map((p, i) => ({
+      ...mkDs(p.product, DRAM_PALETTE[i % DRAM_PALETTE.length], history.series[p.product] ?? []),
+      spanGaps: true,
+      pointRadius: 0,
+    })),
+  };
+}
+
+const productLegend = products => products.map((p, i) => [p.product, DRAM_PALETTE[i % DRAM_PALETTE.length]]);
+
+const awsLegend = ds => (ds?.datasets ?? []).map(d => [d.label, d.borderColor]);
 
 const GPU_PALETTE = {
   H100_SXM: C.openai,
@@ -72,6 +89,16 @@ function windowHistory(history, weeks) {
   return { start, dates: history.dates.slice(start) };
 }
 
+function windowTrendforceHistory(history, weeks) {
+  if (!history?.dates?.length) return null;
+  const cutoff = Date.now() - weeks * 7 * 86400000;
+  const start = Math.max(0, history.dates.findIndex(d => new Date(d + 'T00:00:00Z').getTime() >= cutoff));
+  return {
+    dates: history.dates.slice(start),
+    series: Object.fromEntries(Object.entries(history.series ?? {}).map(([k, arr]) => [k, arr.slice(start)])),
+  };
+}
+
 const CPU_PALETTE = {
   'C5 (Xeon)':      C.openai,
   'C6i (Ice Lake)': C.anthropic,
@@ -80,12 +107,6 @@ const CPU_PALETTE = {
   'C7g (Graviton)': C.minimax,
 };
 
-function SectionLabel({ children }) {
-  return (
-    <div className="pricing-section-label">{children}</div>
-  );
-}
-
 const TPU_PALETTE = {
   v4:  C.google,
   v5e: C.teal,
@@ -93,7 +114,10 @@ const TPU_PALETTE = {
   v6e: C.anthropic,
 };
 
-export default function Pricing({ weeks: W = 52 }) {
+// Shared computation for every pricing page. Each page below renders one slice
+// of the returned object; the maths stays here because the GPU charts depend on
+// both the vast.ai and AWS histories together.
+function usePricingCharts(W) {
   const { liveData } = useData();
 
     /* ── GPU spot pricing (moved from the GPU view) ──────────────────── */
@@ -124,6 +148,16 @@ export default function Pricing({ weeks: W = 52 }) {
   const chipData   = useMemo(() => chips.length   > 0 && windowedHistory ? dramLineData(chips, windowedHistory)   : null, [chips, windowedHistory]);
   const moduleData = useMemo(() => modules.length > 0 && windowedHistory ? dramLineData(modules, windowedHistory) : null, [modules, windowedHistory]);
 
+  const nand = liveData?.nand;
+  const nandProducts = useMemo(() => nand?.products ?? [], [nand]);
+  const nandHistory = useMemo(() => windowTrendforceHistory(nand?.history, W), [nand, W]);
+  const nandData = useMemo(() => nandProducts.length > 0 && nandHistory ? trendforceProductData(nandProducts, nandHistory) : null, [nandProducts, nandHistory]);
+
+  const tftLcd = liveData?.tftLcd;
+  const tftLcdProducts = useMemo(() => tftLcd?.products ?? [], [tftLcd]);
+  const tftLcdHistory = useMemo(() => windowTrendforceHistory(tftLcd?.history, W), [tftLcd, W]);
+  const tftLcdData = useMemo(() => tftLcdProducts.length > 0 && tftLcdHistory ? trendforceProductData(tftLcdProducts, tftLcdHistory) : null, [tftLcdProducts, tftLcdHistory]);
+
   // TrendForce "Mainstream DRAM Spot Price" monthly index, windowed to W weeks
   const dramIndex = dram?.index;
   const dramIndexData = useMemo(() => {
@@ -143,7 +177,6 @@ export default function Pricing({ weeks: W = 52 }) {
   // Exact EC2 spot backfill (≤90d) continued forward via the free Spot Advisor.
   const aws = liveData?.aws;
   const AWS_COLOR = { H100: C.openai, H200: C.anthropic, A100: C.teal, Trainium: C.google, Inferentia2: C.minimax };
-  const awsLegend = ds => (ds?.datasets ?? []).map(d => [d.label, d.borderColor]);
 
   // Master time axis = AWS history (reaches furthest back), windowed to W weeks.
   const awsWindow = useMemo(() => {
@@ -305,99 +338,162 @@ export default function Pricing({ weeks: W = 52 }) {
   }, [tpuData, tpuWindow, W]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const dramAsOf = dram?.asOf ? ` · as of ${dram.asOf}` : '';
+  const nandAsOf = nand?.asOf ? ` · as of ${nand.asOf}` : '';
+  const tftLcdAsOf = tftLcd?.asOf ? ` · as of ${tftLcd.asOf}` : '';
+
+  return {
+    dramIndex, dramIndexData, chipData, chips, moduleData, modules, dramAsOf,
+    nandData, nandProducts, nandAsOf, tftLcdData, tftLcdProducts, tftLcdAsOf,
+    gpuIndexData, combinedSpotData, awsChipData,
+    cpuHistData, tpuHistData,
+  };
+}
+
+function NoData({ label }) {
+  return (
+    <div style={{ color: 'var(--ter)', fontSize: 12, padding: '16px 0' }}>
+      No {label} pricing data yet — hit <b style={{ color: 'var(--sec)' }}>Refresh Data</b> to fetch the latest spot prices.
+    </div>
+  );
+}
+
+// ── Page: Memory ──────────────────────────────────────────────────────────
+export function PricingMemory({ weeks: W = 52 }) {
+  const {
+    dramIndex, dramIndexData, chipData, chips, moduleData, modules, dramAsOf,
+    nandData, nandProducts, nandAsOf, tftLcdData, tftLcdProducts, tftLcdAsOf,
+  } = usePricingCharts(W);
+  const anyData = dramIndexData || chipData || moduleData || nandData || tftLcdData;
 
   return (
-    <>
-      <SectionLabel>Memory</SectionLabel>
-      <EditableGrid viewId="pricing-memory">
-        {dramIndexData && (
-          <ChartCard
-            chartId="dram-index"
-            title={`${dramIndex.name} — monthly (${dramIndex.unit})`}
-            height={240} span2
-          >
-            <Line data={dramIndexData} options={baseOpts(v => `$${v.toFixed(1)}`)} />
-          </ChartCard>
-        )}
+    <EditableGrid viewId="pricing-memory">
+      {dramIndexData && (
+        <ChartCard
+          chartId="dram-index"
+          title={`${dramIndex.name} — monthly (${dramIndex.unit})`}
+          height={240} span2
+        >
+          <Line data={dramIndexData} options={baseOpts(v => `$${v.toFixed(1)}`)} />
+        </ChartCard>
+      )}
 
-        {chipData && (
-          <ChartCard
-            chartId="dram-chips"
-            subtitle={`${DRAM_METHOD}${dramAsOf}`}
-            legend={dramLegend(chips)}
-            height={260} span2
-          >
-            <Line data={chipData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
-          </ChartCard>
-        )}
+      {chipData && (
+        <ChartCard
+          chartId="dram-chips"
+          subtitle={`${DRAM_METHOD}${dramAsOf}`}
+          legend={dramLegend(chips)}
+          height={260} span2
+        >
+          <Line data={chipData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
+        </ChartCard>
+      )}
 
-        {moduleData && (
-          <ChartCard
-            chartId="dram-modules"
-            subtitle={`SO-DIMM / UDIMM / RDIMM modules. ${DRAM_METHOD}${dramAsOf}`}
-            legend={dramLegend(modules)}
-            height={240}
-          >
-            <Line data={moduleData} options={baseOpts(v => `$${v.toFixed(0)}`)} />
-          </ChartCard>
-        )}
-      </EditableGrid>
+      {moduleData && (
+        <ChartCard
+          chartId="dram-modules"
+          subtitle={`SO-DIMM / UDIMM / RDIMM modules. ${DRAM_METHOD}${dramAsOf}`}
+          legend={dramLegend(modules)}
+          height={240} span2
+        >
+          <Line data={moduleData} options={baseOpts(v => `$${v.toFixed(0)}`)} />
+        </ChartCard>
+      )}
 
-      <SectionLabel>GPU</SectionLabel>
-      <EditableGrid viewId="pricing-gpu">
-        {gpuIndexData && (
-          <ChartCard
-            chartId="gpu-index"
-            height={240} span2
-          >
-            <Line data={gpuIndexData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
-          </ChartCard>
-        )}
+      {nandData && (
+        <ChartCard
+          chartId="nand-spot"
+          subtitle={`${NAND_METHOD}${nandAsOf}`}
+          legend={productLegend(nandProducts)}
+          height={260} span2
+        >
+          <Line data={nandData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
+        </ChartCard>
+      )}
 
-        {combinedSpotData && (
-          <ChartCard
-            chartId="gpu-spot-combined"
-            legend={awsLegend(combinedSpotData)}
-            height={240} span2
-          >
-            <Line data={combinedSpotData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
-          </ChartCard>
-        )}
+      {tftLcdData && (
+        <ChartCard
+          chartId="tft-lcd-panel"
+          subtitle={`${TFT_LCD_METHOD}${tftLcdAsOf}`}
+          legend={productLegend(tftLcdProducts)}
+          height={240} span2
+        >
+          <Line data={tftLcdData} options={baseOpts(v => `$${v.toFixed(1)}`)} />
+        </ChartCard>
+      )}
 
-        {awsChipData && (
-          <ChartCard
-            chartId="aws-chip-spot"
-            legend={awsLegend(awsChipData)}
-            height={220} span2
-          >
-            <Line data={awsChipData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
-          </ChartCard>
-        )}
+      {!anyData && <ChartCard chartId="dram-index" title="Memory spot pricing" height={200} span2><NoData label="memory" /></ChartCard>}
+    </EditableGrid>
+  );
+}
 
-      </EditableGrid>
+// ── Page: GPU ─────────────────────────────────────────────────────────────
+export function PricingGPU({ weeks: W = 52 }) {
+  const { gpuIndexData, combinedSpotData, awsChipData } = usePricingCharts(W);
+  const anyData = gpuIndexData || combinedSpotData || awsChipData;
 
-      <SectionLabel>CPU / TPU</SectionLabel>
-      <EditableGrid viewId="pricing-cpu">
-        {cpuHistData && (
-          <ChartCard
-            chartId="cpu-spot-history"
-            legend={cpuHistData.datasets.map(d => [d.label, d.borderColor])}
-            height={220} span2
-          >
-            <Line data={cpuHistData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
-          </ChartCard>
-        )}
+  return (
+    <EditableGrid viewId="pricing-gpu">
+      {gpuIndexData && (
+        <ChartCard chartId="gpu-index" height={240} span2>
+          <Line data={gpuIndexData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
+        </ChartCard>
+      )}
 
-        {tpuHistData && (
-          <ChartCard
-            chartId="tpu-spot-history"
-            legend={tpuHistData.datasets.map(d => [d.label, d.borderColor])}
-            height={220} span2
-          >
-            <Line data={tpuHistData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
-          </ChartCard>
-        )}
-      </EditableGrid>
-    </>
+      {combinedSpotData && (
+        <ChartCard chartId="gpu-spot-combined" legend={awsLegend(combinedSpotData)} height={240} span2>
+          <Line data={combinedSpotData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
+        </ChartCard>
+      )}
+
+      {awsChipData && (
+        <ChartCard chartId="aws-chip-spot" legend={awsLegend(awsChipData)} height={220} span2>
+          <Line data={awsChipData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
+        </ChartCard>
+      )}
+
+      {!anyData && <ChartCard chartId="gpu-index" title="GPU spot pricing" height={200} span2><NoData label="GPU" /></ChartCard>}
+    </EditableGrid>
+  );
+}
+
+// ── Page: CPU ─────────────────────────────────────────────────────────────
+export function PricingCPU({ weeks: W = 52 }) {
+  const { cpuHistData } = usePricingCharts(W);
+
+  return (
+    <EditableGrid viewId="pricing-cpu">
+      {cpuHistData ? (
+        <ChartCard
+          chartId="cpu-spot-history"
+          legend={cpuHistData.datasets.map(d => [d.label, d.borderColor])}
+          height={220} span2
+        >
+          <Line data={cpuHistData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
+        </ChartCard>
+      ) : (
+        <ChartCard chartId="cpu-spot-history" title="CPU spot pricing" height={200} span2><NoData label="CPU" /></ChartCard>
+      )}
+    </EditableGrid>
+  );
+}
+
+// ── Page: TPU ─────────────────────────────────────────────────────────────
+export function PricingTPU({ weeks: W = 52 }) {
+  const { tpuHistData } = usePricingCharts(W);
+
+  return (
+    <EditableGrid viewId="pricing-tpu">
+      {tpuHistData ? (
+        <ChartCard
+          chartId="tpu-spot-history"
+          legend={tpuHistData.datasets.map(d => [d.label, d.borderColor])}
+          height={220} span2
+        >
+          <Line data={tpuHistData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
+        </ChartCard>
+      ) : (
+        <ChartCard chartId="tpu-spot-history" title="TPU preemptible pricing" height={200} span2><NoData label="TPU" /></ChartCard>
+      )}
+    </EditableGrid>
   );
 }

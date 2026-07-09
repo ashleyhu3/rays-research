@@ -297,6 +297,41 @@ export function DramMini() {
   );
 }
 
+function TrendforceProductMini({ dataKey, title, digits = 2 }) {
+  const { liveData } = useData();
+
+  const data = useMemo(() => {
+    const h = liveData?.[dataKey]?.history;
+    if (!h?.dates?.length || !h?.series) return null;
+    const N = 90;
+    const products = Object.entries(h.series)
+      .map(([k, s]) => ({ k, s, latest: [...s].reverse().find(v => v != null) ?? 0 }))
+      .filter(p => p.s.some(v => v != null))
+      .sort((a, b) => b.latest - a.latest)
+      .slice(0, 6);
+    if (products.length === 0) return null;
+    return {
+      labels: h.dates.slice(-N).map(d => d.slice(5)),
+      datasets: products.map(({ k, s }, i) => mkLine(k, PALETTE[i % PALETTE.length], s.slice(-N))),
+    };
+  }, [liveData, dataKey]);
+
+  if (!data) return null;
+  return (
+    <MiniCard title={title}>
+      <Line data={data} options={baseOpts(v => `$${Number(v).toFixed(digits)}`)} />
+    </MiniCard>
+  );
+}
+
+export function NandMini() {
+  return <TrendforceProductMini dataKey="nand" title="NAND Spot Prices — TrendForce" digits={2} />;
+}
+
+export function TftLcdMini() {
+  return <TrendforceProductMini dataKey="tftLcd" title="TFT-LCD Panel Prices — TrendForce" digits={1} />;
+}
+
 // ── OpenRouter Usage Rankings ──────────────────────────────────────────────
 export function OpenRouterRanksMini() {
   const { liveData } = useData();
@@ -860,6 +895,8 @@ export const CHART_REGISTRY = {
   github:                [GitHubMini],
   gpu:                   [GPUMini],
   dram:                  [DramMini],
+  nand:                  [NandMini],
+  tftLcd:                [TftLcdMini],
   'aws-spot':            [AwsSpotMini],
   'cloud-gpu':           [CloudGpuMini],
   openrouter:            [OpenRouterPricingMini],

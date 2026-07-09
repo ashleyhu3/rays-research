@@ -1,10 +1,11 @@
-import { useMemo, useState, useRef, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Line, Bar } from 'react-chartjs-2';
 import { C, fa } from '../../config/colors';
 import { baseOpts, mkDs, dualAxisOpts, fmtM, GRID, TICK, BORD } from '../../utils/chartHelpers';
 import ChartCard from '../../components/chart/ChartCard';
 import EditableGrid from '../../components/chart/EditableGrid';
 import { useData } from '../../context/DataContext';
+import { useSentimentSearch } from '../../context/SentimentSearchContext';
 import { TickerPanel } from '../options/Options';
 
 /* ── Short Interest Panel ─────────────────────────────────────────────
@@ -376,6 +377,27 @@ const CAT_COLOR = {
 const monthLabel = iso =>
   new Date(iso + 'T00:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
 
+// Time-range windows for the per-ticker StockTwits section. `days` measures the
+// trailing window ending TODAY (so on 07-07 the 1M window is 06-07 → 07-07);
+// 0 = the full default history.
+const ST_RANGES = [
+  { id: '1m',  label: '1M',  days: 30 },
+  { id: '3m',  label: '3M',  days: 90 },
+  { id: 'all', label: 'All', days: 0 },
+];
+
+// First index of `dates` (sorted ISO, ascending) that falls within the trailing
+// `days` window ending today (UTC); slice from it to keep only the most recent
+// window. days=0 → 0.
+const sliceStart = (dates, days) => {
+  if (!days || !dates?.length) return 0;
+  const today = new Date().toISOString().slice(0, 10);
+  const cutoff = Date.parse(today + 'T00:00:00Z') - days * 86400000;
+  let i = 0;
+  while (i < dates.length && Date.parse(dates[i] + 'T00:00:00Z') < cutoff) i++;
+  return i;
+};
+
 function scatterOpts({ xTitle, yTitle, xFmt = v => v, yFmt = v => v, pointLabel }) {
   return {
     responsive: true, maintainAspectRatio: false, animation: { duration: 300 },
@@ -424,9 +446,12 @@ function sectorScatter(sd, xf, yf, metaf) {
 export default function Sentiment() {
   const { liveData } = useData();
   const sd = liveData?.sentiment;
-  const [input, setInput] = useState('');
-  const [ticker, setTicker] = useState(null);
-  const inputRef = useRef(null);
+  const { ticker, search, available } = useSentimentSearch();
+  // Default to the trailing month so the rolling-30-day charts open on the
+  // window their titles promise (e.g. 06-07 → 07-07 on 07-07).
+  const [range, setRange] = useState('1m');
+
+  const rangeDays = ST_RANGES.find(r => r.id === range)?.days ?? 0;
 
   const v = (sd && ticker && sd.tickers[ticker]) || null;
   const tkColor = v ? (CAT_COLOR[v.category] ?? C.openai) : C.openai;
@@ -473,14 +498,15 @@ export default function Sentiment() {
   // ── Per-ticker charts ─────────────────────────────────────────────────
   const tkWeeklyVP = useMemo(() => {
     const w = v?.weekly; if (!w?.dates?.length) return null;
+    const s = sliceStart(w.dates, rangeDays);
     return {
-      labels: w.dates.map(monthLabel),
+      labels: w.dates.slice(s).map(monthLabel),
       datasets: [
-        { ...mkDs('Weekly posts', tkColor, w.volume, false), yAxisID: 'y',  spanGaps: true, pointRadius: 0 },
-        { ...mkDs('Close price', C.red,    w.price,  false), yAxisID: 'y1', spanGaps: true, pointRadius: 0 },
+        { ...mkDs('Weekly posts', tkColor, w.volume.slice(s), false), yAxisID: 'y',  spanGaps: true, pointRadius: 0 },
+        { ...mkDs('Close price', C.red,    w.price.slice(s),  false), yAxisID: 'y1', spanGaps: true, pointRadius: 0 },
       ],
     };
-  }, [v, tkColor]);
+  }, [v, tkColor, rangeDays]);
 
   const tkDailyVP = useMemo(() => {
     const d = v?.daily30; if (!d?.dates?.length) return null;
@@ -495,61 +521,37 @@ export default function Sentiment() {
 
   const tkSentiment = useMemo(() => {
     const w = v?.weekly; if (!w?.dates?.length) return null;
+    const s = sliceStart(w.dates, rangeDays);
     return {
-      labels: w.dates.map(monthLabel),
+      labels: w.dates.slice(s).map(monthLabel),
       datasets: [
-        { ...mkDs('Bullish %', C.openai, w.bullPct, true), spanGaps: true, pointRadius: 0 },
-        { ...mkDs('Bearish %', C.red,    w.bearPct, true), spanGaps: true, pointRadius: 0 },
+        { ...mkDs('Bullish %', C.openai, w.bullPct.slice(s), true), spanGaps: true, pointRadius: 0 },
+        { ...mkDs('Bearish %', C.red,    w.bearPct.slice(s), true), spanGaps: true, pointRadius: 0 },
       ],
     };
-  }, [v]);
+  }, [v, rangeDays]);
 
   const tkRolling = useMemo(() => {
     const r = v?.rolling; if (!r?.dates?.length) return null;
+    const s = sliceStart(r.dates, rangeDays);
     return {
-      labels: r.dates.map(monthLabel),
+      labels: r.dates.slice(s).map(monthLabel),
       datasets: [
-        { ...mkDs('Vol ↔ price level', C.openai, r.volPrice, false), spanGaps: true, pointRadius: 0 },
+        { ...mkDs('Vol ↔ price level', C.openai, r.volPrice.slice(s), false), spanGaps: true, pointRadius: 0 },
       ],
     };
-  }, [v]);
-
-  function search(raw) {
-    const t = (raw ?? input).trim().toUpperCase();
-    if (!t) return;
-    setInput(t);
-    setTicker(t);
-  }
+  }, [v, rangeDays]);
 
   const corrTip = c => ` ${c.raw.ticker}: (${c.parsed.x?.toFixed(2)}, ${c.parsed.y?.toFixed(2)})`;
   const asOf = sd?.asOf ? ` · as of ${sd.asOf}` : '';
-  const available = sd ? Object.keys(sd.tickers) : [];
 
   return (
     <div className="opts-page">
-      {/* Search bar — one ticker isolates its charts; empty = aggregate view */}
-      <form className="opts-search-row" onSubmit={e => { e.preventDefault(); search(); }}>
-        <input
-          ref={inputRef}
-          className="opts-input"
-          value={input}
-          onChange={e => setInput(e.target.value.toUpperCase())}
-          placeholder="Search a ticker — options for any (NVDA, AAPL); sentiment for tracked names (MU, SNDK)…"
-          spellCheck={false}
-          autoComplete="off"
-          autoCapitalize="characters"
-        />
-        <button className="opts-search-btn" type="submit" disabled={!input.trim()}>Search</button>
-        {ticker && (
-          <button type="button" className="opts-search-btn" onClick={() => { setTicker(null); setInput(''); }}>
-            ← Aggregate view
-          </button>
-        )}
-      </form>
-
-      {/* Quick-pick chips for the tracked universe */}
+      {/* Quick-pick chips for the tracked universe — the search input itself
+          lives in the Topbar (see SentimentSearchBar) so it stays visible
+          while this page scrolls. */}
       {available.length > 0 && (
-        <div className="opts-samples" style={{ marginTop: -4, marginBottom: 14 }}>
+        <div className="opts-samples" style={{ marginBottom: 14 }}>
           {available.map(t => (
             <button key={t} className={`opts-sample${t === ticker ? ' active' : ''}`} onClick={() => search(t)}>{t}</button>
           ))}
@@ -612,7 +614,21 @@ export default function Sentiment() {
             <ShortInterestPanel key={`si-${ticker}`} ticker={ticker} />
           </div>
 
-          <div style={{ ...SECTION_HDR, marginTop: 30 }}>StockTwits Sentiment — {ticker}</div>
+          <div style={{ ...SECTION_HDR, marginTop: 30, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+            <span>StockTwits Sentiment — {ticker}</span>
+            {v && (
+              <div className="opts-chart-toggle" style={{ textTransform: 'none', letterSpacing: 'normal' }}>
+                {ST_RANGES.map(r => (
+                  <button
+                    key={r.id}
+                    type="button"
+                    className={`opts-chart-toggle-btn${range === r.id ? ' active' : ''}`}
+                    onClick={() => setRange(r.id)}
+                  >{r.label}</button>
+                ))}
+              </div>
+            )}
+          </div>
           {!v ? (
             <div className="opts-empty" style={{ paddingTop: 6 }}>
               <h2>No StockTwits sentiment tracked for {ticker}</h2>
@@ -632,7 +648,7 @@ export default function Sentiment() {
           )}
           {tkDailyVP && (
             <ChartCard chartId="sent-tk-daily-vp" title={`Daily Posting Volume vs Price — ${ticker} (rolling 30 days)`}
-              subtitle="Daily post count (left) against closing price (right) for the most recent 30 trading days with both price and post data."
+              subtitle="Daily post count (left) against closing price (right) over the trailing 30 calendar days."
               legend={[['Daily posts', tkColor], ['Close price', C.red]]} height={260} span2>
               <Line data={tkDailyVP} options={dualAxisOpts(v2 => v2.toLocaleString(), v2 => `$${v2.toFixed(2)}`)} />
             </ChartCard>

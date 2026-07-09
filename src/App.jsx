@@ -14,6 +14,8 @@ import Chat from './pages/chat/Chat';
 import { UIProvider } from './context/UIContext';
 import { DashboardProvider } from './context/DashboardContext';
 import { LayoutProvider } from './context/LayoutContext';
+import { SentimentSearchProvider } from './context/SentimentSearchContext';
+import SentimentSearchBar from './pages/sentiment/SentimentSearchBar';
 
 // ── Page components (static imports for reliability) ─────────────────
 // Overview
@@ -29,13 +31,10 @@ import MarketSignals    from './pages/market-signals/MarketSignals';
 import DemandGeneral    from './pages/market-signals/InfrastructureOss';
 import DemandOpenRouter from './pages/market-signals/OpenRouter';
 // Supply chain
-import AISupply, {
-  AISupplyOptics,
-  AISupplyCCL,
-  AISupplyPCB,
-  AISupplyABF,
-  AISupplyMLCC,
-  AISupplyFiber,
+import {
+  AISupplyOptics, AISupplyPCB, AISupplyMLCC, AISupplyFiber,
+  AISupplyCooling, AISupplyPower, AISupplyEquipment, AISupplyMemory, AISupplyFoundry,
+  AISupplyCPU, AISupplyODM,
 } from './pages/supply-chain/SupplyChain';
 import DcTimelines, {
   DcCapacity,
@@ -43,8 +42,10 @@ import DcTimelines, {
 } from './pages/supply-chain/DcBuildouts';
 // Tools
 import Options from './pages/options/Options';
-import Pricing from './pages/pricing/Pricing';
+import { PricingMemory, PricingGPU, PricingCPU, PricingTPU } from './pages/pricing/Pricing';
 import Sentiment from './pages/sentiment/Sentiment';
+import Alerts, { OptionsReportTitle, OptionsReportControls } from './pages/alerts/Alerts';
+import { OptionsReportProvider } from './context/OptionsReportContext';
 import DataValidity from './pages/data-validity/DataValidity';
 import Transcripts from './pages/transcripts/Transcripts';
 // Source-specific signal pages
@@ -61,7 +62,7 @@ import Community      from './pages/sources/Community';
 
 /** Views that use EditableGrid and support layout customisation */
 const LAYOUT_EDITABLE = new Set([
-  'pypi','github','web','hf','pricing','datacenter','electricity','chinese',
+  'pypi','github','web','hf','pricing-memory','pricing-gpu','pricing-cpu','pricing-tpu','datacenter','electricity','chinese',
   'demand-openai','demand-anthropic','demand-google','demand-zhipu','demand-minimax','demand-general','openrouter-rankings',
   'dc-capacity','dc-timelines',
   'dc-co-aws','dc-co-google','dc-co-microsoft','dc-co-oracle','dc-co-openai','dc-co-nebius','dc-co-meta',
@@ -73,17 +74,24 @@ const VIEW_COMPONENTS = {
   github:      GitHub,
   web:         Web,
   hf:          HuggingFace,
-  pricing:     Pricing,
+  'pricing-memory': PricingMemory,
+  'pricing-gpu':    PricingGPU,
+  'pricing-cpu':    PricingCPU,
+  'pricing-tpu':    PricingTPU,
   datacenter:  Datacenter,
   electricity: Electricity,
   chinese:     Chinese,
-  'ai-supply':        AISupply,
-  'ai-supply-optics': AISupplyOptics,
-  'ai-supply-fiber':  AISupplyFiber,
-  'ai-supply-ccl':    AISupplyCCL,
-  'ai-supply-pcb':    AISupplyPCB,
-  'ai-supply-abf':    AISupplyABF,
-  'ai-supply-mlcc':   AISupplyMLCC,
+  'ai-supply-optics':    AISupplyOptics,
+  'ai-supply-fiber':     AISupplyFiber,
+  'ai-supply-pcb':       AISupplyPCB,
+  'ai-supply-mlcc':      AISupplyMLCC,
+  'ai-supply-cooling':   AISupplyCooling,
+  'ai-supply-power':     AISupplyPower,
+  'ai-supply-equipment': AISupplyEquipment,
+  'ai-supply-memory':    AISupplyMemory,
+  'ai-supply-foundry':   AISupplyFoundry,
+  'ai-supply-cpu':       AISupplyCPU,
+  'ai-supply-odm':       AISupplyODM,
   'dc-capacity':      DcCapacity,
   'dc-timelines':     DcTimelines,
   'dc-co-aws':        DcCoAWS,
@@ -97,6 +105,7 @@ const VIEW_COMPONENTS = {
   'docker':           Docker,
   'community':        Community,
   'options':          Options,
+  'alerts':           Alerts,
   'sentiment':        Sentiment,
   'sources':          DataValidity,
   'transcripts':      Transcripts,
@@ -133,12 +142,15 @@ export default function App() {
   // Check if this is a sector overview page
   const sectorId = SECTOR_OVERVIEW_IDS[currentView] ?? null;
   const ViewComponent = sectorId ? null : VIEW_COMPONENTS[currentView];
-  const showSidebar = currentView !== 'pricing' && currentView !== 'options' && currentView !== 'chat' && currentView !== 'sentiment' && currentView !== 'sources' && currentView !== 'transcripts';
+  const isAlerts = currentView === 'alerts';
+  const showSidebar = currentView !== 'options' && currentView !== 'chat' && currentView !== 'sentiment' && currentView !== 'sources' && currentView !== 'transcripts' && currentView !== 'alerts';
 
   return (
     <DashboardProvider>
       <UIProvider>
         <LayoutProvider>
+        <SentimentSearchProvider>
+        <OptionsReportProvider>
         <Navbar onNavigate={setCurrentView} currentView={currentView} />
         <div className="app-body">
           {showSidebar && <Sidebar currentView={currentView} onNavigate={setCurrentView} mode={mode} />}
@@ -146,8 +158,14 @@ export default function App() {
             {currentView !== 'chat' && (
               <Topbar
                 title={meta.title}
-                weeks={mode === 'demand' || mode === 'pricing' ? weeks : undefined}
-                onWeeksChange={mode === 'demand' || mode === 'pricing' ? setWeeks : undefined}
+                titleContent={
+                  isAlerts ? <OptionsReportTitle />
+                  : currentView === 'sentiment' ? <SentimentSearchBar />
+                  : undefined
+                }
+                rightContent={isAlerts ? <OptionsReportControls /> : undefined}
+                weeks={!isAlerts && (mode === 'demand' || mode === 'pricing') ? weeks : undefined}
+                onWeeksChange={!isAlerts && (mode === 'demand' || mode === 'pricing') ? setWeeks : undefined}
                 months={mode === 'supply' ? months : undefined}
                 onMonthsChange={mode === 'supply' ? setMonths : undefined}
                 sectorId={sectorId}
@@ -165,6 +183,8 @@ export default function App() {
             </div>
           </main>
         </div>
+        </OptionsReportProvider>
+        </SentimentSearchProvider>
         </LayoutProvider>
       </UIProvider>
     </DashboardProvider>

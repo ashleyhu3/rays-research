@@ -1,17 +1,28 @@
 name: Collect StockTwits data
 
-# Refreshes the StockTwits sentiment CSVs on GitHub's always-on scheduler.
-# The collector is incremental: it reads the latest message already committed
-# for each ticker and scrapes only the new window, so the committed CSVs ARE
-# the state store — they must be checked out (and committed back) each run.
+# Refreshes the StockTwits sentiment data on GitHub's always-on scheduler,
+# storing everything in MongoDB (no CSVs are committed to the repo):
 #
-# The public StockTwits API needs no auth, so this workflow requires no secrets.
+#   1. prepare — write one-row "resume stub" CSVs from Mongo (latest message
+#      per ticker) so the Python collector's incremental logic knows where to
+#      resume without full CSVs living in the repo.
+#   2. scrape  — the Python collector fetches only the new window per ticker.
+#   3. ingest  — upsert the scraped messages into `stocktwits_messages`,
+#      recompute the per-day `stocktwits_daily` rollups, prune messages older
+#      than the retention window.
+#   4. analyze — recompute the sentiment snapshot (weekly volume/sentiment,
+#      rolling correlations) from the daily rollups already in Mongo + daily
+#      closes from Massive, and store it in the `sentimentData` blob the site
+#      serves. No re-scrape: weekly series are summed from the stored dailies.
+#
+# Required repo secrets: MONGODB_URI. Optional: MONGODB_DB, MASSIVE_API_KEY
+# (daily closes; Yahoo fallback if unset). The StockTwits API needs no auth.
 # Tickers are read from stocktwits/Stocktwits-Scraper-main/tickers.txt.
 
 on:
   schedule:
-    # Once daily at 06:00 UTC. High-volume tickers can take a while, so the
-    # job allows a long timeout below.
+    # Once daily at 06:00 UTC. Incremental scrapes are small, but leave
+    # headroom for rate-limit backoff on high-volume tickers.
     - cron: '0 6 * * *'
   workflow_dispatch: {}   # allow manual runs from the Actions tab
 
@@ -20,36 +31,43 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: write   # needed to commit refreshed CSVs back to the repo
+  contents: read
 
 jobs:
   collect:
     runs-on: ubuntu-latest
-    timeout-minutes: 300   # MU/SNDK etc. can take 45-60 min each, serially
-    defaults:
-      run:
-        working-directory: stocktwits/Stocktwits-Scraper-main
+    timeout-minutes: 120
+    env:
+      MONGODB_URI: ${{ secrets.MONGODB_URI }}
+      MONGODB_DB: ${{ secrets.MONGODB_DB }}
+      DATA_DIR: stocktwits/Stocktwits-Scraper-main/data
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
 
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
       - name: Install dependencies
-        run: pip install pandas
+        run: |
+          npm ci --omit=dev
+          pip install pandas
 
-      - name: Run collector
+      - name: Prepare resume stubs from Mongo
+        run: node server/scripts/syncStocktwits.js prepare "$DATA_DIR"
+
+      - name: Scrape new messages
+        working-directory: stocktwits/Stocktwits-Scraper-main
         run: python update_all.py --data-dir data
 
-      - name: Commit refreshed data
-        run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/
-          if git diff --cached --quiet; then
-            echo "No data changes to commit."
-          else
-            git commit -m "chore(stocktwits): scheduled data refresh"
-            git push
-          fi
+      - name: Ingest into MongoDB
+        run: node server/scripts/syncStocktwits.js ingest "$DATA_DIR"
+
+      - name: Recompute sentiment snapshot
+        env:
+          MASSIVE_API_KEY: ${{ secrets.MASSIVE_API_KEY }}
+        run: COLLECT_KEYS=sentiment node server/scripts/collect.js

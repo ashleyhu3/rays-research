@@ -84,15 +84,17 @@ export const fmtGrowthPct = v => `${v > 0 ? '+' : ''}${v.toFixed(0)}%`;
 
 /**
  * Direction of the most recent complete week's token volume vs the prior
- * complete week for one provider: 'up', 'down', or null (flat / no data).
- * The in-progress week is dropped so a partial total can't read as a fake
- * drop.
+ * complete week for one provider: 'up', 'down', 'flat' (genuinely unchanged),
+ * or null (no data to compare). The in-progress week is dropped so a partial
+ * total can't read as a fake drop.
  */
 export function orWeeklyTrend(ranks, provider) {
   const cw = completeWeeks(ranks, provider);
   if (!cw || cw.totals.length < 2) return null;
   const latest = cw.totals.at(-1);
   const prev   = cw.totals.at(-2);
-  if (!(prev > 0) || latest === prev) return null;
-  return latest > prev ? 'up' : 'down';
+  if (!(prev > 0)) return null;
+  if (latest > prev) return 'up';
+  if (latest < prev) return 'down';
+  return 'flat';
 }
