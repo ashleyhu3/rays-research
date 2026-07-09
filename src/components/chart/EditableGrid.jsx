@@ -23,10 +23,14 @@ export default function EditableGrid({ viewId, children }) {
   // the order it's written in the view file. Deterministic — it does not depend
   // on the live data, so the layout is identical across environments — until the
   // user pins an explicit arrangement (below), which then wins. All charts
-  // default to half-width; users can widen any chart to full via the controls.
+  // default to half-width; callers can optionally set a default column.
   const defaultLayout = useMemo(() => {
     const ordered = cards.map((c, i) => ({
-      item: { chartId: c.props.chartId, span: c.props.defaultFull ? 'full' : 'half', col: 'auto' },
+      item: {
+        chartId: c.props.chartId,
+        span: c.props.defaultFull ? 'full' : 'half',
+        col: c.props.defaultCol ?? 'auto',
+      },
       pin:  c.props.pinTop ? 1 : 0,
       i,
     }));

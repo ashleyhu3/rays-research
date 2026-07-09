@@ -5,9 +5,12 @@
  * Each archived page goes through the same parser and averaging as the live
  * scraper (session average × (1 + session change), averaged per model), and
  * lands in server/data/dramHistory.json keyed by the snapshot date. Dates that
- * already exist (e.g. from the live daily scrape) are never overwritten.
+ * already exist (e.g. from the live daily scrape) are never overwritten unless
+ * --overwrite is passed — which recomputes every snapshot through the current
+ * parser (use this after changing the averaging methodology so the whole
+ * history is on one consistent basis, with no discontinuity at the changeover).
  *
- * Usage: node server/scripts/backfillDram.js [--from 20250101]
+ * Usage: node server/scripts/backfillDram.js [--from 20250101] [--overwrite]
  */
 const axios = require('axios');
 const { parseModels, loadHistory, saveHistory } = require('../scrapers/dram');
@@ -43,8 +46,9 @@ async function listSnapshots(from) {
 async function main() {
   const fromArg = process.argv.indexOf('--from');
   const from = fromArg > -1 ? process.argv[fromArg + 1] : '20250101';
+  const overwrite = process.argv.includes('--overwrite');
 
-  console.log(`Listing Wayback snapshots of ${PAGE} since ${from}…`);
+  console.log(`Listing Wayback snapshots of ${PAGE} since ${from}…${overwrite ? ' (overwrite mode)' : ''}`);
   const timestamps = await listSnapshots(from);
   console.log(`${timestamps.length} snapshots found`);
 
@@ -53,7 +57,7 @@ async function main() {
 
   for (const ts of timestamps) {
     const date = `${ts.slice(0, 4)}-${ts.slice(4, 6)}-${ts.slice(6, 8)}`;
-    if (history[date]) { skipped++; continue; } // never overwrite existing days
+    if (history[date] && !overwrite) { skipped++; continue; } // keep existing days unless overwriting
 
     // id_ returns the original page body without the archive toolbar
     const url = `https://web.archive.org/web/${ts}id_/${PAGE}`;
@@ -64,9 +68,10 @@ async function main() {
         console.warn(`✗ ${date}: no spot tables found in snapshot`);
         failed++;
       } else {
+        const existed = !!history[date];
         history[date] = Object.fromEntries(models.map(m => [m.model, m.price]));
         added++;
-        console.log(`✓ ${date}: ${models.length} models`);
+        console.log(`✓ ${date}: ${models.length} models${existed ? ' (recomputed)' : ''}`);
       }
     } catch (e) {
       console.warn(`✗ ${date}: ${e.message}`);
@@ -77,7 +82,7 @@ async function main() {
 
   saveHistory(history);
   const dates = Object.keys(history).sort();
-  console.log(`\nDone. ${added} dates added, ${skipped} already present, ${failed} failed.`);
+  console.log(`\nDone. ${added} dates ${overwrite ? 'written/recomputed' : 'added'}, ${skipped} skipped, ${failed} failed.`);
   console.log(`History now spans ${dates[0]} → ${dates[dates.length - 1]} (${dates.length} dates).`);
 }
 

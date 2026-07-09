@@ -200,7 +200,7 @@ function pctLabel(v) {
   return `${v > 0 ? '+' : ''}${v.toFixed(digits)}%`;
 }
 
-function withPointLabels(options, formatter) {
+function withPointLabels(options, formatter, labelOptions = {}) {
   const existingPadding = typeof options.layout?.padding === 'object' ? options.layout.padding : {};
   return {
     ...options,
@@ -218,12 +218,17 @@ function withPointLabels(options, formatter) {
         rowHeight: 13,
         collisionXOffset: 9,
         maxVerticalShift: 34,
+        ...labelOptions,
       },
     },
   };
 }
 
-const revOpts = withPointLabels(baseOpts(revenueAxisLabel), compactRevenueLabel);
+const revOpts = withPointLabels(baseOpts(revenueAxisLabel), compactRevenueLabel, {
+  font: "700 10.5px 'Inter', sans-serif",
+  offset: 10,
+  rowHeight: 15,
+});
 
 const pctOpts = withPointLabels({
   ...baseOpts(v => `${v != null ? v.toFixed(1) : '—'}%`),

@@ -48,6 +48,18 @@ export default function DemandAnthropic({ weeks: W }) {
 
   return (
     <EditableGrid viewId="demand-anthropic">
+      {arrSeries?.length > 1 && (
+        <ArrTrajectoryCard
+          chartId="an-arr"
+          series={arrSeries}
+          color={C.anthropic}
+          name="Anthropic"
+          height={300}
+          pinTop
+          defaultCol="left"
+        />
+      )}
+
       <ChartCard
         chartId="an-sdk"
         legend={[['anthropic (PyPI)', C.anthropic], ['@anthropic-ai/sdk (npm)', C.teal]]}
@@ -86,17 +98,6 @@ export default function DemandAnthropic({ weeks: W }) {
       >
         <Bar data={priceBar.data} options={pricingBarOpts} />
       </ChartCard>
-
-      {arrSeries?.length > 1 && (
-        <ArrTrajectoryCard
-          chartId="an-arr"
-          series={arrSeries}
-          color={C.anthropic}
-          name="Anthropic"
-          height={300}
-          defaultFull
-        />
-      )}
 
       {metricTrendCard({
         chartId: 'an-web-visits',

@@ -21,7 +21,7 @@ function fmtCell(v) {
 export default function ChartCard({
   chartId,
   title, src, srcUrl, freq, lag, legend, insight, srcNote,
-  isNew, span2, height = 200, children,
+  isNew, span2, height = 200, children, preface, fillBody = false,
   transposed = false, rowLinks = [], colLinks = [], colorPct = false, clean = false,
 }) {
   // Editorial text (name, description, source, cadence, insight, footnote) is
@@ -58,7 +58,7 @@ export default function ChartCard({
 
   if (sectorOverviewMode && chartId && !isPinned(chartId, activeSector)) return null;
   if (pageCharts && chartId && !pageCharts.has(chartId)) return null;
-  const cls = ['cbox', isNew && 'new', span2 && 'span2'].filter(Boolean).join(' ');
+  const cls = ['cbox', isNew && 'new', span2 && 'span2', fillBody && 'fill-body'].filter(Boolean).join(' ');
 
   const chartChild = React.Children.toArray(children)[0];
   const rawData    = chartChild?.props?.data;
@@ -207,6 +207,15 @@ export default function ChartCard({
     </div>
   );
 
+  const body = fillBody ? (
+    <div
+      className="ch-body-fill"
+      style={{ minHeight: typeof height === 'number' ? height : undefined }}
+    >
+      {renderBody('100%')}
+    </div>
+  ) : renderBody(height);
+
   return (
     <div className={cls}>
       {clean ? (
@@ -234,7 +243,9 @@ export default function ChartCard({
         </>
       )}
 
-      {renderBody(height)}
+      {preface}
+
+      {body}
 
       {sourceRow}
       {insight && <InsightBox html={insight} />}
@@ -243,6 +254,7 @@ export default function ChartCard({
       {expanded && (
         <ChartModal title={title} onClose={() => setExpanded(false)}>
           {legend && <InlineLegend items={legend} />}
+          {preface}
           <div className="ch-modal-chart">{renderBody('100%')}</div>
           {sourceRow}
           {insight && <InsightBox html={insight} />}

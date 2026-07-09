@@ -30,7 +30,7 @@ export function orComboCard(ranks, provider, weeks, color, idPrefix) {
       srcUrl="https://openrouter.ai/rankings"
       freq="daily"
       subtitle={`Bars show ${provider}'s weekly token volume (left axis); the line shows year-over-year growth in % (right axis), starting once 52 weeks of history exist. The in-progress week is excluded.`}
-      height={260} span2 pinTop
+      height={260} span2 pinTop fillBody
     >
       <Bar data={data} options={dualAxisOpts(fmtTok, fmtGrowthPct)} />
     </ChartCard>

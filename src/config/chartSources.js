@@ -105,6 +105,7 @@ export const CHART_SOURCES = {
   'gpu-current-rates': { src: 'vast.ai API',          srcUrl: 'https://cloud.vast.ai/create/', freq: 'live', lag: LAG.gpu },
   'gpu-avail':         { src: 'vast.ai API',          srcUrl: 'https://vast.ai/pricing',        freq: 'live', lag: LAG.gpu },
   'gpu-index':         { src: 'vast.ai + AWS EC2',    srcUrl: 'https://aws.amazon.com/ec2/spot/instance-advisor/', freq: 'daily', lag: LAG.dailySnap },
+  'gpu-by-model':      { src: 'vast.ai API',          srcUrl: 'https://vast.ai/pricing',        freq: 'daily', lag: LAG.gpu },
   'gpu-spot-combined': { src: 'vast.ai + AWS EC2',    srcUrl: 'https://aws.amazon.com/ec2/spot/instance-advisor/', freq: 'daily', lag: LAG.dailySnap },
   'aws-chip-spot':     { src: 'AWS EC2 + Spot Advisor', srcUrl: 'https://aws.amazon.com/ec2/spot/instance-advisor/', freq: 'daily', lag: LAG.dailySnap },
   'gpu-cloud-avg':     { src: 'AWS · Azure · GCP · CoreWeave · Nebius · Oracle', srcUrl: 'https://cloud-gpus.com/', freq: 'daily', lag: LAG.cloudGpu },

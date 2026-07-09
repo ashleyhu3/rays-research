@@ -48,6 +48,18 @@ export default function DemandOpenAI({ weeks: W }) {
 
   return (
     <EditableGrid viewId="demand-openai">
+      {arrSeries?.length > 1 && (
+        <ArrTrajectoryCard
+          chartId="oa-arr"
+          series={arrSeries}
+          color={C.openai}
+          name="OpenAI"
+          height={300}
+          pinTop
+          defaultCol="left"
+        />
+      )}
+
       <ChartCard
         chartId="oa-sdk"
         legend={[['openai (PyPI)', C.openai], ['openai (npm)', C.teal]]}
@@ -76,17 +88,6 @@ export default function DemandOpenAI({ weeks: W }) {
       >
         <Bar data={priceBar.data} options={pricingBarOpts} />
       </ChartCard>
-
-      {arrSeries?.length > 1 && (
-        <ArrTrajectoryCard
-          chartId="oa-arr"
-          series={arrSeries}
-          color={C.openai}
-          name="OpenAI"
-          height={300}
-          defaultFull
-        />
-      )}
 
       {metricTrendCard({
         chartId: 'oa-web-visits',

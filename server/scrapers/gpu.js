@@ -25,10 +25,11 @@ const KEY_ALIASES = {
   H100_PCIE: 'H100_PCIe',
 };
 
-// Minimum verified offers before we trust a median (spot/bid is thinner and
-// noisier than on-demand, so it needs more samples to be meaningful).
-const MIN_SAMPLES_OD   = 2;
-const MIN_SAMPLES_SPOT = 4;
+// Minimum verified offers before we record a daily median. We keep thin-supply
+// markets too (sample count is persisted as `n`) so H100 SXM / A100 SXM4 /
+// B200-style listings do not silently disappear on sparse marketplace days.
+const MIN_SAMPLES_OD   = 1;
+const MIN_SAMPLES_SPOT = 1;
 
 const DAY_MS = 86400000;
 
@@ -161,6 +162,18 @@ function buildHistoryPayload(history) {
   const series = fill('od');
   const spotSeries = fill('spot');
 
+  // Raw (non-interpolated) on-demand series: the real daily median where a model
+  // was actually quoted that day, null otherwise. The forward-filled `series`
+  // above keeps lines continuous; `rawSeries` is what the by-model tiles read so
+  // their price/7d/30d reflect real quotes (and a thin-supply model reads its
+  // last real date, not a fabricated flat carry-forward).
+  const rawSeries = {};
+  const rawSpotSeries = {};
+  for (const g of gpus) {
+    rawSeries[g] = dates.map(d => (Number.isFinite(history[d]?.[g]?.od) ? history[d][g].od : null));
+    rawSpotSeries[g] = dates.map(d => (Number.isFinite(history[d]?.[g]?.spot) ? history[d][g].spot : null));
+  }
+
   // Mainstream rental benchmark: simple average on-demand $/hr across the GPUs
   // priced that day. A 7-day centered moving average smooths daily sampling noise.
   const raw = dates.map((_, i) => {
@@ -176,7 +189,7 @@ function buildHistoryPayload(history) {
     return +(sum / n).toFixed(3);
   });
 
-  return { dates, series, spotSeries, index };
+  return { dates, series, spotSeries, rawSeries, rawSpotSeries, index };
 }
 
 async function getGpuPrices() {
@@ -209,7 +222,7 @@ async function getGpuPrices() {
     availability,
     history: historyPayload,
     asOf: new Date().toISOString().slice(0, 10),
-    methodology: 'Live vast.ai marketplace medians across verified single-GPU offers, recorded daily. On-demand = dph_total; spot = the interruptible min_bid floor (only shown where enough offers exist to be meaningful). Both use a 10% trimmed median to reject mis-priced listings. The time series accumulates from the day scraping began — there is no public archive of vast.ai spot history to backfill.',
+    methodology: 'Live vast.ai marketplace medians across verified single-GPU offers, recorded daily. On-demand = dph_total; spot = the interruptible min_bid floor. Both use a 10% trimmed median when enough samples exist, and preserve the verified-offer count so thin-supply model quotes are still visible instead of being dropped. The time series accumulates from the day scraping began — there is no public archive of vast.ai spot history to backfill.',
   };
 }
 

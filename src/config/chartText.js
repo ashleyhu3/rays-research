@@ -172,9 +172,13 @@ export const CHART_TEXT = {
     title: 'Mainstream GPU Rental Benchmark ($/hr)',
     subtitle: 'Average on-demand $/hr across the tracked GPUs.',
   },
+  'gpu-by-model': {
+    title: 'GPU Rental Price by Model ($/hr)',
+    subtitle: 'Live vast.ai on-demand $/hr per accelerator (trimmed median of verified single-GPU offers). Tiles show the latest quote and its 7d / 30d move; thin-supply models carry the last real quote forward and are flagged with its date.',
+  },
   'gpu-spot-combined': {
     title: 'GPU Spot Price by Model ($/hr)',
-    subtitle: 'Interruptible spot price for each tracked GPU over time.',
+    subtitle: 'H100 SXM, H200, B200, A100 SXM4, and RTX 5090 $/GPU-hr. Uses vast.ai interruptible bid floors where available, falling back to the model rental median when a thin-supply market has no bid quote; H100/H200/A100 pre-vast.ai history is AWS-indexed.',
   },
   'aws-chip-spot': {
     title: 'AWS AI-Chip Spot Price — Trainium / Inferentia ($/chip/hr)',

@@ -39,6 +39,26 @@ function categoryOf(model) {
   return 'chip';
 }
 
+// A mainstream, fully-tested spot quote carries a JEDEC speed grade — a 4-digit
+// data rate, sometimes a "4800/5600" pair. The other rows TrendForce lists under
+// the same collapsed model name are different products that trade far apart and
+// must not be blended into the headline average:
+//   • eTT  — "effectively tested" partial-good dies, sold at a steep discount
+//            (e.g. DDR4 16Gb eTT ≈ $11 vs the 3200 grade ≈ $77 — a 6.7× gap)
+//   • bare — an organization-only row (e.g. "2Gx8") with no speed grade
+// Rule: within a model, if any variant is speed-graded, average only the
+// speed-graded non-eTT variants; otherwise (e.g. memory modules, which TrendForce
+// lists without a data rate) keep all non-eTT variants so the model still prices.
+const SPEED_RE = /\b\d{4}(?:\/\d{4})?\b/;
+const ETT_RE   = /\beTT\b/i;
+
+function selectMainstream(items) {
+  const nonEtt = items.filter(r => !ETT_RE.test(r.item));
+  const pool   = nonEtt.length ? nonEtt : items;          // all-eTT model → keep it
+  const graded = pool.filter(r => SPEED_RE.test(r.item));
+  return graded.length ? graded : pool;
+}
+
 // "▲ 1.14 %" → 1.14, "▼ -0.71 %" → -0.71, "0.00 %" → 0
 function parseChange(text) {
   const m = text.match(/-?\d+(?:\.\d+)?/);
@@ -83,21 +103,25 @@ function parseModels(html) {
     });
   });
 
-  // Average the adjusted prices of all variants of each model
+  // Group every listed variant of each model, then average only the mainstream
+  // (speed-graded, non-eTT) ones so the headline matches TrendForce's own quote.
   const byModel = new Map();
   for (const r of rows) {
     if (!byModel.has(r.model)) byModel.set(r.model, []);
     byModel.get(r.model).push(r);
   }
 
-  return [...byModel.entries()].map(([model, items]) => ({
-    model,
-    category:  categoryOf(model),
-    price:     +(items.reduce((s, r) => s + r.adjusted, 0) / items.length).toFixed(3),
-    changePct: +(items.reduce((s, r) => s + r.changePct, 0) / items.length).toFixed(2),
-    variants:  items.length,
-    items:     items.map(({ item, sessionAverage, changePct }) => ({ item, sessionAverage, changePct })),
-  }));
+  return [...byModel.entries()].map(([model, all]) => {
+    const items = selectMainstream(all);
+    return {
+      model,
+      category:  categoryOf(model),
+      price:     +(items.reduce((s, r) => s + r.adjusted, 0) / items.length).toFixed(3),
+      changePct: +(items.reduce((s, r) => s + r.changePct, 0) / items.length).toFixed(2),
+      variants:  items.length,
+      items:     items.map(({ item, sessionAverage, changePct }) => ({ item, sessionAverage, changePct })),
+    };
+  });
 }
 
 // TrendForce DataTrack "Mainstream DRAM Spot Price" — the public JSON feed

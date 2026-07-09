@@ -8,6 +8,10 @@ import { useDashboard } from '../../context/DashboardContext';
 const fmtMonth = v => new Date(v).toLocaleDateString('en-US', { month: 'short', year: '2-digit', timeZone: 'UTC' });
 const fmtDate  = v => new Date(v).toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
 const withCommas = n => Math.round(n).toLocaleString('en-US');
+const fmtCurrentArr = n => `${new Intl.NumberFormat('en-US', {
+  minimumSignificantDigits: 5,
+  maximumSignificantDigits: 5,
+}).format(n / 1e9)} B`;
 
 // Inline plugin: dashed vertical "now" marker where history hands off to the
 // live extrapolation. Config comes from options.plugins.nowLine.
@@ -148,7 +152,7 @@ export default function ArrTrajectoryCard({ chartId, series, color = C.accent, n
       </div>
 
       <div className="arr-hero">
-        <div className="arr-ticker" style={{ color }}>${withCommas(live)}</div>
+        <div className="arr-ticker" style={{ color }}>${fmtCurrentArr(live)}</div>
         <div className="arr-sub">
           <span className={`arr-yoy ${up ? 'up' : 'dn'}`}>Y/Y {up ? '+' : ''}{withCommas(model.yoyPct)}%</span>
           <span className="arr-detail">
