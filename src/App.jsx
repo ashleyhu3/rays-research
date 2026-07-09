@@ -32,7 +32,7 @@ import DemandGeneral    from './pages/market-signals/InfrastructureOss';
 import DemandOpenRouter from './pages/market-signals/OpenRouter';
 // Supply chain
 import {
-  AISupplyOptics, AISupplyPCB, AISupplyMLCC, AISupplyFiber,
+  AISupplyOptics, AISupplyCCL, AISupplyPCB, AISupplyABF, AISupplyMLCC, AISupplyFiber,
   AISupplyCooling, AISupplyPower, AISupplyEquipment, AISupplyMemory, AISupplyFoundry,
   AISupplyCPU, AISupplyODM,
 } from './pages/supply-chain/SupplyChain';
@@ -83,7 +83,9 @@ const VIEW_COMPONENTS = {
   chinese:     Chinese,
   'ai-supply-optics':    AISupplyOptics,
   'ai-supply-fiber':     AISupplyFiber,
+  'ai-supply-ccl':       AISupplyCCL,
   'ai-supply-pcb':       AISupplyPCB,
+  'ai-supply-abf':       AISupplyABF,
   'ai-supply-mlcc':      AISupplyMLCC,
   'ai-supply-cooling':   AISupplyCooling,
   'ai-supply-power':     AISupplyPower,

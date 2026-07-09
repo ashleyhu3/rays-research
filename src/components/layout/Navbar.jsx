@@ -38,7 +38,7 @@ function TableIcon() {
 }
 
 const SUPPLY_VIEWS  = new Set([
-  'ai-supply-optics', 'ai-supply-fiber', 'ai-supply-pcb', 'ai-supply-mlcc',
+  'ai-supply-optics', 'ai-supply-fiber', 'ai-supply-ccl', 'ai-supply-pcb', 'ai-supply-abf', 'ai-supply-mlcc',
   'ai-supply-cooling', 'ai-supply-power', 'ai-supply-equipment', 'ai-supply-memory', 'ai-supply-foundry',
   'ai-supply-cpu', 'ai-supply-odm',
 ]);

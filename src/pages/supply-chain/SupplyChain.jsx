@@ -14,14 +14,15 @@ const ALL_COMPANIES = [
   { id: '3081', ticker: '3081TT', group: 'optics', exchange: 'tpex', name: '聯亞光電' },
   { id: '3363', ticker: '3363TT', group: 'optics', exchange: 'tpex', name: '上詮'    },
   { id: '3163', ticker: '3163TT', group: 'optics', exchange: 'tpex', name: '波若威'  },
-  // PCB
-  { id: '2383', ticker: '2383TT', group: 'pcb', exchange: 'twse', name: '台光電'   },
+  // PCB materials / boards / substrates
+  { id: '2383', ticker: '2383TT', group: 'ccl', exchange: 'twse', name: '台光電'   },
+  { id: '6274', ticker: '6274TT', group: 'ccl', exchange: 'tpex', name: '台燿科技' },
+  { id: '8358', ticker: '8358TT', group: 'ccl', exchange: 'tpex', name: '金居'     },
   { id: '2368', ticker: '2368TT', group: 'pcb', exchange: 'twse', name: '金像電'   },
-  { id: '3037', ticker: '3037TT', group: 'pcb', exchange: 'twse', name: '欣興電子' },
-  { id: '8046', ticker: '8046TT', group: 'pcb', exchange: 'twse', name: '南電'     },
   { id: '4958', ticker: '4958TT', group: 'pcb', exchange: 'twse', name: '臻鼎-KY'  },
-  { id: '6274', ticker: '6274TT', group: 'pcb', exchange: 'tpex', name: '台燿科技' },
-  { id: '8358', ticker: '8358TT', group: 'pcb', exchange: 'tpex', name: '金居'     },
+  { id: '8021', ticker: '8021TT', group: 'pcb', exchange: 'twse', name: '尖點'     },
+  { id: '3037', ticker: '3037TT', group: 'abf', exchange: 'twse', name: '欣興電子' },
+  { id: '8046', ticker: '8046TT', group: 'abf', exchange: 'twse', name: '南電'     },
   // MLCC
   { id: '2327', ticker: '2327TT', group: 'mlcc', exchange: 'twse', name: '國巨'   },
   { id: '2492', ticker: '2492TT', group: 'mlcc', exchange: 'twse', name: '華新科'  },
@@ -77,9 +78,17 @@ const CHAINS = {
     label: 'Fiber',
     colors: ['#f43f5e'],
   },
+  ccl: {
+    label: 'CCL',
+    colors: ['#f87171', '#38bdf8', '#fbbf24'],
+  },
   pcb: {
     label: 'PCB',
-    colors: ['#ef4444', '#f97316', '#facc15', '#4ade80', '#22d3ee', '#818cf8', '#fca5c1'],
+    colors: ['#4ade80', '#22d3ee', '#818cf8'],
+  },
+  abf: {
+    label: 'ABF',
+    colors: ['#f97316', '#fca5c1'],
   },
   mlcc: {
     label: 'MLCC',
@@ -171,19 +180,58 @@ function buildTotalRevenueDataset(companies, periods) {
   return mkDs('Total revenue', '#e2e8f0', data, true);
 }
 
-const revOpts = baseOpts(v => {
+const revenueAxisLabel = v => {
   if (v == null) return '—';
   if (Math.abs(v) >= 1000) return `NT$${(v / 1000).toFixed(1)}B`;
   return `NT$${v.toFixed(0)}M`;
-});
+};
 
-const pctOpts = {
+function compactRevenueLabel(v) {
+  if (v == null || Number.isNaN(v)) return '';
+  const abs = Math.abs(v);
+  if (abs >= 1000) return `${(v / 1000).toFixed(abs >= 10000 ? 0 : 1)}B`;
+  return `${v.toFixed(abs >= 100 ? 0 : 1)}M`;
+}
+
+function pctLabel(v) {
+  if (v == null || Number.isNaN(v)) return '';
+  const abs = Math.abs(v);
+  const digits = abs >= 100 ? 0 : 1;
+  return `${v > 0 ? '+' : ''}${v.toFixed(digits)}%`;
+}
+
+function withPointLabels(options, formatter) {
+  const existingPadding = typeof options.layout?.padding === 'object' ? options.layout.padding : {};
+  return {
+    ...options,
+    layout: {
+      ...(options.layout ?? {}),
+      padding: { top: 18, right: 16, bottom: 8, left: 6, ...existingPadding },
+    },
+    plugins: {
+      ...options.plugins,
+      pointValueLabels: {
+        display: true,
+        formatter,
+        font: "700 9px 'Inter', sans-serif",
+        offset: 9,
+        rowHeight: 13,
+        collisionXOffset: 9,
+        maxVerticalShift: 34,
+      },
+    },
+  };
+}
+
+const revOpts = withPointLabels(baseOpts(revenueAxisLabel), compactRevenueLabel);
+
+const pctOpts = withPointLabels({
   ...baseOpts(v => `${v != null ? v.toFixed(1) : '—'}%`),
   scales: {
     x: { grid: GRID, ticks: { ...TICK, maxTicksLimit: 8, autoSkip: true }, border: BORD },
     y: { grid: GRID, ticks: { ...TICK, callback: v => `${v}%` }, border: BORD, beginAtZero: false },
   },
-};
+}, pctLabel);
 
 function NoData() {
   return (
@@ -301,7 +349,9 @@ function SupplyChainPage({ chain, months = 12 }) {
 
 export function AISupplyOptics(props)    { return <SupplyChainPage chain="optics"    {...props} />; }
 export function AISupplyFiber(props)     { return <SupplyChainPage chain="fiber"     {...props} />; }
+export function AISupplyCCL(props)       { return <SupplyChainPage chain="ccl"       {...props} />; }
 export function AISupplyPCB(props)       { return <SupplyChainPage chain="pcb"       {...props} />; }
+export function AISupplyABF(props)       { return <SupplyChainPage chain="abf"       {...props} />; }
 export function AISupplyMLCC(props)      { return <SupplyChainPage chain="mlcc"      {...props} />; }
 export function AISupplyCooling(props)   { return <SupplyChainPage chain="cooling"   {...props} />; }
 export function AISupplyPower(props)     { return <SupplyChainPage chain="power"     {...props} />; }

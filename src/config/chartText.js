@@ -244,7 +244,7 @@ export const CHART_TEXT = {
   // ── Supply chain (views: ai-supply-optics / ai-supply-pcb / …) ────────
   ...Object.fromEntries(
     [
-      ['optics', 'Optics'], ['fiber', 'Fiber'], ['pcb', 'PCB'], ['mlcc', 'MLCC'],
+      ['optics', 'Optics'], ['fiber', 'Fiber'], ['ccl', 'CCL'], ['pcb', 'PCB'], ['abf', 'ABF'], ['mlcc', 'MLCC'],
       ['cooling', 'Cooling'], ['power', 'Power'], ['equipment', 'Equipment'],
       ['memory', 'Memory'], ['foundry', 'Foundry'], ['cpu', 'CPU'], ['odm', 'ODM'],
     ].flatMap(([chain, label]) => [
