@@ -169,6 +169,30 @@ export default function DemandGeneral({ weeks: W }) {
   // AI company revenue (Epoch AI)
   const epochRevData = useMemo(() => buildRevenueScatter(ld?.epochRevenue, W ?? 260), [ld?.epochRevenue, W]);
 
+  // Taiwan monthly UAV (HS 8806) export value — AI-adjacent autonomy/defense
+  // demand signal, scraped monthly from Taiwan customs (server/scrapers/customsTrade.js).
+  const droneData = useMemo(() => {
+    const series = ld?.customsDrones?.series ?? [];
+    if (series.length === 0) return null;
+    // Cap to the most recent ~20 months so the recent ramp stays readable.
+    const trimmed = series.slice(-20);
+    const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const fmtLabel = period => {
+      const [y, m] = period.split('-');
+      return `${MON[Number(m) - 1]} ${y.slice(2)}`;
+    };
+    return {
+      labels: trimmed.map(p => fmtLabel(p.period)),
+      datasets: [{
+        label: 'UAV export value (US$m)',
+        data: trimmed.map(p => p.value),
+        backgroundColor: fa(C.teal, 0.75),
+        borderColor: C.teal,
+        borderWidth: 1, borderRadius: 4,
+      }],
+    };
+  }, [ld]);
+
   // HN weekly AI story volume
   const hnWeekly = ld?.hn?.weekly ?? [];
   const hnData   = useMemo(() => {
@@ -260,6 +284,15 @@ export default function DemandGeneral({ weeks: W }) {
       >
         <Bar data={mktData} options={hBarOpts(v => `${v.toFixed(1)}%`)} />
       </ChartCard>
+
+      {droneData && (
+        <ChartCard
+          chartId="gen-tw-drones"
+          height={220} span2
+        >
+          <Bar data={droneData} options={baseOpts(v => `$${v}m`)} />
+        </ChartCard>
+      )}
     </EditableGrid>
   );
 }

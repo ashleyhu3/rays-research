@@ -165,6 +165,16 @@ const SOURCE_REGISTRY = {
     fallback: 'Cached monthly history; new month appears after the filing window.',
     endpointUrl: 'https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockMonthRevenue',
   },
+  customsDrones: {
+    name: 'Taiwan UAV Exports', provider: 'Taiwan Customs (MOF/BOFT trade statistics)',
+    ourCadenceMs: 24 * 3600e3, sourceCadence: 'Monthly', criticalLagThresholdMs: 45 * 24 * 3600e3,
+    upstreamLagMs: 30 * 24 * 3600e3, upstreamLagText: 'monthly · ~1 month',
+    upstreamLagNote: 'Taiwan customs publishes monthly clearance statistics ~1 month after the month ends (the latest 1–2 months can be preliminary and get revised upward). The freshest fully-reported month is therefore up to a month behind.',
+    reliabilityGrade: 'B+', reliabilityNote: 'Official Bureau of Foreign Trade "by Country" chart endpoint; no key/CAPTCHA, but a single unofficial JSON endpoint.',
+    ragScope: 'Taiwan monthly export value of unmanned aircraft (HS 8806), World total, US$m.',
+    fallback: 'Cached monthly series; a new month appears after customs publishes it.',
+    endpointUrl: 'https://publicinfo.trade.gov.tw/cuswebo/FSCE3010F/GetData',
+  },
 
   // ── Consumer / community ────────────────────────────────────────────
   huggingface: {

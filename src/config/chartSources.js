@@ -38,6 +38,7 @@ const LAG = {
   cloudGpu:   '~hours behind',
   eia:        '~2 months behind',
   mops:       'up to ~1 month behind',
+  customs:    'monthly · ~1 month behind',
   sec:        '~1 day behind',
   mcp:        '~minutes behind',
   sentiment:  'daily · prices EOD',
@@ -189,6 +190,7 @@ export const CHART_SOURCES = {
   'gen-docker':    { src: 'hub.docker.com', srcUrl: 'https://hub.docker.com/r/nvidia/cuda', freq: '6-hourly', lag: LAG.docker },
   'gen-hn':        { src: 'hn.algolia.com', srcUrl: 'https://hn.algolia.com/?q=AI', freq: 'weekly', lag: LAG.hn },
   'gen-cnmarket':  { src: 'idc.com · zhipuai.cn', srcUrl: 'https://www.zhipuai.cn/', freq: 'static', lag: LAG.report },
+  'gen-tw-drones': { src: 'Taiwan Customs (MOF/BOFT)', srcUrl: 'https://publicinfo.trade.gov.tw/cuswebo/FSCE000F/FSCE000F', freq: 'monthly', lag: LAG.customs },
 
   // ── Market signals · OpenRouter model rankings ────────────────────────
   'or-top':       { src: 'openrouter.ai/rankings', srcUrl: 'https://openrouter.ai/rankings', freq: 'weekly', lag: LAG.orRanks },

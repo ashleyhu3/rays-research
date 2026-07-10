@@ -27,6 +27,7 @@ const scrapers = {
   epochRevenue:     () => require('./scrapers/epochRevenue').getEpochRevenueData(),
   sentiment:        () => require('./scrapers/sentiment').getSentimentData(),
   webTraffic:       () => require('./scrapers/webTraffic').getWebTrafficData(),
+  customsDrones:    () => require('./scrapers/customsTrade').getDroneExports(),
 };
 
 // TTLs match each source's natural update frequency.
@@ -58,6 +59,7 @@ const TTL = {
   epochRevenue:  24 * 3600000,  // daily   — Epoch AI CSV is updated as new disclosures appear
   sentiment:     24 * 3600000,  // daily   — StockTwits posting/sentiment vs price; recomputed once per day
   webTraffic:    24 * 3600000,  // daily   — SimilarWeb monthly visit estimates via Apify; one snapshot per day
+  customsDrones: 24 * 3600000,  // daily   — Taiwan customs UAV exports publish monthly; daily poll picks up new months
 };
 
 // Hard cap per scraper so one hung source can never wedge a refresh
@@ -124,7 +126,7 @@ function setup() {
   cron.schedule('0 */6 * * *', () => refreshAll(['docker', 'openrouterRanks', 'dram', 'nand', 'aws', 'cpu']));
 
   // Daily at 03:00 UTC: aggregate stats whose sources only publish once per day
-  cron.schedule('0 3 * * *', () => refreshAll(['gpu', 'tftLcd', 'tpu', 'epochRevenue', 'sentiment', 'pypi', 'github', 'eia', 'mops', 'githubCommits', 'npm', 'huggingface', 'mcp', 'sec', 'webTraffic']));
+  cron.schedule('0 3 * * *', () => refreshAll(['gpu', 'tftLcd', 'tpu', 'epochRevenue', 'sentiment', 'pypi', 'github', 'eia', 'mops', 'githubCommits', 'npm', 'huggingface', 'mcp', 'sec', 'webTraffic', 'customsDrones']));
 
   // Options: warm every 6h, plus once shortly after boot so the RAG has data fast
   cron.schedule('30 */6 * * *', () => warmOptions());

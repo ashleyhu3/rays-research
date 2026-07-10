@@ -347,7 +347,8 @@ body { font-family: var(--font-b); background: var(--bg); color: var(--text); }
 .sector-overview [data-chart-id="trends-api"],
 .sector-overview [data-chart-id="cn-pricing"],
 .sector-overview [data-chart-id="dc-capex"],
-.sector-overview [data-chart-id="elec-consumption"] { grid-column: span 2; }
+.sector-overview [data-chart-id="elec-consumption"],
+.sector-overview [data-chart-id="gen-tw-drones"] { grid-column: span 2; }
 /* Drop verbose chrome so the narrow cards stay readable. */
 .sector-overview .cbox  { padding: 12px 14px; }
 .sector-overview .ch-sub,
@@ -367,7 +368,8 @@ body { font-family: var(--font-b); background: var(--bg); color: var(--text); }
   [data-chart-id="trends-api"],
   [data-chart-id="cn-pricing"],
   [data-chart-id="dc-capex"],
-  [data-chart-id="elec-consumption"]
+  [data-chart-id="elec-consumption"],
+  [data-chart-id="gen-tw-drones"]
 ) .ch-head {
   flex-direction: row;
   align-items: flex-start;
@@ -1216,6 +1218,30 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
    look of the source template. */
 .or-status { color: var(--ter); font-size: 13px; text-align: center; padding: 44px 10px; }
 
+/* Per-ticker layout: a left nav of tickers + the selected ticker's report. */
+.or-layout { display: flex; align-items: flex-start; gap: 20px; }
+.or-nav {
+  flex-shrink: 0; width: 150px; position: sticky; top: 8px;
+  display: flex; flex-direction: column; gap: 2px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 8px;
+}
+.or-nav-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px; border-radius: 6px; cursor: pointer;
+  background: none; border: none; width: 100%; text-align: left;
+  font-family: var(--font-b); font-size: 14px; font-weight: 600;
+  letter-spacing: .02em; color: var(--sec); transition: background .15s, color .15s;
+}
+.or-nav-item:hover  { background: rgba(255,255,255,.04); color: var(--text); }
+.or-nav-item.active { background: var(--adim); color: var(--accent); }
+.or-nav-name { flex: 1; }
+.or-nav-dots { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; }
+.or-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; display: inline-block; }
+.or-dot.call { background: #34d399; box-shadow: 0 0 0 2px rgba(52,211,153,.18); }
+.or-dot.put  { background: #f87171; box-shadow: 0 0 0 2px rgba(248,113,113,.18); }
+.or-layout .or-report { flex: 1; min-width: 0; }
+
 .or-report { display: flex; flex-direction: column; gap: 22px; }
 
 .or-ticker {
@@ -1294,6 +1320,10 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
   .alerts-page, .alerts-page * { visibility: visible !important; }
   .alerts-page { position: absolute; left: 0; top: 0; width: 100%; max-width: none; margin: 0; padding: 0; }
 
+  /* Print only the selected ticker's report, not the ticker nav. */
+  .or-nav, .or-nav * { visibility: hidden !important; }
+  .or-nav { display: none !important; }
+  .or-layout { display: block; }
   .or-report { gap: 26px; }
   .or-ticker { background: #fff !important; border: none !important; border-radius: 0; padding: 0; overflow: visible; }
   .or-ticker-head { border-bottom: 2px solid #111827 !important; }

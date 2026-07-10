@@ -415,6 +415,10 @@ export const CHART_TEXT = {
     title: 'China Enterprise LLM Market Share (%)',
     subtitle: 'Highly fragmented — the top 6 players hold only 37% combined.',
   },
+  'gen-tw-drones': {
+    title: 'Taiwan Monthly UAV Export Value',
+    subtitle: 'Monthly export value of unmanned aircraft (HS 8806), US$m — an AI-adjacent defense/autonomy demand signal.',
+  },
 
   // ── Market signals · OpenRouter model rankings (view: openrouter-rankings)
   'or-top': {

@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { getOptionsData } = require('../scrapers/options');
 
-const DEFAULT_TICKERS = ['TSM', 'ASML'];
+const DEFAULT_TICKERS = ['TSM', 'ASML', 'INTC', 'TXN', 'STM', 'TEL', 'GOOG', 'NOK'];
 const BASE = 'https://api.massive.com';
 const CALL_COLOR = '#059669';
 const PUT_COLOR = '#dc2626';
@@ -935,6 +935,24 @@ if (require.main === module) {
 
 // One contract row as pre-formatted display strings (the web app renders these
 // verbatim, mirroring the PDF/email table exactly — no client-side math).
+// Sum today's and the prior trading day's contract volume across every tracked
+// expiration, split by side, so a ticker's day-over-day call/put flow surge can
+// be detected downstream without re-parsing the formatted table cells.
+function aggregateFlow(tickerReport) {
+  const flow = { callToday: 0, callYesterday: 0, putToday: 0, putYesterday: 0 };
+  for (const exp of tickerReport.expirations ?? []) {
+    for (const row of exp.tableCalls ?? []) {
+      flow.callToday += row.todayVolume ?? 0;
+      flow.callYesterday += row.yesterdayVolume ?? 0;
+    }
+    for (const row of exp.tablePuts ?? []) {
+      flow.putToday += row.todayVolume ?? 0;
+      flow.putYesterday += row.yesterdayVolume ?? 0;
+    }
+  }
+  return flow;
+}
+
 function structuredContractRow(row) {
   return {
     side: row.side,
@@ -964,6 +982,10 @@ function buildStructuredReport(report, { generatedAt = new Date().toISOString(),
         priceText: fmtUsd(nearest?.price),
         change: fmtChange(nearest?.priceChange, nearest?.changePct),
         priceChange: nearest?.priceChange ?? null,
+        // Raw call/put volume totals (today vs the prior trading day, summed across
+        // the tracked expirations) so the web sidebar can flag day-over-day surges
+        // in call or put flow with a coloured dot next to the ticker.
+        flow: aggregateFlow(tickerReport),
         expirations: (tickerReport.expirations ?? []).map(exp => ({
           selectedDate: exp.selectedDate,
           expiryLabel: fmtExpiry(exp.selectedDate),
