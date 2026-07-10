@@ -72,38 +72,53 @@ function isPartialLatestWeek(ranks) {
   return new Date(ranks.asOf + 'T00:00:00Z') < weekEnd;
 }
 
-// Volume-vs-price scatter: log axes span the wide range of both token volume
-// and per-token price; each point is one model.
-const volPriceOpts = {
-  responsive: true,
-  maintainAspectRatio: false,
-  animation: false,
-  plugins: {
-    legend: { display: false },
-    tooltip: {
-      callbacks: {
-        title: ctx => ctx[0]?.raw?.name ?? '',
-        label: ctx => `${fmtB(ctx.raw.y)} tokens · $${ctx.raw.x.toFixed(2)}/M input`,
+// A "nice" round tick step near hi/count, then the smallest multiple of that
+// step at or above `hi` — so the axis fits the data snugly (highest point ~6T →
+// top gridline 6T, not 10T) while ticks stay on clean, evenly-spaced values.
+function niceLinearBound(hi, count = 5) {
+  if (!(hi > 0)) return { max: count, step: 1 };
+  const rawStep = hi / count;
+  const mag = 10 ** Math.floor(Math.log10(rawStep));
+  const norm = rawStep / mag;
+  const step = (norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 5 ? 5 : 10) * mag;
+  return { max: Math.ceil(hi / step) * step, step };
+}
+
+// Volume-vs-price scatter: linear axes so equal on-screen distance always means
+// an equal change in value (0→10 spans the same width as 90→100), rather than a
+// log scale where each power of ten is equally wide. Bounds/ticks are derived
+// from the current week's data; each point is one model.
+function makeVolPriceOpts(xMax, yMax) {
+  const x = niceLinearBound(xMax);
+  const y = niceLinearBound(yMax);
+  const linAxis = (bound, text, fmt) => ({
+    type: 'linear',
+    min: 0,
+    max: bound.max,
+    ticks: { ...TICK, stepSize: bound.step, callback: fmt },
+    title: { display: true, text, color: '#94a3b8', font: { size: 11 } },
+    grid: GRID,
+    border: BORD,
+  });
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          title: ctx => ctx[0]?.raw?.name ?? '',
+          label: ctx => `${fmtB(ctx.raw.y)} tokens · $${ctx.raw.x.toFixed(2)}/M input`,
+        },
       },
     },
-  },
-  scales: {
-    x: {
-      type: 'logarithmic',
-      title: { display: true, text: 'Input price ($/M tokens)', color: '#94a3b8', font: { size: 11 } },
-      grid: GRID,
-      border: BORD,
-      ticks: { ...TICK, callback: v => `$${v}` },
+    scales: {
+      x: linAxis(x, 'Input price ($/M tokens)', v => `$${v}`),
+      y: linAxis(y, 'Weekly tokens', v => fmtB(v)),
     },
-    y: {
-      type: 'logarithmic',
-      title: { display: true, text: 'Weekly tokens', color: '#94a3b8', font: { size: 11 } },
-      grid: GRID,
-      border: BORD,
-      ticks: { ...TICK, callback: v => fmtB(v) },
-    },
-  },
-};
+  };
+}
 
 function NoKey() {
   return (
@@ -199,6 +214,17 @@ export default function DemandOpenRouter({ weeks: W = 52 }) {
     };
   }, [ranks, ld]);
 
+  // Linear axis bounds for the scatter, recomputed from the current week's points
+  // so the ticks stay evenly spaced with clean round values whatever the range.
+  const volPriceOpts = useMemo(() => {
+    const pts = volPriceData?.datasets?.[0]?.data ?? [];
+    if (!pts.length) return null;
+    return makeVolPriceOpts(
+      Math.max(...pts.map(p => p.x)),
+      Math.max(...pts.map(p => p.y)),
+    );
+  }, [volPriceData]);
+
   // ── 4. Combined: total weekly tokens (bars) + YoY growth (line) ───
   const comboData = useMemo(() => {
     const s = orTokensWithGrowth(ranks, null, W, 52);
@@ -262,10 +288,10 @@ export default function DemandOpenRouter({ weeks: W = 52 }) {
 
       <ChartCard
         chartId="or-volprice"
-        subtitle={`Most recent full week${asOf ? ` · as of ${asOf}` : ''}. Each point is a model: weekly token volume vs current input price (log axes).`}
+        subtitle={`Most recent full week${asOf ? ` · as of ${asOf}` : ''}. Each point is a model: weekly token volume vs current input price (linear axes).`}
         height={380} span2
       >
-        {volPriceData ? <Scatter data={volPriceData} options={volPriceOpts} /> : <NoKey />}
+        {volPriceData && volPriceOpts ? <Scatter data={volPriceData} options={volPriceOpts} /> : <NoKey />}
       </ChartCard>
 
       {comboData && (

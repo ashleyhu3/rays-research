@@ -85,10 +85,11 @@ export const NAV_SECTIONS = [
     sectorId: 'pricing',
     mode: 'pricing',
     items: [
-      { id: 'pricing-memory', label: 'Memory' },
-      { id: 'pricing-gpu',    label: 'GPU'    },
-      { id: 'pricing-cpu',    label: 'CPU'    },
-      { id: 'pricing-tpu',    label: 'TPU'    },
+      { id: 'pricing-memory', label: 'Memory'    },
+      { id: 'pricing-gpu',    label: 'GPU'       },
+      { id: 'pricing-aws',    label: 'AWS Chips' },
+      { id: 'pricing-cpu',    label: 'CPU'       },
+      { id: 'pricing-tpu',    label: 'TPU'       },
     ],
   },
 ];
@@ -113,6 +114,7 @@ export const VIEW_META = {
   pricing:           { title: 'PRICING — GPU & MEMORY SPOT' },
   'pricing-memory':  { title: 'PRICING — MEMORY SPOT' },
   'pricing-gpu':     { title: 'PRICING — GPU SPOT' },
+  'pricing-aws':     { title: 'PRICING — AWS AI-CHIP SPOT' },
   'pricing-cpu':     { title: 'PRICING — CPU SPOT' },
   'pricing-tpu':     { title: 'PRICING — TPU PREEMPTIBLE' },
   datacenter:        { title: 'US DATACENTER BUILD' },

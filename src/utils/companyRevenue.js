@@ -32,21 +32,41 @@ const REV_COMPANIES = [
 // ~6 months of complete weeks.
 const WEEKS_6MO = 26;
 
+// Sorted token multiset of a slug's model part (after the provider prefix),
+// e.g. "anthropic/claude-4.8-opus" → "4.8|claude|opus". Lets us match ids whose
+// version and tier are in a different order than the ranking slug.
+function modelTokens(slug) {
+  return slug.split('/').slice(1).join('/').split(/[-/]/).filter(Boolean).sort().join('|');
+}
+
 // $/M input tokens for one rankings permaslug, from the live /models list.
-// Permaslugs carry version/date suffixes that the model ids drop, so match on
-// the longest model id that prefixes the slug at a boundary. null when unpriced.
+// Permaslugs carry version/date suffixes that the model ids drop, so first match
+// on the longest model id that prefixes the slug at a boundary. Rankings slugs
+// also reorder version/tier ("claude-4.8-opus") vs the catalog ("claude-opus-4.8"),
+// which no prefix can bridge, so fall back to same-provider token-multiset
+// equality — otherwise every flagship Claude model drops out. null when unpriced.
 export function livePriceForSlug(slug, models) {
   if (!slug || !models?.length) return null;
-  let best = null;
+  // Drop a trailing date suffix and any ":free"/":variant" tag before matching.
+  const core = slug.replace(/-\d{8}$/, '').replace(/:.*$/, '');
+  const provider = core.split('/')[0];
+  const coreTokens = modelTokens(core);
+  let best = null;       // by boundary prefix (most specific)
+  let tokenBest = null;  // by reordered token multiset (fallback)
   for (const m of models) {
     if (!(m.pricing?.prompt > 0)) continue;
-    const hit = slug === m.id
-      || slug.startsWith(`${m.id}-`)
-      || slug.startsWith(`${m.id}:`)
-      || slug.startsWith(`${m.id}/`);
-    if (hit && (!best || m.id.length > best.id.length)) best = m;
+    const hit = core === m.id
+      || core.startsWith(`${m.id}-`)
+      || core.startsWith(`${m.id}:`)
+      || core.startsWith(`${m.id}/`);
+    if (hit) {
+      if (!best || m.id.length > best.id.length) best = m;
+    } else if (m.id.split('/')[0] === provider && modelTokens(m.id) === coreTokens) {
+      if (!tokenBest || m.id.length > tokenBest.id.length) tokenBest = m;
+    }
   }
-  return best ? best.pricing.prompt : null;
+  const pick = best || tokenBest;
+  return pick ? pick.pricing.prompt : null;
 }
 
 /**

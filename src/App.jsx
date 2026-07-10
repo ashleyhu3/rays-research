@@ -42,7 +42,7 @@ import DcTimelines, {
 } from './pages/supply-chain/DcBuildouts';
 // Tools
 import Options from './pages/options/Options';
-import { PricingMemory, PricingGPU, PricingCPU, PricingTPU } from './pages/pricing/Pricing';
+import { PricingMemory, PricingGPU, PricingCPU, PricingTPU, PricingAWS } from './pages/pricing/Pricing';
 import Sentiment from './pages/sentiment/Sentiment';
 import Alerts, { OptionsReportTitle, OptionsReportControls } from './pages/alerts/Alerts';
 import { OptionsReportProvider } from './context/OptionsReportContext';
@@ -62,7 +62,7 @@ import Community      from './pages/sources/Community';
 
 /** Views that use EditableGrid and support layout customisation */
 const LAYOUT_EDITABLE = new Set([
-  'pypi','github','web','hf','pricing-memory','pricing-gpu','pricing-cpu','pricing-tpu','datacenter','electricity','chinese',
+  'pypi','github','web','hf','pricing-memory','pricing-gpu','pricing-aws','pricing-cpu','pricing-tpu','datacenter','electricity','chinese',
   'demand-openai','demand-anthropic','demand-google','demand-zhipu','demand-minimax','demand-general','openrouter-rankings',
   'dc-capacity','dc-timelines',
   'dc-co-aws','dc-co-google','dc-co-microsoft','dc-co-oracle','dc-co-openai','dc-co-nebius','dc-co-meta',
@@ -76,6 +76,7 @@ const VIEW_COMPONENTS = {
   hf:          HuggingFace,
   'pricing-memory': PricingMemory,
   'pricing-gpu':    PricingGPU,
+  'pricing-aws':    PricingAWS,
   'pricing-cpu':    PricingCPU,
   'pricing-tpu':    PricingTPU,
   datacenter:  Datacenter,

@@ -190,14 +190,6 @@ function latestFiniteDate(dates, series) {
   return null;
 }
 
-// Keys with any real data, richest first (so the priciest accelerators lead).
-function gpuModelKeysOf(rawSeries) {
-  if (!rawSeries) return [];
-  return Object.keys(rawSeries)
-    .filter(k => (rawSeries[k] ?? []).some(Number.isFinite))
-    .sort((a, b) => (latestFinite(rawSeries[b]) ?? 0) - (latestFinite(rawSeries[a]) ?? 0));
-}
-
 function gpuTilesOf(rawSeries, dates, keys, freshnessSeries = rawSeries) {
   if (!rawSeries || !dates) return [];
   return keys.map(k => {
@@ -236,18 +228,6 @@ function backfillLeading(arr) {
   if (first <= 0) return arr;
   const fv = arr[first];
   return arr.map((v, i) => (i < first ? fv : v));
-}
-
-// Earliest index at which ANY of the given series has a real value — the chart's
-// left edge, so the (young) vast.ai history fills the width instead of trailing
-// empty space. vast.ai has no public archive, so nothing real exists before this.
-function firstRealIndex(series, keys) {
-  let first = Infinity;
-  for (const k of keys) {
-    const idx = (series[k] ?? []).findIndex(Number.isFinite);
-    if (idx >= 0 && idx < first) first = idx;
-  }
-  return Number.isFinite(first) ? first : 0;
 }
 
 
@@ -294,27 +274,6 @@ function usePricingCharts(W) {
   const gpu = liveData?.gpu;
   const gpuHist = gpu?.history;
   const gpuWindow = useMemo(() => windowHistory(gpuHist, W), [gpuHist, W]);
-
-  // GPU rental price by model (on-demand $/hr) — reference-style tiles + trend.
-  // Uses the raw (non-forward-filled) per-model series so figures are real quotes.
-  const gpuRaw = gpuHist?.rawSeries;
-  const gpuModelKeys = useMemo(() => gpuModelKeysOf(gpuRaw), [gpuRaw]);
-  const gpuTiles = useMemo(() => gpuTilesOf(gpuRaw, gpuHist?.dates, gpuModelKeys), [gpuRaw, gpuHist, gpuModelKeys]);
-  const gpuModelData = useMemo(() => {
-    if (!gpuHist?.dates?.length || !gpuModelKeys.length) return null;
-    // Lines use the forward-filled/interpolated `series` (continuous), while the
-    // tiles above use rawSeries (real quotes). Window from the later of the time
-    // toggle and the first real quote, so the young history fills the width with
-    // no empty left margin, then backfill each line's leading edge to that start.
-    const ser = gpuHist.series ?? {};
-    const cutoff = Date.now() - W * 7 * 86400000;
-    let wStart = gpuHist.dates.findIndex(d => new Date(d + 'T00:00:00Z').getTime() >= cutoff);
-    if (wStart < 0) wStart = 0;
-    const start = Math.max(wStart, firstRealIndex(ser, gpuModelKeys));
-    const dates = gpuHist.dates.slice(start);
-    const windowed = Object.fromEntries(gpuModelKeys.map(k => [k, backfillLeading((ser[k] ?? []).slice(start))]));
-    return gpuModelLineData(windowed, dates, gpuModelKeys, W);
-  }, [gpuHist, gpuModelKeys, W]);
 
   /* ── Memory (DRAM) spot pricing — TrendForce ─────────────────────── */
   const dram    = liveData?.dram;
@@ -568,7 +527,7 @@ function usePricingCharts(W) {
   return {
     dramIndex, dramIndexData, chipData, chips, chipTiles, moduleData, modules, moduleTiles, dramAsOf,
     nandData, nandTiles, nandAsOf,
-    gpuIndexData, combinedSpotData, combinedSpotTiles, awsChipData, gpuModelData, gpuTiles,
+    gpuIndexData, combinedSpotData, combinedSpotTiles, awsChipData,
     cpuHistData, tpuHistData,
   };
 }
@@ -641,8 +600,8 @@ export function PricingMemory({ weeks: W = 52 }) {
 
 // ── Page: GPU ─────────────────────────────────────────────────────────────
 export function PricingGPU({ weeks: W = 52 }) {
-  const { gpuModelData, gpuTiles, gpuIndexData, combinedSpotData, combinedSpotTiles, awsChipData } = usePricingCharts(W);
-  const anyData = gpuModelData || gpuIndexData || combinedSpotData || awsChipData;
+  const { gpuIndexData, combinedSpotData, combinedSpotTiles } = usePricingCharts(W);
+  const anyData = gpuIndexData || combinedSpotData;
 
   return (
     <EditableGrid viewId="pricing-gpu">
@@ -662,24 +621,24 @@ export function PricingGPU({ weeks: W = 52 }) {
         </ChartCard>
       )}
 
-      {gpuModelData && (
-        <ChartCard
-          chartId="gpu-by-model"
-          legend={gpuModelData.datasets.map(d => [d.label, d.borderColor])}
-          preface={<PriceModelTiles tiles={gpuTiles} fmt={v => `$${v.toFixed(2)}`} unit="/hr" />}
-          height={260} span2
-        >
-          <Line data={gpuModelData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
-        </ChartCard>
-      )}
+      {!anyData && <ChartCard chartId="gpu-index" title="GPU spot pricing" height={200} span2><NoData label="GPU" /></ChartCard>}
+    </EditableGrid>
+  );
+}
 
-      {awsChipData && (
+// ── Page: AWS AI Chips ──────────────────────────────────────────────────────
+export function PricingAWS({ weeks: W = 52 }) {
+  const { awsChipData } = usePricingCharts(W);
+
+  return (
+    <EditableGrid viewId="pricing-aws">
+      {awsChipData ? (
         <ChartCard chartId="aws-chip-spot" legend={awsLegend(awsChipData)} height={220} span2>
           <Line data={awsChipData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
         </ChartCard>
+      ) : (
+        <ChartCard chartId="aws-chip-spot" title="AWS AI-chip spot pricing" height={200} span2><NoData label="AWS AI-chip" /></ChartCard>
       )}
-
-      {!anyData && <ChartCard chartId="gpu-index" title="GPU spot pricing" height={200} span2><NoData label="GPU" /></ChartCard>}
     </EditableGrid>
   );
 }
