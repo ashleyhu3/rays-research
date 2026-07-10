@@ -36,6 +36,8 @@
     "alerts:run": "node --env-file-if-exists=.env server/scripts/runAlerts.js",
     "options-report:generate": "node --env-file-if-exists=.env server/scripts/generateAndStoreDailyOptionsReport.js",
     "options-report:send": "node --env-file-if-exists=.env server/scripts/sendDailyOptionsReport.js",
+    "weekly-report:generate": "node --env-file-if-exists=.env server/scripts/generateWeeklyReport.js",
+    "weekly-report:send": "node --env-file-if-exists=.env server/scripts/sendWeeklyReport.js",
     "test:transcripts": "node --test server/transcripts/*.test.js server/transcripts/*.test.mjs",
     "test:alerts": "node --test server/alertsEngine.test.js server/mailer.test.js"
   },

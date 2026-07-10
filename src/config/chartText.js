@@ -421,17 +421,17 @@ export const CHART_TEXT = {
     title: 'Top 10 Models by Weekly Token Volume',
     // subtitle is computed (latest week / as-of) in the view
   },
-  'or-trend': {
-    title: 'Top 8 Models — Weekly Token Trend',
-    subtitle: 'Rising lines signal accelerating adoption; each point is one week of token throughput.',
+  'or-volprice': {
+    title: 'Model Volume vs Price',
+    subtitle: 'Each point is a model: weekly token volume (log) against current $/M input price (log).',
   },
   'or-provstack': {
     title: 'Provider Token Volume (Stacked Weekly)',
     subtitle: 'Weekly tokens by provider — shows which companies are gaining or losing share.',
   },
-  'or-provshare': {
-    title: 'Provider Market Share (%)',
-    subtitle: "Each line is a provider's percentage of total weekly OpenRouter traffic; crossing lines = share shifts.",
+  'or-revenue': {
+    title: 'Est. Weekly Revenue by Company',
+    subtitle: "Each company's weekly token volume multiplied by its $/M input price, summed across its models.",
   },
   'or-combo': {
     title: 'Total Weekly Tokens vs YoY Growth',

@@ -129,10 +129,13 @@ async function getOpenRouterRankings() {
   const latestWk = allWeeks[allWeeks.length - 1];
   const latestBucket = weekBuckets[latestWk] ?? {};
 
+  // Keep a deep list of models so downstream charts (volume-vs-price scatter,
+  // per-model revenue) see beyond the handful of highest-volume models — e.g.
+  // Claude Opus, GPT-4o and other second-tier models sit well below the top 15.
   const topModels = Object.entries(latestBucket)
     .filter(([slug]) => slug !== 'other')
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 15)
+    .slice(0, 60)
     .map(([slug, tokens], i) => ({
       slug,
       name:     displayName(slug),

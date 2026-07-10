@@ -1,8 +1,9 @@
 import { useMemo } from 'react';
-import { Line, Bar } from 'react-chartjs-2';
+import { Line, Bar, Scatter } from 'react-chartjs-2';
 import { C, fa } from '../../config/colors';
 import { baseOpts, hBarOpts, stackedOpts, dualAxisOpts, mkDs, mkBar, GRID, TICK, BORD } from '../../utils/chartHelpers';
 import { orTokensWithGrowth, fmtGrowthPct } from '../../utils/openrouterProvider';
+import { buildCompanyRevenue, fmtUsd, livePriceForSlug } from '../../utils/companyRevenue';
 import ChartCard from '../../components/chart/ChartCard';
 import EditableGrid from '../../components/chart/EditableGrid';
 import { useData } from '../../context/DataContext';
@@ -60,6 +61,49 @@ function weekLabel(isoDate) {
   const d = new Date(isoDate + 'T00:00:00Z');
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
 }
+
+// True when the most recent ISO week in the scrape is still in progress (its
+// Sunday hasn't been reached yet), so its per-model totals are partial.
+function isPartialLatestWeek(ranks) {
+  const labels = ranks?.weekLabels ?? [];
+  const lastMonday = labels[labels.length - 1];
+  if (!lastMonday || !ranks?.asOf) return false;
+  const weekEnd = new Date(new Date(lastMonday + 'T00:00:00Z').getTime() + 6 * 86400000);
+  return new Date(ranks.asOf + 'T00:00:00Z') < weekEnd;
+}
+
+// Volume-vs-price scatter: log axes span the wide range of both token volume
+// and per-token price; each point is one model.
+const volPriceOpts = {
+  responsive: true,
+  maintainAspectRatio: false,
+  animation: false,
+  plugins: {
+    legend: { display: false },
+    tooltip: {
+      callbacks: {
+        title: ctx => ctx[0]?.raw?.name ?? '',
+        label: ctx => `${fmtB(ctx.raw.y)} tokens · $${ctx.raw.x.toFixed(2)}/M input`,
+      },
+    },
+  },
+  scales: {
+    x: {
+      type: 'logarithmic',
+      title: { display: true, text: 'Input price ($/M tokens)', color: '#94a3b8', font: { size: 11 } },
+      grid: GRID,
+      border: BORD,
+      ticks: { ...TICK, callback: v => `$${v}` },
+    },
+    y: {
+      type: 'logarithmic',
+      title: { display: true, text: 'Weekly tokens', color: '#94a3b8', font: { size: 11 } },
+      grid: GRID,
+      border: BORD,
+      ticks: { ...TICK, callback: v => fmtB(v) },
+    },
+  },
+};
 
 function NoKey() {
   return (
@@ -127,19 +171,33 @@ export default function DemandOpenRouter({ weeks: W = 52 }) {
     return { labels: wkLabels, datasets };
   }, [ranks, wkLabels, W]);
 
-  // ── 3. Top 8 models weekly token trend (line) ─────────────────────
-  const trendData = useMemo(() => {
-    if (!ranks?.trend || !wkLabels.length) return null;
-    const slugs = Object.keys(ranks.trend).slice(0, 8);
+  // ── 3. Volume vs price scatter (most recent full week) ────────────
+  // One point per tracked model: x = current $/M input price, y = tokens in the
+  // latest complete week. Models without a live price or volume are dropped.
+  const volPriceData = useMemo(() => {
+    const models = ld?.openrouter?.models ?? ld?.openrouter?.data?.models ?? [];
+    const list = ranks?.topModels ?? [];
+    if (!list.length) return null;
+    const partial = isPartialLatestWeek(ranks);
+    const pts = list.map(m => {
+      const price = livePriceForSlug(m.slug, models);
+      const vol   = partial ? m.prevTokens : m.tokens;
+      if (!(price > 0) || !(vol > 0)) return null;
+      return { x: price, y: vol, name: m.name, color: modelColor(m.slug) };
+    }).filter(Boolean);
+    if (!pts.length) return null;
     return {
-      labels: wkLabels,
-      datasets: slugs.map(slug => mkDs(
-        ranks.topModels.find(m => m.slug === slug)?.name ?? slug,
-        modelColor(slug),
-        (ranks.trend[slug] ?? []).slice(-W),
-      )),
+      datasets: [{
+        label: 'Models',
+        data: pts,
+        pointBackgroundColor: pts.map(p => fa(p.color, 0.8)),
+        pointBorderColor:     pts.map(p => p.color),
+        pointBorderWidth: 1,
+        pointRadius: 6,
+        pointHoverRadius: 8,
+      }],
     };
-  }, [ranks, wkLabels, W]);
+  }, [ranks, ld]);
 
   // ── 4. Combined: total weekly tokens (bars) + YoY growth (line) ───
   const comboData = useMemo(() => {
@@ -176,21 +234,9 @@ export default function DemandOpenRouter({ weeks: W = 52 }) {
     };
   }, [ranks]);
 
-  // ── 6. Provider share % line over W weeks ─────────────────────────
-  const provShareData = useMemo(() => {
-    const pw = ranks?.providerWeekly;
-    if (!pw || !wkLabels.length || !ranks?.weeklyTotals?.length) return null;
-    const totals = ranks.weeklyTotals.slice(-W);
-    const provs  = Object.keys(pw).filter(p => p !== 'Other');
-    return {
-      labels: wkLabels,
-      datasets: provs.map(prov => mkDs(
-        prov,
-        provColor(prov),
-        (pw[prov] ?? []).slice(-W).map((t, i) => totals[i] > 0 ? +(t / totals[i] * 100).toFixed(1) : 0),
-      )),
-    };
-  }, [ranks, wkLabels, W]);
+  // ── 6. Estimated weekly revenue per company (bar) ─────────────────
+  // Σ over each company's models of weekly tokens × $/M input price.
+  const revenueData = useMemo(() => buildCompanyRevenue(ranks, ld), [ranks, ld]);
 
   const asOf = ranks?.asOf ? new Date(ranks.asOf).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : null;
   const latestWeek = ranks?.latestWeek ? weekLabel(ranks.latestWeek) : null;
@@ -207,34 +253,19 @@ export default function DemandOpenRouter({ weeks: W = 52 }) {
     <EditableGrid viewId="openrouter-rankings">
 
       <ChartCard
-        chartId="or-top"
-        subtitle={`Week of ${latestWeek ?? '—'}${asOf ? ` · as of ${asOf}` : ''}. Prompt + completion tokens combined.`}
-        height={260} span2
+        chartId="or-revenue"
+        subtitle={`Weekly, past 6 months${asOf ? ` · as of ${asOf}` : ''}. Weekly tokens × current $/M input price, summed per company.`}
+        height={380} span2
       >
-        {topBarData ? <Bar data={topBarData} options={hBarOpts(fmtB)} /> : <NoKey />}
+        {revenueData ? <Line data={revenueData} options={baseOpts(fmtUsd)} /> : <NoKey />}
       </ChartCard>
 
       <ChartCard
-        chartId="or-trend"
-        height={260} span2
+        chartId="or-volprice"
+        subtitle={`Most recent full week${asOf ? ` · as of ${asOf}` : ''}. Each point is a model: weekly token volume vs current input price (log axes).`}
+        height={380} span2
       >
-        {trendData ? <Line data={trendData} options={baseOpts(fmtB)} /> : <NoKey />}
-      </ChartCard>
-
-      <ChartCard
-        chartId="or-provstack"
-        height={260} span2
-      >
-        {provStackData ? <Bar data={provStackData} options={stackedOpts(fmtB)} /> : <NoKey />}
-      </ChartCard>
-
-      <ChartCard
-        chartId="or-provshare"
-        height={260} span2
-      >
-        {provShareData
-          ? <Line data={provShareData} options={baseOpts(v => `${v.toFixed(1)}%`)} />
-          : <NoKey />}
+        {volPriceData ? <Scatter data={volPriceData} options={volPriceOpts} /> : <NoKey />}
       </ChartCard>
 
       {comboData && (
@@ -245,6 +276,21 @@ export default function DemandOpenRouter({ weeks: W = 52 }) {
           <Bar data={comboData} options={dualAxisOpts(fmtB, fmtGrowthPct)} />
         </ChartCard>
       )}
+
+      <ChartCard
+        chartId="or-top"
+        subtitle={`Week of ${latestWeek ?? '—'}${asOf ? ` · as of ${asOf}` : ''}. Prompt + completion tokens combined.`}
+        height={260} span2
+      >
+        {topBarData ? <Bar data={topBarData} options={hBarOpts(fmtB)} /> : <NoKey />}
+      </ChartCard>
+
+      <ChartCard
+        chartId="or-provstack"
+        height={260} span2
+      >
+        {provStackData ? <Bar data={provStackData} options={stackedOpts(fmtB)} /> : <NoKey />}
+      </ChartCard>
 
       {growthData && (
         <ChartCard
