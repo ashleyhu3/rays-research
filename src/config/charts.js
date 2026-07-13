@@ -21,11 +21,10 @@ const REGISTRY = [
 
   // ── Market signals ─────────────────────────────────────────────────
   // OpenRouter model rankings
-  { id: 'or-revenue',   sectorId: 'market', subView: 'openrouter', defaultPinned: true },
+  { id: 'or-revenue-total', sectorId: 'market', subView: 'openrouter', defaultPinned: true },
   { id: 'or-top',       sectorId: 'market', subView: 'openrouter', defaultPinned: false },
-  { id: 'or-volprice',  sectorId: 'market', subView: 'openrouter', defaultPinned: true },
   { id: 'or-provstack', sectorId: 'market', subView: 'openrouter', defaultPinned: true },
-  { id: 'or-combo',     sectorId: 'market', subView: 'openrouter', defaultPinned: true },
+  { id: 'or-combo-price', sectorId: 'market', subView: 'openrouter', defaultPinned: true },
   { id: 'or-growth',    sectorId: 'market', subView: 'openrouter', defaultPinned: false },
   // Infrastructure & OSS signals
   { id: 'gen-ai-revenue', sectorId: 'market', subView: 'general', defaultPinned: true  },

@@ -6,6 +6,7 @@ import { wkLabels } from '../../utils/labels';
 import { stackedOpts, mkBar, fmtM, fmtK } from '../../utils/chartHelpers';
 import { buildCompanyPriceBar, pricingBarOpts } from '../../utils/modelPricing';
 import { orComboCard } from '../../components/chart/OrGrowthCards';
+import RevPerTokenCard from '../../components/chart/RevPerTokenCard';
 import { metricTrendCard } from '../../components/chart/MetricTrendCard';
 import ChartCard from '../../components/chart/ChartCard';
 import ArrTrajectoryCard from '../../components/chart/ArrTrajectoryCard';
@@ -69,6 +70,15 @@ export default function DemandOpenAI({ weeks: W }) {
       </ChartCard>
 
       {orComboCard(ld?.openrouterRanks, 'OpenAI', W, C.openai, 'oa')}
+
+      <RevPerTokenCard
+        chartId="oa-revtoken"
+        provider="OpenAI"
+        ranks={ld?.openrouterRanks}
+        liveData={ld}
+        weeks={W}
+        color={C.openai}
+      />
 
       {metricTrendCard({
         chartId: 'oa-stars',

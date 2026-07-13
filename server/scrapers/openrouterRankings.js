@@ -144,10 +144,16 @@ async function getOpenRouterRankings() {
       rank: i + 1,
     }));
 
-  // ── 3. Weekly trend for top 10 models ───────────────────────────────
-  const top10Slugs = topModels.slice(0, 10).map(m => m.slug);
+  // ── 3. Weekly trend for every kept model ────────────────────────────
+  // One series per model in `topModels`, not just the global top 10. The
+  // revenue estimate prices a company's untracked volume at the average of its
+  // tracked models, so a company whose models all sit below the global top 10
+  // (OpenAI, Google) used to have *no* series at all: its revenue collapsed to
+  // tokens × one constant price, and revenue-per-token came out a flat line.
+  // With a series per kept model, each company's weekly mix is priced model by
+  // model. ~57 slugs × ~80 weeks — a few hundred KB, cheap to store and ship.
   const trend = {};
-  for (const slug of top10Slugs) {
+  for (const { slug } of topModels) {
     trend[slug] = allWeeks.map(wk => weekBuckets[wk]?.[slug] ?? 0);
   }
 

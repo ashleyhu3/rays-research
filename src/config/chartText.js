@@ -425,21 +425,17 @@ export const CHART_TEXT = {
     title: 'Top 10 Models by Weekly Token Volume',
     // subtitle is computed (latest week / as-of) in the view
   },
-  'or-volprice': {
-    title: 'Model Volume vs Price',
-    subtitle: 'Each point is a model: weekly token volume (log) against current $/M input price (log).',
-  },
   'or-provstack': {
     title: 'Provider Token Volume (Stacked Weekly)',
     subtitle: 'Weekly tokens by provider — shows which companies are gaining or losing share.',
   },
-  'or-revenue': {
-    title: 'Est. Weekly Revenue by Company',
-    subtitle: "Each company's weekly token volume multiplied by its $/M input price, summed across its models.",
+  'or-revenue-total': {
+    title: 'Est. Weekly Revenue',
+    subtitle: 'The per-company weekly revenue estimates aggregated into a single platform-wide total.',
   },
-  'or-combo': {
-    title: 'Total Weekly Tokens vs YoY Growth',
-    subtitle: 'Bars show total platform tokens (left axis); the line shows year-over-year growth in % (right axis).',
+  'or-combo-price': {
+    title: 'Weekly Token Volume vs Token Price',
+    subtitle: 'Bars show total platform tokens (left axis); the line shows estimated total weekly revenue divided by that week’s tokens — the blended $/M realised across the model mix (right axis).',
   },
   'or-growth': {
     title: 'Week-over-Week Token Growth — Top Models (%)',

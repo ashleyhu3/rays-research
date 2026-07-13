@@ -1,9 +1,8 @@
 import { useMemo } from 'react';
-import { Line, Bar, Scatter } from 'react-chartjs-2';
+import { Line, Bar } from 'react-chartjs-2';
 import { C, fa } from '../../config/colors';
-import { baseOpts, hBarOpts, stackedOpts, dualAxisOpts, mkDs, mkBar, GRID, TICK, BORD } from '../../utils/chartHelpers';
-import { orTokensWithGrowth, fmtGrowthPct } from '../../utils/openrouterProvider';
-import { buildCompanyRevenue, fmtUsd, livePriceForSlug } from '../../utils/companyRevenue';
+import { baseOpts, hBarOpts, stackedOpts, dualAxisOpts, mkDs, mkBar } from '../../utils/chartHelpers';
+import { buildTotalRevenue, buildRevPerToken, fmtUsd, fmtUsdPerM } from '../../utils/companyRevenue';
 import ChartCard from '../../components/chart/ChartCard';
 import EditableGrid from '../../components/chart/EditableGrid';
 import { useData } from '../../context/DataContext';
@@ -60,64 +59,6 @@ function weekLabel(isoDate) {
   if (!isoDate) return '';
   const d = new Date(isoDate + 'T00:00:00Z');
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
-}
-
-// True when the most recent ISO week in the scrape is still in progress (its
-// Sunday hasn't been reached yet), so its per-model totals are partial.
-function isPartialLatestWeek(ranks) {
-  const labels = ranks?.weekLabels ?? [];
-  const lastMonday = labels[labels.length - 1];
-  if (!lastMonday || !ranks?.asOf) return false;
-  const weekEnd = new Date(new Date(lastMonday + 'T00:00:00Z').getTime() + 6 * 86400000);
-  return new Date(ranks.asOf + 'T00:00:00Z') < weekEnd;
-}
-
-// A "nice" round tick step near hi/count, then the smallest multiple of that
-// step at or above `hi` — so the axis fits the data snugly (highest point ~6T →
-// top gridline 6T, not 10T) while ticks stay on clean, evenly-spaced values.
-function niceLinearBound(hi, count = 5) {
-  if (!(hi > 0)) return { max: count, step: 1 };
-  const rawStep = hi / count;
-  const mag = 10 ** Math.floor(Math.log10(rawStep));
-  const norm = rawStep / mag;
-  const step = (norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 5 ? 5 : 10) * mag;
-  return { max: Math.ceil(hi / step) * step, step };
-}
-
-// Volume-vs-price scatter: linear axes so equal on-screen distance always means
-// an equal change in value (0→10 spans the same width as 90→100), rather than a
-// log scale where each power of ten is equally wide. Bounds/ticks are derived
-// from the current week's data; each point is one model.
-function makeVolPriceOpts(xMax, yMax) {
-  const x = niceLinearBound(xMax);
-  const y = niceLinearBound(yMax);
-  const linAxis = (bound, text, fmt) => ({
-    type: 'linear',
-    min: 0,
-    max: bound.max,
-    ticks: { ...TICK, stepSize: bound.step, callback: fmt },
-    title: { display: true, text, color: '#94a3b8', font: { size: 11 } },
-    grid: GRID,
-    border: BORD,
-  });
-  return {
-    responsive: true,
-    maintainAspectRatio: false,
-    animation: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        callbacks: {
-          title: ctx => ctx[0]?.raw?.name ?? '',
-          label: ctx => `${fmtB(ctx.raw.y)} tokens · $${ctx.raw.x.toFixed(2)}/M input`,
-        },
-      },
-    },
-    scales: {
-      x: linAxis(x, 'Input price ($/M tokens)', v => `$${v}`),
-      y: linAxis(y, 'Weekly tokens', v => fmtB(v)),
-    },
-  };
 }
 
 function NoKey() {
@@ -186,58 +127,20 @@ export default function DemandOpenRouter({ weeks: W = 52 }) {
     return { labels: wkLabels, datasets };
   }, [ranks, wkLabels, W]);
 
-  // ── 3. Volume vs price scatter (most recent full week) ────────────
-  // One point per tracked model: x = current $/M input price, y = tokens in the
-  // latest complete week. Models without a live price or volume are dropped.
-  const volPriceData = useMemo(() => {
-    const models = ld?.openrouter?.models ?? ld?.openrouter?.data?.models ?? [];
-    const list = ranks?.topModels ?? [];
-    if (!list.length) return null;
-    const partial = isPartialLatestWeek(ranks);
-    const pts = list.map(m => {
-      const price = livePriceForSlug(m.slug, models);
-      const vol   = partial ? m.prevTokens : m.tokens;
-      if (!(price > 0) || !(vol > 0)) return null;
-      return { x: price, y: vol, name: m.name, color: modelColor(m.slug) };
-    }).filter(Boolean);
-    if (!pts.length) return null;
-    return {
-      datasets: [{
-        label: 'Models',
-        data: pts,
-        pointBackgroundColor: pts.map(p => fa(p.color, 0.8)),
-        pointBorderColor:     pts.map(p => p.color),
-        pointBorderWidth: 1,
-        pointRadius: 6,
-        pointHoverRadius: 8,
-      }],
-    };
-  }, [ranks, ld]);
-
-  // Linear axis bounds for the scatter, recomputed from the current week's points
-  // so the ticks stay evenly spaced with clean round values whatever the range.
-  const volPriceOpts = useMemo(() => {
-    const pts = volPriceData?.datasets?.[0]?.data ?? [];
-    if (!pts.length) return null;
-    return makeVolPriceOpts(
-      Math.max(...pts.map(p => p.x)),
-      Math.max(...pts.map(p => p.y)),
-    );
-  }, [volPriceData]);
-
-  // ── 4. Combined: total weekly tokens (bars) + YoY growth (line) ───
-  const comboData = useMemo(() => {
-    const s = orTokensWithGrowth(ranks, null, W, 52);
+  // ── 4b. Same bars, but the line is blended realised price ─────────
+  // Total estimated weekly revenue ÷ total weekly tokens, i.e. the average
+  // $/M actually earned across the platform's mix of models that week.
+  const comboPriceData = useMemo(() => {
+    const s = buildRevPerToken(ranks, ld, null, W);
     if (!s) return null;
     return {
       labels: s.labels,
       datasets: [
-        // Lowest order draws last → line renders on top of the bars
-        { ...mkDs('YoY growth (%)', C.orange, s.growth), type: 'line', yAxisID: 'y1', order: 0 },
+        { ...mkDs('Revenue per M tokens', C.orange, s.price), type: 'line', yAxisID: 'y1', order: 0 },
         { ...mkBar('Total tokens', C.teal, s.tokens), yAxisID: 'y', order: 1 },
       ],
     };
-  }, [ranks, W]);
+  }, [ranks, ld, W]);
 
   // ── 5. WoW growth horizontal bar ──────────────────────────────────
   const growthData = useMemo(() => {
@@ -260,9 +163,8 @@ export default function DemandOpenRouter({ weeks: W = 52 }) {
     };
   }, [ranks]);
 
-  // ── 6. Estimated weekly revenue per company (bar) ─────────────────
-  // Σ over each company's models of weekly tokens × $/M input price.
-  const revenueData = useMemo(() => buildCompanyRevenue(ranks, ld), [ranks, ld]);
+  // ── 7. Aggregate weekly revenue across all companies (line) ───────
+  const revenueTotalData = useMemo(() => buildTotalRevenue(ranks, ld), [ranks, ld]);
 
   const asOf = ranks?.asOf ? new Date(ranks.asOf).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : null;
   const latestWeek = ranks?.latestWeek ? weekLabel(ranks.latestWeek) : null;
@@ -279,27 +181,19 @@ export default function DemandOpenRouter({ weeks: W = 52 }) {
     <EditableGrid viewId="openrouter-rankings">
 
       <ChartCard
-        chartId="or-revenue"
-        subtitle={`Weekly, past 6 months${asOf ? ` · as of ${asOf}` : ''}. Weekly tokens × current $/M input price, summed per company.`}
-        height={380} span2
+        chartId="or-revenue-total"
+        subtitle={`Weekly, past 6 months${asOf ? ` · as of ${asOf}` : ''}. The per-company estimates summed into one platform-wide series.`}
+        height={260} span2
       >
-        {revenueData ? <Line data={revenueData} options={baseOpts(fmtUsd)} /> : <NoKey />}
+        {revenueTotalData ? <Line data={revenueTotalData} options={baseOpts(fmtUsd)} /> : <NoKey />}
       </ChartCard>
 
-      <ChartCard
-        chartId="or-volprice"
-        subtitle={`Most recent full week${asOf ? ` · as of ${asOf}` : ''}. Each point is a model: weekly token volume vs current input price (linear axes).`}
-        height={380} span2
-      >
-        {volPriceData && volPriceOpts ? <Scatter data={volPriceData} options={volPriceOpts} /> : <NoKey />}
-      </ChartCard>
-
-      {comboData && (
+      {comboPriceData && (
         <ChartCard
-          chartId="or-combo"
+          chartId="or-combo-price"
           height={260} span2
         >
-          <Bar data={comboData} options={dualAxisOpts(fmtB, fmtGrowthPct)} />
+          <Bar data={comboPriceData} options={dualAxisOpts(fmtB, fmtUsdPerM)} />
         </ChartCard>
       )}
 

@@ -5,6 +5,7 @@ import { hBarOpts, stackedOpts, fmtM, GRID, TICK, BORD } from '../../utils/chart
 import { metricTrendCard } from '../../components/chart/MetricTrendCard';
 import { buildCompanyPriceBar, pricingBarOpts } from '../../utils/modelPricing';
 import { orComboCard } from '../../components/chart/OrGrowthCards';
+import RevPerTokenCard from '../../components/chart/RevPerTokenCard';
 import ChartCard from '../../components/chart/ChartCard';
 import EditableGrid from '../../components/chart/EditableGrid';
 import { useData } from '../../context/DataContext';
@@ -75,6 +76,16 @@ export default function DemandZhipu({ weeks: W }) {
   return (
     <EditableGrid viewId="demand-zhipu">
       {orComboCard(ld?.openrouterRanks, 'Zhipu AI', W, C.zhipu, 'zh')}
+
+      <RevPerTokenCard
+        chartId="zh-revtoken"
+        provider="Zhipu AI"
+        ranks={ld?.openrouterRanks}
+        liveData={ld}
+        weeks={W}
+        color={C.zhipu}
+        ticker="2513.HK"
+      />
 
       <ChartCard
         chartId="zh-revenue"

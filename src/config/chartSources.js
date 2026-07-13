@@ -194,10 +194,9 @@ export const CHART_SOURCES = {
 
   // ── Market signals · OpenRouter model rankings ────────────────────────
   'or-top':       { src: 'openrouter.ai/rankings', srcUrl: 'https://openrouter.ai/rankings', freq: 'weekly', lag: LAG.orRanks },
-  'or-volprice':  { src: 'openrouter.ai/rankings + /models pricing', srcUrl: 'https://openrouter.ai/rankings', freq: 'weekly', lag: LAG.orRanks },
   'or-provstack': { src: 'openrouter.ai/rankings', srcUrl: 'https://openrouter.ai/rankings', freq: 'weekly', lag: LAG.orRanks },
-  'or-revenue':   { src: 'openrouter.ai/rankings + /models pricing', srcUrl: 'https://openrouter.ai/rankings', freq: 'weekly', lag: LAG.orRanks },
-  'or-combo':     { src: 'openrouter.ai/rankings', srcUrl: 'https://openrouter.ai/rankings', freq: 'weekly', lag: LAG.orRanks },
+  'or-revenue-total': { src: 'openrouter.ai/rankings + /models pricing', srcUrl: 'https://openrouter.ai/rankings', freq: 'weekly', lag: LAG.orRanks },
+  'or-combo-price': { src: 'openrouter.ai/rankings + /models pricing', srcUrl: 'https://openrouter.ai/rankings', freq: 'weekly', lag: LAG.orRanks },
   'or-growth':    { src: 'openrouter.ai/rankings', srcUrl: 'https://openrouter.ai/rankings', freq: 'weekly', lag: LAG.orRanks },
 
   // ── Web traffic (SimilarWeb via Apify) ────────────────────────────────

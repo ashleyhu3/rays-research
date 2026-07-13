@@ -58,13 +58,18 @@ export default function Chinese({ weeks: W }) {
     const ranks = liveData?.openrouterRanks;
     if (!ranks?.trend) return null;
     const weeks = (ranks.weekLabels ?? []).slice(-W);
+    // ranks.trend carries a series for every kept model (~57), of which ~17 are
+    // Chinese — too many to read. Keep the 8 largest by latest weekly volume.
     const datasets = Object.entries(ranks.trend)
       .map(([slug, series]) => {
         const cn = CN_PREFIXES.find(p => slug.startsWith(p.match));
         if (!cn) return null;
-        return mkDs(slug.split('/')[1] ?? slug, cn.color, series.slice(-W));
+        return { latest: series.at(-1) ?? 0, ds: mkDs(slug.split('/')[1] ?? slug, cn.color, series.slice(-W)) };
       })
-      .filter(Boolean);
+      .filter(Boolean)
+      .sort((a, b) => b.latest - a.latest)
+      .slice(0, 8)
+      .map(x => x.ds);
     return datasets.length > 0 ? { labels: weeks, datasets } : null;
   }, [liveData, W]);
 

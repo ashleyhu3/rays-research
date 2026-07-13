@@ -5,16 +5,16 @@
  *   revenue(company, week) = Σ over the company's models of
  *                              (model tokens that week) × (model $/M input price) / 1e6
  *
- * We have per-model weekly token series only for the tracked top models
- * (`ranks.trend`), so a company's remaining volume (its provider weekly total
- * minus the tracked models) is priced at the average of its tracked models and
- * added on — keeping every company represented instead of dropping smaller
- * models to zero. Prices are current (applied to historical volumes), i.e. this
- * is revenue-at-today's-pricing.
+ * `ranks.trend` carries a weekly token series for every model the scrape keeps
+ * (~57), which covers ~90–100% of each company's recent weekly volume. The
+ * remainder — older models that have dropped out of the kept set, so mostly a
+ * historical tail — is priced at the average of the company's tracked models
+ * and added on, rather than dropped to zero. Prices are current (applied to
+ * historical volumes), i.e. this is revenue-at-today's-pricing.
  */
 import { C } from '../config/colors';
 import { mkDs } from './chartHelpers';
-import { orWeekLabel } from './openrouterProvider';
+import { orWeekLabel, orTokensWithGrowth } from './openrouterProvider';
 
 // Companies with a dedicated demand page, plus DeepSeek. `name` must match the
 // provider display name emitted by server/scrapers/openrouterRankings.js.
@@ -109,9 +109,14 @@ export function buildCompanyRevenue(ranks, liveData, W = WEEKS_6MO) {
         revenue       += (t * p.price) / 1e6;
         trackedTokens += t;
       }
-      // Remaining (untracked) volume priced at the company's tracked-model average.
+      // Remaining (untracked) volume assumed to carry the same mix as the
+      // tracked volume, so price it at the blended $/M actually realised that
+      // week rather than an unweighted mean of list prices — which would give a
+      // rarely-used $75/M model the same say as a heavily-used $0.15/M one.
+      // Falls back to the unweighted mean in weeks with no tracked volume.
+      const blended  = trackedTokens > 0 ? (revenue * 1e6) / trackedTokens : avgPrice;
       const leftover = Math.max(0, (weekly[i] ?? 0) - trackedTokens);
-      revenue += (leftover * avgPrice) / 1e6;
+      revenue += (leftover * blended) / 1e6;
       data.push(Math.round(revenue));
     }
 
@@ -126,6 +131,77 @@ export function buildCompanyRevenue(ranks, liveData, W = WEEKS_6MO) {
   };
 }
 
+/**
+ * Estimated total weekly revenue across all companies over the last W weeks —
+ * the per-company series summed week by week, so every revenue chart agrees.
+ * Returns null without data.
+ */
+export function totalRevenueSeries(ranks, liveData, W = WEEKS_6MO) {
+  const perCompany = buildCompanyRevenue(ranks, liveData, W);
+  if (!perCompany) return null;
+
+  return {
+    labels: perCompany.labels,
+    data:   perCompany.labels.map((_, i) =>
+      perCompany.datasets.reduce((sum, ds) => sum + (ds.data[i] ?? 0), 0)),
+  };
+}
+
+/** Line-chart data ({ labels, datasets }) of total estimated weekly revenue. */
+export function buildTotalRevenue(ranks, liveData, W = WEEKS_6MO) {
+  const total = totalRevenueSeries(ranks, liveData, W);
+  if (!total) return null;
+
+  return {
+    labels: total.labels,
+    datasets: [mkDs('All companies', C.teal, total.data, true)],
+  };
+}
+
+/**
+ * Estimated weekly revenue for one company over the last W weeks, in the same
+ * units and from the same computation as buildCompanyRevenue. Returns null when
+ * the company has no live revenue.
+ */
+export function companyRevenueSeries(ranks, liveData, company, W = WEEKS_6MO) {
+  const perCompany = buildCompanyRevenue(ranks, liveData, W);
+  const ds = perCompany?.datasets.find(d => d.label === company);
+  return ds ? { labels: perCompany.labels, data: ds.data } : null;
+}
+
+/**
+ * Blended realised price by week — estimated weekly revenue ÷ that week's
+ * tokens, in $/M — for one company, or for the whole platform when `provider`
+ * is null. That is the average $/M actually earned across the mix of models
+ * served that week, as opposed to any single model's list price.
+ *
+ * orTokensWithGrowth drops the in-progress week (a partial total would read as
+ * a collapse) while the revenue series keeps every week in ranks.weekLabels, so
+ * the two are aligned on their trailing complete weeks before dividing.
+ * Returns null without data.
+ */
+export function buildRevPerToken(ranks, liveData, provider, W = WEEKS_6MO) {
+  const s   = orTokensWithGrowth(ranks, provider, W, 52);
+  const rev = provider
+    ? companyRevenueSeries(ranks, liveData, provider, Infinity)
+    : totalRevenueSeries(ranks, liveData, Infinity);
+  if (!s || !rev) return null;
+
+  const n   = rev.data.length;
+  const end = s.labels.at(-1) === rev.labels.at(-1) ? n : n - 1;
+  const start   = end - s.tokens.length;
+  const weekRev = rev.data.slice(start, end);
+  if (start < 0 || weekRev.length !== s.tokens.length) return null;
+
+  return {
+    labels:   s.labels,
+    isoWeeks: (ranks?.weekLabels ?? []).slice(start, end),
+    tokens:   s.tokens,
+    revenue:  weekRev,
+    price:    s.tokens.map((t, i) => (t > 0 ? +((weekRev[i] * 1e6) / t).toFixed(3) : null)),
+  };
+}
+
 /** y-axis / tooltip formatter for USD revenue. */
 export const fmtUsd = v => {
   const n = Math.abs(v);
@@ -134,3 +210,6 @@ export const fmtUsd = v => {
   if (n >= 1e3) return `$${(v / 1e3).toFixed(0)}K`;
   return `$${Math.round(v)}`;
 };
+
+/** y-axis / tooltip formatter for blended revenue per million tokens. */
+export const fmtUsdPerM = v => (v == null ? '—' : `$${v.toFixed(2)}/M`);

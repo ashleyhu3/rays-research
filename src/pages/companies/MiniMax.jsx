@@ -5,6 +5,7 @@ import { baseOpts, hBarOpts, fmtM, GRID, TICK, BORD } from '../../utils/chartHel
 import { metricTrendCard } from '../../components/chart/MetricTrendCard';
 import { buildCompanyPriceBar, pricingBarOpts } from '../../utils/modelPricing';
 import { orComboCard } from '../../components/chart/OrGrowthCards';
+import RevPerTokenCard from '../../components/chart/RevPerTokenCard';
 import ChartCard from '../../components/chart/ChartCard';
 import EditableGrid from '../../components/chart/EditableGrid';
 import { useData } from '../../context/DataContext';
@@ -48,6 +49,16 @@ export default function DemandMiniMax({ weeks: W }) {
   return (
     <EditableGrid viewId="demand-minimax">
       {orComboCard(ld?.openrouterRanks, 'MiniMax', W, C.minimax, 'mm')}
+
+      <RevPerTokenCard
+        chartId="mm-revtoken"
+        provider="MiniMax"
+        ranks={ld?.openrouterRanks}
+        liveData={ld}
+        weeks={W}
+        color={C.minimax}
+        ticker="0100.HK"
+      />
 
       {metricTrendCard({
         chartId: 'mm-hf',
