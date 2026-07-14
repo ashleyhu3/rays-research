@@ -1,9 +1,21 @@
 import { createContext, useContext, useState, useCallback } from 'react';
+import soxxStatic from '../pages/alerts/soxxStatic.json';
 
 // Shared state for the daily options report so the page body and the Topbar
 // controls (Refresh / Download / the report date beside the title) stay in
 // sync even though they render in different parts of the layout tree.
 const OptionsReportContext = createContext(null);
+
+// SOXX was just added to the tracked ticker list, but the stored report
+// predates that change and won't get a real SOXX pull until the next
+// generate run. Splice in one static pull client-side (not persisted to
+// Mongo/file storage) so it shows on the page in the meantime — drop this
+// once a live-generated report includes SOXX on its own.
+function withStaticSoxx(report) {
+  if (!report?.tickers) return report;
+  if (report.tickers.some(t => t.ticker === 'SOXX')) return report;
+  return { ...report, tickers: [...report.tickers, soxxStatic] };
+}
 
 export function OptionsReportProvider({ children }) {
   const [report, setReport]   = useState(null);
@@ -16,7 +28,7 @@ export function OptionsReportProvider({ children }) {
     try {
       const res = await fetch('/api/alerts/daily-options-report');
       const json = await res.json();
-      if (res.ok) setReport(json.report || null);
+      if (res.ok) setReport(withStaticSoxx(json.report || null));
     } catch { setReport(null); }
     finally { setLoading(false); }
   }, []);
@@ -31,7 +43,7 @@ export function OptionsReportProvider({ children }) {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`);
-      setReport(json.report || null);
+      setReport(withStaticSoxx(json.report || null));
       setMsg({ kind: 'ok', text: `Updated the report for ${json.meta?.date || 'today'}.` });
     } catch (err) {
       setMsg({ kind: 'err', text: `Update failed: ${err.message}` });
