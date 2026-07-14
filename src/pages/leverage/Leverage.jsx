@@ -21,6 +21,10 @@ import ChartCard from '../../components/chart/ChartCard';
 const TEAL = '#299682', BLUE = '#4577b4', ORANGE = '#ad622d', PURPLE = '#7864b4';
 const RATIO = '#59c7b5';
 
+// Keep collecting and rescaling the ratio series, but leave it off the chart
+// until the comparison is ready to be shown again.
+const SHOW_MARKET_CAP_RATIO = false;
+
 /** Series hue as a translucent wash — stacked bands read as layered glass over
  * the grid rather than opaque blocks, while staying a distinct fill per layer. */
 function alpha(hex, a) {
@@ -37,46 +41,30 @@ const MARKETS = {
     // The API serves trillions of won, which is also how Korea quotes it.
     scale: 1,
     unit: 'T',
-    unitName: 'trillions of won (KRW tn)',
     title: 'Korean retail leverage · three borrowed layers',
     // Each layer links to the exact table it is read from, not to a site root.
     layers: [
       {
         key: 'collateral', label: 'Securities-collateral loans', color: BLUE,
-        srcLabel: 'KOFIA · 신용공여 잔고 추이 (예탁증권 담보융자 column)',
+        srcLabel: 'KOFIA credit balances',
         srcUrl: 'https://freesis.kofia.or.kr/stat/FreeSIS.do?parentDivId=MSIS10000000000000&serviceId=STATSCU0100000070',
       },
       {
         key: 'margin', label: 'Margin loans', color: ORANGE,
-        srcLabel: 'KOFIA · 신용공여 잔고 추이 (신용거래융자 column)',
+        srcLabel: 'KOFIA credit balances',
         srcUrl: 'https://freesis.kofia.or.kr/stat/FreeSIS.do?parentDivId=MSIS10000000000000&serviceId=STATSCU0100000070',
       },
       {
         key: 'etf', label: '2× leveraged ETFs', color: PURPLE,
-        srcLabel: 'Daum Finance · ETF listing (close × shares outstanding)',
+        srcLabel: 'Daum ETF data',
         srcUrl: 'https://finance.daum.net/domestic/etf',
         srcExtra: {
-          label: 'HKEXnews · Trading Information of Leveraged & Inverse Products (CSOP)',
+          label: 'HKEXnews filings',
           url: 'https://www1.hkexnews.hk/search/titlesearch.xhtml?lang=en',
         },
       },
     ],
     fundsTitle: 'Leveraged ETF layer · by fund',
-    fundsSrc: 'Daum Finance · ETF listing + HKEXnews',
-    fundsSrcUrl: 'https://finance.daum.net/domestic/etf',
-    note:
-      'Margin loans are the KOFIA daily all-market 신용거래융자 balance; securities-collateral loans are 예탁증권 담보융자 from the '
-      + 'same table — borrowing against pledged shares, which unlike margin can be drawn out of the account, so it is credit extended '
-      + "on the same collateral but not necessarily money in the market. The ETF layer is KODEX's plain KOSPI200 2× fund, the four "
-      + 'domestic single-stock 2× notes (KODEX and TIGER, each on SK Hynix and Samsung Electronics — opened 2026-05-27) whose net '
-      + 'assets clear 1조원, and the two Hong Kong-listed CSOP single-stock 2× notes for the same pair. Smaller single-stock funds '
-      + "(ACE, RISE, SOL, 1Q, KIWOOM, PLUS) and TIGER's own KOSPI200 2× stay out. Domestic net assets are recomputed exactly as "
-      + "closing price × that day's shares outstanding; the two CSOP notes' AUM is read directly off their daily HKEXnews regulatory "
-      + "filing (USD, converted to won at that day's Daum USD/KRW rate) — none of it is estimated. Cash layers (broker deposits, CMA) "
-      + 'are not charted — they are dry powder, not leverage.',
-    fundsNote:
-      "Net assets = closing price × shares outstanding for the domestic funds, per day; issuer-reported AUM (converted from USD) for "
-      + 'the two HK-listed CSOP notes.',
   },
   taiwan: {
     id: 'taiwan',
@@ -86,55 +74,44 @@ const MARKETS = {
     // shows NT$ billions so both markets read in plain English units.
     scale: 0.1,
     unit: 'B',
-    unitName: 'billions of NT$ (NT$ bn)',
     title: 'Taiwan retail leverage · margin loans + 2× ETFs',
     // The margin band is two exchanges summed, so it carries two links.
     layers: [
       {
         key: 'margin', label: 'Margin loans', color: ORANGE,
-        srcLabel: 'TWSE · 信用交易統計 (MI_MARGN, 融資金額)',
+        srcLabel: 'TWSE margin data',
         srcUrl: 'https://www.twse.com.tw/zh/trading/margin/mi-margn.html',
         srcExtra: {
-          label: 'TPEx · 上櫃股票融資融券餘額 (融資金 summary row)',
+          label: 'TPEx margin data',
           url: 'https://www.tpex.org.tw/zh-tw/mainboard/trading/margin-trading/transactions.html',
         },
       },
       {
         key: 'etf', label: '2× leveraged ETFs', color: PURPLE,
-        srcLabel: 'Yuanta · 歷史淨值 (FUND_SIZE)',
+        srcLabel: 'Yuanta fund data',
         srcUrl: 'https://www.yuantaetfs.com/tradeInfo/comparison/00631L/historical',
+        srcExtra: {
+          label: 'Fubon fund data',
+          url: 'https://websys.fsit.com.tw/FubonETF/Trade/Pcf.aspx?stkId=00675L',
+        },
       },
     ],
     ratio: {
       key: 'leverageRatio',
-      label: 'Margin + Yuanta 2× / market cap',
+      label: 'Margin + 2× ETFs / market cap',
       color: RATIO,
       sources: [
         {
-          label: 'TWSE · weekly listed-equity market capitalization',
+          label: 'TWSE market cap',
           url: 'https://www.twse.com.tw/en/trading/statistics/week.html',
         },
         {
-          label: 'TPEx · historical OTC market value',
+          label: 'TPEx market cap',
           url: 'https://www.tpex.org.tw/zh-tw/mainboard/trading/historical/market-value.html',
         },
       ],
     },
     fundsTitle: 'Leveraged ETF layer · by fund',
-    fundsSrc: 'Yuanta · 歷史淨值 (FUND_SIZE)',
-    fundsSrcUrl: 'https://www.yuantaetfs.com/tradeInfo/comparison/00631L/historical',
-    note:
-      'Margin loans are the whole borrowing market: the TWSE listed balance plus the TPEx OTC balance, both published daily in '
-      + 'money terms. (OTC is about a quarter of Taiwan\'s margin debt — leaving it out understates the layer badly.) The ETF layer '
-      + "is 00631L (Yuanta Taiwan 50 2×) alone — its exact net assets (FUND_SIZE) from Yuanta's own API, daily and five years deep — "
-      + "not units × NAV, which only approximates it because published NAV is rounded. It's about two thirds of all Taiwan 2× assets "
-      + 'on its own, but the layer will understate the full 2× market until more funds are added. Short-sale balances are reported '
-      + 'in lots, not money, so they are not stacked onto a money axis. The ratio line is (margin loans + this fund\'s net assets) ÷ '
-      + 'combined TWSE-listed and TPEx-OTC equity market capitalization. Market capitalization is observed at each TWSE week-end and '
-      + 'carried forward between observations; the leverage numerator continues to update daily.',
-    fundsNote:
-      'Net assets as published by the issuer (FUND_SIZE), daily. Just 00631L for now — Yuanta\'s other 2× funds and every other '
-      + "issuer's (Cathay, Capital, Fuh-Hwa) are left out until each has a confirmed date-queryable daily history source.",
   },
 };
 
@@ -148,8 +125,6 @@ const RANGES = [
   { id: '12m', label: '12M', days: 366 },
   { id: '5y',  label: '5Y',  days: 1830 },
 ];
-
-const pct = v => (v == null ? '—' : `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`);
 
 function dayLabel(iso) {
   return new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
@@ -222,26 +197,6 @@ function windowed(data, market, range) {
   return { dates: cut(dates), total, layers, shown, ratio };
 }
 
-/**
- * The horizontal markers, derived from the data rather than hard-coded — a line
- * whose number is frozen in source stops meaning anything the day after it's
- * written. Each is a level this market has actually paid for before.
- */
-function refLines(data, market, win) {
-  if (!data?.dates?.length || !win?.dates?.length) return [];
-  const shown = stackedLayers(data, market);
-  const at = iso => {
-    const i = data.dates.findIndex(d => d >= iso);
-    return i < 0 ? null : shown.reduce((s, l) => s + (data[l.key][i] ?? 0), 0);
-  };
-  const year = data.dates[data.dates.length - 1].slice(0, 4);
-  return [
-    { label: `Window start · ${win.dates[0]}`, value: win.total[0], color: '#6b7280', dash: [1, 3] },
-    { label: `Year open · ${year}-01`,          value: at(`${year}-01-01`), color: '#b58a2a', dash: [2, 4] },
-    { label: `Q2 base · ${year}-04`,            value: at(`${year}-04-01`), color: '#c65d57', dash: [6, 4] },
-  ].filter(r => Number.isFinite(r.value));
-}
-
 export function LeverageKorea()  { return <Leverage marketId="korea" />; }
 export function LeverageTaiwan() { return <Leverage marketId="taiwan" />; }
 
@@ -266,8 +221,9 @@ export default function Leverage({ marketId = 'korea' }) {
   }, [market]);
 
   const win  = useMemo(() => windowed(data, market, range), [data, market, range]);
-  const refs = useMemo(() => refLines(data, market, win), [data, market, win]);
-  const ratioVisible = Boolean(market.ratio && win?.ratio?.some(Number.isFinite));
+  const ratioVisible = Boolean(
+    SHOW_MARKET_CAP_RATIO && market.ratio && win?.ratio?.some(Number.isFinite)
+  );
 
   const chart = useMemo(() => {
     if (!win) return null;
@@ -310,19 +266,6 @@ export default function Leverage({ marketId = 'korea' }) {
           fill: false,
           order: 0,
         },
-        ...refs.map((r, i) => ({
-          label: r.label,
-          data: win.dates.map(() => r.value),
-          stack: `ref${i}`,
-          borderColor: r.color,
-          borderWidth: 1.5,
-          borderDash: r.dash,
-          pointRadius: 0,
-          pointHoverRadius: 0,
-          fill: false,
-          order: 1,
-          isReference: true,
-        })),
         ...(ratioVisible ? [{
           label: market.ratio.label,
           data: win.ratio,
@@ -341,7 +284,7 @@ export default function Leverage({ marketId = 'korea' }) {
         }] : []),
       ],
     };
-  }, [win, refs, market, ratioVisible]);
+  }, [win, market, ratioVisible]);
 
   const opts = useMemo(() => ({
     responsive: true,
@@ -357,9 +300,8 @@ export default function Leverage({ marketId = 'korea' }) {
         padding: 10,
         titleFont: { family: "'Inter',sans-serif", size: 11 },
         bodyFont: { family: "'Inter',sans-serif", size: 11 },
-        // Reference lines are context, not readings — keep them out of the hover.
-        filter: item => !item.dataset.isReference,
         callbacks: {
+          title: items => (items.length ? win.dates[items[0].dataIndex] : ''),
           label: c => {
             const value = c.dataset.isRatio ? `${Number(c.raw).toFixed(2)}%` : fmt(c.raw);
             return ` ${c.dataset.label}: ${value}`;
@@ -427,34 +369,15 @@ export default function Leverage({ marketId = 'korea' }) {
     );
   }
 
-  const { latest, funds, carriedFrom } = data;
-  const first  = win.total[0];
+  const { latest, funds } = data;
   const latestTotal = win.total[win.total.length - 1];
-  const chg = first ? ((latestTotal - first) / first) * 100 : null;
-
-  // A layer measured but not yet stacked (see MIN_HISTORY) is still real money —
-  // name it and its value rather than letting it vanish from the page.
-  const pending = market.layers.filter(l => !win.shown.some(s => s.key === l.key));
-
-  // KOFIA publishes 1–3 days behind the ETF layer; say which layers are showing
-  // a carried-forward value rather than letting a flat line imply fresh data.
-  const stale = market.layers.filter(l => carriedFrom?.[l.key]);
-  const staleFrom = stale.length ? carriedFrom[stale[0].key] : null;
-  const layerLag = stale.length
-    ? `source publishes 1–3 days late — ${stale.map(l => l.label).join(', ')} carried forward from ${staleFrom}`
-    : null;
-  const ratioLag = market.ratio && data.marketSizeDate
-    ? `market cap observed weekly — latest ${data.marketSizeDate}`
-    : null;
-  const lag = [layerLag, ratioLag].filter(Boolean).join(' · ') || 'Same day';
-
   return (
     <>
       <div className="lev-head">
         <div className="lev-stats">
-          <Tile label="Total firepower" value={fmt(latestTotal)} sub={`${range.label} ${pct(chg)}`} color={INK} />
+          <Tile label="Total firepower" value={fmt(latestTotal)} color={INK} />
           {market.layers.map(l => (
-            <Tile key={l.key} label={l.label} value={fmt(latest[l.key])} sub={tileSub(l, latest, data, fmt)} color={l.color} />
+            <Tile key={l.key} label={l.label} value={fmt(latest[l.key])} color={l.color} />
           ))}
         </div>
         {toggles}
@@ -463,39 +386,25 @@ export default function Leverage({ marketId = 'korea' }) {
       <ChartCard
         chartId={`${market.id}-leverage-stack`}
         title={market.title}
-        src={<SourceLinks layers={market.layers} ratio={market.ratio} />}
+        src={<SourceLinks layers={market.layers} />}
         freq="Daily"
-        lag={lag}
         span2
         height={430}
         legend={[
-          // The third slot is a link: each layer's swatch points at the table it
-          // is read from, so the chart's provenance is one click from the series.
-          ...win.shown.map(l => [l.label, l.color, l.srcUrl]),
-          ['Total', INK],
-          ...(ratioVisible ? [[market.ratio.label, market.ratio.color]] : []),
-          ...refs.map(r => [r.label, r.color]),
+          ...win.shown.map(l => [l.label, l.color]),
         ]}
-        srcNote={
-          `In ${market.unitName}, one point per trading day. ${market.note}`
-          + (pending.length
-            ? ` Not yet stacked: ${pending.map(l => `${l.label} (${fmt(latest[l.key])} today)`).join(', ')} — measured daily but with too little history to draw as a band; it joins the stack as collection accumulates.`
-            : '')
-        }
       >
         <Line data={chart} options={opts} />
       </ChartCard>
 
       <ChartCard
         chartId={`${market.id}-leverage-funds`}
-        title={`${market.fundsTitle}${data.fundsDate ? ` · ${data.fundsDate}` : ''}`}
-        src={market.fundsSrc}
-        srcUrl={market.fundsSrcUrl}
+        title={market.fundsTitle}
+        src={<SourceLinks layers={market.layers.filter(l => l.key === 'etf')} />}
         freq="Daily"
         span2
         fillBody
         height={Math.max(220, 34 + (funds?.length ?? 0) * 26)}
-        srcNote={market.fundsNote}
       >
         <table className="lev-table">
           <thead>
@@ -527,33 +436,15 @@ export default function Leverage({ marketId = 'korea' }) {
 }
 
 /**
- * What the tile says under the number. Taiwan's margin is two markets summed, and
- * its ETF layer is one issuer out of several — both facts belong next to the
- * figure, not only in the footnote.
- */
-function tileSub(layer, latest, data, fmt) {
-  if (layer.key === 'margin' && Number.isFinite(latest.marginOtc)) {
-    return `listed ${fmt(latest.marginListed)} + OTC ${fmt(latest.marginOtc)}`;
-  }
-  if (layer.key === 'etf' && data.etfMarket?.total > 0 && Number.isFinite(latest.etf)) {
-    return `${((latest.etf / data.etfMarket.total) * 100).toFixed(0)}% of all listed 2× funds`;
-  }
-  return latest.date;
-}
-
-/**
  * The source row under the chart: one link per table actually queried, rather
  * than a single link to a site's front door. Taiwan's margin band is two
  * exchanges summed, so it lists both.
  */
-function SourceLinks({ layers, ratio }) {
-  const entries = [
-    ...layers.flatMap(l => [
+function SourceLinks({ layers }) {
+  const entries = layers.flatMap(l => [
     { label: l.srcLabel, url: l.srcUrl, color: l.color },
     ...(l.srcExtra ? [{ label: l.srcExtra.label, url: l.srcExtra.url, color: l.color }] : []),
-    ]),
-    ...(ratio?.sources ?? []).map(s => ({ ...s, color: ratio.color })),
-  ];
+  ]);
   // Both Korean credit layers come out of one KOFIA table — list it once.
   const seen = new Set();
   const unique = entries.filter(e => (seen.has(e.label) ? false : seen.add(e.label)));
@@ -569,12 +460,11 @@ function SourceLinks({ layers, ratio }) {
   );
 }
 
-function Tile({ label, value, sub, color }) {
+function Tile({ label, value, color }) {
   return (
     <div className="lev-tile">
       <div className="lev-tile-label"><span className="lev-dot" style={{ background: color }} />{label}</div>
       <div className="lev-tile-value">{value}</div>
-      <div className="lev-tile-sub">{sub}</div>
     </div>
   );
 }

@@ -23,6 +23,12 @@ const PRIOR_LOOKAHEAD_DAYS = 120;
 // retaining active chains long enough to avoid churn as expirations roll.
 const PRIOR_CACHE_MAX = 1200;
 
+// The report tracks the three nearest expirations. A caller that only needs the
+// front one (a one-chart export) can say so and skip two thirds of the chain
+// history — every contract in an expiration costs a request the first time it is
+// seen, so the count is the run's dominant cost.
+const EXPIRATION_COUNT = 3;
+
 const DEFAULT_TICKERS = ['TSM', 'ASML', 'INTC', 'TXN', 'STM', 'TEL', 'GOOG', 'NOK', 'SOXX'];
 const BASE = 'https://api.massive.com';
 const CALL_COLOR = '#059669';
@@ -1055,14 +1061,12 @@ function stackLabels(entries, markers, fontSize) {
   return ordered;
 }
 
-// Bars and comparison lines now all count the full call/put chain for their matched
-// expiration. Different cycles can still be an order of magnitude apart, though,
-// and one shared scale would flatten the quiet cycle into what looks like missing
-// data. Each therefore keeps its own visual band: both absolute totals are printed,
-// while height communicates the shape of that cycle's ramp. The legend says the
-// lines use their own scale so nobody reads the two bands as one axis.
-const BAR_BAND = 0.62;   // share of the plot the bars get, measured up from the axis
-const LINE_BAND = 0.32;  // share the lines get, measured down from the top
+// Bars and comparison lines all count the full call/put chain for their matched
+// expiration, so they are the same quantity and share one scale: a point above a
+// bar means that cycle traded more contracts that session, and heights compare
+// across the whole plot. Cycles can be an order of magnitude apart, which is the
+// comparison the chart exists to make — a quiet cycle drawn low is the finding,
+// not a defect. Both absolute totals stay printed for the cases where it is.
 function volumeChartBody(chart, width, height, fonts) {
   const rows = chart?.rows ?? [];
   if (!rows.length) {
@@ -1079,12 +1083,15 @@ function volumeChartBody(chart, width, height, fonts) {
   const barWidth = Math.min(86, step * 0.7);
   const centerX = index => margin.left + (step * index) + (step / 2);
 
-  // The lines are scaled and placed first: whether any resolved decides how much of
-  // the plot the bars get. With no line to make room for, the bars take all of it.
+  // One scale for everything drawn: the tallest mark in the frame, whether it is a
+  // bar or a comparison point, sets the top of the plot.
   const barIndexByDate = new Map(rows.map((row, index) => [row.date, index]));
-  const priorMax = Math.max(1, ...priors.flatMap(prior => prior.points.map(point => point.volume ?? 0)));
-  const lineFloor = margin.top + (chartHeight * LINE_BAND);
-  const scaleY = value => lineFloor - ((value / priorMax) * (chartHeight * LINE_BAND));
+  const plotMax = Math.max(
+    1,
+    ...rows.map(row => row.volume ?? 0),
+    ...priors.flatMap(prior => prior.points.map(point => point.volume ?? 0)),
+  );
+  const scaleY = value => baseline - ((value / plotMax) * chartHeight);
 
   const series = priors.map(prior => ({
     ...prior,
@@ -1097,12 +1104,9 @@ function volumeChartBody(chart, width, height, fonts) {
 
   // Every session gets a bar, whether or not a line has a point above it — a session
   // the prior chain never traded says nothing about what these strikes did today.
-  const barMax = Math.max(1, ...rows.map(row => row.volume ?? 0));
-  const barBand = chartHeight * (series.length ? BAR_BAND : 1);
-
   const barGeom = rows.map((row, index) => {
     const value = row.volume ?? 0;
-    const barHeight = value > 0 ? Math.max(5, (value / barMax) * barBand) : 5;
+    const barHeight = value > 0 ? Math.max(5, (value / plotMax) * chartHeight) : 5;
     return {
       value,
       isToday: index === rows.length - 1,
@@ -1188,33 +1192,24 @@ function volumeChartBody(chart, width, height, fonts) {
     cursor += 33 + textWidth(label) + 26;
   }
 
-  // Says what the lines are aligned on and that they carry their own scale, so the
-  // chart explains its own comparison: every point sits the same number of sessions
-  // from its cycle's call as the bar beneath it sits from the upcoming one, and a
-  // point's height is only ever readable against the other points. The note shares the
-  // legend's row, so it drops detail from the front as the legend eats the width — the
-  // scale caveat is the last thing given up, being the one that prevents a misreading.
+  // Says what the lines are aligned on: every point sits the same number of sessions
+  // from its cycle's call as the bar beneath it sits from the upcoming one. The note
+  // shares the legend's row, so it drops detail from the front as the legend eats the
+  // width. No scale caveat any more — the lines are on the bars' scale.
   let note = '';
   if (series.length) {
     const room = width - margin.right - cursor - 12;
     const date = chart.nextEarnings ? fmtDateShort(chart.nextEarnings) : null;
     const text = [
-      date ? `aligned to earnings · next call ${date} · lines: own scale` : null,
-      date ? `next call ${date} · lines: own scale` : null,
-      'lines: own scale',
+      date ? `aligned to earnings · next call ${date}` : null,
+      date ? `next call ${date}` : null,
     ].find(candidate => candidate && textWidth(candidate) <= room);
     if (text) {
       note = `<text x="${width - margin.right}" y="20" text-anchor="end" class="vc-faint" font-family="${MONO}" font-size="${fonts.legend}" font-weight="600">${escapeHtml(text)}</text>`;
     }
   }
 
-  // A hairline where the bars' band ends and the lines' begins: two scales in one
-  // frame are only honest if the seam between them is visible.
-  const divider = series.length
-    ? `<line x1="${margin.left}" y1="${(baseline - (chartHeight * BAR_BAND)).toFixed(2)}" x2="${width - margin.right}" y2="${(baseline - (chartHeight * BAR_BAND)).toFixed(2)}" class="vc-seam" stroke-dasharray="2 6" stroke-width="1"></line>`
-    : '';
-
-  return `${legendItems.join('')}${note}${divider}${bars}${lines}${labels}`;
+  return `${legendItems.join('')}${note}${bars}${lines}${labels}`;
 }
 
 function buildVolumeChartSvg(chart) {
@@ -1707,9 +1702,9 @@ function renderMarkdown(report, outPath) {
   return `${lines.join('\n').replace(/\n{3,}/g, '\n\n')}\n`;
 }
 
-async function fetchTickerReport(ticker, reportDate) {
+async function fetchTickerReport(ticker, reportDate, maxExpirations = EXPIRATION_COUNT) {
   const first = await getOptionsData(ticker);
-  const expirations = (first.expirations ?? []).slice(0, 3);
+  const expirations = (first.expirations ?? []).slice(0, maxExpirations);
   const byDate = [];
 
   for (const expiration of expirations) {
@@ -1728,7 +1723,10 @@ async function fetchTickerReport(ticker, reportDate) {
   };
 }
 
-async function generateDailyOptionsReport({ date = today(), tickers = DEFAULT_TICKERS, out = null, format = null } = {}) {
+async function generateDailyOptionsReport({
+  date = today(), tickers = DEFAULT_TICKERS, out = null, format = null,
+  maxExpirations = EXPIRATION_COUNT,
+} = {}) {
   const outPath = path.resolve(out ?? `daily-options-data-${date}.html`);
   const outputFormat = format ?? (path.extname(outPath).toLowerCase() === '.md' ? 'md' : 'html');
   const tickerReports = [];
@@ -1736,7 +1734,7 @@ async function generateDailyOptionsReport({ date = today(), tickers = DEFAULT_TI
   try {
     for (const ticker of tickers) {
       try {
-        tickerReports.push(await fetchTickerReport(ticker, date));
+        tickerReports.push(await fetchTickerReport(ticker, date, maxExpirations));
       } finally {
         // Histories are memoized only to share work across one ticker's three
         // expirations. Persistent aggregate totals carry the useful state between

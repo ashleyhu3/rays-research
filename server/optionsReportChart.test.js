@@ -44,8 +44,11 @@ function readLayout(svg) {
 
   const circles = [...svg.matchAll(/<circle cx="([\d.]+)" cy="([\d.]+)"/g)]
     .map(m => ({ x: +m[1], y: +m[2] }));
-  // The diamond marker's path starts at its top vertex.
-  const diamonds = [...svg.matchAll(/<path d="M([\d.]+),([\d.]+) L/g)]
+  // The diamond marker's path starts at its top vertex and closes (Z). The series
+  // polylines are open paths that also start with "M x,y L", so the close is what
+  // separates a marker from the start of a line — which, now that lines and bars
+  // share one scale, can begin anywhere in the plot.
+  const diamonds = [...svg.matchAll(/<path d="M([\d.]+),([\d.]+) L[^"]*Z"/g)]
     .map(m => ({ x: +m[1], y: +m[2] + 5.4 }));
 
   return { labels, markers: [...circles, ...diamonds] };
@@ -147,9 +150,10 @@ function barsOf(svg) {
     .map(m => ({ x: +m[1], y: +m[2], height: +m[3] }));
 }
 
-test('bars stay readable when a comparison cycle dwarfs the current chain', () => {
-  // Full chains can still differ sharply between earnings cycles. Sharing one y-scale
-  // would flatten the quieter cycle onto the axis and make real sessions look absent.
+test('bars and comparison lines are drawn on one shared scale', () => {
+  // Bars and lines both count a full chain, so they are the same quantity and are
+  // read against one axis: height is comparable everywhere in the frame, and the
+  // tallest mark — here a comparison point, not a bar — sets the top of the plot.
   const svg = buildVolumeChartSvg(chartWith(
     [1900, 795, 547, 1600, 1100, 12800, 11200, 7600, 44900, 44900],
     [13200, 32800, 41500, 20800, 23900, 96800, 36500, 44000, 37600, 45700],
@@ -159,23 +163,38 @@ test('bars stay readable when a comparison cycle dwarfs the current chain', () =
   const bars = barsOf(svg);
   assert.equal(bars.length, 10, 'every session gets a bar');
 
-  // The bars are scaled among themselves, so the day's peak fills its band and the
-  // quiet sessions keep a height that reflects their volume rather than a floor.
-  const tallest = Math.max(...bars.map(bar => bar.height));
-  const distinct = new Set(bars.map(bar => bar.height.toFixed(1)));
-  assert.ok(tallest > 150, `tallest bar should fill its band, got ${tallest}`);
-  assert.ok(distinct.size >= 7, `bars should be distinguishable, got ${distinct.size} heights`);
+  // The cost of one axis: against a cycle 2.6× larger, the quietest sessions (under
+  // ~2k contracts) compress into the 5px minimum bar and stop being distinguishable
+  // by height. The busy sessions — the ones the chart is read for — stay separable,
+  // and every bar still prints its absolute total.
+  const busy = bars.filter(bar => bar.height > 5);
+  const distinct = new Set(busy.map(bar => bar.height.toFixed(1)));
+  assert.ok(distinct.size >= 4, `busy sessions should be distinguishable, got ${distinct.size}`);
 
-  // Bars and lines never overlap, so a point can't be misread as sitting "above" a bar
-  // it shares no scale with.
+  // One scale, checked where the two marks meet: on the last session the bar (44,900)
+  // is larger than the year point above it (39,000), so that point must fall inside
+  // the bar rather than floating over it — the misreading a separate band invited.
   const markers = readLayout(svg).markers;
-  const barTop = Math.min(...bars.map(bar => bar.y));
+  const lastBar = bars.at(-1);
+  const lastX = Math.max(...markers.map(marker => marker.x));
+  const lastColumn = markers.filter(marker => Math.abs(marker.x - lastX) < 1);
+  assert.ok(lastColumn.length, 'the last session carries comparison points');
   assert.ok(
-    Math.max(...markers.map(m => m.y)) < barTop,
-    'every comparison point sits clear of the bar band',
+    lastColumn.some(marker => marker.y > lastBar.y),
+    'a comparison point below the bar it sits over is drawn inside it',
   );
-  assert.match(svg, /lines: own scale/);
-  assertNoCollisions(svg, 'chain dwarfs bars');
+
+  // The busiest mark in the frame is the 115,000 year peak, not a bar, so it — not the
+  // tallest bar — reaches the top of the plot.
+  assert.ok(
+    Math.min(...markers.map(marker => marker.y)) < Math.min(...bars.map(bar => bar.y)),
+    'the tallest comparison point rises above every bar',
+  );
+
+  // Heights encode volume on one scale: 12,800 against 1,900 is a 6.7× bar.
+  const ratio = bars[5].height / bars[0].height;
+  assert.ok(Math.abs(ratio - 12800 / 1900) < 0.1, `bar heights track volume, got ${ratio}×`);
+  assertNoCollisions(svg, 'shared scale');
 });
 
 test('current rows sum every contract in the selected expiration', () => {
@@ -313,7 +332,12 @@ test('a session the prior chain never traded still gets its bar', () => {
   // The four leading zeros are real zeros, not absent data: they sit at the floor,
   // while every traded session rises above it.
   assert.ok(bars.slice(0, 4).every(bar => bar.height === 5), 'zero sessions sit at the floor');
-  assert.ok(bars[8].height > 50, 'a busy session is drawn at full scale');
+  assert.ok(bars[8].height > bars[4].height, 'a busy session out-rises a quiet one');
+  // The year chain peaked 11× above this chain's busiest session, and one shared scale
+  // says so: the bars are drawn short. That is the comparison, not a rendering fault —
+  // the absolute totals are printed above each mark for when the shape gets small.
+  assert.ok(bars[8].height < 40, 'a chain dwarfed by its prior cycle is drawn short');
+  assert.match(svg, />10\.4k</, 'the busy session still prints its absolute total');
 });
 
 test('a ticker with no earnings alignment still renders the year line alone', () => {

@@ -20,13 +20,17 @@
  *   so history costs one request per day (~3s per 5 dates; fine for a backfill).
  *
  * • ETF — Yuanta's own API returns FUND_SIZE, the fund's exact net assets, per
- *   day, five years deep. That is the authoritative number (units × NAV only
- *   approximates it, since published NAV is rounded). The layer is just 00631L
- *   (元大台灣50正2, Yuanta Taiwan 50 2×) — the original and largest Taiwan 2×
- *   fund, about two thirds of all Taiwan 2× assets on its own. `etfMarketTotal`
- *   records the whole listed 2× market for the current day (TWSE's live feed)
- *   purely so the page can state what share of it this one fund covers, instead
- *   of implying the layer is the whole market.
+ *   day, five years deep, for 00631L (元大台灣50正2, Yuanta Taiwan 50 2×) — the
+ *   original and largest Taiwan 2× fund, about two thirds of all Taiwan 2×
+ *   assets on its own. Fubon exposes no batched history API for 00675L (富邦臺
+ *   灣加權正2, third-largest), but its PCF (creation/redemption basket) page
+ *   reports the fund's exact net assets one reference date per request — see
+ *   fubonPcfDay for the date-shift quirk that makes this workable. Both are
+ *   the authoritative number (units × NAV only approximates it, since
+ *   published NAV is rounded). `etfMarketTotal` records the whole listed 2×
+ *   market for the current day (TWSE's live feed) purely so the page can
+ *   state what share of it these funds cover, instead of implying the layer
+ *   is the whole market.
  *
  * • Market size — TWSE publishes its total listed-equity capitalization in a
  *   weekly workbook; TPEx publishes the market value of every OTC company for
@@ -254,6 +258,75 @@ function englishName(name) {
   return out.replace(/\s+/g, ' ').trim();
 }
 
+/* ── Leveraged ETFs: Fubon (00675L) ────────────────────────────────── */
+
+// 00675L (富邦臺灣加權正2, Fubon TAIEX 2×) — the third-largest Taiwan 2× fund.
+// Fubon exposes no batched history API, but its PCF (creation/redemption
+// basket) page reports the fund's exact net assets for one reference date per
+// request: /FubonETF/Trade/Pcf.aspx?ddate=YYYYMMDD&stkId=00675L. The basket it
+// returns is dated the *next* trading day (ddate=20241125 shows the
+// 2024/11/26 PCF), so the observation date has to be read off the page
+// itself, not assumed from the query param — and a pre-launch or otherwise
+// empty reference date reports the fund's net assets as literally "NT$0",
+// which is how an empty day is told apart from a real one.
+const FUBON_CODE = '00675L';
+const FUBON_HOST = 'https://websys.fsit.com.tw';
+
+function fubonPcfUrl(ddate) {
+  return `${FUBON_HOST}/FubonETF/Trade/Pcf.aspx?ddate=${ddate}&stkId=${FUBON_CODE}`;
+}
+
+// Fields are read by their label rather than a fixed position, the same
+// defensive pattern the KOFIA/HKEX/TWSE readers use.
+function parseFubonPcf(html) {
+  const pairs = {};
+  const re = /<p>([^<]+)<\/p>\s*<p>([^<]+)<\/p>/g;
+  let m;
+  while ((m = re.exec(html))) pairs[m[1].trim()] = m[2].trim();
+
+  const dateMatch = html.match(/現金申購買回清單[\s\S]{0,400}?(\d{4})\/(\d{2})\/(\d{2})/);
+  if (!dateMatch) return null;
+  const aum = Number((pairs['基金淨資產價值'] ?? '').replace(/[^\d.]/g, ''));
+  if (!Number.isFinite(aum) || aum <= 0) return null;
+  return { day: `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}`, aum: aum / OKU };
+}
+
+async function fubonPcfDay(ddate) {
+  const res = await fetch(fubonPcfUrl(ddate), {
+    headers: { 'User-Agent': UA, 'Referer': `${FUBON_HOST}/FubonETF/` },
+    signal: AbortSignal.timeout(30000),
+  });
+  if (!res.ok) throw new Error(`Fubon PCF HTTP ${res.status}`);
+  return parseFubonPcf(await res.text());
+}
+
+// One request per weekday in [from, to] — the PCF page has no range query.
+// Keyed by the *displayed* PCF date rather than the queried ddate, so a
+// reference date that rolls forward over a holiday still lands on the right
+// day and simply overwrites/dedupes against a neighboring query.
+// The scraper's full ETF universe — Yuanta's fund(s) plus Fubon's — shared by
+// getTaiwanLeverage (to build the per-day fund breakdown) and assemble() (to
+// filter stored history down to funds this scraper still sources).
+const FUND_CODES = [...YUANTA_FUNDS, FUBON_CODE];
+
+async function fubonFundHistory(from, to) {
+  const out = {};
+  const end = new Date(`${to}T00:00:00Z`);
+  for (let t = new Date(`${from}T00:00:00Z`); t <= end; t = new Date(t.getTime() + 86400000)) {
+    const dow = t.getUTCDay();
+    if (dow === 0 || dow === 6) continue;
+    const ddate = iso(t).replace(/-/g, '');
+    try {
+      const row = await fubonPcfDay(ddate);
+      if (row) out[row.day] = row.aum;
+    } catch (e) {
+      console.warn(`[taiwanLeverage] Fubon PCF ${ddate}: ${e.message}`);
+    }
+    await sleep(300);                                     // be a good citizen
+  }
+  return out;
+}
+
 /* ── Whole listed 2× market (today only) ───────────────────────────── */
 
 // TWSE's market-information feed: `c` = units outstanding, `e` = NAV. Used only
@@ -301,7 +374,7 @@ async function getTaiwanLeverage(days = 30) {
   const from = iso(new Date(today.getTime() - days * 86400000));
   const to = iso(today);
 
-  const [listed, etfFunds, marketTotal, listedMarketCaps] = await Promise.all([
+  const [listed, yuantaFunds, fubonDays, marketTotal, listedMarketCaps] = await Promise.all([
     // FinMind is a convenience — it serves TWSE's own figure over a whole range
     // in one request — but it is a free tier that rate-limits (402). It must not
     // be able to take the scrape down with it: TWSE, TPEx and Yuanta are the
@@ -314,12 +387,17 @@ async function getTaiwanLeverage(days = 30) {
       console.warn(`[taiwanLeverage] Yuanta ${c}: ${e.message}`);
       return { name: c, days: {} };
     }))),
+    fubonFundHistory(from, to).catch(e => {
+      console.warn(`[taiwanLeverage] Fubon PCF unavailable (${e.message})`);
+      return {};
+    }),
     listedEtfMarketTotal().catch(e => { console.warn('[taiwanLeverage] ETF market feed:', e.message); return null; }),
     twseWeeklyMarketCaps().catch(e => {
       console.warn('[taiwanLeverage] TWSE weekly market cap:', e.message);
       return {};
     }),
   ]);
+  const etfFunds = [...yuantaFunds, { name: 'Fubon TAIEX 2×', days: fubonDays }];
 
   const history = loadHistory();
 
@@ -433,13 +511,13 @@ async function getTaiwanLeverage(days = 30) {
   }
 
   const names = {};
-  etfFunds.forEach((f, i) => { names[YUANTA_FUNDS[i]] = f.name; });
+  etfFunds.forEach((f, i) => { names[FUND_CODES[i]] = f.name; });
   const etfDays = new Set(etfFunds.flatMap(f => Object.keys(f.days)));
   for (const day of etfDays) {
     const perFund = {};
     etfFunds.forEach((f, i) => {
       const aum = f.days[day];
-      if (Number.isFinite(aum)) perFund[YUANTA_FUNDS[i]] = round(aum);
+      if (Number.isFinite(aum)) perFund[FUND_CODES[i]] = round(aum);
     });
     if (!Object.keys(perFund).length) continue;
     history[day] = {
@@ -483,10 +561,11 @@ function assemble(history) {
   // reads as absent, not as zero.
   // Only the funds this scraper actually sources. Stored history can still carry
   // fund codes written by an earlier version of this scraper (it summed TWSE's
-  // whole-market snapshot, Cathay and Capital included); carrying those forward
-  // alongside Yuanta's double-counts the layer — it reported 102% of the entire
-  // listed 2× market. Ignore anything outside the Yuanta universe.
-  const universe = new Set(YUANTA_FUNDS);
+  // whole-market snapshot, Cathay and Capital included, or a wider Yuanta
+  // roster); carrying those forward alongside today's funds double-counts the
+  // layer — it once reported 102% of the entire listed 2× market. Ignore
+  // anything outside FUND_CODES.
+  const universe = new Set(FUND_CODES);
   const etfByDay = {};
   const lastAum = {};
   for (const day of dates) {
