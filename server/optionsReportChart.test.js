@@ -10,11 +10,15 @@ const {
   buildCurrentChainRows,
   buildVolumeChartSvg,
   currentRowsFromTotals,
+  pairsFromSessions,
+  sessionsToExpiry,
   sumDailyVolumes,
 } = require('./scripts/generateDailyOptionsReport');
 
 const DATES = ['06-29', '06-30', '07-01', '07-02', '07-06', '07-07', '07-08', '07-09', '07-10', '07-13']
   .map(day => `2026-${day}`);
+
+const PRIOR_EXPIRY = { quarter: '2026-04-17', year: '2025-07-18' };
 
 function chartWith(barVolumes, quarterVolumes, yearVolumes) {
   const byKey = { quarter: quarterVolumes, year: yearVolumes };
@@ -23,9 +27,11 @@ function chartWith(barVolumes, quarterVolumes, yearVolumes) {
     color: '#059669',
     softColor: '#bfe8d8',
     sideLabel: 'calls',
+    expiration: '2026-07-17',
     nextEarnings: '2026-07-16',
     priors: CYCLES.map(cycle => ({
       ...cycle,
+      expiration: PRIOR_EXPIRY[cycle.key],
       points: DATES.map((date, i) => ({
         barDate: date,
         date: `2025-${date.slice(5)}`,
@@ -136,11 +142,23 @@ test('each series is identifiable without colour', () => {
   // cannot separate the two hues still has line style and marker shape.
   assert.match(svg, /stroke-dasharray="5 4"/);
   assert.ok(svg.includes('<circle') && svg.includes('<path d="M'), 'both marker shapes present');
-  assert.match(svg, /All calls, current/);
-  assert.ok(!svg.includes('Top 3 calls'), 'bar legend describes the full current chain');
-  assert.match(svg, /All calls, last qtr/);
-  assert.match(svg, /All calls, 1 yr ago/);
   assert.match(svg, /next call 7\/16/);
+});
+
+test('the legend names the expiration each series sums', () => {
+  const svg = buildVolumeChartSvg(chartWith(
+    [1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000],
+    [2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000],
+    [3000, 3000, 3000, 3000, 3000, 3000, 3000, 3000, 3000, 3000],
+  ));
+  // Two charts of the same ticker over the same ten sessions differ only in the chains
+  // they hold against each other, so the legend has to say which those are. The year
+  // that separates the prior-year chain from the rest is what makes it confusable, so
+  // that entry — and only that entry — carries one.
+  assert.match(svg, /Jul 17, current/);
+  assert.match(svg, /Apr 17, last qtr/);
+  assert.match(svg, /Jul 18 &#39;25, 1 yr ago/);
+  assert.ok(!svg.includes('All calls'), 'the legend names chains, not sides');
 });
 
 // The bars, as emitted: the rounded rects of the plot. The legend swatch is square
@@ -350,8 +368,64 @@ test('a ticker with no earnings alignment still renders the year line alone', ()
   chart.nextEarnings = null;
 
   const svg = buildVolumeChartSvg(chart);
-  assert.match(svg, /All calls, 1 yr ago/);
+  assert.match(svg, /Jul 18 &#39;25, 1 yr ago/);
   assert.ok(!svg.includes('last qtr'), 'no last-quarter legend entry without an anchor');
   assert.ok(!svg.includes('next call'), 'no earnings note without an upcoming call');
   assertNoCollisions(svg, 'fallback');
+});
+
+// INTC on 14 July 2026: three chains — Jul 15, Jul 17, Jul 20 — with two, four and
+// seven sessions left to run. Every one of them is charted over the same ten sessions,
+// so pairing a bar to the past by its distance from *earnings* gives all three charts
+// the identical history, which is the bug this alignment replaces. Distance from the
+// chain's own expiration separates them, and it still lands inside the same earnings
+// cycle because the prior chain was picked at the same offset from its own call.
+test('two expirations a few days apart read different history', () => {
+  const chartDates = DATES.slice(3, 7);          // 07-02, 07-06, 07-07, 07-08
+  const effectiveDate = chartDates.at(-1);       // the report's session
+  // The prior quarter's sessions, most recent last, through that cycle's chain expiry.
+  const priorSessions = ['2026-04-08', '2026-04-09', '2026-04-10', '2026-04-13',
+    '2026-04-14', '2026-04-15', '2026-04-16', '2026-04-17'];
+  const priorExpiry = '2026-04-17';
+
+  const near = pairsFromSessions(
+    priorSessions, priorExpiry,
+    sessionsToExpiry(chartDates, effectiveDate, '2026-07-09'),   // expires tomorrow
+    chartDates,
+  );
+  const far = pairsFromSessions(
+    priorSessions, priorExpiry,
+    sessionsToExpiry(chartDates, effectiveDate, '2026-07-14'),   // four sessions out
+    chartDates,
+  );
+
+  // The last bar of the near chain is one session from expiry, so it is compared with
+  // the session one before the prior chain expired; the far chain's last bar has four
+  // to run, and reaches four sessions further back.
+  assert.equal(near.at(-1).date, '2026-04-16');
+  assert.equal(far.at(-1).date, '2026-04-13');
+  assert.ok(
+    near.every((pair, i) => pair.date !== far[i].date),
+    'no bar in the two charts compares against the same past session',
+  );
+
+  // Every bar keeps its own counterpart, in order, and the pairing walks the real
+  // session calendar rather than the calendar's gaps: 4/10 -> 4/13 skips the weekend.
+  assert.deepEqual(near.map(pair => pair.date),
+    ['2026-04-13', '2026-04-14', '2026-04-15', '2026-04-16']);
+  assert.deepEqual(near.map(pair => pair.barDate), chartDates);
+});
+
+test('a bar deeper than the prior calendar reaches is dropped, not mispaired', () => {
+  const chartDates = ['2026-07-06', '2026-07-07', '2026-07-08'];
+  const priorSessions = ['2026-04-16', '2026-04-17'];
+  const pairs = pairsFromSessions(
+    priorSessions, '2026-04-17',
+    sessionsToExpiry(chartDates, '2026-07-08', '2026-07-09'),   // 3, 2, 1 sessions out
+    chartDates,
+  );
+
+  // Only the last bar (one session from expiry) has a counterpart in the two sessions
+  // the calendar reaches. The others go without a marker rather than borrowing one.
+  assert.deepEqual(pairs, [{ barDate: '2026-07-08', date: '2026-04-16' }]);
 });

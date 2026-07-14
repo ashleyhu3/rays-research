@@ -239,6 +239,20 @@ function fmtDateShort(dateStr) {
   return `${month}/${day}`;
 }
 
+const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+// An expiration, named the way a chain is spoken about: "Apr 17". A prior cycle in
+// another year carries one — "Jul 18 '25" — since that is exactly where the two
+// chains being compared are easiest to confuse.
+function fmtExpiryShort(dateStr, relativeTo) {
+  if (!dateStr) return '-';
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const label = `${MONTHS_SHORT[month - 1]} ${day}`;
+  const baseYear = Number(String(relativeTo ?? '').slice(0, 4));
+  return year === baseYear ? label : `${label} '${String(year).slice(2)}`;
+}
+
 function addDays(dateStr, days) {
   const date = new Date(`${dateStr}T00:00:00Z`);
   date.setUTCDate(date.getUTCDate() + days);
@@ -255,12 +269,12 @@ function daysBetween(from, date) {
   return Math.round((new Date(`${date}T00:00:00Z`) - new Date(`${from}T00:00:00Z`)) / 86_400_000);
 }
 
-// Sessions between today and an earnings call that hasn't happened yet can't be
-// read off a calendar that doesn't exist yet, so the forward leg is counted in
-// weekdays. A market holiday inside that window would overstate it by one session;
-// the alternative — a hard-coded holiday table — goes stale silently, and being one
-// session out shifts every point of both lines equally, which does not change the
-// comparison the chart is making.
+// Sessions between today and a date that hasn't arrived yet (an expiration, an
+// earnings call) can't be read off a calendar that doesn't exist yet, so the forward
+// leg is counted in weekdays. A market holiday inside that window would overstate it
+// by one session; the alternative — a hard-coded holiday table — goes stale silently,
+// and being one session out shifts every point of both lines equally, which does not
+// change the comparison the chart is making.
 function weekdaysUntil(from, to) {
   let count = 0;
   let cursor = from;
@@ -423,25 +437,34 @@ function persistPriorCache() {
   priorCacheDirty = false;
 }
 
-// One scrape of a prior-cycle chain, summed to a date -> volume map. The window runs
-// months past the dates needed today: the range costs nothing extra per contract
-// (it is one aggregates call either way), and it buys every later run a cache hit.
+// One scrape of a prior-cycle chain, summed to a date -> volume map, together with the
+// bar -> session pairing that chain implies. The window runs months past the dates
+// needed today: the range costs nothing extra per contract (it is one aggregates call
+// either way), and it buys every later run a cache hit.
 //
 // Candidates are tried nearest-expiration first and the search stops at the first one
 // that actually traded through the sessions being compared, so a chain that had not
 // been listed yet back then does not win on calendar proximity alone. If none clears
 // the bar, the best-covered candidate is kept anyway — that is the honest answer, and
 // caching it stops the next run from re-scraping the same dead chains.
-async function scrapePriorChain(ticker, side, targetExpiry, firstDate, lastDate, neededDates) {
+//
+// Which sessions are compared depends on which candidate wins, because a bar is
+// matched to the past by its distance from its own expiration — so the pairing is
+// computed per candidate rather than handed in.
+async function scrapePriorChain(ticker, side, expirationDate, targetExpiry, dte, chartDates) {
   const candidates = await fetchPriorChains(ticker, side, targetExpiry);
   if (!candidates?.length) return null;
 
-  const rangeStart = addDays(firstDate, -5);
-  const lookahead = addDays(lastDate, PRIOR_LOOKAHEAD_DAYS);
-  const rangeEnd = lookahead < today() ? lookahead : today();
-
   let best = null;
   for (const chain of candidates.slice(0, MAX_CHAIN_CANDIDATES)) {
+    const pairs = await pairsForExpiry(ticker, expirationDate, chain.expiration, dte, chartDates);
+    if (!pairs.length) continue;
+
+    const neededDates = pairs.map(pair => pair.date);
+    const rangeStart = addDays(neededDates[0], -5);
+    const lookahead = addDays(neededDates[neededDates.length - 1], PRIOR_LOOKAHEAD_DAYS);
+    const rangeEnd = lookahead < today() ? lookahead : today();
+
     const histories = await mapLimit(
       chain.contracts,
       PRIOR_CONCURRENCY,
@@ -457,11 +480,11 @@ async function scrapePriorChain(ticker, side, targetExpiry, firstDate, lastDate,
       rangeStart,
       rangeEnd,
       totals,
-      coverage: neededDates.length ? covered / neededDates.length : 0,
+      coverage: covered / neededDates.length,
       fetchedAt: new Date().toISOString(),
     };
 
-    if (!best || entry.coverage > best.coverage) best = entry;
+    if (!best || entry.coverage > best.entry.coverage) best = { entry, pairs };
     if (entry.coverage >= MIN_CHAIN_COVERAGE) break;
   }
 
@@ -605,33 +628,32 @@ async function buildCurrentChainRows(
 }
 
 // Total contract volume across the *entire* prior-cycle chain for this side — not
-// the top three. `pairs` already says which past session each bar is compared with,
-// so a point always sits above the bar it corresponds to. Sessions the chain never
-// traded simply have no marker; whatever is available is drawn rather than dropping
-// the series.
-async function buildPriorSeries(ticker, side, expirationDate, cycle, pairs, targetExpiry) {
-  if (!pairs.length) return null;
-  const neededDates = pairs.map(pair => pair.date);
-  const firstDate = neededDates[0];
-  const lastDate = neededDates[neededDates.length - 1];
+// the top three. The pairing says which past session each bar is compared with, so a
+// point always sits above the bar it corresponds to. Sessions the chain never traded
+// simply have no marker; whatever is available is drawn rather than dropping the
+// series.
+//
+// A cached chain is re-paired rather than re-scraped: the pairing follows from the
+// chain's expiration, which the cache records, so the sessions can be recomputed for
+// nothing while the thousands of per-contract requests behind them are not.
+async function buildPriorSeries(ticker, side, expirationDate, cycle, targetExpiry, dte, chartDates) {
   const key = `${ticker}|${side}|${expirationDate}|${cycle}`;
 
   try {
     let entry = readPriorCache().chains[key];
-    const covers = entry && entry.rangeStart <= firstDate && entry.rangeEnd >= lastDate;
+    let pairs = entry?.expiration
+      ? await pairsForExpiry(ticker, expirationDate, entry.expiration, dte, chartDates)
+      : [];
+    const covers = pairs.length
+      && entry.rangeStart <= pairs[0].date
+      && entry.rangeEnd >= pairs[pairs.length - 1].date;
 
-    // An entry cached before candidate selection existed carries no `coverage`. If it
-    // also misses most of the sessions being compared, it is a chain that was picked
-    // on calendar proximity alone and never traded through the window — re-resolve it
-    // once against the neighbours. An entry that *has* a coverage figure has already
-    // been through that search, so a low one is the real answer and is left alone.
-    const guessed = covers && entry.coverage === undefined
-      && neededDates.filter(date => (entry.totals[date] ?? 0) > 0).length
-         < neededDates.length * MIN_CHAIN_COVERAGE;
-
-    if (!covers || guessed) {
-      entry = await scrapePriorChain(ticker, side, targetExpiry, firstDate, lastDate, neededDates);
-      if (!entry) return null;
+    if (!covers) {
+      const scraped = await scrapePriorChain(
+        ticker, side, expirationDate, targetExpiry, dte, chartDates,
+      );
+      if (!scraped) return null;
+      ({ entry, pairs } = scraped);
       savePriorChain(key, entry);
     }
 
@@ -651,18 +673,69 @@ async function buildPriorSeries(ticker, side, expirationDate, cycle, pairs, targ
   }
 }
 
-// What each bar is compared against, per cycle.
+// How many sessions each bar sits before the chain expires. The known leg (bar ->
+// today) is read off the trading calendar the bars were drawn from; the unknown leg
+// (today -> expiration) is counted in weekdays.
+function sessionsToExpiry(chartDates, effectiveDate, expirationDate) {
+  const forward = weekdaysUntil(effectiveDate, expirationDate);
+  return chartDates.map((_, index) => forward + (chartDates.length - 1 - index));
+}
+
+// Which past session each bar is compared with, given the prior chain it is compared
+// against. A bar sits N sessions before its own expiration, so its counterpart is the
+// session N before the prior chain's expiration.
 //
-// The alignment is by position in the earnings cycle, not by calendar date: a bar
-// four sessions before the upcoming call is paired with the session four before the
-// previous call, and four before the call for the same quarter a year ago. Options
-// volume ramps into an earnings date, so comparing 13 July with 13 July a year ago
-// compares two different points of the ramp whenever the call moved — which it
-// does, by a week or more, most years.
+// Distance-to-expiry rather than distance-to-earnings, because the bars are the same
+// ten sessions in every one of a ticker's expiration charts: an earnings-relative
+// pairing therefore produces the identical past sessions in all of them, however
+// differently each chain is placed around the call. INTC's Jul 15 and Jul 20 chains
+// are five sessions apart in their lives — two days to run versus five — and now read
+// history that far apart too. Earnings still decides *which* chain is compared (the
+// prior expiry is picked at the same offset from its own call), so a chain that is
+// "the weekly before earnings" stays that in every cycle.
+function pairsFromSessions(sessions, priorExpiry, dte, chartDates) {
+  // The expiration itself can fall on a non-trading day, so count back from the last
+  // session on or before it.
+  const upToExpiry = (sessions ?? []).filter(date => date <= priorExpiry);
+  if (!upToExpiry.length) return [];
+  const expiryIndex = upToExpiry.length - 1;
+
+  return chartDates
+    .map((barDate, index) => ({ barDate, index: expiryIndex - dte[index] }))
+    .filter(pair => pair.index >= 0)
+    .map(pair => ({ barDate: pair.barDate, date: upToExpiry[pair.index] }));
+}
+
+async function pairsForExpiry(ticker, expirationDate, priorExpiry, dte, chartDates) {
+  const deepest = Math.max(...dte, 0);
+  const sessions = await fetchSessions(ticker, addDays(priorExpiry, -(deepest * 2) - 30), priorExpiry)
+    .catch(error => {
+      console.warn(`[options-report] session calendar unavailable for ${ticker} to ${priorExpiry}: ${error.message}`);
+      return [];
+    });
+
+  const pairs = pairsFromSessions(sessions, priorExpiry, dte, chartDates);
+  if (pairs.length) return pairs;
+
+  // No calendar to count back through (a rate-limit squeeze, usually). Shifting every
+  // bar by the gap between the two expirations still lines the chains up on their own
+  // expiries, to within the holidays that separate them, so a line is still drawn.
+  const shift = daysBetween(priorExpiry, expirationDate);
+  return chartDates.map(barDate => ({ barDate, date: addDays(barDate, -shift) }));
+}
+
+// Which chain each cycle compares against.
 //
-// Returns null when the ticker's earnings dates can't be established, and the
-// caller falls back to the plain 52-week calendar shift.
-async function buildCycleAlignment(ticker, expirationDate, chartDates, effectiveDate) {
+// The tracked expiration is placed at the same distance from its own earnings call in
+// every cycle, so a chain that is "the weekly after earnings" stays that a quarter and
+// a year ago. Options volume ramps into an earnings date, so comparing a chain that
+// expires the day before the call with one that expired a week after it compares two
+// different points of the ramp — and the calls move by a week or more most years, so
+// a plain calendar shift lands on the wrong side of one often enough to matter.
+//
+// Returns null when the ticker's earnings dates can't be established, and the caller
+// falls back to the plain 52-week calendar shift.
+async function buildCycleAlignment(ticker, expirationDate) {
   let anchors;
   try {
     anchors = await getEarningsAnchors(ticker);
@@ -670,66 +743,29 @@ async function buildCycleAlignment(ticker, expirationDate, chartDates, effective
     console.warn(`[options-report] earnings dates unavailable for ${ticker}: ${error.message}`);
     return null;
   }
-  if (!anchors) return null;
+  if (!anchors?.next) return null;
 
-  // Sessions from each bar back to the upcoming call: the known leg (bar -> today)
-  // comes off the real trading calendar, the unknown leg (today -> call) is counted
-  // in weekdays.
-  const toCall = weekdaysUntil(effectiveDate, anchors.next);
-  const distances = chartDates.map((_, index) => toCall + (chartDates.length - 1 - index));
-  const deepest = distances[0];
-
-  // The expiration is placed at the same distance from its own call as the tracked
-  // expiration sits from the upcoming one, so a chain that is "the weekly after
-  // earnings" stays that in every cycle.
   const expiryOffset = daysBetween(anchors.next, expirationDate);
 
-  // A cycle whose session calendar can't be fetched (a rate-limit squeeze usually)
-  // is dropped on its own — losing the last-quarter line is not a reason to also
-  // throw away a year-ago line that resolved fine.
   const alignment = {};
   for (const { key } of CYCLES) {
     const call = anchors[key];
-    const sessions = await fetchSessions(ticker, addDays(call, -(deepest * 2) - 30), call)
-      .catch(error => {
-        console.warn(`[options-report] ${key} calendar unavailable for ${ticker}: ${error.message}`);
-        return [];
-      });
-
-    // The call itself can land on a non-trading day, so count back from the last
-    // session on or before it.
-    const upToCall = sessions.filter(date => date <= call);
-    if (!upToCall.length) continue;
-    const callIndex = upToCall.length - 1;
-
-    alignment[key] = {
-      call,
-      targetExpiry: addDays(call, expiryOffset),
-      pairs: chartDates
-        .map((barDate, index) => ({ barDate, index: callIndex - distances[index] }))
-        .filter(pair => pair.index >= 0)
-        .map(pair => ({ barDate: pair.barDate, date: upToCall[pair.index] })),
-    };
+    if (!call) continue;
+    alignment[key] = { call, targetExpiry: addDays(call, expiryOffset) };
   }
 
-  // Nothing resolved at all: let the caller fall back to the plain 52-week shift,
-  // which needs no calendar and so still draws something.
   if (!Object.keys(alignment).length) return null;
 
   return { anchors, alignment };
 }
 
 // The pre-earnings-alignment behaviour, kept for tickers whose earnings dates can't
-// be read: the year-ago line only, shifted by 52 weeks.
-function fallbackAlignment(expirationDate, chartDates) {
+// be read: the year-ago line only, against the chain expiring 52 weeks earlier.
+function fallbackAlignment(expirationDate) {
   return {
     anchors: null,
     alignment: {
-      year: {
-        call: null,
-        targetExpiry: addDays(expirationDate, -YEAR_SHIFT_DAYS),
-        pairs: chartDates.map(barDate => ({ barDate, date: addDays(barDate, -YEAR_SHIFT_DAYS) })),
-      },
+      year: { call: null, targetExpiry: addDays(expirationDate, -YEAR_SHIFT_DAYS) },
     },
   };
 }
@@ -844,8 +880,9 @@ async function enrichExpirationData(data, reportDate) {
   const tablePuts = topPuts.map(rowWithHistory);
 
   const { anchors, alignment } =
-    (await buildCycleAlignment(data.ticker, data.selectedDate, chartDates, effectiveDate))
-    ?? fallbackAlignment(data.selectedDate, chartDates);
+    (await buildCycleAlignment(data.ticker, data.selectedDate))
+    ?? fallbackAlignment(data.selectedDate);
+  const dte = sessionsToExpiry(chartDates, effectiveDate, data.selectedDate);
 
   // One series per side per cycle. A cycle with no alignment (the fallback has no
   // last-quarter anchor) is simply absent from the chart.
@@ -854,7 +891,7 @@ async function enrichExpirationData(data, reportDate) {
       const aligned = alignment[cycle.key];
       if (!aligned) return null;
       const built = await buildPriorSeries(
-        data.ticker, side, data.selectedDate, cycle.key, aligned.pairs, aligned.targetExpiry,
+        data.ticker, side, data.selectedDate, cycle.key, aligned.targetExpiry, dte, chartDates,
       );
       return built ? { ...cycle, ...built, call: aligned.call } : null;
     }));
@@ -882,6 +919,7 @@ async function enrichExpirationData(data, reportDate) {
       softColor,
       priors,
       sideLabel,
+      expiration: data.selectedDate,
       nextEarnings: anchors?.next ?? null,
     };
   }
@@ -1168,14 +1206,19 @@ function volumeChartBody(chart, width, height, fonts) {
     ).join('');
   }).join('');
 
+  // Each series is named by the expiration whose chain it sums, so the legend says
+  // outright which chains are being held against each other — the one thing a reader
+  // otherwise has to take on trust, and the thing that differs between two charts of
+  // the same ticker drawn over the same ten sessions.
   const side = chart.sideLabel ?? 'contracts';
+  const expiryName = date => (date ? fmtExpiryShort(date, chart.expiration) : `All ${side}`);
   const legendText = (x, text) =>
     `<text x="${x.toFixed(2)}" y="20" class="vc-muted" font-family="${MONO}" font-size="${fonts.legend}" font-weight="600">${escapeHtml(text)}</text>`;
   // Monospace, so a character advance is a reliable ~0.6em — no measuring needed.
   const textWidth = text => text.length * fonts.legend * 0.6;
 
   let cursor = margin.left;
-  const currentLabel = `All ${side}, current`;
+  const currentLabel = `${expiryName(chart.expiration)}, current`;
   const legendItems = [
     `<rect x="${cursor}" y="8" width="12" height="9" rx="2" fill="${chart.color}"></rect>`
     + legendText(cursor + 19, currentLabel),
@@ -1183,7 +1226,7 @@ function volumeChartBody(chart, width, height, fonts) {
   cursor += 19 + textWidth(currentLabel) + 26;
 
   for (const prior of series) {
-    const label = `All ${side}, ${prior.label}`;
+    const label = `${expiryName(prior.expiration)}, ${prior.label}`;
     legendItems.push(`
       <line x1="${cursor}" y1="16" x2="${cursor + 26}" y2="16" stroke="${prior.color}" stroke-width="2"${prior.dash ? ` stroke-dasharray="${prior.dash}"` : ''}></line>
       ${markerShape(prior.marker, cursor + 13, 16, prior.color)}
@@ -1193,15 +1236,16 @@ function volumeChartBody(chart, width, height, fonts) {
   }
 
   // Says what the lines are aligned on: every point sits the same number of sessions
-  // from its cycle's call as the bar beneath it sits from the upcoming one. The note
-  // shares the legend's row, so it drops detail from the front as the legend eats the
-  // width. No scale caveat any more — the lines are on the bars' scale.
+  // from its own expiration as the bar beneath it sits from this one, and the chains
+  // themselves are matched around each cycle's earnings call. The note shares the
+  // legend's row, so it drops detail from the front as the legend eats the width. No
+  // scale caveat any more — the lines are on the bars' scale.
   let note = '';
   if (series.length) {
     const room = width - margin.right - cursor - 12;
     const date = chart.nextEarnings ? fmtDateShort(chart.nextEarnings) : null;
     const text = [
-      date ? `aligned to earnings · next call ${date}` : null,
+      date ? `matched by days to expiry · next call ${date}` : 'matched by days to expiry',
       date ? `next call ${date}` : null,
     ].find(candidate => candidate && textWidth(candidate) <= room);
     if (text) {
@@ -1849,8 +1893,10 @@ module.exports = {
   buildVolumeChartSvg,
   currentRowsFromTotals,
   generateDailyOptionsReport,
+  pairsFromSessions,
   renderHtml,
   renderMarkdown,
+  sessionsToExpiry,
   sumDailyVolumes,
   today,
 };
