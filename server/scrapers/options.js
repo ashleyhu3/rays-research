@@ -36,10 +36,10 @@ async function fetchChain(symbol, expDate) {
   while (resp.next_url) {
     const next = new URL(resp.next_url);
     next.searchParams.delete('apiKey');
-    const r = await fetch(next.toString(), {
-      headers: { Authorization: `Bearer ${getKey()}`, Accept: 'application/json' },
-    });
-    resp = await r.json();
+    // Route every page through the checked request helper. A page-two 429/5xx must
+    // fail the report; treating its error body as an empty final page would silently
+    // cache a truncated chain as "all contracts".
+    resp = await mGet(next.toString());
     results.push(...(resp.results ?? []));
   }
   return results;
@@ -96,9 +96,7 @@ async function fetchExpirations(symbol) {
     if (pastCutoff || !resp.next_url) break;
     const next = new URL(resp.next_url);
     next.searchParams.delete('apiKey');
-    resp = await fetch(next.toString(), {
-      headers: { Authorization: `Bearer ${getKey()}`, Accept: 'application/json' },
-    }).then(r => r.json());
+    resp = await mGet(next.toString());
   }
   return [...seen].sort();
 }
@@ -144,4 +142,4 @@ async function getOptionsData(ticker, dateStr) {
   };
 }
 
-module.exports = { getOptionsData };
+module.exports = { fetchChain, getOptionsData };

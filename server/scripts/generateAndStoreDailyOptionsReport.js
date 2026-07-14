@@ -11,9 +11,9 @@ const { BLOB: EARNINGS_BLOB } = require('../earningsDates');
 // Every blob the report touches has to be preloaded, not just the one it writes. An
 // unlisted blob falls back to the local JSON file on read — which in a fresh CI
 // checkout does not exist — so the run would rebuild both caches from empty every
-// time: re-scraping every prior-cycle chain from Massive, and spending 16 Alpha
-// Vantage calls a day against a 25/day key. The equivalent list for the in-process
-// (Render) path is STORAGE_BLOBS in server.js; keep the two in step.
+// time: re-scraping every full current/prior chain from Massive, and spending 16
+// Alpha Vantage calls a day against a 25/day key. The equivalent list for the
+// in-process (Render) path is STORAGE_BLOBS in server.js; keep the two in step.
 const BLOBS = [BLOB, PRIOR_BLOB, EARNINGS_BLOB];
 
 function parseArgs(argv) {

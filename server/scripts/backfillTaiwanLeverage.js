@@ -1,11 +1,9 @@
 /**
  * Seed the Taiwan retail-firepower history.
  *
- * Only the margin layer backfills — TWSE publishes the balance in money terms
- * for every past day, and FinMind serves the whole window in one request. The
- * leveraged-ETF layer cannot be backfilled at all: units outstanding are only
- * published for the current day, so that layer starts accumulating from the
- * first collection and is left null before it.
+ * Backfills margin balances and Yuanta 2× fund net assets daily, plus the
+ * combined TWSE + TPEx market-cap denominator at each TWSE week-end. The ratio
+ * uses those measured weekly denominators and carries them between observations.
  *
  * Usage: npm run backfill:taiwan-leverage -- [days]     (default 1830 ≈ 5y)
  */
@@ -34,9 +32,10 @@ async function main() {
   await storage.flush();
   await storage.close();
 
-  const { dates, latest, funds, etfMarket } = data;
+  const { dates, latest, funds, etfMarket, marketSizeDate } = data;
   console.log(`[taiwan-leverage] ${dates.length} trading days: ${dates[0]} → ${dates[dates.length - 1]}`);
   console.log(`[taiwan-leverage] latest ${latest.date}: margin ${latest.margin} (listed ${latest.marginListed} + OTC ${latest.marginOtc}) · ETF ${latest.etf} → total ${latest.total} 億元`);
+  console.log(`[taiwan-leverage] margin + Yuanta 2× / market cap: ${latest.leverageRatio?.toFixed(4) ?? '—'}% (market cap observed ${marketSizeDate ?? '—'})`);
   const cover = etfMarket?.total ? ` — ${((latest.etf / etfMarket.total) * 100).toFixed(0)}% of the ${etfMarket.total} 億 listed 2× market` : '';
   console.log(`[taiwan-leverage] ${funds.length} Yuanta 2× funds${cover}`);
 }

@@ -25,7 +25,7 @@ const OUT = process.argv[2] ?? path.join(process.cwd(), `asia-leverage-${new Dat
 // lightness band, chroma floor, adjacent-pair CVD separation and ≥3:1 contrast
 // all pass. Fills are translucent so the stacked bands stay legible on paper and
 // the boundary lines read as edges rather than blocks.
-const BLUE = '#4577b4', ORANGE = '#ad622d', PURPLE = '#7864b4';
+const BLUE = '#4577b4', ORANGE = '#ad622d', PURPLE = '#7864b4', RATIO = '#238f80';
 const FILL = 0.38;
 
 const MARKETS = [
@@ -48,13 +48,14 @@ const MARKETS = [
     blob: 'taiwanLeverageHistory',
     read: () => require('../scrapers/taiwanLeverage').readTaiwanLeverage(),
     title: 'Taiwan retail leverage',
-    subtitle: 'Margin loans (listed + OTC) and 2× leveraged ETF net assets — daily, five years',
+    subtitle: 'Margin loans, Yuanta 2× ETF net assets and leverage / market cap — five years',
     unit: 'B', unitLong: 'billions of NT$ (NT$ bn)', scale: 0.1,
     layers: [
       { key: 'margin', label: 'Margin loans — TWSE listed + TPEx OTC (融資餘額)', color: ORANGE },
       { key: 'etf',    label: '2× leveraged ETFs (Yuanta, FUND_SIZE)',           color: PURPLE },
     ],
-    source: 'TWSE MI_MARGN · TPEx 融資餘額 summary · Yuanta fund-size API',
+    ratio: { key: 'leverageRatio', label: 'Margin + Yuanta 2× / market cap', color: RATIO },
+    source: 'TWSE MI_MARGN · TPEx 融資餘額 summary · Yuanta fund-size API · TWSE weekly market cap · TPEx OTC market value',
   },
 ];
 
@@ -74,6 +75,10 @@ function prepare(market) {
     dates: d.dates,
     series,
     total,
+    ratio: market.ratio
+      ? { ...market.ratio, data: (d[market.ratio.key] ?? []).map(v => (Number.isFinite(v) ? v : null)) }
+      : null,
+    marketSizeDate: d.marketSizeDate ?? null,
     latest,
     latestDate: d.dates[d.dates.length - 1],
     latestTotal: total[total.length - 1],
@@ -116,6 +121,7 @@ function page(m) {
     <div class="legend">
       ${m.layers.map(l => `<span><i style="background:${l.color}"></i>${l.label}</span>`).join('')}
       <span><i class="line"></i>Total</span>
+      ${m.ratio ? `<span><i class="ratio-line" style="background:${m.ratio.color}"></i>${m.ratio.label}</span>` : ''}
     </div>
 
     <table class="funds">
@@ -133,6 +139,7 @@ function page(m) {
     <p class="note">
       In ${m.unitLong}, one point per trading day, ${m.dates[0]} → ${m.latestDate} (${m.dates.length} trading days).
       Source: ${m.source}. Every layer is a measured figure, not an estimate. Cash balances are excluded — they are dry powder, not leverage.
+      ${m.ratio ? `The ratio denominator is combined TWSE + TPEx equity market capitalization, observed weekly and carried forward; latest observation ${m.marketSizeDate ?? '—'}.` : ''}
     </p>
   </section>`;
 }
@@ -143,6 +150,7 @@ function html(markets) {
   const payload = markets.map(m => ({
     id: m.id, dates: m.dates, total: m.total, unit: m.unit,
     layers: m.layers.map(l => ({ key: l.key, label: l.label, color: l.color, data: m.series[l.key] })),
+    ratio: m.ratio,
   }));
 
   return `<!DOCTYPE html>
@@ -177,6 +185,7 @@ function html(markets) {
   .legend span { display: flex; align-items: center; gap: 6px; }
   .legend i { width: 11px; height: 11px; border-radius: 2px; display: inline-block; }
   .legend i.line { height: 2px; width: 14px; border-radius: 0; background: #1f2328; }
+  .legend i.ratio-line { height: 2px; width: 14px; border-radius: 0; }
 
   table.funds { width: 100%; border-collapse: collapse; font-size: 9.5px; }
   table.funds caption { text-align: left; font-weight: 620; font-size: 11px; padding-bottom: 4px; }
@@ -230,6 +239,17 @@ for (const m of ${JSON.stringify(payload)}) {
           tension: 0.2,
           fill: false,
         },
+        ...(m.ratio ? [{
+          label: m.ratio.label,
+          data: m.ratio.data,
+          yAxisID: 'ratio',
+          borderColor: m.ratio.color,
+          borderWidth: 1.6,
+          pointRadius: 0,
+          tension: 0,
+          fill: false,
+          order: -1,
+        }] : []),
       ],
     },
     options: {
@@ -242,6 +262,13 @@ for (const m of ${JSON.stringify(payload)}) {
           grid: { color: '#eceef1' },
           ticks: { color: '#5b6570', font: { size: 9 }, callback: v => v + m.unit },
         },
+        ...(m.ratio ? {
+          ratio: {
+            position: 'right', beginAtZero: false,
+            grid: { drawOnChartArea: false },
+            ticks: { color: m.ratio.color, font: { size: 9 }, callback: v => Number(v).toFixed(2) + '%' },
+          },
+        } : {}),
       },
     },
   });

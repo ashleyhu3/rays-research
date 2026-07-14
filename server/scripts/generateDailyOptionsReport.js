@@ -6,10 +6,11 @@ const storage = require('../storage');
 const { getOptionsData } = require('../scrapers/options');
 const { getEarningsAnchors } = require('../earningsDates');
 
-// Prior-cycle chain volume is settled history — it can never change — so it is
-// scraped once and kept. Each chain is fetched with months of forward headroom,
-// so as the ten-session window slides forward day by day it keeps landing inside
-// an already-stored range and the daily run scrapes only today.
+// Full-chain volume takes one aggregate request per contract. Prior-cycle history
+// is settled, while the current chain gains one new daily total per run, so both are
+// cached here instead of re-scraping thousands of contracts every morning. Each
+// prior chain is fetched with months of forward headroom; each current chain is
+// backfilled once and then extended from the day's already-fetched snapshot.
 // NOTE: this blob must stay registered in server.js STORAGE_BLOBS, or init()
 // won't preload it from Mongo and every restart re-scrapes from an empty file.
 const PRIOR_BLOB = {
@@ -17,7 +18,10 @@ const PRIOR_BLOB = {
   file: path.join(__dirname, '..', 'data', 'optionsPriorYearVolume.json'),
 };
 const PRIOR_LOOKAHEAD_DAYS = 120;
-const PRIOR_CACHE_MAX = 600;
+// Current + two comparison cycles, two sides, three expirations, and a rolling
+// roster of tickers. This remains comfortably below Mongo's blob limit while
+// retaining active chains long enough to avoid churn as expirations roll.
+const PRIOR_CACHE_MAX = 1200;
 
 const DEFAULT_TICKERS = ['TSM', 'ASML', 'INTC', 'TXN', 'STM', 'TEL', 'GOOG', 'NOK', 'SOXX'];
 const BASE = 'https://api.massive.com';
@@ -275,7 +279,12 @@ async function mapLimit(items, limit, fn) {
       out[index] = await fn(items[index]);
     }
   });
-  await Promise.all(workers);
+  // Let every worker settle before propagating an error. Otherwise one rejected
+  // contract leaves sibling requests running after the caller has cleared caches or
+  // closed storage, and a partial backfill can race the next generation.
+  const settled = await Promise.allSettled(workers);
+  const failed = settled.find(result => result.status === 'rejected');
+  if (failed) throw failed.reason;
   return out;
 }
 
@@ -285,27 +294,42 @@ async function mapLimit(items, limit, fn) {
 // for the run keeps us well under the per-minute cap.
 const dailyVolumeCache = new Map();
 
-async function fetchDailyVolume(contractSymbol, start, end) {
-  if (!contractSymbol) return [];
+function dailyVolumePromise(contractSymbol, start, end) {
+  if (!contractSymbol) return Promise.resolve([]);
   const key = `${contractSymbol}|${start}|${end}`;
   if (dailyVolumeCache.has(key)) return dailyVolumeCache.get(key);
 
   const promise = (async () => {
     const pathname = `/v2/aggs/ticker/${encodeURIComponent(contractSymbol)}/range/1/day/${start}/${end}`;
-    try {
-      const resp = await massiveGet(pathname, { adjusted: 'true', sort: 'asc', limit: 5000 });
-      return (resp.results ?? [])
-        .map(row => ({ date: new Date(row.t).toISOString().slice(0, 10), volume: row.v ?? 0 }))
-        .sort((a, b) => a.date.localeCompare(b.date));
-    } catch (error) {
-      console.warn(`[options-report] history unavailable for ${contractSymbol}: ${error.message}`);
-      dailyVolumeCache.delete(key);
-      return [];
-    }
+    const resp = await massiveGet(pathname, { adjusted: 'true', sort: 'asc', limit: 5000 });
+    return (resp.results ?? [])
+      .map(row => ({ date: new Date(row.t).toISOString().slice(0, 10), volume: row.v ?? 0 }))
+      .sort((a, b) => a.date.localeCompare(b.date));
   })();
 
+  // A rejected promise must be retried by the next caller, not retained as data.
+  promise.catch(() => {
+    if (dailyVolumeCache.get(key) === promise) dailyVolumeCache.delete(key);
+  });
   dailyVolumeCache.set(key, promise);
   return promise;
+}
+
+// Prior comparison series are best-effort: one unavailable contract should not
+// remove the entire line. Current full-chain bars are stricter and call the required
+// variant below, because persisting a failed request as a real zero would corrupt all
+// future bars for that expiration.
+async function fetchDailyVolume(contractSymbol, start, end) {
+  try {
+    return await dailyVolumePromise(contractSymbol, start, end);
+  } catch (error) {
+    console.warn(`[options-report] history unavailable for ${contractSymbol}: ${error.message}`);
+    return [];
+  }
+}
+
+function fetchDailyVolumeRequired(contractSymbol, start, end) {
+  return dailyVolumePromise(contractSymbol, start, end);
 }
 
 // Every contract of one side that was listed against the equivalent expiration in an
@@ -365,6 +389,8 @@ function readPriorCache() {
   return blob;
 }
 
+let priorCacheDirty = false;
+
 function savePriorChain(key, entry) {
   const blob = readPriorCache();
   blob.chains[key] = entry;
@@ -378,7 +404,17 @@ function savePriorChain(key, entry) {
   }
 
   blob.updatedAt = new Date().toISOString();
+  priorCacheDirty = true;
+}
+
+// The cache is one Mongo/file blob. Mutate it throughout a generation, then issue a
+// single whole-blob write so concurrent call/put completions cannot race and leave
+// the database with an older partial snapshot.
+function persistPriorCache() {
+  if (!priorCacheDirty) return;
+  const blob = readPriorCache();
   storage.write(PRIOR_BLOB.name, PRIOR_BLOB.file, blob);
+  priorCacheDirty = false;
 }
 
 // One scrape of a prior-cycle chain, summed to a date -> volume map. The window runs
@@ -406,12 +442,7 @@ async function scrapePriorChain(ticker, side, targetExpiry, firstDate, lastDate,
       symbol => fetchDailyVolume(symbol, rangeStart, rangeEnd),
     );
 
-    const totals = {};
-    for (const history of histories) {
-      for (const day of history) {
-        totals[day.date] = (totals[day.date] ?? 0) + day.volume;
-      }
-    }
+    const totals = sumDailyVolumes(histories);
 
     const covered = neededDates.filter(date => totals[date] > 0).length;
     const entry = {
@@ -429,6 +460,142 @@ async function scrapePriorChain(ticker, side, targetExpiry, firstDate, lastDate,
   }
 
   return best;
+}
+
+// Sum daily contract volume across every option symbol in one side of one expiry.
+// A missing symbol/day contributes zero; the stock-session calendar decides which
+// zeroes are rendered, rather than the sparse option aggregates endpoint.
+function sumDailyVolumes(histories) {
+  const totals = {};
+  for (const history of histories ?? []) {
+    for (const day of history ?? []) {
+      totals[day.date] = (totals[day.date] ?? 0) + (day.volume ?? 0);
+    }
+  }
+  return totals;
+}
+
+function addDailyTotals(target, addition) {
+  for (const [date, volume] of Object.entries(addition ?? {})) {
+    target[date] = (target[date] ?? 0) + (volume ?? 0);
+  }
+  return target;
+}
+
+function uniqueSymbols(symbols) {
+  return [...new Set((symbols ?? []).filter(Boolean))].sort();
+}
+
+// Turn a cached full-chain history plus today's full snapshot into chart rows. The
+// contracts all belong to the same side and expiration; callers deliberately pass
+// the complete chain, not the three rows retained for the detail table.
+function currentRowsFromTotals(contracts, chartDates, effectiveDate, totals = {}) {
+  const currentVolume = (contracts ?? []).reduce((sum, row) => sum + (row.volume ?? 0), 0);
+  return (chartDates ?? []).map(date => ({
+    date,
+    volume: date === effectiveDate ? currentVolume : (totals[date] ?? 0),
+  }));
+}
+
+// Full current-chain volume for one side/expiration. On the first encounter (or
+// after a missed reporting day), backfill the window contract-by-contract. Normal
+// daily runs hit the persisted range and append only the snapshot total, keeping the
+// report within the same request budget as the former top-three bars.
+async function buildCurrentChainRows(
+  ticker,
+  side,
+  expirationDate,
+  contracts,
+  chartDates,
+  effectiveDate,
+  reportDate,
+  dependencies = {},
+) {
+  const key = `${ticker}|${side}|${expirationDate}|current`;
+  const symbols = uniqueSymbols((contracts ?? []).map(row => row.contractSymbol));
+  const priorDates = (chartDates ?? []).filter(date => date < effectiveDate);
+  const firstDate = priorDates[0] ?? effectiveDate;
+  const lastDate = priorDates[priorDates.length - 1] ?? effectiveDate;
+  const readEntry = dependencies.readEntry
+    ?? (cacheKey => readPriorCache().chains[cacheKey]);
+  const saveEntry = dependencies.saveEntry ?? savePriorChain;
+  const fetchHistory = dependencies.fetchHistory ?? fetchDailyVolumeRequired;
+  let entry = readEntry(key);
+  const cachedSymbols = Array.isArray(entry?.symbols) ? uniqueSymbols(entry.symbols) : [];
+  const covers = entry
+    && Array.isArray(entry.symbols)
+    && entry.rangeStart <= firstDate
+    && entry.rangeEnd >= lastDate;
+  let changed = false;
+
+  if (!covers) {
+    // Match fetchContractVolumeHistory's range exactly, so the top-three table rows
+    // already in the in-run cache do not cost a second request during a backfill.
+    const rangeStart = addDays(reportDate, -45);
+    // Preserve contracts that were present earlier in the expiration's life even if
+    // a later snapshot omits them; their historical volume still belongs in the bar.
+    const trackedSymbols = uniqueSymbols([...cachedSymbols, ...symbols]);
+    const histories = await mapLimit(
+      trackedSymbols,
+      PRIOR_CONCURRENCY,
+      symbol => fetchHistory(symbol, rangeStart, reportDate),
+    );
+    const totals = sumDailyVolumes(histories);
+    entry = {
+      expiration: expirationDate,
+      contractCount: symbols.length,
+      symbols: trackedSymbols,
+      rangeStart,
+      // Only claim coverage through the snapshot's actual market session. The
+      // report date can be a weekend or one calendar day ahead in Hong Kong.
+      rangeEnd: effectiveDate,
+      totals,
+      coverage: priorDates.length
+        ? priorDates.filter(date => Object.hasOwn(totals, date)).length / priorDates.length
+        : 1,
+      fetchedAt: new Date().toISOString(),
+    };
+    changed = true;
+  } else {
+    // Do not mutate an object held by a prior asynchronous storage write.
+    entry = { ...entry, symbols: [...cachedSymbols], totals: { ...(entry.totals ?? {}) } };
+
+    // Live chains routinely gain strikes. Backfill only the newly observed symbols;
+    // a sorted symbol roster catches additions even when the total count is unchanged.
+    const cachedSymbolSet = new Set(cachedSymbols);
+    const addedSymbols = symbols.filter(symbol => !cachedSymbolSet.has(symbol));
+    if (addedSymbols.length) {
+      const histories = await mapLimit(
+        addedSymbols,
+        PRIOR_CONCURRENCY,
+        symbol => fetchHistory(symbol, entry.rangeStart, reportDate),
+      );
+      addDailyTotals(entry.totals, sumDailyVolumes(histories));
+      entry.symbols = uniqueSymbols([...cachedSymbols, ...addedSymbols]);
+      changed = true;
+    }
+  }
+
+  const currentVolume = (contracts ?? []).reduce((sum, row) => sum + (row.volume ?? 0), 0);
+  if (entry.totals[effectiveDate] !== currentVolume
+      || entry.contractCount !== symbols.length
+      || entry.rangeEnd < effectiveDate) {
+    entry.totals[effectiveDate] = currentVolume;
+    entry.contractCount = symbols.length;
+    if (entry.rangeEnd < effectiveDate) entry.rangeEnd = effectiveDate;
+    entry.fetchedAt = new Date().toISOString();
+    changed = true;
+  }
+
+  entry.coverage = priorDates.length
+    ? priorDates.filter(date => Object.hasOwn(entry.totals, date)).length / priorDates.length
+    : 1;
+
+  if (changed) {
+    entry.fetchedAt = new Date().toISOString();
+    saveEntry(key, entry);
+  }
+  return currentRowsFromTotals(contracts, chartDates, effectiveDate, entry.totals);
 }
 
 // Total contract volume across the *entire* prior-cycle chain for this side — not
@@ -618,8 +785,10 @@ async function fetchTradingDays(ticker, end, count) {
 }
 
 async function enrichExpirationData(data, reportDate) {
-  const topCalls = topByVolume(data.calls).map(row => ({ ...row, side: 'call' }));
-  const topPuts = topByVolume(data.puts).map(row => ({ ...row, side: 'put' }));
+  const allCalls = (data.calls ?? []).map(row => ({ ...row, side: 'call' }));
+  const allPuts = (data.puts ?? []).map(row => ({ ...row, side: 'put' }));
+  const topCalls = topByVolume(allCalls);
+  const topPuts = topByVolume(allPuts);
   const rows = [...topCalls, ...topPuts];
 
   const histories = await Promise.all(rows.map(row => fetchContractVolumeHistory(row.contractSymbol, reportDate)));
@@ -686,18 +855,23 @@ async function enrichExpirationData(data, reportDate) {
     return series.filter(Boolean);
   }
 
-  const [priorCall, priorPut] = await Promise.all([priorSeriesFor('call'), priorSeriesFor('put')]);
+  const seriesResults = await Promise.allSettled([
+    priorSeriesFor('call'),
+    priorSeriesFor('put'),
+    buildCurrentChainRows(
+      data.ticker, 'call', data.selectedDate, allCalls, chartDates, effectiveDate, reportDate,
+    ),
+    buildCurrentChainRows(
+      data.ticker, 'put', data.selectedDate, allPuts, chartDates, effectiveDate, reportDate,
+    ),
+  ]);
+  const seriesFailure = seriesResults.find(result => result.status === 'rejected');
+  if (seriesFailure) throw seriesFailure.reason;
+  const [priorCall, priorPut, currentCallRows, currentPutRows] = seriesResults.map(result => result.value);
 
-  function chartFor(sideRows, color, softColor, priors, sideLabel) {
+  function chartFor(currentRows, color, softColor, priors, sideLabel) {
     return {
-      rows: chartDates.map(date => {
-        const volume = sideRows.reduce((sum, row) => {
-          if (date === effectiveDate) return sum + (row.volume ?? 0);
-          const hMap = historyMaps.get(row.contractSymbol) ?? new Map();
-          return sum + (hMap.get(date) ?? 0);
-        }, 0);
-        return { date, volume };
-      }),
+      rows: currentRows,
       color,
       softColor,
       priors,
@@ -712,8 +886,8 @@ async function enrichExpirationData(data, reportDate) {
     tableCalls,
     tablePuts,
     volumeCharts: {
-      call: chartFor(topCalls, CALL_COLOR, CALL_SOFT, priorCall, 'calls'),
-      put: chartFor(topPuts, PUT_COLOR, PUT_SOFT, priorPut, 'puts'),
+      call: chartFor(currentCallRows, CALL_COLOR, CALL_SOFT, priorCall, 'calls'),
+      put: chartFor(currentPutRows, PUT_COLOR, PUT_SOFT, priorPut, 'puts'),
     },
   };
 }
@@ -881,16 +1055,12 @@ function stackLabels(entries, markers, fontSize) {
   return ordered;
 }
 
-// Bars (top-3 contracts, this cycle) and the comparison lines (each the whole chain
-// at the equivalent point of an earlier earnings cycle) are both contract counts —
-// but they count very different things. For a name whose flow is spread thin across
-// strikes, the chain runs tens of times the top three (INTC: a 3.3k bar against a
-// 96.8k line), and on one shared scale that pins every bar flat to the axis, where a
-// real session reads as a missing one. So each gets its own scale in its own band:
-// lines in the top of the plot, bars below, never overlapping. The comparison the
-// chart makes is shape against shape — is this cycle's ramp steeper than the last
-// one's — and that survives the rebasing; a bar's height was never comparable with a
-// line's anyway. The legend says the scales are separate so nobody reads them as one.
+// Bars and comparison lines now all count the full call/put chain for their matched
+// expiration. Different cycles can still be an order of magnitude apart, though,
+// and one shared scale would flatten the quiet cycle into what looks like missing
+// data. Each therefore keeps its own visual band: both absolute totals are printed,
+// while height communicates the shape of that cycle's ramp. The legend says the
+// lines use their own scale so nobody reads the two bands as one axis.
 const BAR_BAND = 0.62;   // share of the plot the bars get, measured up from the axis
 const LINE_BAND = 0.32;  // share the lines get, measured down from the top
 function volumeChartBody(chart, width, height, fonts) {
@@ -1001,11 +1171,12 @@ function volumeChartBody(chart, width, height, fonts) {
   const textWidth = text => text.length * fonts.legend * 0.6;
 
   let cursor = margin.left;
+  const currentLabel = `All ${side}, current`;
   const legendItems = [
     `<rect x="${cursor}" y="8" width="12" height="9" rx="2" fill="${chart.color}"></rect>`
-    + legendText(cursor + 19, `Top 3 ${side}`),
+    + legendText(cursor + 19, currentLabel),
   ];
-  cursor += 19 + textWidth(`Top 3 ${side}`) + 26;
+  cursor += 19 + textWidth(currentLabel) + 26;
 
   for (const prior of series) {
     const label = `All ${side}, ${prior.label}`;
@@ -1051,7 +1222,7 @@ function buildVolumeChartSvg(chart) {
   const width = CHART_WIDTH;
   const height = CHART_HEIGHT;
   return `
-    <svg class="volume-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="daily contract volume, with total chain volume at the same point of the previous quarter's and last year's earnings cycle">
+    <svg class="volume-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="total daily chain volume for the current, previous-quarter, and prior-year earnings cycles">
       <rect x="0" y="0" width="${width}" height="${height}" fill="transparent"></rect>
       ${volumeChartBody(chart, width, height, { value: 17, date: 14, legend: 12 })}
     </svg>
@@ -1562,8 +1733,24 @@ async function generateDailyOptionsReport({ date = today(), tickers = DEFAULT_TI
   const outputFormat = format ?? (path.extname(outPath).toLowerCase() === '.md' ? 'md' : 'html');
   const tickerReports = [];
 
-  for (const ticker of tickers) {
-    tickerReports.push(await fetchTickerReport(ticker, date));
+  try {
+    for (const ticker of tickers) {
+      try {
+        tickerReports.push(await fetchTickerReport(ticker, date));
+      } finally {
+        // Histories are memoized only to share work across one ticker's three
+        // expirations. Persistent aggregate totals carry the useful state between
+        // runs, so retaining thousands of per-contract arrays would only leak memory
+        // in the long-running server process.
+        dailyVolumeCache.clear();
+        priorChainCache.clear();
+        sessionCache.clear();
+      }
+    }
+  } finally {
+    // Keep successfully completed chain backfills even if a later ticker fails; the
+    // next run can resume from them instead of starting the migration over.
+    persistPriorCache();
   }
 
   const report = { date, tickers: tickerReports };
@@ -1588,21 +1775,20 @@ if (require.main === module) {
   });
 }
 
-// One contract row as pre-formatted display strings (the web app renders these
-// verbatim, mirroring the PDF/email table exactly — no client-side math).
-// Sum today's and the prior trading day's contract volume across every tracked
-// expiration, split by side, so a ticker's day-over-day call/put flow surge can
-// be detected downstream without re-parsing the formatted table cells.
+// Sum the latest two full-chain chart bars across every tracked expiration, split
+// by side, so the sidebar's surge signal measures the same volume the charts show.
+// The detail tables intentionally remain top-three and are no longer used here.
 function aggregateFlow(tickerReport) {
   const flow = { callToday: 0, callYesterday: 0, putToday: 0, putYesterday: 0 };
   for (const exp of tickerReport.expirations ?? []) {
-    for (const row of exp.tableCalls ?? []) {
-      flow.callToday += row.todayVolume ?? 0;
-      flow.callYesterday += row.yesterdayVolume ?? 0;
-    }
-    for (const row of exp.tablePuts ?? []) {
-      flow.putToday += row.todayVolume ?? 0;
-      flow.putYesterday += row.yesterdayVolume ?? 0;
+    for (const [side, todayKey, yesterdayKey] of [
+      ['call', 'callToday', 'callYesterday'],
+      ['put', 'putToday', 'putYesterday'],
+    ]) {
+      const rows = exp.volumeCharts?.[side]?.rows ?? [];
+      if (rows.length < 2) continue;
+      flow[todayKey] += rows[rows.length - 1]?.volume ?? 0;
+      flow[yesterdayKey] += rows[rows.length - 2]?.volume ?? 0;
     }
   }
   return flow;
@@ -1659,10 +1845,14 @@ module.exports = {
   DEFAULT_TICKERS,
   LABEL_GAP,
   PRIOR_BLOB,
+  aggregateFlow,
+  buildCurrentChainRows,
   buildStructuredReport,
   buildVolumeChartSvg,
+  currentRowsFromTotals,
   generateDailyOptionsReport,
   renderHtml,
   renderMarkdown,
+  sumDailyVolumes,
   today,
 };

@@ -6,7 +6,11 @@ const assert = require('node:assert/strict');
 const {
   CYCLES,
   LABEL_GAP,
+  aggregateFlow,
+  buildCurrentChainRows,
   buildVolumeChartSvg,
+  currentRowsFromTotals,
+  sumDailyVolumes,
 } = require('./scripts/generateDailyOptionsReport');
 
 const DATES = ['06-29', '06-30', '07-01', '07-02', '07-06', '07-07', '07-08', '07-09', '07-10', '07-13']
@@ -129,6 +133,8 @@ test('each series is identifiable without colour', () => {
   // cannot separate the two hues still has line style and marker shape.
   assert.match(svg, /stroke-dasharray="5 4"/);
   assert.ok(svg.includes('<circle') && svg.includes('<path d="M'), 'both marker shapes present');
+  assert.match(svg, /All calls, current/);
+  assert.ok(!svg.includes('Top 3 calls'), 'bar legend describes the full current chain');
   assert.match(svg, /All calls, last qtr/);
   assert.match(svg, /All calls, 1 yr ago/);
   assert.match(svg, /next call 7\/16/);
@@ -141,10 +147,9 @@ function barsOf(svg) {
     .map(m => ({ x: +m[1], y: +m[2], height: +m[3] }));
 }
 
-test('bars stay readable when the whole chain dwarfs the top three', () => {
-  // INTC, 2026-07-13: the top three strikes are a thin slice of a chain spread across
-  // far more strikes, so the comparison lines run ~20x the bars. Sharing one y-scale
-  // flattened every bar onto the axis, and ten real sessions read as ten missing ones.
+test('bars stay readable when a comparison cycle dwarfs the current chain', () => {
+  // Full chains can still differ sharply between earnings cycles. Sharing one y-scale
+  // would flatten the quieter cycle onto the axis and make real sessions look absent.
   const svg = buildVolumeChartSvg(chartWith(
     [1900, 795, 547, 1600, 1100, 12800, 11200, 7600, 44900, 44900],
     [13200, 32800, 41500, 20800, 23900, 96800, 36500, 44000, 37600, 45700],
@@ -171,6 +176,125 @@ test('bars stay readable when the whole chain dwarfs the top three', () => {
   );
   assert.match(svg, /lines: own scale/);
   assertNoCollisions(svg, 'chain dwarfs bars');
+});
+
+test('current rows sum every contract in the selected expiration', () => {
+  const histories = [
+    [{ date: DATES[0], volume: 10 }, { date: DATES[1], volume: 20 }],
+    [{ date: DATES[0], volume: 30 }, { date: DATES[1], volume: 40 }],
+    [{ date: DATES[0], volume: 50 }, { date: DATES[1], volume: 60 }],
+    // A fourth strike proves the chart is not capped at the table's top three.
+    [{ date: DATES[0], volume: 70 }, { date: DATES[1], volume: 80 }],
+  ];
+  const totals = sumDailyVolumes(histories);
+  const contracts = [
+    { volume: 11 }, { volume: 22 }, { volume: 33 }, { volume: 44 },
+  ];
+  const rows = currentRowsFromTotals(contracts, [DATES[0], DATES[1], DATES[2]], DATES[2], totals);
+
+  assert.deepEqual(rows, [
+    { date: DATES[0], volume: 160 },
+    { date: DATES[1], volume: 200 },
+    { date: DATES[2], volume: 110 },
+  ]);
+});
+
+test('current-chain cache backfills once and fetches newly added strikes', async () => {
+  let entry = null;
+  const fetched = [];
+  const historyBySymbol = {
+    A: [{ date: DATES[0], volume: 10 }, { date: DATES[1], volume: 20 }],
+    B: [{ date: DATES[0], volume: 30 }, { date: DATES[1], volume: 40 }],
+    C: [{ date: DATES[0], volume: 5 }, { date: DATES[1], volume: 7 }],
+  };
+  const dependencies = {
+    readEntry: () => entry,
+    saveEntry: (_key, value) => { entry = JSON.parse(JSON.stringify(value)); },
+    fetchHistory: async symbol => {
+      fetched.push(symbol);
+      return historyBySymbol[symbol] ?? [];
+    },
+  };
+  const baseContracts = [
+    { contractSymbol: 'A', volume: 100 },
+    { contractSymbol: 'B', volume: 200 },
+  ];
+
+  const first = await buildCurrentChainRows(
+    'INTC', 'call', '2026-07-17', baseContracts,
+    [DATES[0], DATES[1], DATES[2]], DATES[2], '2026-07-14', dependencies,
+  );
+  assert.deepEqual(first.map(row => row.volume), [40, 60, 300]);
+  assert.deepEqual(fetched.sort(), ['A', 'B']);
+  assert.deepEqual(entry.symbols, ['A', 'B']);
+
+  fetched.length = 0;
+  const cached = await buildCurrentChainRows(
+    'INTC', 'call', '2026-07-17', baseContracts,
+    [DATES[0], DATES[1], DATES[2]], DATES[2], '2026-07-14', dependencies,
+  );
+  assert.deepEqual(cached.map(row => row.volume), [40, 60, 300]);
+  assert.deepEqual(fetched, [], 'an unchanged covered chain is a cache hit');
+
+  fetched.length = 0;
+  const expanded = await buildCurrentChainRows(
+    'INTC', 'call', '2026-07-17',
+    [...baseContracts, { contractSymbol: 'C', volume: 50 }],
+    [DATES[0], DATES[1], DATES[2]], DATES[2], '2026-07-14', dependencies,
+  );
+  assert.deepEqual(expanded.map(row => row.volume), [45, 67, 350]);
+  assert.deepEqual(fetched, ['C'], 'only the newly listed strike is backfilled');
+  assert.deepEqual(entry.symbols, ['A', 'B', 'C']);
+});
+
+test('a failed required history request is not persisted as zero volume', async () => {
+  let saves = 0;
+  const dependencies = {
+    readEntry: () => null,
+    saveEntry: () => { saves += 1; },
+    fetchHistory: async symbol => {
+      if (symbol === 'B') throw new Error('temporary Massive failure');
+      return [{ date: DATES[0], volume: 10 }];
+    },
+  };
+
+  await assert.rejects(
+    buildCurrentChainRows(
+      'INTC', 'call', '2026-07-17',
+      [{ contractSymbol: 'A', volume: 100 }, { contractSymbol: 'B', volume: 200 }],
+      [DATES[0], DATES[1]], DATES[1], '2026-07-14', dependencies,
+    ),
+    /temporary Massive failure/,
+  );
+  assert.equal(saves, 0, 'partial backfills must be retried on the next run');
+});
+
+test('sidebar flow is derived from full-chain chart bars, not top-three tables', () => {
+  const report = {
+    expirations: [
+      {
+        volumeCharts: {
+          call: { rows: [{ volume: 100 }, { volume: 250 }] },
+          put: { rows: [{ volume: 80 }, { volume: 200 }] },
+        },
+        tableCalls: [{ todayVolume: 1, yesterdayVolume: 1 }],
+        tablePuts: [{ todayVolume: 1, yesterdayVolume: 1 }],
+      },
+      {
+        volumeCharts: {
+          call: { rows: [{ volume: 40 }, { volume: 75 }] },
+          put: { rows: [{ volume: 20 }, { volume: 30 }] },
+        },
+      },
+    ],
+  };
+
+  assert.deepEqual(aggregateFlow(report), {
+    callToday: 325,
+    callYesterday: 140,
+    putToday: 230,
+    putYesterday: 100,
+  });
 });
 
 test('a session the prior chain never traded still gets its bar', () => {

@@ -36,7 +36,10 @@ permissions:
 jobs:
   generate:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    # A newly introduced expiration needs one full-chain history backfill. Cached
+    # daily runs are much faster, but the first run after this migration can cover
+    # several thousand option symbols across the ticker roster.
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
 

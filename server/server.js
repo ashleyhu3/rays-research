@@ -616,8 +616,8 @@ const STORAGE_BLOBS = [
   { name: 'koreaLeverageHistory', file: path.join(DATA_DIR, 'koreaLeverageHistory.json') },
   { name: 'taiwanLeverageHistory', file: path.join(DATA_DIR, 'taiwanLeverageHistory.json') },
   { name: 'dailyOptionsReport', file: path.join(DATA_DIR, 'dailyOptionsReport.json') },
-  // Settled prior-cycle chain volume behind the report charts. Scraped once per
-  // expiration and reused, so the daily job only scrapes today.
+  // Full-chain volume behind the report charts. Prior cycles are settled; current
+  // expirations are backfilled once and then extended from each daily snapshot.
   { name: 'optionsPriorYearVolume', file: path.join(DATA_DIR, 'optionsPriorYearVolume.json') },
   // Earnings-call dates (Alpha Vantage) that the report's comparison lines are
   // aligned to. Cached for a week — the free tier allows only 25 calls a day.

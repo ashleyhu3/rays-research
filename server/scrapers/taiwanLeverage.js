@@ -4,6 +4,7 @@
  *
  *   margin  融資餘額        broker margin loans — listed (TWSE) + OTC (TPEx)
  *   etf     槓桿 ETF 淨資產  net assets of the 2× ("正2") ETFs
+ *   ratio   charted leverage / market capitalization, in percent
  *
  * Sources, and why each one:
  *
@@ -19,21 +20,27 @@
  *   so history costs one request per day (~3s per 5 dates; fine for a backfill).
  *
  * • ETF — Yuanta's own API returns FUND_SIZE, the fund's exact net assets, per
- *   day, five years deep, for every 2× fund it issues. That is the authoritative
- *   number (units × NAV only approximates it, since published NAV is rounded).
- *   The other issuers of Taiwan 2× funds have no usable daily history: Cathay
- *   exposes no date-queryable endpoint and Capital sits behind bot protection.
- *   So the layer is Yuanta's 2× funds — the largest issuer, and 00631L alone is
- *   about two thirds of all Taiwan 2× assets. `etfMarketTotal` records the whole
- *   listed 2× market for the current day (TWSE's live feed) purely so the page
- *   can state what share of it this layer actually covers, instead of implying
- *   the layer is the whole market.
+ *   day, five years deep. That is the authoritative number (units × NAV only
+ *   approximates it, since published NAV is rounded). The layer is just 00631L
+ *   (元大台灣50正2, Yuanta Taiwan 50 2×) — the original and largest Taiwan 2×
+ *   fund, about two thirds of all Taiwan 2× assets on its own. `etfMarketTotal`
+ *   records the whole listed 2× market for the current day (TWSE's live feed)
+ *   purely so the page can state what share of it this one fund covers, instead
+ *   of implying the layer is the whole market.
+ *
+ * • Market size — TWSE publishes its total listed-equity capitalization in a
+ *   weekly workbook; TPEx publishes the market value of every OTC company for
+ *   any requested date. The denominator is their sum on the TWSE week-end date.
+ *   It is carried forward between weekly observations, while the numerator
+ *   continues to update daily.
  *
  * There is deliberately no cash layer and no short band: Taiwan publishes no
  * daily customer-cash aggregate, and short balances are reported in lots, which
  * cannot be stacked onto a money axis.
  */
 const path = require('path');
+const { inflateRawSync } = require('zlib');
+const XLSX = require('@e965/xlsx');
 const storage = require('../storage');
 
 const HISTORY_FILE = path.join(__dirname, '..', 'data', 'taiwanLeverageHistory.json');
@@ -93,6 +100,108 @@ async function tpexOtcMargin(day) {
   return Number.isFinite(thousands) ? (thousands * 1000) / OKU : null;
 }
 
+/* ── Market capitalization: TWSE listed + TPEx OTC ─────────────────── */
+
+// TWSE publishes the full weekly history as one legacy-XLS file inside a
+// one-file ZIP. Keeping the archive discovery call separate from the workbook
+// URL avoids baking a staticFiles path into the scraper.
+async function twseWeeklyMarketCaps() {
+  const indexRes = await fetch('https://www.twse.com.tw/rwd/en/statisticsWeek/index?response=json', {
+    headers: { 'User-Agent': UA, 'Referer': 'https://www.twse.com.tw/' },
+    signal: AbortSignal.timeout(30000),
+  });
+  if (!indexRes.ok) throw new Error(`TWSE weekly statistics HTTP ${indexRes.status}`);
+  const index = await indexRes.json();
+  const download = index.data?.[0]?.[1];
+  if (typeof download !== 'string' || !download) throw new Error('TWSE weekly statistics has no workbook link');
+
+  const archiveRes = await fetch(new URL(download, 'https://www.twse.com.tw'), {
+    headers: { 'User-Agent': UA, 'Referer': 'https://www.twse.com.tw/' },
+    signal: AbortSignal.timeout(30000),
+  });
+  if (!archiveRes.ok) throw new Error(`TWSE market-cap workbook HTTP ${archiveRes.status}`);
+  const archive = Buffer.from(await archiveRes.arrayBuffer());
+  if (archive.length > 5_000_000) throw new Error('TWSE market-cap archive is unexpectedly large');
+  return parseTwseWeeklyMarketCaps(unzipFirstFile(archive));
+}
+
+// The official archive currently contains one deflated workbook. Parse the ZIP
+// local-file header directly instead of adding a second package solely to
+// extract one small file.
+function unzipFirstFile(archive) {
+  if (archive.length < 30 || archive.readUInt32LE(0) !== 0x04034b50) {
+    throw new Error('TWSE market-cap download is not a ZIP archive');
+  }
+  const flags = archive.readUInt16LE(6);
+  const method = archive.readUInt16LE(8);
+  const compressedSize = archive.readUInt32LE(18);
+  const rawSize = archive.readUInt32LE(22);
+  const nameLength = archive.readUInt16LE(26);
+  const extraLength = archive.readUInt16LE(28);
+  if (flags & 0x01) throw new Error('TWSE market-cap ZIP is encrypted');
+  if (flags & 0x08) throw new Error('TWSE market-cap ZIP uses an unsupported data descriptor');
+  if (rawSize > 10_000_000) throw new Error('TWSE market-cap workbook is unexpectedly large');
+
+  const start = 30 + nameLength + extraLength;
+  const end = start + compressedSize;
+  if (end > archive.length) throw new Error('TWSE market-cap ZIP is truncated');
+  const compressed = archive.subarray(start, end);
+  const workbook = method === 0 ? Buffer.from(compressed)
+    : method === 8 ? inflateRawSync(compressed)
+      : null;
+  if (!workbook) throw new Error(`TWSE market-cap ZIP compression method ${method} is unsupported`);
+  if (rawSize && workbook.length !== rawSize) throw new Error('TWSE market-cap workbook size does not match ZIP header');
+  return workbook;
+}
+
+function workbookDate(value) {
+  if (value instanceof Date && Number.isFinite(value.getTime())) return value.toISOString().slice(0, 10);
+  if (Number.isFinite(value)) {
+    const p = XLSX.SSF.parse_date_code(value);
+    if (p?.y && p?.m && p?.d) {
+      return `${p.y}-${String(p.m).padStart(2, '0')}-${String(p.d).padStart(2, '0')}`;
+    }
+  }
+  const text = String(value ?? '').trim().replace(/\//g, '-');
+  return /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : null;
+}
+
+function parseTwseWeeklyMarketCaps(workbook) {
+  // Keep Excel dates as serials and decode them explicitly. Date objects can
+  // shift a week-end back one day when the server runs in a positive UTC zone.
+  const book = XLSX.read(workbook, { type: 'buffer', cellDates: false });
+  const sheet = book.Sheets[book.SheetNames[0]];
+  if (!sheet) throw new Error('TWSE market-cap workbook has no worksheet');
+  const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true });
+  const out = {};
+  for (const row of rows.slice(2)) {
+    const day = workbookDate(row?.[0]);
+    const value = Number(String(row?.[1] ?? '').replace(/,/g, ''));
+    if (day && Number.isFinite(value) && value > 0) out[day] = round(value);
+  }
+  if (!Object.keys(out).length) throw new Error('TWSE market-cap workbook contains no observations');
+  return out;                                             // 億元 (NT$ 100 million)
+}
+
+// TPEx publishes every OTC company's market value in NT$ millions. Summing that
+// official column and dividing by 100 puts it in the same 億元 unit as TWSE.
+async function tpexOtcMarketCap(day) {
+  const [y, m, d] = day.split('-');
+  const url = `https://www.tpex.org.tw/www/zh-tw/afterTrading/dailyMarktVal?date=${y}%2F${m}%2F${d}&response=json`;
+  const res = await fetch(url, { headers: { 'User-Agent': UA, 'Referer': 'https://www.tpex.org.tw/' }, signal: AbortSignal.timeout(30000) });
+  if (!res.ok) throw new Error(`TPEx market value HTTP ${res.status}`);
+  const json = await res.json();
+  const rows = json.tables?.[0]?.data ?? [];
+  let millions = 0, observations = 0;
+  for (const row of rows) {
+    const value = Number(String(row?.[5] ?? '').replace(/,/g, ''));
+    if (!Number.isFinite(value) || value <= 0) continue;
+    millions += value;
+    observations++;
+  }
+  return observations ? millions / 100 : null;
+}
+
 /* ── Leveraged ETFs: Yuanta ────────────────────────────────────────── */
 
 // Yuanta's front-end calls this with a device UUID; a malformed one is rejected
@@ -100,9 +209,11 @@ async function tpexOtcMargin(day) {
 const YUANTA_API = 'https://etfapi.yuantaetfs.com/ectranslation/api/trans';
 const YUANTA_DEVICE = '9ba170bb-6dfc-4efc-8d67-30b9423937f0';
 
-// Every 2× fund Yuanta issues (including the futures-based ones, which trade
-// under the 期元大 brand but answer on the same API).
-const YUANTA_FUNDS = ['00631L', '00637L', '00647L', '00680L', '00683L', '00706L', '00708L'];
+// Just the flagship: 元大台灣50正2 (Yuanta Taiwan 50 2×), the original and by far
+// the largest Taiwan 2× fund — about two thirds of all Taiwan 2× assets on its
+// own. Yuanta's other 2× funds (Yuanta Futures single-stock/rate/commodity
+// notes) answer on the same API but are left out of the layer for now.
+const YUANTA_FUNDS = ['00631L'];
 
 async function yuantaFund(code, from, to) {
   const q = new URLSearchParams({
@@ -173,6 +284,7 @@ async function listedEtfMarketTotal() {
 function loadHistory() { return storage.read(BLOB, HISTORY_FILE); }
 function saveHistory(h) { storage.write(BLOB, HISTORY_FILE, h); }
 function round(v) { return Math.round(v * 10) / 10; }
+function roundRatio(v) { return Math.round(v * 10000) / 10000; }
 
 const iso = d => d.toISOString().slice(0, 10);
 
@@ -180,15 +292,16 @@ const iso = d => d.toISOString().slice(0, 10);
  * Scrape the last `days` days of every layer, merge into history, and return the
  * assembled series. The backfill script passes ~1830 (five years).
  *
- * TPEx has no range query, so it is fetched one day at a time — the only slow
- * part of the run, and the reason `days` defaults to a month for the daily poll.
+ * TPEx has no range query, so margin is fetched one day at a time and market
+ * capitalization once per TWSE week-end. This is why `days` defaults to a month
+ * for the daily poll; the one-time denominator backfill is batched separately.
  */
 async function getTaiwanLeverage(days = 30) {
   const today = new Date();
   const from = iso(new Date(today.getTime() - days * 86400000));
   const to = iso(today);
 
-  const [listed, etfFunds, marketTotal] = await Promise.all([
+  const [listed, etfFunds, marketTotal, listedMarketCaps] = await Promise.all([
     // FinMind is a convenience — it serves TWSE's own figure over a whole range
     // in one request — but it is a free tier that rate-limits (402). It must not
     // be able to take the scrape down with it: TWSE, TPEx and Yuanta are the
@@ -202,6 +315,10 @@ async function getTaiwanLeverage(days = 30) {
       return { name: c, days: {} };
     }))),
     listedEtfMarketTotal().catch(e => { console.warn('[taiwanLeverage] ETF market feed:', e.message); return null; }),
+    twseWeeklyMarketCaps().catch(e => {
+      console.warn('[taiwanLeverage] TWSE weekly market cap:', e.message);
+      return {};
+    }),
   ]);
 
   const history = loadHistory();
@@ -272,6 +389,49 @@ async function getTaiwanLeverage(days = 30) {
     history[day] = { ...(history[day] ?? {}), marginListed: round(value) };
   }
 
+  // Market-size observations are weekly. The dedicated backfill fills the full
+  // five-year chart in one run; normal refreshes fill at most 60 missing weeks,
+  // newest first, so they stay well inside the scheduler timeout and gradually
+  // heal any older holes. Four concurrent TPEx reads avoids hammering the
+  // exchange while keeping that bounded batch quick.
+  const historyDays = Object.keys(history).filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d)).sort();
+  const fiveYearsAgo = iso(new Date(today.getTime() - 1835 * 86400000));
+  const capFrom = [historyDays[0] ?? from, fiveYearsAgo].sort().at(-1);
+  const capDays = Object.keys(listedMarketCaps)
+    .filter(day => day >= capFrom && day <= to)
+    .sort();
+
+  for (const day of capDays) {
+    history[day] = { ...(history[day] ?? {}), marketSizeListed: listedMarketCaps[day] };
+  }
+
+  const missingMarketCapOtc = capDays.filter(day => !Number.isFinite(history[day]?.marketSizeOtc));
+  const needMarketCapOtc = days > 365 ? missingMarketCapOtc : missingMarketCapOtc.slice(-60);
+  if (needMarketCapOtc.length > 5) {
+    const deferred = missingMarketCapOtc.length - needMarketCapOtc.length;
+    console.log(`[taiwanLeverage] TPEx: fetching ${needMarketCapOtc.length} weekly market-cap observations`
+      + (deferred ? ` (${deferred} older observations deferred)` : '') + '…');
+  }
+  let marketCapOtcOk = 0;
+  for (let i = 0; i < needMarketCapOtc.length; i += 4) {
+    const batch = needMarketCapOtc.slice(i, i + 4);
+    await Promise.all(batch.map(async day => {
+      try {
+        const value = await tpexOtcMarketCap(day);
+        if (Number.isFinite(value)) {
+          history[day] = { ...(history[day] ?? {}), marketSizeOtc: round(value) };
+          marketCapOtcOk++;
+        }
+      } catch (e) {
+        console.warn(`[taiwanLeverage] TPEx market cap ${day}: ${e.message}`);
+      }
+    }));
+    if (i + 4 < needMarketCapOtc.length) await sleep(120);
+  }
+  if (needMarketCapOtc.length > 5) {
+    console.log(`[taiwanLeverage] TPEx: got ${marketCapOtcOk}/${needMarketCapOtc.length} weekly market-cap observations`);
+  }
+
   const names = {};
   etfFunds.forEach((f, i) => { names[YUANTA_FUNDS[i]] = f.name; });
   const etfDays = new Set(etfFunds.flatMap(f => Object.keys(f.days)));
@@ -309,7 +469,7 @@ async function getTaiwanLeverage(days = 30) {
 function assemble(history) {
   const dates = Object.keys(history).filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d)).sort();
 
-  const keys = ['marginListed', 'marginOtc', 'etf'];
+  const keys = ['marginListed', 'marginOtc', 'etf', 'marketSizeListed', 'marketSizeOtc'];
   const series = Object.fromEntries(keys.map(k => [k, []]));
   const last = {};
   const carried = Object.fromEntries(keys.map(k => [k, null]));
@@ -355,6 +515,22 @@ function assemble(history) {
   });
   const total = dates.map((_, i) => round((margin[i] ?? 0) + (series.etf[i] ?? 0)));
 
+  // A ratio is only valid when every component is present. The amount chart can
+  // tolerate a temporarily missing layer by carrying it forward, but treating a
+  // missing exchange or ETF value as zero would silently understate leverage.
+  const marketSize = dates.map((_, i) => {
+    const listed = series.marketSizeListed[i], otc = series.marketSizeOtc[i];
+    return Number.isFinite(listed) && Number.isFinite(otc) ? round(listed + otc) : null;
+  });
+  const leverageRatio = dates.map((_, i) => {
+    const completeNumerator = Number.isFinite(series.marginListed[i])
+      && Number.isFinite(series.marginOtc[i])
+      && Number.isFinite(series.etf[i]);
+    return completeNumerator && Number.isFinite(marketSize[i]) && marketSize[i] > 0
+      ? roundRatio((total[i] / marketSize[i]) * 100)
+      : null;
+  });
+
   const lastDay = [...dates].reverse().find(d => history[d]?.funds);
   const names = history.names ?? {};
   const funds = Object.entries(lastAum)
@@ -362,6 +538,8 @@ function assemble(history) {
     .sort((a, b) => b.aum - a.aum);
 
   const i = dates.length - 1;
+  const marketSizeDate = [...dates].reverse().find(d =>
+    Number.isFinite(history[d]?.marketSizeListed) && Number.isFinite(history[d]?.marketSizeOtc)) ?? null;
   return {
     dates,
     margin,
@@ -369,6 +547,11 @@ function assemble(history) {
     marginOtc: series.marginOtc,
     etf: series.etf,
     total,
+    marketSize,
+    marketSizeListed: series.marketSizeListed,
+    marketSizeOtc: series.marketSizeOtc,
+    leverageRatio,
+    marketSizeDate,
     funds,
     fundsDate: lastDay ?? null,
     // Whole listed 2× market today, so the page can say what share of it the
@@ -382,6 +565,10 @@ function assemble(history) {
       marginOtc: series.marginOtc[i] ?? null,
       etf: series.etf[i] ?? null,
       total: total[i] ?? null,
+      marketSize: marketSize[i] ?? null,
+      marketSizeListed: series.marketSizeListed[i] ?? null,
+      marketSizeOtc: series.marketSizeOtc[i] ?? null,
+      leverageRatio: leverageRatio[i] ?? null,
     },
     updatedAt: new Date().toISOString(),
   };
@@ -389,4 +576,8 @@ function assemble(history) {
 
 function readTaiwanLeverage() { return assemble(loadHistory()); }
 
-module.exports = { getTaiwanLeverage, readTaiwanLeverage };
+module.exports = {
+  getTaiwanLeverage,
+  readTaiwanLeverage,
+  _test: { assemble, parseTwseWeeklyMarketCaps, unzipFirstFile },
+};

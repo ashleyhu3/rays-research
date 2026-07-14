@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "test": "npm run test:mailer && npm run test:transcripts && npm run test:options-report",
+    "test": "npm run test:mailer && npm run test:transcripts && npm run test:options-report && npm run test:leverage",
     "dev": "node --env-file=.env server/server.js",
     "build": "vite build",
     "start": "NODE_ENV=production node --env-file-if-exists=.env server/server.js",
@@ -41,10 +41,12 @@
     "weekly-report:send": "node --env-file-if-exists=.env server/scripts/sendWeeklyReport.js",
     "test:transcripts": "node --test server/transcripts/*.test.js server/transcripts/*.test.mjs",
     "test:mailer": "node --test server/mailer.test.js",
-    "test:options-report": "node --test server/earningsDates.test.js server/optionsReportChart.test.js"
+    "test:options-report": "node --test server/earningsDates.test.js server/optionsReportChart.test.js server/optionsScraper.test.js",
+    "test:leverage": "node --test server/scrapers/taiwanLeverage.test.js"
   },
   "dependencies": {
     "@aws-sdk/client-pricing": "^3.1069.0",
+    "@e965/xlsx": "^0.20.3",
     "@langchain/core": "^1.2.1",
     "@langchain/langgraph": "^1.4.7",
     "axios": "^1.17.0",
