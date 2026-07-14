@@ -1375,3 +1375,7 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
 .lev-table td { padding: 6px 10px; color: var(--text); border-bottom: 1px solid rgba(255,255,255,.04); }
 .lev-table .num { text-align: right; font-variant-numeric: tabular-nums; }
 .lev-table .lev-kind { color: var(--sec); white-space: nowrap; }
+
+/* Source row under the leverage charts — one link per table queried */
+.lev-srcs { display: inline-flex; flex-wrap: wrap; gap: 4px 14px; }
+.lev-srcs .ch-src { display: inline-flex; align-items: center; gap: 5px; }

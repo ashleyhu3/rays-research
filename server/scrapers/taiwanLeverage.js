@@ -218,8 +218,7 @@ async function getTaiwanLeverage(days = 30) {
   const tradingDays = Object.keys(listed).length ? Object.keys(listed).sort() : calendar;
 
   // The newest listed-margin days come straight from TWSE, so the live edge of
-  // the chart is the exchange's own number rather than a mirror's copy. When
-  // FinMind is down this is also the only source, so fill any day still missing.
+  // the chart is the exchange's own number rather than a mirror's copy.
   for (const day of tradingDays.slice(-3)) {
     try {
       const v = await twseListedMargin(day);
@@ -228,18 +227,27 @@ async function getTaiwanLeverage(days = 30) {
       console.warn(`[taiwanLeverage] TWSE ${day}: ${e.message}`);
     }
   }
-  if (!Object.keys(listed).length) {
-    for (const day of tradingDays) {
-      if (Number.isFinite(history[day]?.marginListed)) continue;
-      try {
-        const v = await twseListedMargin(day);
-        if (Number.isFinite(v)) listed[day] = v;
-      } catch (e) {
-        console.warn(`[taiwanLeverage] TWSE ${day}: ${e.message}`);
-      }
-      await sleep(120);
+
+  // Any day still without a listed balance — because FinMind was rate-limited —
+  // is fetched from TWSE directly. This must be driven by what is *missing*, not
+  // by whether `listed` is empty: the three re-reads above always leave it
+  // non-empty, and an emptiness check let a rate-limited run write a history that
+  // was OTC-only before the last few weeks, which drew the margin band stepping
+  // up fourfold on the day the listed series happened to begin.
+  const missingListed = tradingDays.filter(
+    d => !Number.isFinite(listed[d]) && !Number.isFinite(history[d]?.marginListed));
+  if (missingListed.length > 5) console.log(`[taiwanLeverage] TWSE: filling ${missingListed.length} missing listed-margin days…`);
+  let listedOk = 0;
+  for (const day of missingListed) {
+    try {
+      const v = await twseListedMargin(day);
+      if (Number.isFinite(v)) { listed[day] = v; listedOk++; }
+    } catch (e) {
+      console.warn(`[taiwanLeverage] TWSE ${day}: ${e.message}`);
     }
+    await sleep(200);
   }
+  if (missingListed.length > 5) console.log(`[taiwanLeverage] TWSE: got ${listedOk}/${missingListed.length}`);
 
   // TPEx: one request per trading day. Skip days already stored, so the daily
   // poll costs a couple of requests and only a backfill pays the full price.
@@ -313,12 +321,18 @@ function assemble(history) {
   // total "fell" 8%). Carry each fund's own last value instead, and only count a
   // fund from the day it first appears — so a fund that hasn't launched yet
   // reads as absent, not as zero.
+  // Only the funds this scraper actually sources. Stored history can still carry
+  // fund codes written by an earlier version of this scraper (it summed TWSE's
+  // whole-market snapshot, Cathay and Capital included); carrying those forward
+  // alongside Yuanta's double-counts the layer — it reported 102% of the entire
+  // listed 2× market. Ignore anything outside the Yuanta universe.
+  const universe = new Set(YUANTA_FUNDS);
   const etfByDay = {};
   const lastAum = {};
   for (const day of dates) {
     const funds = history[day]?.funds ?? {};
     for (const [code, aum] of Object.entries(funds)) {
-      if (Number.isFinite(aum)) lastAum[code] = aum;
+      if (universe.has(code) && Number.isFinite(aum)) lastAum[code] = aum;
     }
     const codes = Object.keys(lastAum);
     if (codes.length) etfByDay[day] = round(codes.reduce((s, c) => s + lastAum[c], 0));

@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Line } from 'react-chartjs-2';
 import ChartCard from '../../components/chart/ChartCard';
-import { KOREA, TAIWAN } from './leverageData';
 
 /**
  * Retail leverage — the borrowed money behind an Asian market, stacked, one
@@ -26,22 +25,32 @@ const MARKETS = {
     id: 'korea',
     label: 'Korea',
     endpoint: '/api/korea-leverage',
-    seed: KOREA,
     // The API serves trillions of won, which is also how Korea quotes it.
     scale: 1,
     unit: 'T',
     unitName: 'trillions of won (KRW tn)',
     title: 'Korean retail leverage · three borrowed layers',
+    // Each layer links to the exact table it is read from, not to a site root.
     layers: [
-      { key: 'collateral', label: 'Securities-collateral loans', color: BLUE },
-      { key: 'margin',     label: 'Margin loans',                color: ORANGE },
-      { key: 'etf',        label: '2× leveraged ETFs',           color: PURPLE },
+      {
+        key: 'collateral', label: 'Securities-collateral loans', color: BLUE,
+        srcLabel: 'KOFIA · 신용공여 잔고 추이 (예탁증권 담보융자 column)',
+        srcUrl: 'https://freesis.kofia.or.kr/stat/FreeSIS.do?parentDivId=MSIS10000000000000&serviceId=STATSCU0100000070',
+      },
+      {
+        key: 'margin', label: 'Margin loans', color: ORANGE,
+        srcLabel: 'KOFIA · 신용공여 잔고 추이 (신용거래융자 column)',
+        srcUrl: 'https://freesis.kofia.or.kr/stat/FreeSIS.do?parentDivId=MSIS10000000000000&serviceId=STATSCU0100000070',
+      },
+      {
+        key: 'etf', label: '2× leveraged ETFs', color: PURPLE,
+        srcLabel: 'Daum Finance · ETF listing (close × shares outstanding)',
+        srcUrl: 'https://finance.daum.net/domestic/etf',
+      },
     ],
-    src: 'KOFIA FreeSIS (신용공여 잔고 추이 — margin loans + securities-collateral loans) + Daum Finance ETF net assets',
-    srcUrl: 'https://freesis.kofia.or.kr/',
     fundsTitle: 'Leveraged ETF layer · by fund',
-    fundsSrc: 'Daum Finance',
-    fundsSrcUrl: 'https://finance.daum.net/domestic/all_etfs',
+    fundsSrc: 'Daum Finance · ETF listing',
+    fundsSrcUrl: 'https://finance.daum.net/domestic/etf',
     note:
       'Margin loans are the KOFIA daily all-market 신용거래융자 balance; securities-collateral loans are 예탁증권 담보융자 from the '
       + 'same table — borrowing against pledged shares, which unlike margin can be drawn out of the account, so it is credit extended '
@@ -58,21 +67,31 @@ const MARKETS = {
     id: 'taiwan',
     label: 'Taiwan',
     endpoint: '/api/taiwan-leverage',
-    seed: TAIWAN,
     // The API serves 億元 (hundred-million NT$), the unit Taiwan quotes; the page
     // shows NT$ billions so both markets read in plain English units.
     scale: 0.1,
     unit: 'B',
     unitName: 'billions of NT$ (NT$ bn)',
     title: 'Taiwan retail leverage · margin loans + 2× ETFs',
+    // The margin band is two exchanges summed, so it carries two links.
     layers: [
-      { key: 'margin', label: 'Margin loans',      color: ORANGE },
-      { key: 'etf',    label: '2× leveraged ETFs', color: PURPLE },
+      {
+        key: 'margin', label: 'Margin loans', color: ORANGE,
+        srcLabel: 'TWSE · 信用交易統計 (MI_MARGN, 融資金額)',
+        srcUrl: 'https://www.twse.com.tw/zh/trading/margin/mi-margn.html',
+        srcExtra: {
+          label: 'TPEx · 上櫃股票融資融券餘額 (融資金 summary row)',
+          url: 'https://www.tpex.org.tw/zh-tw/mainboard/trading/margin-trading/transactions.html',
+        },
+      },
+      {
+        key: 'etf', label: '2× leveraged ETFs', color: PURPLE,
+        srcLabel: 'Yuanta · 歷史淨值 (FUND_SIZE)',
+        srcUrl: 'https://www.yuantaetfs.com/tradeInfo/comparison/00631L/historical',
+      },
     ],
-    src: 'TWSE MI_MARGN (listed margin) + TPEx 融資餘額 summary (OTC margin) + Yuanta fund-size API',
-    srcUrl: 'https://www.twse.com.tw/zh/trading/margin/mi-margn.html',
     fundsTitle: 'Leveraged ETF layer · by fund',
-    fundsSrc: 'Yuanta ETF fund-size API',
+    fundsSrc: 'Yuanta · 歷史淨值 (FUND_SIZE)',
     fundsSrcUrl: 'https://www.yuantaetfs.com/tradeInfo/comparison/00631L/historical',
     note:
       'Margin loans are the whole borrowing market: the TWSE listed balance plus the TPEx OTC balance, both published daily in '
@@ -195,14 +214,15 @@ export default function Leverage({ marketId = 'korea' }) {
   const range = RANGES.find(r => r.id === rangeId) ?? RANGES[2];
   const fmt   = v => (v == null ? '—' : `${v.toFixed(1)}${market.unit}`);
 
-  // Draw the committed five-year snapshot. The live endpoint is still wired and
-  // still correct, but the Mongo it reads from holds only the few weeks the
-  // collector has gathered since these layers were added — so serving it here
-  // would silently truncate the chart. Once the Mongo backfill lands, swap the
-  // seed for the fetch below.
   useEffect(() => {
+    let live = true;
+    setData(null);
     setError(null);
-    setData(rescale(market.seed, market));
+    fetch(market.endpoint)
+      .then(r => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then(j => { if (live) setData(rescale(j, market)); })
+      .catch(e => { if (live) setError(e.message); });
+    return () => { live = false; };
   }, [market]);
 
   const win  = useMemo(() => windowed(data, market, range), [data, market, range]);
@@ -348,14 +368,15 @@ export default function Leverage({ marketId = 'korea' }) {
       <ChartCard
         chartId={`${market.id}-leverage-stack`}
         title={market.title}
-        src={market.src}
-        srcUrl={market.srcUrl}
+        src={<SourceLinks layers={market.layers} />}
         freq="Daily"
         lag={lag}
         span2
         height={430}
         legend={[
-          ...win.shown.map(l => [l.label, l.color]),
+          // The third slot is a link: each layer's swatch points at the table it
+          // is read from, so the chart's provenance is one click from the series.
+          ...win.shown.map(l => [l.label, l.color, l.srcUrl]),
           ['Total', INK],
           ...refs.map(r => [r.label, r.color]),
         ]}
@@ -420,6 +441,31 @@ function tileSub(layer, latest, data, fmt) {
     return `${((latest.etf / data.etfMarket.total) * 100).toFixed(0)}% of all listed 2× funds`;
   }
   return latest.date;
+}
+
+/**
+ * The source row under the chart: one link per table actually queried, rather
+ * than a single link to a site's front door. Taiwan's margin band is two
+ * exchanges summed, so it lists both.
+ */
+function SourceLinks({ layers }) {
+  const entries = layers.flatMap(l => [
+    { label: l.srcLabel, url: l.srcUrl, color: l.color },
+    ...(l.srcExtra ? [{ label: l.srcExtra.label, url: l.srcExtra.url, color: l.color }] : []),
+  ]);
+  // Both Korean credit layers come out of one KOFIA table — list it once.
+  const seen = new Set();
+  const unique = entries.filter(e => (seen.has(e.label) ? false : seen.add(e.label)));
+
+  return (
+    <span className="lev-srcs">
+      {unique.map(e => (
+        <a key={e.label} className="ch-src" href={e.url} target="_blank" rel="noopener noreferrer">
+          <span className="lev-dot" style={{ background: e.color }} />{e.label}
+        </a>
+      ))}
+    </span>
+  );
 }
 
 function Tile({ label, value, sub, color }) {
