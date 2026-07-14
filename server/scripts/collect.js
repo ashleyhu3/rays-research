@@ -30,6 +30,7 @@ const BLOBS = [
   { name: 'cloudGpuHistory', file: path.join(DATA_DIR, 'cloudGpuHistory.json') },
   { name: 'sentimentData',   file: path.join(DATA_DIR, 'sentiment.json') },
   { name: 'koreaLeverageHistory', file: path.join(DATA_DIR, 'koreaLeverageHistory.json') },
+  { name: 'taiwanLeverageHistory', file: path.join(DATA_DIR, 'taiwanLeverageHistory.json') },
   { name: 'latestSnapshots', file: path.join(DATA_DIR, 'latestSnapshots.json') },
 ];
 

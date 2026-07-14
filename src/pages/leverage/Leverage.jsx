@@ -1,26 +1,91 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Line } from 'react-chartjs-2';
 import ChartCard from '../../components/chart/ChartCard';
+import { KOREA, TAIWAN } from './leverageData';
 
 /**
- * Korean retail firepower — the four layers of household money behind the
- * KOSPI, stacked, one point per trading day.
+ * Retail leverage — the borrowed money behind an Asian market, stacked, one
+ * point per trading day.
  *
- * The layers are ordered by leverage, innermost first: CMA sweep cash, broker
- * deposits, margin loans, then 2× ETFs. That ordering is the point of the chart
- * — a de-levering cycle peels the stack from the outside in, so the top band
- * moving while the bottom two sit still says the core hasn't sold yet.
+ * Two layers, ordered by leverage: margin loans, then the 2× ETFs on top. Cash
+ * layers (Korean broker deposits and CMA sweep balances) are deliberately not
+ * here — they are dry powder, not leverage, and stacking them made the chart
+ * about liquidity rather than about borrowing.
+ *
+ * The two markets do not disclose equally, and the page shows that rather than
+ * papering over it — see each market's `note`.
  */
 
-// Validated for the dark chart surface (#111419): OKLCH lightness band, chroma
-// floor, adjacent-pair CVD separation (worst ΔE 35 protan / 13 tritan) and ≥3:1
-// contrast all pass. Don't brighten these by eye — re-run the palette validator.
-const LAYERS = [
-  { key: 'cma',     label: 'CMA 잔고',    en: 'CMA sweep cash', color: '#299682' },
-  { key: 'deposit', label: '투자자예탁금', en: 'Broker deposits', color: '#4577b4' },
-  { key: 'margin',  label: '신용거래융자', en: 'Margin loans',    color: '#ad622d' },
-  { key: 'etf',     label: '레버리지 ETF', en: '2× leveraged ETFs', color: '#7864b4' },
-];
+// Colours are validated for the dark chart surface (#111419): OKLCH lightness
+// band, chroma floor, adjacent-pair CVD separation and ≥3:1 contrast all pass.
+// Don't brighten these by eye — re-run the palette validator.
+const TEAL = '#299682', BLUE = '#4577b4', ORANGE = '#ad622d', PURPLE = '#7864b4';
+
+const MARKETS = {
+  korea: {
+    id: 'korea',
+    label: 'Korea',
+    endpoint: '/api/korea-leverage',
+    seed: KOREA,
+    // The API serves trillions of won, which is also how Korea quotes it.
+    scale: 1,
+    unit: 'T',
+    unitName: 'trillions of won (KRW tn)',
+    title: 'Korean retail leverage · three borrowed layers',
+    layers: [
+      { key: 'collateral', label: 'Securities-collateral loans', color: BLUE },
+      { key: 'margin',     label: 'Margin loans',                color: ORANGE },
+      { key: 'etf',        label: '2× leveraged ETFs',           color: PURPLE },
+    ],
+    src: 'KOFIA FreeSIS (신용공여 잔고 추이 — margin loans + securities-collateral loans) + Daum Finance ETF net assets',
+    srcUrl: 'https://freesis.kofia.or.kr/',
+    fundsTitle: 'Leveraged ETF layer · by fund',
+    fundsSrc: 'Daum Finance',
+    fundsSrcUrl: 'https://finance.daum.net/domestic/all_etfs',
+    note:
+      'Margin loans are the KOFIA daily all-market 신용거래융자 balance; securities-collateral loans are 예탁증권 담보융자 from the '
+      + 'same table — borrowing against pledged shares, which unlike margin can be drawn out of the account, so it is credit extended '
+      + 'on the same collateral but not necessarily money in the market. The ETF layer is every 2× fund a Korean retail investor can '
+      + 'buy — the two KOSPI200 leveraged funds, plus the single-stock (Samsung / SK Hynix) leveraged funds that opened on '
+      + "2026-05-27 — and each fund's net assets are recomputed exactly as closing price × that day's shares outstanding, not "
+      + 'estimated. CSOP 7709.HK (the HK-listed SK Hynix 2×) is excluded: no free daily AUM feed exists, and guessing it would put '
+      + 'an estimate inside a measured layer. Cash layers (broker deposits, CMA) are not charted — they are dry powder, not leverage.',
+    fundsNote:
+      'Net assets = closing price × shares outstanding, per fund, per day. Single-stock 2× funds are the memory trade (Samsung '
+      + 'Electronics / SK Hynix); index 2× funds track KOSPI200.',
+  },
+  taiwan: {
+    id: 'taiwan',
+    label: 'Taiwan',
+    endpoint: '/api/taiwan-leverage',
+    seed: TAIWAN,
+    // The API serves 億元 (hundred-million NT$), the unit Taiwan quotes; the page
+    // shows NT$ billions so both markets read in plain English units.
+    scale: 0.1,
+    unit: 'B',
+    unitName: 'billions of NT$ (NT$ bn)',
+    title: 'Taiwan retail leverage · margin loans + 2× ETFs',
+    layers: [
+      { key: 'margin', label: 'Margin loans',      color: ORANGE },
+      { key: 'etf',    label: '2× leveraged ETFs', color: PURPLE },
+    ],
+    src: 'TWSE MI_MARGN (listed margin) + TPEx 融資餘額 summary (OTC margin) + Yuanta fund-size API',
+    srcUrl: 'https://www.twse.com.tw/zh/trading/margin/mi-margn.html',
+    fundsTitle: 'Leveraged ETF layer · by fund',
+    fundsSrc: 'Yuanta ETF fund-size API',
+    fundsSrcUrl: 'https://www.yuantaetfs.com/tradeInfo/comparison/00631L/historical',
+    note:
+      'Margin loans are the whole borrowing market: the TWSE listed balance plus the TPEx OTC balance, both published daily in '
+      + 'money terms. (OTC is about a quarter of Taiwan\'s margin debt — leaving it out understates the layer badly.) The ETF layer '
+      + "is each fund's exact net assets (FUND_SIZE) from Yuanta's own API, daily and five years deep — not units × NAV, which only "
+      + 'approximates it because published NAV is rounded. Short-sale balances are reported in lots, not money, so they are not '
+      + 'stacked onto a money axis.',
+    fundsNote:
+      "Net assets as published by the issuer. Covers Yuanta's 2× funds — the largest issuer, and 00631L alone is about two thirds of "
+      + "Taiwan's 2× assets. Cathay and Capital publish the same fields but expose no date-queryable endpoint, so their funds have no "
+      + 'daily history to backfill.',
+  },
+};
 
 const SURFACE = '#111419';
 const INK     = '#e8e6e3';
@@ -33,20 +98,49 @@ const RANGES = [
   { id: '5y',  label: '5Y',  days: 1830 },
 ];
 
-const fmt = v => (v == null ? '—' : `${v.toFixed(1)}조`);
 const pct = v => (v == null ? '—' : `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`);
 
 function dayLabel(iso) {
-  const d = new Date(`${iso}T00:00:00Z`);
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+  return new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
 }
 function monthLabel(iso) {
   const d = new Date(`${iso}T00:00:00Z`);
   return `${d.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' })} '${String(d.getUTCFullYear()).slice(-2)}`;
 }
 
+/**
+ * Convert the payload into the market's display unit once, at the door, so the
+ * chart, tiles, reference lines and fund table can never disagree about units.
+ */
+function rescale(payload, market) {
+  const k = market.scale ?? 1;
+  if (k === 1) return payload;
+  const arr = a => (Array.isArray(a) ? a.map(v => (Number.isFinite(v) ? v * k : null)) : a);
+  return {
+    ...payload,
+    total: arr(payload.total),
+    ...Object.fromEntries(market.layers.map(l => [l.key, arr(payload[l.key])])),
+    funds: (payload.funds ?? []).map(f => ({ ...f, aum: f.aum * k })),
+    etfMarket: payload.etfMarket ? { ...payload.etfMarket, total: payload.etfMarket.total * k } : null,
+    latest: Object.fromEntries(Object.entries(payload.latest ?? {}).map(
+      ([key, v]) => [key, key === 'date' || !Number.isFinite(v) ? v : v * k])),
+  };
+}
+
+/**
+ * A layer only earns a place in the stack once it has enough history to be a
+ * shape rather than a spike — a band drawn from one observation is a vertical
+ * cliff, and it drags the window's change with it. Both layers clear this today;
+ * it stays as a guard for a newly-added fund or feed.
+ */
+const MIN_HISTORY = 20;
+
+function stackedLayers(data, market) {
+  return market.layers.filter(l => (data?.[l.key] ?? []).filter(Number.isFinite).length >= MIN_HISTORY);
+}
+
 /** Slice every series to the selected window. */
-function windowed(data, range) {
+function windowed(data, market, range) {
   if (!data?.dates?.length) return null;
   const { dates } = data;
   let from = 0;
@@ -59,51 +153,60 @@ function windowed(data, range) {
     from = dates.findIndex(d => d >= cutoff);
   }
   if (from < 0) from = 0;
-  const cut = arr => arr.slice(from);
-  return {
-    dates: cut(dates),
-    total: cut(data.total),
-    layers: Object.fromEntries(LAYERS.map(l => [l.key, cut(data[l.key] ?? [])])),
-  };
+  const cut = arr => (arr ?? []).slice(from);
+  const shown = stackedLayers(data, market);
+  const layers = Object.fromEntries(shown.map(l => [l.key, cut(data[l.key])]));
+  // Total is summed from the layers actually drawn, so the line always equals
+  // the top of the stack — it can't be inflated by a layer the chart is holding
+  // back for want of history.
+  const total = cut(dates).map((_, i) => shown.reduce((s, l) => s + (layers[l.key][i] ?? 0), 0));
+  return { dates: cut(dates), total, layers, shown };
 }
 
 /**
  * The horizontal markers, derived from the data rather than hard-coded — a line
  * whose number is frozen in source stops meaning anything the day after it's
- * written. Each one is a level the market has actually paid for before.
+ * written. Each is a level this market has actually paid for before.
  */
-function refLines(data, win) {
+function refLines(data, market, win) {
   if (!data?.dates?.length || !win?.dates?.length) return [];
+  const shown = stackedLayers(data, market);
   const at = iso => {
     const i = data.dates.findIndex(d => d >= iso);
-    return i < 0 ? null : data.total[i];
+    return i < 0 ? null : shown.reduce((s, l) => s + (data[l.key][i] ?? 0), 0);
   };
   const year = data.dates[data.dates.length - 1].slice(0, 4);
-  const out = [
+  return [
     { label: `Window start · ${win.dates[0]}`, value: win.total[0], color: '#6b7280', dash: [1, 3] },
     { label: `Year open · ${year}-01`,          value: at(`${year}-01-01`), color: '#b58a2a', dash: [2, 4] },
     { label: `Q2 base · ${year}-04`,            value: at(`${year}-04-01`), color: '#c65d57', dash: [6, 4] },
-  ];
-  return out.filter(r => Number.isFinite(r.value));
+  ].filter(r => Number.isFinite(r.value));
 }
 
-export default function Leverage() {
+export function LeverageKorea()  { return <Leverage marketId="korea" />; }
+export function LeverageTaiwan() { return <Leverage marketId="taiwan" />; }
+
+export default function Leverage({ marketId = 'korea' }) {
+  const [rangeId, setRangeId] = useState('12m');
   const [data, setData]   = useState(null);
   const [error, setError] = useState(null);
-  const [rangeId, setRangeId] = useState('12m');
+
+  const market = MARKETS[marketId];
   const range = RANGES.find(r => r.id === rangeId) ?? RANGES[2];
+  const fmt   = v => (v == null ? '—' : `${v.toFixed(1)}${market.unit}`);
 
+  // Draw the committed five-year snapshot. The live endpoint is still wired and
+  // still correct, but the Mongo it reads from holds only the few weeks the
+  // collector has gathered since these layers were added — so serving it here
+  // would silently truncate the chart. Once the Mongo backfill lands, swap the
+  // seed for the fetch below.
   useEffect(() => {
-    let live = true;
-    fetch('/api/korea-leverage')
-      .then(r => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-      .then(j => { if (live) setData(j); })
-      .catch(e => { if (live) setError(e.message); });
-    return () => { live = false; };
-  }, []);
+    setError(null);
+    setData(rescale(market.seed, market));
+  }, [market]);
 
-  const win  = useMemo(() => windowed(data, range), [data, range]);
-  const refs = useMemo(() => refLines(data, win), [data, win]);
+  const win  = useMemo(() => windowed(data, market, range), [data, market, range]);
+  const refs = useMemo(() => refLines(data, market, win), [data, market, win]);
 
   const chart = useMemo(() => {
     if (!win) return null;
@@ -111,8 +214,8 @@ export default function Leverage() {
     return {
       labels: win.dates.map(long ? monthLabel : dayLabel),
       datasets: [
-        ...LAYERS.map(l => ({
-          label: `${l.label} · ${l.en}`,
+        ...win.shown.map(l => ({
+          label: l.label,
           data: win.layers[l.key],
           backgroundColor: l.color,
           // A 2px gap in the surface colour between stacked bands, so adjacent
@@ -149,7 +252,7 @@ export default function Leverage() {
         })),
       ],
     };
-  }, [win, refs]);
+  }, [win, refs, market]);
 
   const opts = useMemo(() => ({
     responsive: true,
@@ -166,7 +269,7 @@ export default function Leverage() {
         titleFont: { family: "'Inter',sans-serif", size: 11 },
         bodyFont: { family: "'Inter',sans-serif", size: 11 },
         // Reference lines are context, not readings — keep them out of the hover.
-        filter: item => item.datasetIndex <= LAYERS.length,
+        filter: item => item.datasetIndex <= (win?.shown?.length ?? market.layers.length),
         callbacks: { label: c => ` ${c.dataset.label}: ${fmt(c.parsed.y)}` },
       },
     },
@@ -181,87 +284,118 @@ export default function Leverage() {
         // be zero — a cropped axis silently misstates every band's size.
         beginAtZero: true,
         grid: { color: 'rgba(255,255,255,.04)' },
-        ticks: { color: MUTED, callback: v => `${v}조`, font: { size: 10 } },
+        ticks: { color: MUTED, callback: v => `${v}${market.unit}`, font: { size: 10 } },
       },
     },
-  }), []);
+  }), [market, win]);   // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (error) return <div className="empty">Leverage data unavailable: {error}</div>;
-  if (!data || !win) return <div className="empty">Loading Korean leverage data…</div>;
+  const toggles = (
+    <div className="lev-toggles">
+      <div className="view-toggle">
+        {RANGES.map(r => (
+          <button
+            key={r.id}
+            className={`vt-btn${r.id === rangeId ? ' active' : ''}`}
+            onClick={() => setRangeId(r.id)}
+          >{r.label}</button>
+        ))}
+      </div>
+    </div>
+  );
+
+  if (error || !data || !win || !chart) {
+    return (
+      <>
+        <div className="lev-head"><div />{toggles}</div>
+        <div className="empty">
+          {error
+            ? `${market.label} leverage data unavailable: ${error}`
+            : `Loading ${market.label} leverage data…`}
+        </div>
+      </>
+    );
+  }
 
   const { latest, funds, carriedFrom } = data;
-  const first = win.total[0];
-  const chg = first ? ((latest.total - first) / first) * 100 : null;
+  const first  = win.total[0];
+  const latestTotal = win.total[win.total.length - 1];
+  const chg = first ? ((latestTotal - first) / first) * 100 : null;
+
+  // A layer measured but not yet stacked (see MIN_HISTORY) is still real money —
+  // name it and its value rather than letting it vanish from the page.
+  const pending = market.layers.filter(l => !win.shown.some(s => s.key === l.key));
 
   // KOFIA publishes 1–3 days behind the ETF layer; say which layers are showing
   // a carried-forward value rather than letting a flat line imply fresh data.
-  const stale = LAYERS.filter(l => carriedFrom?.[l.key]).map(l => l.en);
+  const stale = market.layers.filter(l => carriedFrom?.[l.key]);
+  const staleFrom = stale.length ? carriedFrom[stale[0].key] : null;
+  const lag = stale.length
+    ? `source publishes 1–3 days late — ${stale.map(l => l.label).join(', ')} carried forward from ${staleFrom}`
+    : 'Same day';
 
   return (
     <>
       <div className="lev-head">
         <div className="lev-stats">
-          <Tile label="Total firepower" value={fmt(latest.total)} sub={`${range.label} ${pct(chg)}`} color={INK} />
-          {LAYERS.map(l => (
-            <Tile key={l.key} label={l.en} value={fmt(latest[l.key])} sub={l.label} color={l.color} />
+          <Tile label="Total firepower" value={fmt(latestTotal)} sub={`${range.label} ${pct(chg)}`} color={INK} />
+          {market.layers.map(l => (
+            <Tile key={l.key} label={l.label} value={fmt(latest[l.key])} sub={tileSub(l, latest, data, fmt)} color={l.color} />
           ))}
         </div>
-        <div className="view-toggle lev-range">
-          {RANGES.map(r => (
-            <button
-              key={r.id}
-              className={`vt-btn${r.id === rangeId ? ' active' : ''}`}
-              onClick={() => setRangeId(r.id)}
-            >{r.label}</button>
-          ))}
-        </div>
+        {toggles}
       </div>
 
       <ChartCard
-        chartId="korea-leverage-stack"
-        title="Korean retail firepower · four leveraged layers"
-        src="KOFIA FreeSIS (증시자금추이 · 신용공여 잔고추이 · CMA잔고 추이) + Daum Finance ETF net assets"
-        srcUrl="https://freesis.kofia.or.kr/"
+        chartId={`${market.id}-leverage-stack`}
+        title={market.title}
+        src={market.src}
+        srcUrl={market.srcUrl}
         freq="Daily"
-        lag={stale.length ? `KOFIA publishes 1–3 days late — ${stale.join(', ')} carried forward from ${carriedFrom[LAYERS.find(l => carriedFrom[l.key]).key]}` : 'Same day'}
+        lag={lag}
         span2
         height={430}
         legend={[
-          ...LAYERS.map(l => [`${l.en} · ${l.label}`, l.color]),
+          ...win.shown.map(l => [l.label, l.color]),
           ['Total', INK],
           ...refs.map(r => [r.label, r.color]),
         ]}
         srcNote={
-          'Trillions of won (조원), one point per trading day. Cash and credit layers are KOFIA daily actuals. ' +
-          'The ETF layer is every 2× fund a Korean retail investor can buy — the two KOSPI200 leveraged funds, plus the ' +
-          'single-stock (Samsung / SK Hynix) leveraged funds that opened on 2026-05-27 — and each fund\'s net assets are ' +
-          'recomputed exactly as closing price × that day\'s shares outstanding, not estimated. CSOP 7709.HK (the HK-listed ' +
-          'SK Hynix 2×) is excluded: no free daily AUM feed exists, and guessing it would put an estimate inside a measured layer.'
+          `In ${market.unitName}, one point per trading day. ${market.note}`
+          + (pending.length
+            ? ` Not yet stacked: ${pending.map(l => `${l.label} (${fmt(latest[l.key])} today)`).join(', ')} — measured daily but with too little history to draw as a band; it joins the stack as collection accumulates.`
+            : '')
         }
       >
         <Line data={chart} options={opts} />
       </ChartCard>
 
       <ChartCard
-        chartId="korea-leverage-funds"
-        title={`Leveraged ETF layer · by fund${data.fundsDate ? ` · ${data.fundsDate}` : ''}`}
-        src="Daum Finance"
-        srcUrl="https://finance.daum.net/domestic/all_etfs"
+        chartId={`${market.id}-leverage-funds`}
+        title={`${market.fundsTitle}${data.fundsDate ? ` · ${data.fundsDate}` : ''}`}
+        src={market.fundsSrc}
+        srcUrl={market.fundsSrcUrl}
         freq="Daily"
         span2
         fillBody
-        height={Math.max(220, 34 + funds.length * 26)}
-        srcNote="Net assets = closing price × shares outstanding, per fund, per day. Single-stock 2× funds are the memory trade (Samsung Electronics / SK Hynix); index 2× funds track KOSPI200."
+        height={Math.max(220, 34 + (funds?.length ?? 0) * 26)}
+        srcNote={market.fundsNote}
       >
         <table className="lev-table">
           <thead>
-            <tr><th>Fund</th><th>Type</th><th className="num">Net assets</th><th className="num">Share of layer</th></tr>
+            <tr>
+              <th>Fund</th>
+              {marketId === 'korea' && <th>Type</th>}
+              <th className="num">Net assets</th>
+              <th className="num">Share of layer</th>
+            </tr>
           </thead>
           <tbody>
-            {funds.map(f => (
+            {(funds ?? []).map(f => (
               <tr key={f.code}>
-                <td>{f.name}</td>
-                <td className="lev-kind">{f.kind === 'single' ? 'Single-stock 2×' : 'Index 2×'}</td>
+                <td>{f.name} <span className="lev-code">{f.code}</span></td>
+                {marketId === 'korea' && (
+                  <td className="lev-kind">{f.kind === 'single' ? 'Single-stock 2×' : 'Index 2×'}</td>
+                )}
                 <td className="num">{fmt(f.aum)}</td>
                 <td className="num">{latest.etf ? `${((f.aum / latest.etf) * 100).toFixed(1)}%` : '—'}</td>
               </tr>
@@ -271,6 +405,21 @@ export default function Leverage() {
       </ChartCard>
     </>
   );
+}
+
+/**
+ * What the tile says under the number. Taiwan's margin is two markets summed, and
+ * its ETF layer is one issuer out of several — both facts belong next to the
+ * figure, not only in the footnote.
+ */
+function tileSub(layer, latest, data, fmt) {
+  if (layer.key === 'margin' && Number.isFinite(latest.marginOtc)) {
+    return `listed ${fmt(latest.marginListed)} + OTC ${fmt(latest.marginOtc)}`;
+  }
+  if (layer.key === 'etf' && data.etfMarket?.total > 0 && Number.isFinite(latest.etf)) {
+    return `${((latest.etf / data.etfMarket.total) * 100).toFixed(0)}% of all listed 2× funds`;
+  }
+  return latest.date;
 }
 
 function Tile({ label, value, sub, color }) {

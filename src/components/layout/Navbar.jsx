@@ -52,7 +52,7 @@ const PRICING_VIEWS = new Set(['pricing-memory', 'pricing-gpu', 'pricing-cpu', '
 const SENTIMENT_VIEWS = new Set(['sentiment']);
 const SOURCES_VIEWS   = new Set(['sources']);
 const TRANSCRIPT_VIEWS = new Set(['transcripts']);
-const LEVERAGE_VIEWS   = new Set(['leverage']);
+const LEVERAGE_VIEWS   = new Set(['leverage-korea', 'leverage-taiwan']);
 
 export default function Navbar({ onNavigate, currentView }) {
   const { tableMode, setTableMode } = useUI();
@@ -120,7 +120,7 @@ export default function Navbar({ onNavigate, currentView }) {
         </button>
         <button
           className={`nlink${isLeverage ? ' active' : ''}`}
-          onClick={() => onNavigate('leverage')}
+          onClick={() => onNavigate('leverage-korea')}
         >
           Leverage
         </button>

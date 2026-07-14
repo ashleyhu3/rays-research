@@ -16,6 +16,7 @@
     "backfill:nand": "node --env-file=.env server/scripts/backfillTrendforcePrice.js nand",
     "backfill:tft-lcd": "node --env-file=.env server/scripts/backfillTrendforcePrice.js tft-lcd",
     "backfill:korea-leverage": "node --env-file=.env server/scripts/backfillKoreaLeverage.js",
+    "backfill:taiwan-leverage": "node --env-file=.env server/scripts/backfillTaiwanLeverage.js",
     "backfill:aws-spot": "node --env-file=.env server/scripts/backfillAwsSpot.js",
     "backfill:cpu-spot": "node --env-file=.env server/scripts/backfillCpuSpot.js",
     "backfill:transcripts:alpha": "node --env-file=.env server/scripts/backfillAlphaVantageTranscripts.js",

@@ -1,12 +1,17 @@
 /**
- * Korean retail firepower — four leveraged layers of household money in the
+ * Korean retail firepower — the leveraged layers of household money in the
  * KOSPI/KOSDAQ, in trillions of won (조원), one point per trading day.
  *
- *   deposit  투자자예탁금        cash parked at brokers, ready to buy
- *   cma      CMA 잔고           sweep accounts (the innermost, least-levered layer)
- *   margin   신용거래융자        broker margin loans
- *   etf      레버리지 ETF 순자산  2× ETFs (index + the single-stock ones opened up
- *                               in May 2026, which now dominate the layer)
+ *   margin      신용거래융자        broker margin loans
+ *   collateral  예탁증권 담보융자    loans against pledged securities — the quieter
+ *                                  cousin of margin: same borrowing, but the
+ *                                  cash can leave the account
+ *   etf         레버리지 ETF 순자산  2× ETFs (index + the single-stock ones opened
+ *                                  up in May 2026, which now dominate the layer)
+ *
+ * Only borrowed money is charted. The cash layers KOFIA also publishes
+ * (투자자예탁금 broker deposits, CMA sweep balances) are not leverage — they are
+ * dry powder — and were removed from the stack.
  *
  * Both sources are anonymous JSON APIs — no key, no login.
  *
@@ -38,15 +43,15 @@ const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
 
 const KOFIA_URL = 'https://freesis.kofia.or.kr/meta/getMetaDataList.do';
 
-// OBJ_NM → the one column we want out of each table.
-const KOFIA_SERIES = {
-  deposit: { obj: 'STATSCU0100000060BO', col: 'TMPV2', name: '증시자금추이 · 투자자예탁금' },
-  margin:  { obj: 'STATSCU0100000070BO', col: 'TMPV2', name: '신용공여 잔고추이 · 신용거래융자(전체)' },
-  cma:     { obj: 'STATSCU0100000110BO', col: 'TMPV7', name: '운용대상별 CMA잔고 추이 · 합계', extra: { tmpV59: '' } },
+// Both credit layers come out of one table (신용공여 잔고 추이) — its columns are
+// 신용거래융자(전체) and, at the far right, 예탁증권 담보융자.
+const KOFIA_MARGIN_TABLE = {
+  obj: 'STATSCU0100000070BO',
+  cols: { margin: 'TMPV2', collateral: 'TMPV9' },
 };
 
-async function kofiaSeries(key, from, to) {
-  const spec = KOFIA_SERIES[key];
+async function kofiaCredit(from, to) {
+  const spec = KOFIA_MARGIN_TABLE;
   const res = await fetch(KOFIA_URL, {
     method: 'POST',
     headers: {
@@ -62,21 +67,23 @@ async function kofiaSeries(key, from, to) {
         tmpV46: to,
         tmpV40: '01',        // unit divisor — "01" → divide by 1 → raw won
         tmpV41: '01',
-        ...(spec.extra ?? {}),
       },
     }),
     signal: AbortSignal.timeout(60000),
   });
-  if (!res.ok) throw new Error(`KOFIA ${key} HTTP ${res.status}`);
+  if (!res.ok) throw new Error(`KOFIA credit HTTP ${res.status}`);
   const json = await res.json();
-  const out = {};
+  const out = { margin: {}, collateral: {} };
   for (const row of json.ds1 ?? []) {
-    const day = String(row.TMPV1 ?? '');
-    const won = row[spec.col];
-    if (!/^\d{8}$/.test(day) || !Number.isFinite(won)) continue;
-    out[`${day.slice(0, 4)}-${day.slice(4, 6)}-${day.slice(6)}`] = won / TRILLION;
+    const raw = String(row.TMPV1 ?? '');
+    if (!/^\d{8}$/.test(raw)) continue;
+    const day = `${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6)}`;
+    for (const [key, col] of Object.entries(spec.cols)) {
+      const won = row[col];
+      if (Number.isFinite(won)) out[key][day] = won / TRILLION;
+    }
   }
-  if (!Object.keys(out).length) throw new Error(`KOFIA ${key} returned no rows`);
+  if (!Object.keys(out.margin).length) throw new Error('KOFIA credit returned no rows');
   return out;
 }
 
@@ -101,11 +108,33 @@ async function daumJson(url) {
   return res.json();
 }
 
+// Daum only publishes the Korean fund name. The dashboard reads in English, so
+// each name is rendered from its parts (the issuer brand is left as-is — KODEX
+// and TIGER are the brands, not Korean words).
+const TERMS = [
+  [/SK하이닉스/g, 'SK Hynix'],
+  [/삼성전자/g, 'Samsung Electronics'],
+  [/선물/g, 'Futures'],
+  [/단일종목레버리지/g, 'Single-Stock 2×'],
+  [/레버리지/g, 'KOSPI200 2×'],
+];
+
+function englishName(name) {
+  let out = name;
+  for (const [re, en] of TERMS) out = out.replace(re, ` ${en} `);
+  return out.replace(/\s+/g, ' ').trim();
+}
+
 async function leverageUniverse() {
   const json = await daumJson('https://finance.daum.net/api/etfs?page=1&perPage=1000&fieldName=marketCap&order=desc&pagination=true');
   const funds = (json.data ?? [])
     .filter(r => isSingleStock(r.name) || INDEX_LEVERAGE.has(r.symbolCode))
-    .map(r => ({ code: r.symbolCode, name: r.name, kind: isSingleStock(r.name) ? 'single' : 'index' }));
+    .map(r => ({
+      code: r.symbolCode,
+      name: englishName(r.name),
+      nameKo: r.name,
+      kind: isSingleStock(r.name) ? 'single' : 'index',
+    }));
   if (!funds.length) throw new Error('Daum ETF list returned no leveraged funds');
   return funds;
 }
@@ -165,9 +194,8 @@ async function getKoreaLeverage(days = 30) {
   const start = new Date(today.getTime() - days * 86400000);
   const from = iso(start);
 
-  const [kofia, funds] = await Promise.all([
-    Promise.all(Object.keys(KOFIA_SERIES).map(k => kofiaSeries(k, compact(from), compact(iso(today)))))
-      .then(([deposit, margin, cma]) => ({ deposit, margin, cma })),
+  const [credit, funds] = await Promise.all([
+    kofiaCredit(compact(from), compact(iso(today))),
     leverageUniverse(),
   ]);
 
@@ -175,7 +203,7 @@ async function getKoreaLeverage(days = 30) {
 
   const history = loadHistory();
   const days_ = new Set([
-    ...Object.keys(kofia.deposit), ...Object.keys(kofia.margin), ...Object.keys(kofia.cma),
+    ...Object.keys(credit.margin), ...Object.keys(credit.collateral),
     ...fundSeries.flatMap(s => Object.keys(s)),
   ]);
 
@@ -192,12 +220,14 @@ async function getKoreaLeverage(days = 30) {
 
     history[day] = {
       ...prev,
-      ...(Number.isFinite(kofia.deposit[day]) ? { deposit: round(kofia.deposit[day]) } : {}),
-      ...(Number.isFinite(kofia.cma[day])     ? { cma:     round(kofia.cma[day])     } : {}),
-      ...(Number.isFinite(kofia.margin[day])  ? { margin:  round(kofia.margin[day])  } : {}),
+      ...(Number.isFinite(credit.margin[day])     ? { margin:     round(credit.margin[day])     } : {}),
+      ...(Number.isFinite(credit.collateral[day]) ? { collateral: round(credit.collateral[day]) } : {}),
       ...(Number.isFinite(etfDay) ? { etf: etfDay, funds: { ...(prev.funds ?? {}), ...perFund } } : {}),
     };
   }
+  // Names live alongside the series so a read-only assemble (no scrape) can
+  // still label the fund table.
+  history.names = Object.fromEntries(funds.map(f => [f.code, { name: f.name, kind: f.kind }]));
   saveHistory(history);
 
   return assemble(history, funds);
@@ -215,13 +245,28 @@ function round(v) { return Math.round(v * 100) / 100; }
  */
 function assemble(history, funds = []) {
   const dates = Object.keys(history).filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d)).sort();
-  const layers = { deposit: [], cma: [], margin: [], etf: [] };
+  const layers = { collateral: [], margin: [], etf: [] };
   const last = {};
-  const carried = { deposit: null, cma: null, margin: null, etf: null };
+  const carried = { collateral: null, margin: null, etf: null };
+
+  // Rebuild the ETF layer fund-by-fund rather than trusting the stored daily
+  // total: if a fund is missing from a day's scrape, summing only the funds that
+  // did report invents a drop in the layer that is really a data gap. Carry each
+  // fund's own last value, and count a fund only from the day it first appears —
+  // so a fund that hasn't listed yet reads as absent, not as zero.
+  const etfByDay = {};
+  const lastAum = {};
+  for (const day of dates) {
+    for (const [code, aum] of Object.entries(history[day]?.funds ?? {})) {
+      if (Number.isFinite(aum)) lastAum[code] = aum;
+    }
+    const codes = Object.keys(lastAum);
+    if (codes.length) etfByDay[day] = round(codes.reduce((s, c) => s + lastAum[c], 0));
+  }
 
   for (const day of dates) {
     for (const key of Object.keys(layers)) {
-      const v = history[day]?.[key];
+      const v = key === 'etf' ? etfByDay[day] : history[day]?.[key];
       if (Number.isFinite(v)) { last[key] = v; carried[key] = null; }
       else if (Number.isFinite(last[key]) && carried[key] == null) carried[key] = day;
       layers[key].push(Number.isFinite(last[key]) ? last[key] : null);
@@ -229,14 +274,14 @@ function assemble(history, funds = []) {
   }
 
   const total = dates.map((_, i) =>
-    ['deposit', 'cma', 'margin', 'etf'].reduce((s, k) => s + (layers[k][i] ?? 0), 0));
+    ['collateral', 'margin', 'etf'].reduce((s, k) => s + (layers[k][i] ?? 0), 0));
 
-  // Latest per-fund breakdown, biggest first — the tiles above the chart.
+  // Latest per-fund breakdown, biggest first — the tiles above the chart. Uses
+  // each fund's last known value, matching how the layer itself is summed.
   const lastDay = [...dates].reverse().find(d => history[d]?.funds);
-  const perFund = history[lastDay]?.funds ?? {};
-  const byName = Object.fromEntries(funds.map(f => [f.code, f]));
-  const fundRows = Object.entries(perFund)
-    .map(([code, aum]) => ({ code, name: byName[code]?.name ?? code, kind: byName[code]?.kind ?? 'single', aum }))
+  const byName = { ...(history.names ?? {}), ...Object.fromEntries(funds.map(f => [f.code, f])) };
+  const fundRows = Object.entries(lastAum)
+    .map(([code, aum]) => ({ code, name: byName[code]?.name ?? code, kind: byName[code]?.kind ?? 'single', aum: round(aum) }))
     .sort((a, b) => b.aum - a.aum);
 
   return {

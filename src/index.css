@@ -1364,7 +1364,8 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
 .lev-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
 .lev-tile-value { font-size: 20px; font-weight: 600; color: var(--text); margin-top: 4px; font-variant-numeric: tabular-nums; }
 .lev-tile-sub { font-size: 11px; color: var(--sec); margin-top: 2px; }
-.lev-range { flex-shrink: 0; }
+.lev-toggles { display: flex; gap: 8px; flex-shrink: 0; }
+.lev-code { color: var(--sec); font-size: 11px; margin-left: 6px; font-variant-numeric: tabular-nums; }
 .lev-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .lev-table th {
   text-align: left; font-weight: 500; font-size: 11px; color: var(--sec);

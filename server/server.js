@@ -77,6 +77,7 @@ app.get('/api/sentiment',         cachedRoute('sentiment',        s.sentiment));
 app.get('/api/web-traffic',       cachedRoute('webTraffic',       s.webTraffic));
 app.get('/api/customs-drones',    cachedRoute('customsDrones',    s.customsDrones));
 app.get('/api/korea-leverage',    cachedRoute('koreaLeverage',    s.koreaLeverage));
+app.get('/api/taiwan-leverage',   cachedRoute('taiwanLeverage',   s.taiwanLeverage));
 
 // Keyword frequency search — whole-word matches across the StockTwits messages
 // in Mongo (committed-CSV fallback for keyless dev), as trailing-30-day counts
@@ -613,6 +614,7 @@ const STORAGE_BLOBS = [
   { name: 'shortInterestHistory', file: path.join(DATA_DIR, 'shortInterestHistory.json') },
   { name: 'sentimentData',  file: path.join(DATA_DIR, 'sentiment.json') },
   { name: 'koreaLeverageHistory', file: path.join(DATA_DIR, 'koreaLeverageHistory.json') },
+  { name: 'taiwanLeverageHistory', file: path.join(DATA_DIR, 'taiwanLeverageHistory.json') },
   { name: 'dailyOptionsReport', file: path.join(DATA_DIR, 'dailyOptionsReport.json') },
   // Settled prior-cycle chain volume behind the report charts. Scraped once per
   // expiration and reused, so the daily job only scrapes today.

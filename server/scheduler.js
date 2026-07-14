@@ -29,6 +29,7 @@ const scrapers = {
   webTraffic:       () => require('./scrapers/webTraffic').getWebTrafficData(),
   customsDrones:    () => require('./scrapers/customsTrade').getDroneExports(),
   koreaLeverage:    () => require('./scrapers/koreaLeverage').getKoreaLeverage(),
+  taiwanLeverage:   () => require('./scrapers/taiwanLeverage').getTaiwanLeverage(),
 };
 
 // TTLs match each source's natural update frequency.
@@ -62,6 +63,7 @@ const TTL = {
   webTraffic:    24 * 3600000,  // daily   — SimilarWeb monthly visit estimates via Apify; one snapshot per day
   customsDrones: 24 * 3600000,  // daily   — Taiwan customs UAV exports publish monthly; daily poll picks up new months
   koreaLeverage:  6 * 3600000,  // 6-hourly — ETF net assets move with the KRX session; KOFIA publishes once, 1–3 days late
+  taiwanLeverage: 6 * 3600000,  // 6-hourly — TWSE posts the margin balance late evening; the ETF feed is a live snapshot
 };
 
 // Hard cap per scraper so one hung source can never wedge a refresh
@@ -127,7 +129,7 @@ function setup() {
   // Every 6 hours: social signals and business data updated throughout the day
   // 12:00 UTC (21:00 KST) is the run that lands after the KRX close, so the
   // day's ETF net assets settle on the closing price rather than an intraday one.
-  cron.schedule('0 */6 * * *', () => refreshAll(['docker', 'openrouterRanks', 'dram', 'nand', 'aws', 'cpu', 'koreaLeverage']));
+  cron.schedule('0 */6 * * *', () => refreshAll(['docker', 'openrouterRanks', 'dram', 'nand', 'aws', 'cpu', 'koreaLeverage', 'taiwanLeverage']));
 
   // Daily at 03:00 UTC: aggregate stats whose sources only publish once per day
   cron.schedule('0 3 * * *', () => refreshAll(['gpu', 'tftLcd', 'tpu', 'epochRevenue', 'sentiment', 'pypi', 'github', 'eia', 'mops', 'githubCommits', 'npm', 'huggingface', 'mcp', 'sec', 'webTraffic', 'customsDrones']));

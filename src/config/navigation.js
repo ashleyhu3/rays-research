@@ -68,9 +68,11 @@ export const NAV_SECTIONS = [
   },
   {
     label: 'Leverage',
-    mode: 'tool',
+    sectorId: 'leverage',
+    mode: 'leverage',
     items: [
-      { id: 'leverage', label: 'Korean retail firepower' },
+      { id: 'leverage-korea',  label: 'Korea'  },
+      { id: 'leverage-taiwan', label: 'Taiwan' },
     ],
   },
   {
@@ -155,7 +157,8 @@ export const VIEW_META = {
   options:            { title: 'OPTIONS FLOW' },
   alerts:             { title: 'DAILY OPTIONS REPORT' },
   sentiment:          { title: 'MARKETS — SENTIMENT & OPTIONS' },
-  leverage:           { title: 'LEVERAGE — KOREAN RETAIL FIREPOWER' },
+  'leverage-korea':   { title: 'LEVERAGE — KOREAN RETAIL FIREPOWER' },
+  'leverage-taiwan':  { title: 'LEVERAGE — TAIWAN RETAIL FIREPOWER' },
   transcripts:        { title: 'EARNINGS TRANSCRIPT AGENT' },
   sources:            { title: 'DATA VALIDITY TERMINAL' },
 };

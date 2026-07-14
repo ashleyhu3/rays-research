@@ -13,23 +13,32 @@
  */
 const path = require('path');
 const storage = require('../storage');
+const snapshotStore = require('../snapshotStore');
 const { getKoreaLeverage } = require('../scrapers/koreaLeverage');
 
 const DAYS = Number(process.argv[2]) || 1830;
-const BLOBS = [{ name: 'koreaLeverageHistory', file: path.join(__dirname, '..', 'data', 'koreaLeverageHistory.json') }];
+const BLOBS = [
+  { name: 'koreaLeverageHistory', file: path.join(__dirname, '..', 'data', 'koreaLeverageHistory.json') },
+  // The server seeds its request cache from latestSnapshots on boot, so a backfill
+  // that only rewrites history leaves the API serving the pre-backfill payload —
+  // including its old shape, which is how a newly added layer goes missing from
+  // the chart while the data sits correct on disk. Refresh the snapshot too.
+  { name: 'latestSnapshots', file: path.join(__dirname, '..', 'data', 'latestSnapshots.json') },
+]
 
 async function main() {
   await storage.init(BLOBS);
   console.log(`[korea-leverage] storage mode: ${storage.status().mode} — backfilling ${DAYS} days…`);
 
   const data = await getKoreaLeverage(DAYS);
+  snapshotStore.put('koreaLeverage', data);
 
   await storage.flush();
   await storage.close();
 
   const { dates, latest, funds } = data;
   console.log(`[korea-leverage] ${dates.length} trading days: ${dates[0]} → ${dates[dates.length - 1]}`);
-  console.log(`[korea-leverage] latest ${latest.date}: deposit ${latest.deposit} · CMA ${latest.cma} · margin ${latest.margin} · ETF ${latest.etf} → total ${latest.total} 조원`);
+  console.log(`[korea-leverage] latest ${latest.date}: margin ${latest.margin} · ETF ${latest.etf} → total ${latest.total} 조원`);
   console.log(`[korea-leverage] ${funds.length} leveraged ETFs, largest: ${funds.slice(0, 3).map(f => `${f.name} ${f.aum}`).join(' · ')}`);
 }
 
