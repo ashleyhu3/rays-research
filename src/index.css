@@ -1346,3 +1346,31 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
   .or-table th { color: #6b7280 !important; border-bottom: 1px solid #e5e7eb !important; }
   .or-table td, .or-table tr:last-child td { color: #374151 !important; border-bottom: 1px solid #f3f4f6 !important; }
 }
+
+/* ── Leverage page (Korean retail firepower) ───────────────────────── */
+.lev-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 16px; margin-bottom: 14px; flex-wrap: wrap;
+}
+.lev-stats { display: flex; gap: 10px; flex-wrap: wrap; }
+.lev-tile {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 6px; padding: 10px 14px; min-width: 132px;
+}
+.lev-tile-label {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; color: var(--sec); text-transform: uppercase; letter-spacing: .04em;
+}
+.lev-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+.lev-tile-value { font-size: 20px; font-weight: 600; color: var(--text); margin-top: 4px; font-variant-numeric: tabular-nums; }
+.lev-tile-sub { font-size: 11px; color: var(--sec); margin-top: 2px; }
+.lev-range { flex-shrink: 0; }
+.lev-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.lev-table th {
+  text-align: left; font-weight: 500; font-size: 11px; color: var(--sec);
+  text-transform: uppercase; letter-spacing: .04em;
+  padding: 6px 10px; border-bottom: 1px solid var(--border);
+}
+.lev-table td { padding: 6px 10px; color: var(--text); border-bottom: 1px solid rgba(255,255,255,.04); }
+.lev-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.lev-table .lev-kind { color: var(--sec); white-space: nowrap; }

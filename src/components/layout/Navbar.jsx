@@ -52,6 +52,7 @@ const PRICING_VIEWS = new Set(['pricing-memory', 'pricing-gpu', 'pricing-cpu', '
 const SENTIMENT_VIEWS = new Set(['sentiment']);
 const SOURCES_VIEWS   = new Set(['sources']);
 const TRANSCRIPT_VIEWS = new Set(['transcripts']);
+const LEVERAGE_VIEWS   = new Set(['leverage']);
 
 export default function Navbar({ onNavigate, currentView }) {
   const { tableMode, setTableMode } = useUI();
@@ -66,7 +67,8 @@ export default function Navbar({ onNavigate, currentView }) {
   const isSentiment = SENTIMENT_VIEWS.has(currentView);
   const isSources   = SOURCES_VIEWS.has(currentView);
   const isTranscripts = TRANSCRIPT_VIEWS.has(currentView);
-  const isDemand    = !isChat && !isSupply && !isInfra && !isOptions && !isAlerts && !isPricing && !isSentiment && !isSources && !isTranscripts;
+  const isLeverage  = LEVERAGE_VIEWS.has(currentView);
+  const isDemand    = !isChat && !isSupply && !isInfra && !isOptions && !isAlerts && !isPricing && !isSentiment && !isSources && !isTranscripts && !isLeverage;
 
   const title = loading
     ? 'Updating live data…'
@@ -115,6 +117,12 @@ export default function Navbar({ onNavigate, currentView }) {
           onClick={() => onNavigate('alerts')}
         >
           Alerts
+        </button>
+        <button
+          className={`nlink${isLeverage ? ' active' : ''}`}
+          onClick={() => onNavigate('leverage')}
+        >
+          Leverage
         </button>
         <button
           className={`nlink${isTranscripts ? ' active' : ''}`}

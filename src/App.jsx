@@ -47,6 +47,7 @@ import Sentiment from './pages/sentiment/Sentiment';
 import Alerts, { OptionsReportTitle, OptionsReportControls } from './pages/alerts/Alerts';
 import { OptionsReportProvider } from './context/OptionsReportContext';
 import DataValidity from './pages/data-validity/DataValidity';
+import Leverage from './pages/leverage/Leverage';
 import Transcripts from './pages/transcripts/Transcripts';
 // Source-specific signal pages
 import PyPI          from './pages/sources/PyPI';
@@ -111,6 +112,7 @@ const VIEW_COMPONENTS = {
   'alerts':           Alerts,
   'sentiment':        Sentiment,
   'sources':          DataValidity,
+  'leverage':         Leverage,
   'transcripts':      Transcripts,
   'demand-openai':    DemandOpenAI,
   'demand-anthropic': DemandAnthropic,
@@ -146,7 +148,7 @@ export default function App() {
   const sectorId = SECTOR_OVERVIEW_IDS[currentView] ?? null;
   const ViewComponent = sectorId ? null : VIEW_COMPONENTS[currentView];
   const isAlerts = currentView === 'alerts';
-  const showSidebar = currentView !== 'options' && currentView !== 'chat' && currentView !== 'sentiment' && currentView !== 'sources' && currentView !== 'transcripts' && currentView !== 'alerts';
+  const showSidebar = currentView !== 'options' && currentView !== 'chat' && currentView !== 'sentiment' && currentView !== 'sources' && currentView !== 'transcripts' && currentView !== 'alerts' && currentView !== 'leverage';
 
   return (
     <DashboardProvider>

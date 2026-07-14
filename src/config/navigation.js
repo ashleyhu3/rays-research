@@ -67,6 +67,13 @@ export const NAV_SECTIONS = [
     ],
   },
   {
+    label: 'Leverage',
+    mode: 'tool',
+    items: [
+      { id: 'leverage', label: 'Korean retail firepower' },
+    ],
+  },
+  {
     label: 'Transcripts',
     mode: 'tool',
     items: [
@@ -148,6 +155,7 @@ export const VIEW_META = {
   options:            { title: 'OPTIONS FLOW' },
   alerts:             { title: 'DAILY OPTIONS REPORT' },
   sentiment:          { title: 'MARKETS — SENTIMENT & OPTIONS' },
+  leverage:           { title: 'LEVERAGE — KOREAN RETAIL FIREPOWER' },
   transcripts:        { title: 'EARNINGS TRANSCRIPT AGENT' },
   sources:            { title: 'DATA VALIDITY TERMINAL' },
 };
