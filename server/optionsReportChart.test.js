@@ -134,6 +134,64 @@ test('each series is identifiable without colour', () => {
   assert.match(svg, /next call 7\/16/);
 });
 
+// The bars, as emitted: the rounded rects of the plot. The legend swatch is square
+// (rx="2"), so rx="4" picks out the bars alone.
+function barsOf(svg) {
+  return [...svg.matchAll(/<rect x="([\d.]+)" y="([\d.]+)" width="[\d.]+" height="([\d.]+)" rx="4"/g)]
+    .map(m => ({ x: +m[1], y: +m[2], height: +m[3] }));
+}
+
+test('bars stay readable when the whole chain dwarfs the top three', () => {
+  // INTC, 2026-07-13: the top three strikes are a thin slice of a chain spread across
+  // far more strikes, so the comparison lines run ~20x the bars. Sharing one y-scale
+  // flattened every bar onto the axis, and ten real sessions read as ten missing ones.
+  const svg = buildVolumeChartSvg(chartWith(
+    [1900, 795, 547, 1600, 1100, 12800, 11200, 7600, 44900, 44900],
+    [13200, 32800, 41500, 20800, 23900, 96800, 36500, 44000, 37600, 45700],
+    [11300, 21100, 36200, 39700, 34100, 115000, 39000, 57700, 44600, 39000],
+  ));
+
+  const bars = barsOf(svg);
+  assert.equal(bars.length, 10, 'every session gets a bar');
+
+  // The bars are scaled among themselves, so the day's peak fills its band and the
+  // quiet sessions keep a height that reflects their volume rather than a floor.
+  const tallest = Math.max(...bars.map(bar => bar.height));
+  const distinct = new Set(bars.map(bar => bar.height.toFixed(1)));
+  assert.ok(tallest > 150, `tallest bar should fill its band, got ${tallest}`);
+  assert.ok(distinct.size >= 7, `bars should be distinguishable, got ${distinct.size} heights`);
+
+  // Bars and lines never overlap, so a point can't be misread as sitting "above" a bar
+  // it shares no scale with.
+  const markers = readLayout(svg).markers;
+  const barTop = Math.min(...bars.map(bar => bar.y));
+  assert.ok(
+    Math.max(...markers.map(m => m.y)) < barTop,
+    'every comparison point sits clear of the bar band',
+  );
+  assert.match(svg, /lines: own scale/);
+  assertNoCollisions(svg, 'chain dwarfs bars');
+});
+
+test('a session the prior chain never traded still gets its bar', () => {
+  const chart = chartWith(
+    [0, 0, 0, 0, 81, 1600, 3400, 2500, 10400, 10300],
+    [], [11300, 21100, 36200, 39700, 34100, 115000, 39000, 57700, 44600, 39000],
+  );
+  chart.priors = chart.priors.filter(prior => prior.key === 'year');
+  // The year chain only traded the back half of the window — the front half of the
+  // line has no points at all, and must not take the bars down with it.
+  chart.priors[0].points = chart.priors[0].points.slice(5);
+
+  const svg = buildVolumeChartSvg(chart);
+  const bars = barsOf(svg);
+  assert.equal(bars.length, 10, 'a bar per session, with or without a point above it');
+  // The four leading zeros are real zeros, not absent data: they sit at the floor,
+  // while every traded session rises above it.
+  assert.ok(bars.slice(0, 4).every(bar => bar.height === 5), 'zero sessions sit at the floor');
+  assert.ok(bars[8].height > 50, 'a busy session is drawn at full scale');
+});
+
 test('a ticker with no earnings alignment still renders the year line alone', () => {
   const chart = chartWith(
     [1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000],

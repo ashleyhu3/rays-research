@@ -829,7 +829,8 @@ const LABEL_TOP = 40;
 // separates a marker from whatever sits behind it — are left to the host
 // stylesheet. Series colours stay inline: they are legible on either surface.
 // The web app's dark values live alongside `.or-chart` in src/index.css.
-const CHART_CSS_LIGHT = '.vc-muted{fill:#6b7280}.vc-faint{fill:#8b93a1}.vc-ring{stroke:#ffffff}';
+const CHART_CSS_LIGHT = '.vc-muted{fill:#6b7280}.vc-faint{fill:#8b93a1}.vc-ring{stroke:#ffffff}'
+  + '.vc-seam{stroke:#d5d8dd}';
 
 function markerShape(marker, x, y, color, title = '') {
   const attrs = `fill="${color}" class="vc-ring" stroke-width="2"`;
@@ -881,9 +882,17 @@ function stackLabels(entries, markers, fontSize) {
 }
 
 // Bars (top-3 contracts, this cycle) and the comparison lines (each the whole chain
-// at the equivalent point of an earlier earnings cycle) are all contract counts, so
-// they share one y-scale — the lines therefore usually sit well above the bars,
-// which is the honest reading: three strikes are a slice of what the full chain did.
+// at the equivalent point of an earlier earnings cycle) are both contract counts —
+// but they count very different things. For a name whose flow is spread thin across
+// strikes, the chain runs tens of times the top three (INTC: a 3.3k bar against a
+// 96.8k line), and on one shared scale that pins every bar flat to the axis, where a
+// real session reads as a missing one. So each gets its own scale in its own band:
+// lines in the top of the plot, bars below, never overlapping. The comparison the
+// chart makes is shape against shape — is this cycle's ramp steeper than the last
+// one's — and that survives the rebasing; a bar's height was never comparable with a
+// line's anyway. The legend says the scales are separate so nobody reads them as one.
+const BAR_BAND = 0.62;   // share of the plot the bars get, measured up from the axis
+const LINE_BAND = 0.32;  // share the lines get, measured down from the top
 function volumeChartBody(chart, width, height, fonts) {
   const rows = chart?.rows ?? [];
   if (!rows.length) {
@@ -894,25 +903,42 @@ function volumeChartBody(chart, width, height, fonts) {
   const chartWidth = width - margin.left - margin.right;
   const chartHeight = height - margin.top - margin.bottom;
   const priors = chart.priors ?? [];
-  const maxValue = Math.max(
-    1,
-    ...rows.map(row => row.volume ?? 0),
-    ...priors.flatMap(prior => prior.points.map(point => point.volume ?? 0)),
-  );
+  const baseline = margin.top + chartHeight;
+
   const step = chartWidth / rows.length;
   const barWidth = Math.min(86, step * 0.7);
   const centerX = index => margin.left + (step * index) + (step / 2);
-  const scaleY = value => margin.top + chartHeight - ((value / maxValue) * chartHeight);
+
+  // The lines are scaled and placed first: whether any resolved decides how much of
+  // the plot the bars get. With no line to make room for, the bars take all of it.
+  const barIndexByDate = new Map(rows.map((row, index) => [row.date, index]));
+  const priorMax = Math.max(1, ...priors.flatMap(prior => prior.points.map(point => point.volume ?? 0)));
+  const lineFloor = margin.top + (chartHeight * LINE_BAND);
+  const scaleY = value => lineFloor - ((value / priorMax) * (chartHeight * LINE_BAND));
+
+  const series = priors.map(prior => ({
+    ...prior,
+    coords: prior.points.flatMap(point => {
+      const index = barIndexByDate.get(point.barDate);
+      if (index === undefined) return [];
+      return { ...point, x: centerX(index), y: scaleY(point.volume ?? 0) };
+    }),
+  })).filter(prior => prior.coords.length);
+
+  // Every session gets a bar, whether or not a line has a point above it — a session
+  // the prior chain never traded says nothing about what these strikes did today.
+  const barMax = Math.max(1, ...rows.map(row => row.volume ?? 0));
+  const barBand = chartHeight * (series.length ? BAR_BAND : 1);
 
   const barGeom = rows.map((row, index) => {
     const value = row.volume ?? 0;
-    const barHeight = value > 0 ? Math.max(5, (value / maxValue) * chartHeight) : 5;
+    const barHeight = value > 0 ? Math.max(5, (value / barMax) * barBand) : 5;
     return {
       value,
       isToday: index === rows.length - 1,
       date: row.date,
       x: centerX(index) - (barWidth / 2),
-      top: margin.top + chartHeight - barHeight,
+      top: baseline - barHeight,
       height: barHeight,
       center: centerX(index),
     };
@@ -922,18 +948,6 @@ function volumeChartBody(chart, width, height, fonts) {
     <rect x="${bar.x.toFixed(2)}" y="${bar.top.toFixed(2)}" width="${barWidth.toFixed(2)}" height="${bar.height.toFixed(2)}" rx="4" fill="${bar.isToday ? chart.color : chart.softColor}"></rect>
     <text x="${bar.center.toFixed(2)}" y="${height - 16}" text-anchor="middle" ${bar.isToday ? `fill="${chart.color}"` : 'class="vc-faint"'} font-family="${MONO}" font-size="${fonts.date}" font-weight="${bar.isToday ? '700' : '500'}">${fmtDateShort(bar.date)}</text>
   `).join('');
-
-  // Each point carries the bar it belongs to, so a cycle with only some sessions
-  // covered still plots those markers above the right bars.
-  const barIndexByDate = new Map(rows.map((row, index) => [row.date, index]));
-  const series = priors.map(prior => ({
-    ...prior,
-    coords: prior.points.flatMap(point => {
-      const bar = barGeom[barIndexByDate.get(point.barDate)];
-      if (!bar) return [];
-      return { ...point, x: bar.center, y: scaleY(point.volume ?? 0) };
-    }),
-  })).filter(prior => prior.coords.length);
 
   const lines = series.map(prior => `
     <path d="${prior.coords.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(' ')}"
@@ -1003,21 +1017,33 @@ function volumeChartBody(chart, width, height, fonts) {
     cursor += 33 + textWidth(label) + 26;
   }
 
-  // Says what the lines are aligned on, so the chart explains its own comparison:
-  // every point sits the same number of sessions from its cycle's call as the bar
-  // beneath it sits from the upcoming one. It shares the legend's row, so it gives up
-  // the explanation and keeps the date when the legend has already used the width.
+  // Says what the lines are aligned on and that they carry their own scale, so the
+  // chart explains its own comparison: every point sits the same number of sessions
+  // from its cycle's call as the bar beneath it sits from the upcoming one, and a
+  // point's height is only ever readable against the other points. The note shares the
+  // legend's row, so it drops detail from the front as the legend eats the width — the
+  // scale caveat is the last thing given up, being the one that prevents a misreading.
   let note = '';
-  if (chart.nextEarnings && series.length) {
-    const date = fmtDateShort(chart.nextEarnings);
+  if (series.length) {
     const room = width - margin.right - cursor - 12;
-    const text = textWidth(`aligned to earnings · next call ${date}`) <= room
-      ? `aligned to earnings · next call ${date}`
-      : `next call ${date}`;
-    note = `<text x="${width - margin.right}" y="20" text-anchor="end" class="vc-faint" font-family="${MONO}" font-size="${fonts.legend}" font-weight="600">${escapeHtml(text)}</text>`;
+    const date = chart.nextEarnings ? fmtDateShort(chart.nextEarnings) : null;
+    const text = [
+      date ? `aligned to earnings · next call ${date} · lines: own scale` : null,
+      date ? `next call ${date} · lines: own scale` : null,
+      'lines: own scale',
+    ].find(candidate => candidate && textWidth(candidate) <= room);
+    if (text) {
+      note = `<text x="${width - margin.right}" y="20" text-anchor="end" class="vc-faint" font-family="${MONO}" font-size="${fonts.legend}" font-weight="600">${escapeHtml(text)}</text>`;
+    }
   }
 
-  return `${legendItems.join('')}${note}${bars}${lines}${labels}`;
+  // A hairline where the bars' band ends and the lines' begins: two scales in one
+  // frame are only honest if the seam between them is visible.
+  const divider = series.length
+    ? `<line x1="${margin.left}" y1="${(baseline - (chartHeight * BAR_BAND)).toFixed(2)}" x2="${width - margin.right}" y2="${(baseline - (chartHeight * BAR_BAND)).toFixed(2)}" class="vc-seam" stroke-dasharray="2 6" stroke-width="1"></line>`
+    : '';
+
+  return `${legendItems.join('')}${note}${divider}${bars}${lines}${labels}`;
 }
 
 function buildVolumeChartSvg(chart) {

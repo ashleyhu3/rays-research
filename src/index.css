@@ -1280,6 +1280,7 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
 .or-chart .vc-muted { fill: var(--sec); }
 .or-chart .vc-faint { fill: var(--ter); }
 .or-chart .vc-ring  { stroke: var(--bg-card); }
+.or-chart .vc-seam  { stroke: var(--border); }
 
 .or-c-call { color: #3fb950; }
 .or-c-put  { color: #f87171; }
