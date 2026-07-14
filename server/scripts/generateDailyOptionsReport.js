@@ -2,7 +2,22 @@
 
 const fs = require('fs');
 const path = require('path');
+const storage = require('../storage');
 const { getOptionsData } = require('../scrapers/options');
+const { getEarningsAnchors } = require('../earningsDates');
+
+// Prior-cycle chain volume is settled history — it can never change — so it is
+// scraped once and kept. Each chain is fetched with months of forward headroom,
+// so as the ten-session window slides forward day by day it keeps landing inside
+// an already-stored range and the daily run scrapes only today.
+// NOTE: this blob must stay registered in server.js STORAGE_BLOBS, or init()
+// won't preload it from Mongo and every restart re-scrapes from an empty file.
+const PRIOR_BLOB = {
+  name: 'optionsPriorYearVolume',
+  file: path.join(__dirname, '..', 'data', 'optionsPriorYearVolume.json'),
+};
+const PRIOR_LOOKAHEAD_DAYS = 120;
+const PRIOR_CACHE_MAX = 600;
 
 const DEFAULT_TICKERS = ['TSM', 'ASML', 'INTC', 'TXN', 'STM', 'TEL', 'GOOG', 'NOK'];
 const BASE = 'https://api.massive.com';
@@ -11,6 +26,30 @@ const PUT_COLOR = '#dc2626';
 const CALL_SOFT = '#bfe8d8';
 const PUT_SOFT = '#f3c7c7';
 const PRICE_COLOR = '#111827';
+const PRIOR_YEAR_COLOR = '#6366f1';
+const PRIOR_QUARTER_COLOR = '#d97706';
+
+// The two comparison lines. Both are the same measure — total chain volume — read
+// at the equivalent point of an earlier earnings cycle, so they are separated by
+// line style and marker shape as well as hue: nothing here is carried by colour
+// alone. Solid/diamond is the nearer cycle, dashed/circle the further one.
+const CYCLES = [
+  { key: 'quarter', color: PRIOR_QUARTER_COLOR, dash: null, marker: 'diamond', label: 'last qtr' },
+  { key: 'year', color: PRIOR_YEAR_COLOR, dash: '5 4', marker: 'circle', label: '1 yr ago' },
+];
+
+// Only used when a ticker's earnings dates can't be established. Shifting by 52
+// weeks rather than a calendar year at least lands each point on the same weekday
+// as the bar it sits above — option volume is strongly day-of-week seasonal.
+const YEAR_SHIFT_DAYS = 364;
+const PRIOR_CONCURRENCY = 6;
+const PRIOR_EXPIRY_WINDOW_DAYS = 21;
+// How many neighbouring expirations to try before settling, and the share of the
+// compared sessions a chain must have traded to be accepted outright.
+const MAX_CHAIN_CANDIDATES = 3;
+const MIN_CHAIN_COVERAGE = 0.5;
+const CHART_SESSIONS = 10;
+const MAX_RETRIES = 9;
 
 function getKey() {
   const key = process.env.MASSIVE_API_KEY;
@@ -18,14 +57,65 @@ function getKey() {
   return key;
 }
 
-async function massiveGet(pathname, params = {}) {
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+// Summing whole prior-cycle chains costs thousands of aggregate calls per run, which
+// is a sustained load against Massive's per-minute cap rather than a burst against
+// it. Retrying into a wall just converts throttling into a slow, lossy run, so
+// instead pace every request through one gate. The gate widens when the API pushes
+// back and creeps back down when it stops, which self-tunes to whatever the plan
+// allows.
+const MIN_INTERVAL_FLOOR_MS = 60_000 / 600;   // ceiling of ~600 req/min
+const MIN_INTERVAL_CEIL_MS = 60_000 / 60;     // never crawl below ~60 req/min
+let minIntervalMs = MIN_INTERVAL_FLOOR_MS;
+let nextSlot = 0;
+
+async function rateLimitSlot() {
+  const now = Date.now();
+  const slot = Math.max(now, nextSlot);
+  nextSlot = slot + minIntervalMs;
+  if (slot > now) await sleep(slot - now);
+}
+
+function throttleBack() {
+  minIntervalMs = Math.min(MIN_INTERVAL_CEIL_MS, minIntervalMs * 1.6);
+  nextSlot = Math.max(nextSlot, Date.now() + minIntervalMs);
+}
+
+// Easing back has to be much slower than backing off. Two comparison cycles doubled
+// the call volume, so a run now spends long stretches at the cap; recovering at 2%
+// per success rebounded into the limit within a hundred calls and burned the retry
+// budget of whatever request happened to be next in line — which is how a single
+// one-off call (a session calendar) ended up being the thing that failed.
+function throttleEase() {
+  minIntervalMs = Math.max(MIN_INTERVAL_FLOOR_MS, minIntervalMs * 0.995);
+}
+
+// Summing whole prior-cycle chains means thousands of aggregate calls per run, which
+// is enough to trip Massive's per-minute cap. A 429 is a "come back shortly", not
+// a failure, so back off and retry rather than letting an empty result through —
+// an empty result silently reshapes the chart it feeds. The retry budget has to
+// outlast a *sustained* squeeze, not just a momentary one: with two cycles in flight
+// the cap can stay shut for a minute or more.
+async function massiveGet(pathname, params = {}, attempt = 0) {
   const url = new URL(pathname, BASE);
   for (const [key, value] of Object.entries(params)) {
     if (value != null) url.searchParams.set(key, String(value));
   }
+  await rateLimitSlot();
   const res = await fetch(url.toString(), {
     headers: { Authorization: `Bearer ${getKey()}`, Accept: 'application/json' },
   });
+  if (res.status === 429 && attempt < MAX_RETRIES) {
+    throttleBack();
+    const retryAfter = Number(res.headers.get('retry-after'));
+    const waitMs = Number.isFinite(retryAfter) && retryAfter > 0
+      ? retryAfter * 1000
+      : Math.min(30_000, 600 * (2 ** attempt)) + Math.floor(Math.random() * 400);
+    await sleep(waitMs);
+    return massiveGet(pathname, params, attempt + 1);
+  }
+  throttleEase();
   if (!res.ok) {
     const body = await res.text().catch(() => '');
     throw new Error(`Massive ${res.status}: ${body.slice(0, 200)}`);
@@ -145,6 +235,332 @@ function addDays(dateStr, days) {
   return date.toISOString().slice(0, 10);
 }
 
+function daysApart(a, b) {
+  const ms = new Date(`${a}T00:00:00Z`) - new Date(`${b}T00:00:00Z`);
+  return Math.abs(ms) / 86_400_000;
+}
+
+// Signed: how far `date` sits after `from`, in calendar days.
+function daysBetween(from, date) {
+  return Math.round((new Date(`${date}T00:00:00Z`) - new Date(`${from}T00:00:00Z`)) / 86_400_000);
+}
+
+// Sessions between today and an earnings call that hasn't happened yet can't be
+// read off a calendar that doesn't exist yet, so the forward leg is counted in
+// weekdays. A market holiday inside that window would overstate it by one session;
+// the alternative — a hard-coded holiday table — goes stale silently, and being one
+// session out shifts every point of both lines equally, which does not change the
+// comparison the chart is making.
+function weekdaysUntil(from, to) {
+  let count = 0;
+  let cursor = from;
+  while (cursor < to) {
+    cursor = addDays(cursor, 1);
+    const day = new Date(`${cursor}T00:00:00Z`).getUTCDay();
+    if (day !== 0 && day !== 6) count += 1;
+  }
+  return count;
+}
+
+// Bounded-concurrency map: the year-ago totals need one aggregate call per strike
+// in the chain (~60-300 per side), so they have to be issued in parallel without
+// opening a socket per contract.
+async function mapLimit(items, limit, fn) {
+  const out = new Array(items.length);
+  let cursor = 0;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (cursor < items.length) {
+      const index = cursor;
+      cursor += 1;
+      out[index] = await fn(items[index]);
+    }
+  });
+  await Promise.all(workers);
+  return out;
+}
+
+// Several of a ticker's expirations routinely resolve to the *same* year-ago chain
+// (a monthly-only name like STM maps all three to 2025-07-18), so the identical
+// per-contract history would otherwise be fetched once per expiration. Memoising
+// for the run keeps us well under the per-minute cap.
+const dailyVolumeCache = new Map();
+
+async function fetchDailyVolume(contractSymbol, start, end) {
+  if (!contractSymbol) return [];
+  const key = `${contractSymbol}|${start}|${end}`;
+  if (dailyVolumeCache.has(key)) return dailyVolumeCache.get(key);
+
+  const promise = (async () => {
+    const pathname = `/v2/aggs/ticker/${encodeURIComponent(contractSymbol)}/range/1/day/${start}/${end}`;
+    try {
+      const resp = await massiveGet(pathname, { adjusted: 'true', sort: 'asc', limit: 5000 });
+      return (resp.results ?? [])
+        .map(row => ({ date: new Date(row.t).toISOString().slice(0, 10), volume: row.v ?? 0 }))
+        .sort((a, b) => a.date.localeCompare(b.date));
+    } catch (error) {
+      console.warn(`[options-report] history unavailable for ${contractSymbol}: ${error.message}`);
+      dailyVolumeCache.delete(key);
+      return [];
+    }
+  })();
+
+  dailyVolumeCache.set(key, promise);
+  return promise;
+}
+
+// Every contract of one side that was listed against the equivalent expiration in an
+// earlier cycle, as candidate chains ranked by how close their expiration lands to
+// the target. Expirations have no exact twin in the past (a Jul 17 2026 expiry has no
+// 2025 counterpart), and the window is wide enough to reach the neighbouring monthly:
+// names like STM list monthlies only, so the nearest match can be a fortnight off.
+//
+// Candidates rather than a single answer, because the *nearest* expiration is not
+// always one that was trading during the sessions being compared. STM's 2026-07-31
+// expiry targets 2026-05-01 a quarter back, whose nearest listing is the 2026-05-08
+// weekly — but that weekly had not been listed yet during the run-up to the April
+// call, so its volume there is nil and the line silently vanishes. The chain that
+// actually traded through the window is the right comparison even if a neighbouring
+// one sits marginally closer on the calendar.
+const priorChainCache = new Map();
+
+async function fetchPriorChains(ticker, side, targetExpiry) {
+  const key = `${ticker}|${side}|${targetExpiry}`;
+  if (!priorChainCache.has(key)) {
+    const promise = resolvePriorChains(ticker, side, targetExpiry);
+    promise.catch(() => priorChainCache.delete(key));
+    priorChainCache.set(key, promise);
+  }
+  return priorChainCache.get(key);
+}
+
+async function resolvePriorChains(ticker, side, targetExpiry) {
+  const resp = await massiveGet('/v3/reference/options/contracts', {
+    underlying_ticker: ticker,
+    contract_type: side,
+    'expiration_date.gte': addDays(targetExpiry, -PRIOR_EXPIRY_WINDOW_DAYS),
+    'expiration_date.lte': addDays(targetExpiry, PRIOR_EXPIRY_WINDOW_DAYS),
+    // A contract that has not expired yet is absent from the expired listing, and
+    // the last-quarter target can still be live when a tracked expiration sits far
+    // enough past the upcoming call.
+    expired: targetExpiry < today() ? 'true' : 'false',
+    limit: 1000,
+  });
+
+  const byExpiration = new Map();
+  for (const contract of resp.results ?? []) {
+    if (contract.underlying_ticker !== ticker || !contract.ticker) continue;
+    const bucket = byExpiration.get(contract.expiration_date) ?? [];
+    bucket.push(contract.ticker);
+    byExpiration.set(contract.expiration_date, bucket);
+  }
+
+  return [...byExpiration.keys()]
+    .sort((a, b) => daysApart(a, targetExpiry) - daysApart(b, targetExpiry))
+    .map(expiration => ({ expiration, contracts: byExpiration.get(expiration) }));
+}
+
+function readPriorCache() {
+  const blob = storage.read(PRIOR_BLOB.name, PRIOR_BLOB.file);
+  if (!blob.chains) blob.chains = {};
+  return blob;
+}
+
+function savePriorChain(key, entry) {
+  const blob = readPriorCache();
+  blob.chains[key] = entry;
+
+  const keys = Object.keys(blob.chains);
+  if (keys.length > PRIOR_CACHE_MAX) {
+    const stale = keys
+      .sort((a, b) => (blob.chains[a].fetchedAt ?? '').localeCompare(blob.chains[b].fetchedAt ?? ''))
+      .slice(0, keys.length - PRIOR_CACHE_MAX);
+    for (const old of stale) delete blob.chains[old];
+  }
+
+  blob.updatedAt = new Date().toISOString();
+  storage.write(PRIOR_BLOB.name, PRIOR_BLOB.file, blob);
+}
+
+// One scrape of a prior-cycle chain, summed to a date -> volume map. The window runs
+// months past the dates needed today: the range costs nothing extra per contract
+// (it is one aggregates call either way), and it buys every later run a cache hit.
+//
+// Candidates are tried nearest-expiration first and the search stops at the first one
+// that actually traded through the sessions being compared, so a chain that had not
+// been listed yet back then does not win on calendar proximity alone. If none clears
+// the bar, the best-covered candidate is kept anyway — that is the honest answer, and
+// caching it stops the next run from re-scraping the same dead chains.
+async function scrapePriorChain(ticker, side, targetExpiry, firstDate, lastDate, neededDates) {
+  const candidates = await fetchPriorChains(ticker, side, targetExpiry);
+  if (!candidates?.length) return null;
+
+  const rangeStart = addDays(firstDate, -5);
+  const lookahead = addDays(lastDate, PRIOR_LOOKAHEAD_DAYS);
+  const rangeEnd = lookahead < today() ? lookahead : today();
+
+  let best = null;
+  for (const chain of candidates.slice(0, MAX_CHAIN_CANDIDATES)) {
+    const histories = await mapLimit(
+      chain.contracts,
+      PRIOR_CONCURRENCY,
+      symbol => fetchDailyVolume(symbol, rangeStart, rangeEnd),
+    );
+
+    const totals = {};
+    for (const history of histories) {
+      for (const day of history) {
+        totals[day.date] = (totals[day.date] ?? 0) + day.volume;
+      }
+    }
+
+    const covered = neededDates.filter(date => totals[date] > 0).length;
+    const entry = {
+      expiration: chain.expiration,
+      contractCount: chain.contracts.length,
+      rangeStart,
+      rangeEnd,
+      totals,
+      coverage: neededDates.length ? covered / neededDates.length : 0,
+      fetchedAt: new Date().toISOString(),
+    };
+
+    if (!best || entry.coverage > best.coverage) best = entry;
+    if (entry.coverage >= MIN_CHAIN_COVERAGE) break;
+  }
+
+  return best;
+}
+
+// Total contract volume across the *entire* prior-cycle chain for this side — not
+// the top three. `pairs` already says which past session each bar is compared with,
+// so a point always sits above the bar it corresponds to. Sessions the chain never
+// traded simply have no marker; whatever is available is drawn rather than dropping
+// the series.
+async function buildPriorSeries(ticker, side, expirationDate, cycle, pairs, targetExpiry) {
+  if (!pairs.length) return null;
+  const neededDates = pairs.map(pair => pair.date);
+  const firstDate = neededDates[0];
+  const lastDate = neededDates[neededDates.length - 1];
+  const key = `${ticker}|${side}|${expirationDate}|${cycle}`;
+
+  try {
+    let entry = readPriorCache().chains[key];
+    const covers = entry && entry.rangeStart <= firstDate && entry.rangeEnd >= lastDate;
+
+    // An entry cached before candidate selection existed carries no `coverage`. If it
+    // also misses most of the sessions being compared, it is a chain that was picked
+    // on calendar proximity alone and never traded through the window — re-resolve it
+    // once against the neighbours. An entry that *has* a coverage figure has already
+    // been through that search, so a low one is the real answer and is left alone.
+    const guessed = covers && entry.coverage === undefined
+      && neededDates.filter(date => (entry.totals[date] ?? 0) > 0).length
+         < neededDates.length * MIN_CHAIN_COVERAGE;
+
+    if (!covers || guessed) {
+      entry = await scrapePriorChain(ticker, side, targetExpiry, firstDate, lastDate, neededDates);
+      if (!entry) return null;
+      savePriorChain(key, entry);
+    }
+
+    const points = pairs
+      .map(pair => ({ ...pair, volume: entry.totals[pair.date] }))
+      .filter(point => point.volume > 0);
+    if (!points.length) return null;
+
+    return {
+      expiration: entry.expiration,
+      contractCount: entry.contractCount,
+      points,
+    };
+  } catch (error) {
+    console.warn(`[options-report] ${cycle} ${side} volume unavailable for ${ticker} ${expirationDate}: ${error.message}`);
+    return null;
+  }
+}
+
+// What each bar is compared against, per cycle.
+//
+// The alignment is by position in the earnings cycle, not by calendar date: a bar
+// four sessions before the upcoming call is paired with the session four before the
+// previous call, and four before the call for the same quarter a year ago. Options
+// volume ramps into an earnings date, so comparing 13 July with 13 July a year ago
+// compares two different points of the ramp whenever the call moved — which it
+// does, by a week or more, most years.
+//
+// Returns null when the ticker's earnings dates can't be established, and the
+// caller falls back to the plain 52-week calendar shift.
+async function buildCycleAlignment(ticker, expirationDate, chartDates, effectiveDate) {
+  let anchors;
+  try {
+    anchors = await getEarningsAnchors(ticker);
+  } catch (error) {
+    console.warn(`[options-report] earnings dates unavailable for ${ticker}: ${error.message}`);
+    return null;
+  }
+  if (!anchors) return null;
+
+  // Sessions from each bar back to the upcoming call: the known leg (bar -> today)
+  // comes off the real trading calendar, the unknown leg (today -> call) is counted
+  // in weekdays.
+  const toCall = weekdaysUntil(effectiveDate, anchors.next);
+  const distances = chartDates.map((_, index) => toCall + (chartDates.length - 1 - index));
+  const deepest = distances[0];
+
+  // The expiration is placed at the same distance from its own call as the tracked
+  // expiration sits from the upcoming one, so a chain that is "the weekly after
+  // earnings" stays that in every cycle.
+  const expiryOffset = daysBetween(anchors.next, expirationDate);
+
+  // A cycle whose session calendar can't be fetched (a rate-limit squeeze usually)
+  // is dropped on its own — losing the last-quarter line is not a reason to also
+  // throw away a year-ago line that resolved fine.
+  const alignment = {};
+  for (const { key } of CYCLES) {
+    const call = anchors[key];
+    const sessions = await fetchSessions(ticker, addDays(call, -(deepest * 2) - 30), call)
+      .catch(error => {
+        console.warn(`[options-report] ${key} calendar unavailable for ${ticker}: ${error.message}`);
+        return [];
+      });
+
+    // The call itself can land on a non-trading day, so count back from the last
+    // session on or before it.
+    const upToCall = sessions.filter(date => date <= call);
+    if (!upToCall.length) continue;
+    const callIndex = upToCall.length - 1;
+
+    alignment[key] = {
+      call,
+      targetExpiry: addDays(call, expiryOffset),
+      pairs: chartDates
+        .map((barDate, index) => ({ barDate, index: callIndex - distances[index] }))
+        .filter(pair => pair.index >= 0)
+        .map(pair => ({ barDate: pair.barDate, date: upToCall[pair.index] })),
+    };
+  }
+
+  // Nothing resolved at all: let the caller fall back to the plain 52-week shift,
+  // which needs no calendar and so still draws something.
+  if (!Object.keys(alignment).length) return null;
+
+  return { anchors, alignment };
+}
+
+// The pre-earnings-alignment behaviour, kept for tickers whose earnings dates can't
+// be read: the year-ago line only, shifted by 52 weeks.
+function fallbackAlignment(expirationDate, chartDates) {
+  return {
+    anchors: null,
+    alignment: {
+      year: {
+        call: null,
+        targetExpiry: addDays(expirationDate, -YEAR_SHIFT_DAYS),
+        pairs: chartDates.map(barDate => ({ barDate, date: addDays(barDate, -YEAR_SHIFT_DAYS) })),
+      },
+    },
+  };
+}
+
 function topByVolume(contracts) {
   return [...(contracts ?? [])]
     .filter(contract => (contract.volume ?? 0) > 0)
@@ -161,26 +577,44 @@ function historyMap(history) {
 }
 
 async function fetchContractVolumeHistory(contractSymbol, reportDate) {
-  if (!contractSymbol) return [];
-  const start = addDays(reportDate, -45);
-  const pathname = `/v2/aggs/ticker/${encodeURIComponent(contractSymbol)}/range/1/day/${start}/${reportDate}`;
-  try {
-    const resp = await massiveGet(pathname, {
-      adjusted: 'true',
-      sort: 'asc',
-      limit: 5000,
-    });
+  const history = await fetchDailyVolume(contractSymbol, addDays(reportDate, -45), reportDate);
+  return history.filter(row => row.date < reportDate);
+}
+
+// The aggregates endpoint emits no bar for a day a contract didn't trade, so the
+// dates a contract *has* are not the days the market was *open*. Taking the axis
+// from the contracts themselves therefore silently drops sessions and lets a chart
+// collapse to three or four bars that look adjacent but are weeks apart. The
+// underlying stock trades every session, so its bars give the true calendar.
+const sessionCache = new Map();
+
+async function fetchSessions(ticker, start, end) {
+  const key = `${ticker}|${start}|${end}`;
+  if (sessionCache.has(key)) return sessionCache.get(key);
+
+  const promise = (async () => {
+    const pathname = `/v2/aggs/ticker/${encodeURIComponent(ticker)}/range/1/day/${start}/${end}`;
+    const resp = await massiveGet(pathname, { adjusted: 'true', sort: 'asc', limit: 5000 });
     return (resp.results ?? [])
-      .map(row => ({
-        date: new Date(row.t).toISOString().slice(0, 10),
-        volume: row.v ?? 0,
-      }))
-      .filter(row => row.date < reportDate)
-      .sort((a, b) => a.date.localeCompare(b.date));
-  } catch (error) {
-    console.warn(`[options-report] history unavailable for ${contractSymbol}: ${error.message}`);
-    return [];
-  }
+      .map(row => new Date(row.t).toISOString().slice(0, 10))
+      .filter(date => date >= start && date <= end)
+      .sort();
+  })();
+
+  // A failed calendar must not be cached, and must not be swallowed into a
+  // one-bar axis — the caller falls back to the contracts' own dates instead.
+  promise.catch(() => sessionCache.delete(key));
+  sessionCache.set(key, promise);
+  return promise;
+}
+
+async function fetchTradingDays(ticker, end, count) {
+  const sessions = await fetchSessions(ticker, addDays(end, -(count * 3) - 10), end);
+  // Today's own bar may not be published yet, but it is still the session the
+  // report is about. Copy first: the cached array is shared.
+  const days = [...sessions];
+  if (!days.includes(end)) days.push(end);
+  return days.slice(-count);
 }
 
 async function enrichExpirationData(data, reportDate) {
@@ -200,9 +634,17 @@ async function enrichExpirationData(data, reportDate) {
   const effectiveDate = latestHistoryDate && latestHistoryVolume === snapshotVolume
     ? latestHistoryDate
     : reportDate;
-  const allPriorDates = allHistoryDates
-    .filter(date => date < effectiveDate)
-    .slice(-9);
+
+  // Ten consecutive sessions, not ten days that happened to trade — a strike with
+  // no trades on a session is a real zero, and belongs on the axis as one. If the
+  // calendar can't be fetched, fall back to the dates the contracts themselves
+  // traded rather than dropping to a single bar.
+  const chartDates = await fetchTradingDays(data.ticker, effectiveDate, CHART_SESSIONS)
+    .catch(error => {
+      console.warn(`[options-report] trading calendar unavailable for ${data.ticker}: ${error.message}`);
+      return [...allHistoryDates.filter(date => date < effectiveDate).slice(-(CHART_SESSIONS - 1)), effectiveDate];
+    });
+  const allPriorDates = chartDates.filter(date => date < effectiveDate);
   const previousDate = allPriorDates[allPriorDates.length - 1] ?? null;
   const averageDates = allPriorDates.slice(-5);
 
@@ -225,9 +667,28 @@ async function enrichExpirationData(data, reportDate) {
 
   const tableCalls = topCalls.map(rowWithHistory);
   const tablePuts = topPuts.map(rowWithHistory);
-  const chartDates = [...allPriorDates, effectiveDate];
 
-  function chartFor(sideRows, color, softColor) {
+  const { anchors, alignment } =
+    (await buildCycleAlignment(data.ticker, data.selectedDate, chartDates, effectiveDate))
+    ?? fallbackAlignment(data.selectedDate, chartDates);
+
+  // One series per side per cycle. A cycle with no alignment (the fallback has no
+  // last-quarter anchor) is simply absent from the chart.
+  async function priorSeriesFor(side) {
+    const series = await Promise.all(CYCLES.map(async cycle => {
+      const aligned = alignment[cycle.key];
+      if (!aligned) return null;
+      const built = await buildPriorSeries(
+        data.ticker, side, data.selectedDate, cycle.key, aligned.pairs, aligned.targetExpiry,
+      );
+      return built ? { ...cycle, ...built, call: aligned.call } : null;
+    }));
+    return series.filter(Boolean);
+  }
+
+  const [priorCall, priorPut] = await Promise.all([priorSeriesFor('call'), priorSeriesFor('put')]);
+
+  function chartFor(sideRows, color, softColor, priors, sideLabel) {
     return {
       rows: chartDates.map(date => {
         const volume = sideRows.reduce((sum, row) => {
@@ -239,16 +700,20 @@ async function enrichExpirationData(data, reportDate) {
       }),
       color,
       softColor,
+      priors,
+      sideLabel,
+      nextEarnings: anchors?.next ?? null,
     };
   }
 
   return {
     ...data,
+    earnings: anchors,
     tableCalls,
     tablePuts,
     volumeCharts: {
-      call: chartFor(topCalls, CALL_COLOR, CALL_SOFT),
-      put: chartFor(topPuts, PUT_COLOR, PUT_SOFT),
+      call: chartFor(topCalls, CALL_COLOR, CALL_SOFT, priorCall, 'calls'),
+      put: chartFor(topPuts, PUT_COLOR, PUT_SOFT, priorPut, 'puts'),
     },
   };
 }
@@ -346,68 +811,229 @@ function buildChartSvg(data) {
   `;
 }
 
-function buildVolumeChartSvg(chart) {
-  const rows = chart?.rows ?? [];
-  if (!rows.length) return '<div class="empty-chart">No chart data</div>';
+const MONO = 'ui-monospace, SFMono-Regular, Menlo, monospace';
+// Three labelled series stacked over ten sessions need real vertical room: a column
+// can hold a bar's number plus a point from each cycle, and the plot area is what
+// keeps them off each other. The width stays as it was — calls and puts sit two to a
+// row, so widening the viewBox only shrinks the rendered height — so the extra room
+// is bought entirely in height.
+const CHART_WIDTH = 860;
+const CHART_HEIGHT = 460;
 
-  const width = 860;
-  const height = 190;
-  const margin = { top: 30, right: 22, bottom: 38, left: 22 };
+// Vertical breathing room for the stacked direct labels in one column.
+const LABEL_GAP = 24;
+const LABEL_TOP = 40;
+
+// The same chart markup is embedded in the dark web app and in the light
+// standalone HTML/SVG exports, so its neutrals — muted text and the ring that
+// separates a marker from whatever sits behind it — are left to the host
+// stylesheet. Series colours stay inline: they are legible on either surface.
+// The web app's dark values live alongside `.or-chart` in src/index.css.
+const CHART_CSS_LIGHT = '.vc-muted{fill:#6b7280}.vc-faint{fill:#8b93a1}.vc-ring{stroke:#ffffff}';
+
+function markerShape(marker, x, y, color, title = '') {
+  const attrs = `fill="${color}" class="vc-ring" stroke-width="2"`;
+  const tip = title ? `<title>${escapeHtml(title)}</title>` : '';
+  if (marker === 'diamond') {
+    const r = 5.4;
+    const d = `M${x.toFixed(2)},${(y - r).toFixed(2)} L${(x + r).toFixed(2)},${y.toFixed(2)} `
+      + `L${x.toFixed(2)},${(y + r).toFixed(2)} L${(x - r).toFixed(2)},${y.toFixed(2)} Z`;
+    return `<path d="${d}" ${attrs}>${tip}</path>`;
+  }
+  return `<circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="4.5" ${attrs}>${tip}</circle>`;
+}
+
+// Stack one column's direct labels so none lands on another, and so none comes to
+// rest on a marker — a label pushed clear of the label below it can otherwise land on
+// another series' marker, which is how a diamond ends up sitting inside "19.0k".
+// Labels are placed lowest first and only ever move up, away from the bars.
+//
+// The two kinds of label dodge differently, because they are not equally free to
+// move. A line's label is one of several stacked above a point that already has its
+// own marker, so it clears any marker it touches at all ('edge'). A bar's label is
+// tied to its bar — lifting it on a graze would drag the whole column's stack tens of
+// pixels up and leave the tallest bar's number floating in space — so it only steps
+// aside when a marker's centre would land in the digits themselves ('centre').
+// Everything else is handled by the halo the labels are drawn with.
+function stackLabels(entries, markers, fontSize) {
+  const glyph = fontSize * 0.72;  // the band a number occupies above its own baseline
+  const clear = 2;
+  const bands = markers.map(y => ({ top: y - 6.5, bottom: y + 6.5, center: y }));
+
+  const hits = (band, y, mode) => (mode === 'centre'
+    ? band.center > y - glyph && band.center < y
+    : band.bottom > y - glyph - clear && band.top < y + clear);
+
+  const ordered = [...entries].sort((a, b) => b.desiredY - a.desiredY);
+  let ceiling = Infinity;
+  for (const entry of ordered) {
+    let y = Math.min(entry.desiredY, ceiling);
+    // Clearing one marker can push a label into the next, so keep lifting.
+    for (let guard = 0; guard <= bands.length; guard += 1) {
+      const hit = bands.find(band => hits(band, y, entry.dodge));
+      if (!hit) break;
+      y = hit.top - clear;
+    }
+    entry.labelY = Math.max(LABEL_TOP, y);
+    ceiling = entry.labelY - LABEL_GAP;
+  }
+  return ordered;
+}
+
+// Bars (top-3 contracts, this cycle) and the comparison lines (each the whole chain
+// at the equivalent point of an earlier earnings cycle) are all contract counts, so
+// they share one y-scale — the lines therefore usually sit well above the bars,
+// which is the honest reading: three strikes are a slice of what the full chain did.
+function volumeChartBody(chart, width, height, fonts) {
+  const rows = chart?.rows ?? [];
+  if (!rows.length) {
+    return `<text x="${width / 2}" y="${height / 2}" text-anchor="middle" class="vc-muted" font-family="system-ui, sans-serif" font-size="14">No chart data</text>`;
+  }
+
+  const margin = { top: 100, right: 22, bottom: 46, left: 22 };
   const chartWidth = width - margin.left - margin.right;
   const chartHeight = height - margin.top - margin.bottom;
-  const maxValue = Math.max(1, ...rows.map(row => row.volume ?? 0));
+  const priors = chart.priors ?? [];
+  const maxValue = Math.max(
+    1,
+    ...rows.map(row => row.volume ?? 0),
+    ...priors.flatMap(prior => prior.points.map(point => point.volume ?? 0)),
+  );
   const step = chartWidth / rows.length;
-  const barWidth = Math.min(86, step * 0.86);
-  const color = chart.color;
-  const softColor = chart.softColor;
+  const barWidth = Math.min(86, step * 0.7);
+  const centerX = index => margin.left + (step * index) + (step / 2);
+  const scaleY = value => margin.top + chartHeight - ((value / maxValue) * chartHeight);
 
-  const bars = rows.map((row, index) => {
+  const barGeom = rows.map((row, index) => {
     const value = row.volume ?? 0;
     const barHeight = value > 0 ? Math.max(5, (value / maxValue) * chartHeight) : 5;
-    const x = margin.left + (step * index) + ((step - barWidth) / 2);
-    const y = margin.top + chartHeight - barHeight;
-    const isToday = index === rows.length - 1;
-    const shouldLabel = true;
-    return `
-      <rect x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${barWidth.toFixed(2)}" height="${barHeight.toFixed(2)}" rx="4" fill="${isToday ? color : softColor}"></rect>
-      ${shouldLabel ? `<text x="${(x + barWidth / 2).toFixed(2)}" y="${(y - 9).toFixed(2)}" text-anchor="middle" fill="${isToday ? color : '#6b7280'}" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18" font-weight="800">${fmtShort(value)}</text>` : ''}
-      <text x="${(x + barWidth / 2).toFixed(2)}" y="${height - 16}" text-anchor="middle" fill="${isToday ? color : '#8b93a1'}" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" font-weight="${isToday ? '700' : '500'}">${fmtDateShort(row.date)}</text>
-    `;
+    return {
+      value,
+      isToday: index === rows.length - 1,
+      date: row.date,
+      x: centerX(index) - (barWidth / 2),
+      top: margin.top + chartHeight - barHeight,
+      height: barHeight,
+      center: centerX(index),
+    };
+  });
+
+  const bars = barGeom.map(bar => `
+    <rect x="${bar.x.toFixed(2)}" y="${bar.top.toFixed(2)}" width="${barWidth.toFixed(2)}" height="${bar.height.toFixed(2)}" rx="4" fill="${bar.isToday ? chart.color : chart.softColor}"></rect>
+    <text x="${bar.center.toFixed(2)}" y="${height - 16}" text-anchor="middle" ${bar.isToday ? `fill="${chart.color}"` : 'class="vc-faint"'} font-family="${MONO}" font-size="${fonts.date}" font-weight="${bar.isToday ? '700' : '500'}">${fmtDateShort(bar.date)}</text>
+  `).join('');
+
+  // Each point carries the bar it belongs to, so a cycle with only some sessions
+  // covered still plots those markers above the right bars.
+  const barIndexByDate = new Map(rows.map((row, index) => [row.date, index]));
+  const series = priors.map(prior => ({
+    ...prior,
+    coords: prior.points.flatMap(point => {
+      const bar = barGeom[barIndexByDate.get(point.barDate)];
+      if (!bar) return [];
+      return { ...point, x: bar.center, y: scaleY(point.volume ?? 0) };
+    }),
+  })).filter(prior => prior.coords.length);
+
+  const lines = series.map(prior => `
+    <path d="${prior.coords.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(' ')}"
+      fill="none" stroke="${prior.color}" stroke-width="2"${prior.dash ? ` stroke-dasharray="${prior.dash}"` : ''} stroke-linejoin="round" stroke-linecap="round"></path>
+    ${prior.coords.map(p =>
+      markerShape(prior.marker, p.x, p.y, prior.color, `${p.date}: ${fmtNum(p.volume)} contracts`),
+    ).join('')}
+  `).join('');
+
+  // All value text is drawn last, over the marks, so a marker or a dash can never
+  // sit on top of a number. Each column's labels are stacked together, and each is
+  // knocked out of whatever it sits on with a halo in the surface colour — with
+  // three series a line passes behind a number often enough that without it the
+  // digits read as struck through.
+  const labels = barGeom.map((bar, index) => {
+    const columnPoints = series.flatMap(prior => {
+      const point = prior.coords.find(p => barIndexByDate.get(p.barDate) === index);
+      return point ? { ...point, color: prior.color } : [];
+    });
+    const entries = [
+      {
+        desiredY: bar.top - 9,
+        x: bar.center,
+        text: fmtShort(bar.value),
+        fill: bar.isToday ? chart.color : null,
+        cls: bar.isToday ? 'vc-ring' : 'vc-muted vc-ring',
+        weight: bar.isToday ? '800' : '700',
+        dodge: 'centre',
+      },
+      ...columnPoints.map(point => ({
+        desiredY: point.y - 12,
+        x: point.x,
+        text: fmtShort(point.volume ?? 0),
+        fill: point.color,
+        cls: 'vc-ring',
+        weight: '700',
+        dodge: 'edge',
+      })),
+    ];
+    return stackLabels(entries, columnPoints.map(p => p.y), fonts.value).map(entry =>
+      `<text x="${entry.x.toFixed(2)}" y="${entry.labelY.toFixed(2)}" text-anchor="middle" class="${entry.cls}"`
+      + `${entry.fill ? ` fill="${entry.fill}"` : ''} paint-order="stroke" stroke-width="3.5" stroke-linejoin="round"`
+      + ` font-family="${MONO}" font-size="${fonts.value}" font-weight="${entry.weight}">${entry.text}</text>`,
+    ).join('');
   }).join('');
 
+  const side = chart.sideLabel ?? 'contracts';
+  const legendText = (x, text) =>
+    `<text x="${x.toFixed(2)}" y="20" class="vc-muted" font-family="${MONO}" font-size="${fonts.legend}" font-weight="600">${escapeHtml(text)}</text>`;
+  // Monospace, so a character advance is a reliable ~0.6em — no measuring needed.
+  const textWidth = text => text.length * fonts.legend * 0.6;
+
+  let cursor = margin.left;
+  const legendItems = [
+    `<rect x="${cursor}" y="8" width="12" height="9" rx="2" fill="${chart.color}"></rect>`
+    + legendText(cursor + 19, `Top 3 ${side}`),
+  ];
+  cursor += 19 + textWidth(`Top 3 ${side}`) + 26;
+
+  for (const prior of series) {
+    const label = `All ${side}, ${prior.label}`;
+    legendItems.push(`
+      <line x1="${cursor}" y1="16" x2="${cursor + 26}" y2="16" stroke="${prior.color}" stroke-width="2"${prior.dash ? ` stroke-dasharray="${prior.dash}"` : ''}></line>
+      ${markerShape(prior.marker, cursor + 13, 16, prior.color)}
+      ${legendText(cursor + 33, label)}
+    `);
+    cursor += 33 + textWidth(label) + 26;
+  }
+
+  // Says what the lines are aligned on, so the chart explains its own comparison:
+  // every point sits the same number of sessions from its cycle's call as the bar
+  // beneath it sits from the upcoming one. It shares the legend's row, so it gives up
+  // the explanation and keeps the date when the legend has already used the width.
+  let note = '';
+  if (chart.nextEarnings && series.length) {
+    const date = fmtDateShort(chart.nextEarnings);
+    const room = width - margin.right - cursor - 12;
+    const text = textWidth(`aligned to earnings · next call ${date}`) <= room
+      ? `aligned to earnings · next call ${date}`
+      : `next call ${date}`;
+    note = `<text x="${width - margin.right}" y="20" text-anchor="end" class="vc-faint" font-family="${MONO}" font-size="${fonts.legend}" font-weight="600">${escapeHtml(text)}</text>`;
+  }
+
+  return `${legendItems.join('')}${note}${bars}${lines}${labels}`;
+}
+
+function buildVolumeChartSvg(chart) {
+  if (!chart?.rows?.length) return '<div class="empty-chart">No chart data</div>';
+  const width = CHART_WIDTH;
+  const height = CHART_HEIGHT;
   return `
-    <svg class="volume-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="daily contract volume">
+    <svg class="volume-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="daily contract volume, with total chain volume at the same point of the previous quarter's and last year's earnings cycle">
       <rect x="0" y="0" width="${width}" height="${height}" fill="transparent"></rect>
-      ${bars}
+      ${volumeChartBody(chart, width, height, { value: 17, date: 14, legend: 12 })}
     </svg>
   `;
 }
 
 function buildVolumeChartLayer(chart, width, height) {
-  const rows = chart?.rows ?? [];
-  if (!rows.length) {
-    return `<text x="${width / 2}" y="${height / 2}" text-anchor="middle" fill="#6b7280" font-family="system-ui, sans-serif" font-size="14">No chart data</text>`;
-  }
-
-  const margin = { top: 30, right: 22, bottom: 38, left: 22 };
-  const chartWidth = width - margin.left - margin.right;
-  const chartHeight = height - margin.top - margin.bottom;
-  const maxValue = Math.max(1, ...rows.map(row => row.volume ?? 0));
-  const step = chartWidth / rows.length;
-  const barWidth = Math.min(86, step * 0.86);
-
-  return rows.map((row, index) => {
-    const value = row.volume ?? 0;
-    const barHeight = value > 0 ? Math.max(5, (value / maxValue) * chartHeight) : 5;
-    const x = margin.left + (step * index) + ((step - barWidth) / 2);
-    const y = margin.top + chartHeight - barHeight;
-    const isToday = index === rows.length - 1;
-    return `
-      <rect x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${barWidth.toFixed(2)}" height="${barHeight.toFixed(2)}" rx="4" fill="${isToday ? chart.color : chart.softColor}"></rect>
-      <text x="${(x + barWidth / 2).toFixed(2)}" y="${(y - 8).toFixed(2)}" text-anchor="middle" fill="${isToday ? chart.color : '#6b7280'}" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" font-weight="700">${fmtShort(value)}</text>
-      <text x="${(x + barWidth / 2).toFixed(2)}" y="${height - 16}" text-anchor="middle" fill="${isToday ? chart.color : '#8b93a1'}" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16" font-weight="${isToday ? '700' : '500'}">${fmtDateShort(row.date)}</text>
-    `;
-  }).join('');
+  return volumeChartBody(chart, width, height, { value: 16, date: 15, legend: 13 });
 }
 
 function tableCellText(value, x, y, anchor = 'end', color = '#374151', weight = '500') {
@@ -419,8 +1045,8 @@ function buildPanelSvg(data, side) {
   const rows = side === 'call' ? (data.tableCalls ?? []) : (data.tablePuts ?? []);
   const typeColor = side === 'call' ? CALL_COLOR : PUT_COLOR;
   const width = 900;
-  const chartHeight = 190;
-  const tableY = 208;
+  const chartHeight = CHART_HEIGHT;
+  const tableY = chartHeight + 18;
   const headerH = 32;
   const rowH = 34;
   const visibleRows = rows.length ? rows : [null];
@@ -484,6 +1110,7 @@ function buildPanelSvg(data, side) {
   }).join('');
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeHtml(data.ticker)} ${side} option volume and table">
+    <style>${CHART_CSS_LIGHT}</style>
     <rect width="${width}" height="${height}" fill="#ffffff"></rect>
     ${buildVolumeChartLayer(chart, width, chartHeight)}
     <rect x="0" y="${tableY}" width="${width}" height="${tableHeight}" fill="#ffffff"></rect>
@@ -498,11 +1125,12 @@ function buildStandaloneChartSvg(data, side) {
   const chart = buildVolumeChartSvg(data.volumeCharts?.[side]).trim();
 
   if (!chart.startsWith('<svg')) {
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="860" height="190" viewBox="0 0 860 190" role="img" aria-label="${escapeHtml(data.ticker)} daily contract volume"><rect width="860" height="190" fill="#ffffff"/><text x="430" y="95" text-anchor="middle" fill="#6b7280" font-family="system-ui, sans-serif" font-size="14">No chart data</text></svg>`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${CHART_WIDTH}" height="${CHART_HEIGHT}" viewBox="0 0 ${CHART_WIDTH} ${CHART_HEIGHT}" role="img" aria-label="${escapeHtml(data.ticker)} daily contract volume"><rect width="${CHART_WIDTH}" height="${CHART_HEIGHT}" fill="#ffffff"/><text x="${CHART_WIDTH / 2}" y="${CHART_HEIGHT / 2}" text-anchor="middle" fill="#6b7280" font-family="system-ui, sans-serif" font-size="14">No chart data</text></svg>`;
   }
 
   return chart
-    .replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" width="860" height="190" ');
+    .replace('<svg ', `<svg xmlns="http://www.w3.org/2000/svg" width="${CHART_WIDTH}" height="${CHART_HEIGHT}" `)
+    .replace('>', `><style>${CHART_CSS_LIGHT}</style>`);
 }
 
 function renderRows(rows) {
@@ -684,6 +1312,7 @@ function renderHtml(report) {
     .call-key { background: var(--calls); }
     .put-key { background: var(--puts); }
     .price-key { background: var(--price); }
+    ${CHART_CSS_LIGHT}
     .oi-chart,
     .volume-chart {
       width: 100%;
@@ -1000,8 +1629,12 @@ function buildStructuredReport(report, { generatedAt = new Date().toISOString(),
 }
 
 module.exports = {
+  CYCLES,
   DEFAULT_TICKERS,
+  LABEL_GAP,
+  PRIOR_BLOB,
   buildStructuredReport,
+  buildVolumeChartSvg,
   generateDailyOptionsReport,
   renderHtml,
   renderMarkdown,

@@ -48,7 +48,7 @@ export default function DemandMiniMax({ weeks: W }) {
 
   return (
     <EditableGrid viewId="demand-minimax">
-      {orComboCard(ld?.openrouterRanks, 'MiniMax', W, C.minimax, 'mm')}
+      {orComboCard(ld?.openrouterRanks, 'MiniMax', W, C.minimax, 'mm', ld)}
 
       <RevPerTokenCard
         chartId="mm-revtoken"

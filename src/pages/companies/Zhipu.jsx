@@ -75,7 +75,7 @@ export default function DemandZhipu({ weeks: W }) {
 
   return (
     <EditableGrid viewId="demand-zhipu">
-      {orComboCard(ld?.openrouterRanks, 'Zhipu AI', W, C.zhipu, 'zh')}
+      {orComboCard(ld?.openrouterRanks, 'Zhipu AI', W, C.zhipu, 'zh', ld)}
 
       <RevPerTokenCard
         chartId="zh-revtoken"

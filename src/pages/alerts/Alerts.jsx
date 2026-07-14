@@ -166,7 +166,12 @@ export default function Alerts() {
 
   useEffect(() => { load(); }, [load]);
 
-  const tickers = report?.tickers ?? [];
+  // Sidebar order: today's total option volume (calls + puts, summed across
+  // all three tracked expirations) from highest to lowest.
+  const tickers = [...(report?.tickers ?? [])].sort((a, b) => {
+    const total = t => (t.flow?.callToday ?? 0) + (t.flow?.putToday ?? 0);
+    return total(b) - total(a);
+  });
   const active = tickers.find(t => t.ticker === selected) ?? tickers[0] ?? null;
 
   return (

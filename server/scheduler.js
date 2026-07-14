@@ -132,19 +132,6 @@ function setup() {
   cron.schedule('30 */6 * * *', () => warmOptions());
   setTimeout(() => warmOptions().catch(e => console.warn('[warmOptions] startup warm failed:', e.message)), 20000);
 
-  // Options-volume email alerts: once per weekday at 4:30pm New York time, so
-  // daylight saving changes do not shift the run an hour away from market close.
-  cron.schedule('30 16 * * 1-5', async () => {
-    try {
-      const { run } = require('./alertsEngine');
-      const summary = await run();
-      const emailed = summary.notifications.filter(n => n.sent).length;
-      console.log(`[alerts] cycle done — ${summary.subscribers} subs, ${emailed} emailed`);
-    } catch (e) {
-      console.error('[alerts] daily cycle failed:', e.message);
-    }
-  }, { timezone: 'America/New_York' });
-
   // Daily options report: scrape options data and generate the web-visible
   // report at 7:45am Hong Kong time. The GitHub workflow runs the same task for
   // sleeping deployments.

@@ -7,6 +7,9 @@ name: Generate daily options report
 # Required repository secrets:
 #   MASSIVE_API_KEY
 #   MONGODB_URI
+#   ALPHAVANTAGE_API_KEY  — earnings-call dates. Without it the charts still build,
+#     but they fall back to a plain 52-week shift: no last-quarter line, and the
+#     year-ago line is no longer aligned to the earnings cycle.
 # Optional:
 #   MONGODB_DB
 #   OPTIONS_REPORT_TICKERS
@@ -49,6 +52,7 @@ jobs:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           MONGODB_DB: ${{ secrets.MONGODB_DB }}
           MASSIVE_API_KEY: ${{ secrets.MASSIVE_API_KEY }}
+          ALPHAVANTAGE_API_KEY: ${{ secrets.ALPHAVANTAGE_API_KEY }}
           OPTIONS_REPORT_DATE: ${{ inputs.report_date }}
           OPTIONS_REPORT_TICKERS: ${{ inputs.tickers || secrets.OPTIONS_REPORT_TICKERS }}
         run: npm run options-report:generate

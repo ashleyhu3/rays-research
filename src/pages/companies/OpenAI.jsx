@@ -69,7 +69,7 @@ export default function DemandOpenAI({ weeks: W }) {
         <Bar data={sdkData} options={stackedOpts(fmtM)} />
       </ChartCard>
 
-      {orComboCard(ld?.openrouterRanks, 'OpenAI', W, C.openai, 'oa')}
+      {orComboCard(ld?.openrouterRanks, 'OpenAI', W, C.openai, 'oa', ld)}
 
       <RevPerTokenCard
         chartId="oa-revtoken"

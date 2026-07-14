@@ -1275,6 +1275,11 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
   color: var(--ter); font-size: 12px; text-align: center; padding: 26px;
   border: 1px dashed var(--border); border-radius: 6px;
 }
+/* Dark-surface neutrals for the report charts. The SVG ships from the server
+   without them so the same markup can also render on the light PDF/HTML export. */
+.or-chart .vc-muted { fill: var(--sec); }
+.or-chart .vc-faint { fill: var(--ter); }
+.or-chart .vc-ring  { stroke: var(--bg-card); }
 
 .or-c-call { color: #3fb950; }
 .or-c-put  { color: #f87171; }

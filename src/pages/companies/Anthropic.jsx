@@ -69,7 +69,7 @@ export default function DemandAnthropic({ weeks: W }) {
         <Bar data={sdkData} options={stackedOpts(fmtM)} />
       </ChartCard>
 
-      {orComboCard(ld?.openrouterRanks, 'Anthropic', W, C.anthropic, 'an')}
+      {orComboCard(ld?.openrouterRanks, 'Anthropic', W, C.anthropic, 'an', ld)}
 
       <RevPerTokenCard
         chartId="an-revtoken"

@@ -57,7 +57,7 @@ export default function DemandGoogle({ weeks: W }) {
         <Bar data={sdkData} options={stackedOpts(fmtM)} />
       </ChartCard>
 
-      {orComboCard(ld?.openrouterRanks, 'Google', W, C.google, 'goo')}
+      {orComboCard(ld?.openrouterRanks, 'Google', W, C.google, 'goo', ld)}
 
       <RevPerTokenCard
         chartId="goo-revtoken"

@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "test": "npm run test:alerts && npm run test:transcripts",
+    "test": "npm run test:mailer && npm run test:transcripts && npm run test:options-report",
     "dev": "node --env-file=.env server/server.js",
     "build": "vite build",
     "start": "NODE_ENV=production node --env-file-if-exists=.env server/server.js",
@@ -33,13 +33,13 @@
     "db:seed": "node --env-file=.env server/scripts/seedMongo.js",
     "db:seed:dc": "node --env-file=.env server/scripts/seedDcBuildouts.js",
     "collect": "node --env-file=.env server/scripts/collect.js",
-    "alerts:run": "node --env-file-if-exists=.env server/scripts/runAlerts.js",
     "options-report:generate": "node --env-file-if-exists=.env server/scripts/generateAndStoreDailyOptionsReport.js",
     "options-report:send": "node --env-file-if-exists=.env server/scripts/sendDailyOptionsReport.js",
     "weekly-report:generate": "node --env-file-if-exists=.env server/scripts/generateWeeklyReport.js",
     "weekly-report:send": "node --env-file-if-exists=.env server/scripts/sendWeeklyReport.js",
     "test:transcripts": "node --test server/transcripts/*.test.js server/transcripts/*.test.mjs",
-    "test:alerts": "node --test server/alertsEngine.test.js server/mailer.test.js"
+    "test:mailer": "node --test server/mailer.test.js",
+    "test:options-report": "node --test server/earningsDates.test.js server/optionsReportChart.test.js"
   },
   "dependencies": {
     "@aws-sdk/client-pricing": "^3.1069.0",
