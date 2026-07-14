@@ -20,6 +20,14 @@ import ChartCard from '../../components/chart/ChartCard';
 // Don't brighten these by eye — re-run the palette validator.
 const TEAL = '#299682', BLUE = '#4577b4', ORANGE = '#ad622d', PURPLE = '#7864b4';
 
+/** Series hue as a translucent wash — stacked bands read as layered glass over
+ * the grid rather than opaque blocks, while staying a distinct fill per layer. */
+function alpha(hex, a) {
+  const n = parseInt(hex.slice(1), 16);
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  return `rgba(${r},${g},${b},${a})`;
+}
+
 const MARKETS = {
   korea: {
     id: 'korea',
@@ -237,13 +245,18 @@ export default function Leverage({ marketId = 'korea' }) {
         ...win.shown.map(l => ({
           label: l.label,
           data: win.layers[l.key],
-          backgroundColor: l.color,
+          // A wash, not a saturated block — the grid stays legible through
+          // the fill and the stack reads as layered glass, not stacked paint.
+          backgroundColor: alpha(l.color, 0.55),
           // A 2px gap in the surface colour between stacked bands, so adjacent
           // fills read as separate volumes instead of one gradient.
           borderColor: SURFACE,
           borderWidth: 2,
           pointRadius: 0,
           pointHoverRadius: 4,
+          pointHoverBackgroundColor: l.color,
+          pointHoverBorderColor: SURFACE,
+          pointHoverBorderWidth: 2,
           tension: 0.25,
           fill: true,
           stack: 'firepower',
@@ -256,6 +269,9 @@ export default function Leverage({ marketId = 'korea' }) {
           borderWidth: 2,
           pointRadius: 0,
           pointHoverRadius: 4,
+          pointHoverBackgroundColor: INK,
+          pointHoverBorderColor: SURFACE,
+          pointHoverBorderWidth: 2,
           tension: 0.25,
           fill: false,
         },
@@ -303,7 +319,9 @@ export default function Leverage({ marketId = 'korea' }) {
         // A stacked area encodes each layer as a height, so the baseline has to
         // be zero — a cropped axis silently misstates every band's size.
         beginAtZero: true,
-        grid: { color: 'rgba(255,255,255,.04)' },
+        // Bumped from the usual hairline (.04) so the grid still reads through
+        // the now-translucent fills instead of disappearing under the wash.
+        grid: { color: 'rgba(255,255,255,.07)' },
         ticks: { color: MUTED, callback: v => `${v}${market.unit}`, font: { size: 10 } },
       },
     },

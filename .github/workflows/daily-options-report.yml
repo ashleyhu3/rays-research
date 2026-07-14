@@ -23,7 +23,7 @@ on:
         description: 'YYYY-MM-DD report date; defaults to the current Hong Kong date'
         required: false
       tickers:
-        description: 'Comma-separated tickers; defaults to OPTIONS_REPORT_TICKERS or TSM,ASML,INTC,TXN,STM,TEL,GOOG,NOK'
+        description: 'Comma-separated tickers; defaults to OPTIONS_REPORT_TICKERS or TSM,ASML,INTC,TXN,STM,TEL,GOOG,NOK,SOXX'
         required: false
 
 concurrency:

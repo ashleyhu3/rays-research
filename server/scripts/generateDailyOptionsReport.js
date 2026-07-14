@@ -19,7 +19,7 @@ const PRIOR_BLOB = {
 const PRIOR_LOOKAHEAD_DAYS = 120;
 const PRIOR_CACHE_MAX = 600;
 
-const DEFAULT_TICKERS = ['TSM', 'ASML', 'INTC', 'TXN', 'STM', 'TEL', 'GOOG', 'NOK'];
+const DEFAULT_TICKERS = ['TSM', 'ASML', 'INTC', 'TXN', 'STM', 'TEL', 'GOOG', 'NOK', 'SOXX'];
 const BASE = 'https://api.massive.com';
 const CALL_COLOR = '#059669';
 const PUT_COLOR = '#dc2626';
