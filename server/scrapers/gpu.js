@@ -79,25 +79,39 @@ function trimmedMedian(values) {
   if (a.length === 0) return null;
   const cut = Math.floor(a.length * 0.1);
   const core = a.length >= 5 ? a.slice(cut, a.length - cut) : a;
-  return core[Math.floor(core.length / 2)];
+  const mid = Math.floor(core.length / 2);
+  return core.length % 2 ? core[mid] : (core[mid - 1] + core[mid]) / 2;
 }
 
 async function getVastPrices() {
-  const q = JSON.stringify({
-    verified:  { eq: true },
-    external:  { eq: false },
-    rentable:  { eq: true },
-    rented:    { eq: false },
-    num_gpus:  { eq: 1 },
-    gpu_name:  { in: VAST_GPUS },
+  async function offersForGpu(gpuName) {
+    const q = JSON.stringify({
+      verified:  { eq: true },
+      external:  { eq: false },
+      rentable:  { eq: true },
+      rented:    { eq: false },
+      num_gpus:  { eq: 1 },
+      gpu_name:  { eq: gpuName },
+    });
+    const { data } = await axios.get(
+      'https://console.vast.ai/api/v0/bundles/',
+      { params: { q }, timeout: 20000 }
+    );
+    return data.offers || [];
+  }
+
+  // Fetch each model separately. A mixed-GPU bundles query currently returns a
+  // capped page across the whole result set, which can undercount thin models
+  // and skew medians toward whichever GPUs happen to fill the page.
+  const results = await Promise.allSettled(VAST_GPUS.map(offersForGpu));
+  const offers = [];
+  results.forEach((r, i) => {
+    if (r.status === 'fulfilled') offers.push(...r.value);
+    else console.warn(`[gpu] vast.ai ${VAST_GPUS[i]} fetch failed:`, r.reason?.message ?? r.reason);
   });
-  const { data } = await axios.get(
-    `https://console.vast.ai/api/v0/bundles/?q=${encodeURIComponent(q)}`,
-    { timeout: 20000 }
-  );
 
   const byGpu = {};
-  (data.offers || []).forEach(o => {
+  offers.forEach(o => {
     const g = normalizeKey(o.gpu_name.replace(/ /g, '_'));
     if (!byGpu[g]) byGpu[g] = { od: [], spot: [] };
     if (Number.isFinite(o.dph_total)) byGpu[g].od.push(o.dph_total);
@@ -222,7 +236,7 @@ async function getGpuPrices() {
     availability,
     history: historyPayload,
     asOf: new Date().toISOString().slice(0, 10),
-    methodology: 'Live vast.ai marketplace medians across verified single-GPU offers, recorded daily. On-demand = dph_total; spot = the interruptible min_bid floor. Both use a 10% trimmed median when enough samples exist, and preserve the verified-offer count so thin-supply model quotes are still visible instead of being dropped. The time series accumulates from the day scraping began — there is no public archive of vast.ai spot history to backfill.',
+    methodology: 'Live vast.ai marketplace medians across verified single-GPU offers, fetched per GPU model to avoid capped mixed-result pages. On-demand = dph_total; spot = the interruptible min_bid floor. Both use a true median after trimming 10% from each tail when enough samples exist, and preserve the verified-offer count so thin-supply model quotes are still visible instead of being dropped. The time series accumulates from the day scraping began — there is no public archive of vast.ai spot history to backfill.',
   };
 }
 

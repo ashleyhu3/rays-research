@@ -170,7 +170,7 @@ export const CHART_TEXT = {
   // ── Pricing · GPU & memory spot (view: pricing) ───────────────────────
   'gpu-index': {
     title: 'Mainstream GPU Rental Benchmark ($/hr)',
-    subtitle: 'Average on-demand $/hr across the tracked GPUs.',
+    subtitle: 'Smoothed average on-demand $/hr across tracked vast.ai verified single-GPU rental offers.',
   },
   'gpu-by-model': {
     title: 'GPU Rental Price by Model ($/hr)',
@@ -178,7 +178,11 @@ export const CHART_TEXT = {
   },
   'gpu-spot-combined': {
     title: 'GPU Spot Price by Model ($/hr)',
-    subtitle: 'H100 SXM, H200, B200, A100 SXM4, and RTX 5090 $/GPU-hr. Uses vast.ai interruptible bid floors where available, falling back to the model rental median when a thin-supply market has no bid quote; H100/H200/A100 pre-vast.ai history is AWS-indexed.',
+    subtitle: 'H100 SXM, H200, B200, A100 SXM4, and RTX 5090 $/GPU-hr. Uses AWS EC2 public spot prices for H100/H200/A100 where available; otherwise fills gaps with vast.ai market quotes and Ornn OCPI chart-extracted history.',
+  },
+  'gpu-spot-average': {
+    title: 'Aggregate Five-Model GPU Spot Average ($/hr)',
+    subtitle: 'Equal-weight average of the five GPU spot-price model lines: H100 SXM, H200, B200, A100 SXM4, and RTX 5090.',
   },
   'aws-chip-spot': {
     title: 'AWS AI-Chip Spot Price — Trainium / Inferentia ($/chip/hr)',

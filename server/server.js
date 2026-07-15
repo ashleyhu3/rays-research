@@ -576,6 +576,16 @@ app.post('/api/alerts/daily-options-report/generate', async (req, res) => {
   }
 });
 
+/* ── Earnings calendar (Alerts page) ─────────────────────────────────── */
+// Events are scraped ahead of time into Mongo (FMP once a month, Alpha Vantage
+// in small daily batches — see server/techEarningsCalendar.js), so this route
+// is a synchronous cache read and never blocks on either vendor.
+const techEarningsCalendar = require('./techEarningsCalendar');
+
+app.get('/api/alerts/earnings-calendar', (req, res) => {
+  res.json({ events: techEarningsCalendar.getStoredEvents() });
+});
+
 app.post('/api/chat', async (req, res) => {
   const { message, history } = req.body ?? {};
   if (!message || typeof message !== 'string') {
@@ -622,6 +632,9 @@ const STORAGE_BLOBS = [
   // Earnings-call dates (Alpha Vantage) that the report's comparison lines are
   // aligned to. Cached for a week — the free tier allows only 25 calls a day.
   { name: 'earningsDates', file: path.join(DATA_DIR, 'earningsDates.json') },
+  // The Calendar view's tech-sector watchlist — scraped monthly (FMP) plus a
+  // small daily Alpha Vantage batch. See server/techEarningsCalendar.js.
+  { name: 'techEarningsCalendar', file: path.join(DATA_DIR, 'techEarningsCalendar.json') },
   // Latest scrape per source — loaded into the request cache on boot for an
   // instant first paint instead of blocking on live re-scrapes.
   { name: 'latestSnapshots', file: path.join(DATA_DIR, 'latestSnapshots.json') },

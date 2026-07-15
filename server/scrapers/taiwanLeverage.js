@@ -38,9 +38,9 @@
  *   It is carried forward between weekly observations, while the numerator
  *   continues to update daily.
  *
- * There is deliberately no cash layer and no short band: Taiwan publishes no
- * daily customer-cash aggregate, and short balances are reported in lots, which
- * cannot be stacked onto a money axis.
+ * There is deliberately no cash layer. Taiwan's exchange-listed reverse funds
+ * target -1× daily returns rather than -2×; their AUM is tracked separately from
+ * bullish firepower so it can be charted without changing the leverage total.
  */
 const path = require('path');
 const { inflateRawSync } = require('zlib');
@@ -218,6 +218,7 @@ const YUANTA_DEVICE = '9ba170bb-6dfc-4efc-8d67-30b9423937f0';
 // own. Yuanta's other 2× funds (Yuanta Futures single-stock/rate/commodity
 // notes) answer on the same API but are left out of the layer for now.
 const YUANTA_FUNDS = ['00631L'];
+const YUANTA_REVERSE_FUNDS = ['00632R'];
 
 async function yuantaFund(code, from, to) {
   const q = new URLSearchParams({
@@ -249,7 +250,7 @@ const TERMS = [
   [/期元大/g, 'Yuanta Futures'], [/元大/g, 'Yuanta'],
   [/台灣50/g, 'Taiwan 50'], [/[臺台]灣加權/g, 'TAIEX'], [/滬深300/g, 'CSI 300'],
   [/美債20/g, 'US 20Y Treasury'], [/美元指/g, 'US Dollar Index'],
-  [/S&P黃金/g, 'S&P Gold'], [/S&P日圓/g, 'S&P Yen'], [/正2/g, '2×'],
+  [/S&P黃金/g, 'S&P Gold'], [/S&P日圓/g, 'S&P Yen'], [/正2/g, '2×'], [/反1/g, 'Bear -1×'],
 ];
 
 function englishName(name) {
@@ -270,10 +271,11 @@ function englishName(name) {
 // empty reference date reports the fund's net assets as literally "NT$0",
 // which is how an empty day is told apart from a real one.
 const FUBON_CODE = '00675L';
+const FUBON_REVERSE_CODE = '00676R';
 const FUBON_HOST = 'https://websys.fsit.com.tw';
 
-function fubonPcfUrl(ddate) {
-  return `${FUBON_HOST}/FubonETF/Trade/Pcf.aspx?ddate=${ddate}&stkId=${FUBON_CODE}`;
+function fubonPcfUrl(code, ddate) {
+  return `${FUBON_HOST}/FubonETF/Trade/Pcf.aspx?ddate=${ddate}&stkId=${code}`;
 }
 
 // Fields are read by their label rather than a fixed position, the same
@@ -291,8 +293,8 @@ function parseFubonPcf(html) {
   return { day: `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}`, aum: aum / OKU };
 }
 
-async function fubonPcfDay(ddate) {
-  const res = await fetch(fubonPcfUrl(ddate), {
+async function fubonPcfDay(code, ddate) {
+  const res = await fetch(fubonPcfUrl(code, ddate), {
     headers: { 'User-Agent': UA, 'Referer': `${FUBON_HOST}/FubonETF/` },
     signal: AbortSignal.timeout(30000),
   });
@@ -308,19 +310,30 @@ async function fubonPcfDay(ddate) {
 // getTaiwanLeverage (to build the per-day fund breakdown) and assemble() (to
 // filter stored history down to funds this scraper still sources).
 const FUND_CODES = [...YUANTA_FUNDS, FUBON_CODE];
+const REVERSE_FUND_CODES = [...YUANTA_REVERSE_FUNDS, FUBON_REVERSE_CODE];
 
-async function fubonFundHistory(from, to) {
+async function fubonFundHistory(code, from, to, history = null, field = null) {
   const out = {};
   const end = new Date(`${to}T00:00:00Z`);
   for (let t = new Date(`${from}T00:00:00Z`); t <= end; t = new Date(t.getTime() + 86400000)) {
     const dow = t.getUTCDay();
     if (dow === 0 || dow === 6) continue;
+    // The PCF returned for a query date is dated the next trading session. Use
+    // the next weekday as the stored-day check; exchange holidays may cause one
+    // harmless re-read, but a later observation can never mask an earlier gap.
+    if (history && field) {
+      let observation = new Date(t.getTime() + 86400000);
+      while (observation.getUTCDay() === 0 || observation.getUTCDay() === 6) {
+        observation = new Date(observation.getTime() + 86400000);
+      }
+      if (Number.isFinite(history[iso(observation)]?.[field]?.[code])) continue;
+    }
     const ddate = iso(t).replace(/-/g, '');
     try {
-      const row = await fubonPcfDay(ddate);
+      const row = await fubonPcfDay(code, ddate);
       if (row) out[row.day] = row.aum;
     } catch (e) {
-      console.warn(`[taiwanLeverage] Fubon PCF ${ddate}: ${e.message}`);
+      console.warn(`[taiwanLeverage] Fubon ${code} PCF ${ddate}: ${e.message}`);
     }
     await sleep(300);                                     // be a good citizen
   }
@@ -373,8 +386,17 @@ async function getTaiwanLeverage(days = 30) {
   const today = new Date();
   const from = iso(new Date(today.getTime() - days * 86400000));
   const to = iso(today);
+  const history = loadHistory();
 
-  const [listed, yuantaFunds, fubonDays, marketTotal, listedMarketCaps] = await Promise.all([
+  const [
+    listed,
+    yuantaFunds,
+    yuantaReverseFunds,
+    fubonDays,
+    fubonReverseDays,
+    marketTotal,
+    listedMarketCaps,
+  ] = await Promise.all([
     // FinMind is a convenience — it serves TWSE's own figure over a whole range
     // in one request — but it is a free tier that rate-limits (402). It must not
     // be able to take the scrape down with it: TWSE, TPEx and Yuanta are the
@@ -387,8 +409,16 @@ async function getTaiwanLeverage(days = 30) {
       console.warn(`[taiwanLeverage] Yuanta ${c}: ${e.message}`);
       return { name: c, days: {} };
     }))),
-    fubonFundHistory(from, to).catch(e => {
+    Promise.all(YUANTA_REVERSE_FUNDS.map(c => yuantaFund(c, from, to).catch(e => {
+      console.warn(`[taiwanLeverage] Yuanta reverse ${c}: ${e.message}`);
+      return { name: c, days: {} };
+    }))),
+    fubonFundHistory(FUBON_CODE, from, to, history, 'funds').catch(e => {
       console.warn(`[taiwanLeverage] Fubon PCF unavailable (${e.message})`);
+      return {};
+    }),
+    fubonFundHistory(FUBON_REVERSE_CODE, from, to, history, 'reverseFunds').catch(e => {
+      console.warn(`[taiwanLeverage] Fubon reverse PCF unavailable (${e.message})`);
       return {};
     }),
     listedEtfMarketTotal().catch(e => { console.warn('[taiwanLeverage] ETF market feed:', e.message); return null; }),
@@ -398,8 +428,10 @@ async function getTaiwanLeverage(days = 30) {
     }),
   ]);
   const etfFunds = [...yuantaFunds, { name: 'Fubon TAIEX 2×', days: fubonDays }];
-
-  const history = loadHistory();
+  const reverseEtfFunds = [
+    ...yuantaReverseFunds,
+    { name: 'Fubon TAIEX Bear -1×', days: fubonReverseDays },
+  ];
 
   // Which days to work on. FinMind's keys are the trading calendar when it
   // answers; without it, fall back to every calendar day in the window (TWSE and
@@ -527,6 +559,23 @@ async function getTaiwanLeverage(days = 30) {
     };
   }
   history.names = names;
+  const reverseNames = {};
+  reverseEtfFunds.forEach((f, i) => { reverseNames[REVERSE_FUND_CODES[i]] = f.name; });
+  const reverseEtfDays = new Set(reverseEtfFunds.flatMap(f => Object.keys(f.days)));
+  for (const day of reverseEtfDays) {
+    const perFund = {};
+    reverseEtfFunds.forEach((f, i) => {
+      const aum = f.days[day];
+      if (Number.isFinite(aum)) perFund[REVERSE_FUND_CODES[i]] = round(aum);
+    });
+    if (!Object.keys(perFund).length) continue;
+    history[day] = {
+      ...(history[day] ?? {}),
+      reverseEtf: round(Object.values(perFund).reduce((a, b) => a + b, 0)),
+      reverseFunds: perFund,
+    };
+  }
+  history.reverseNames = reverseNames;
   if (marketTotal?.day) {
     history.etfMarket = marketTotal;                      // whole 2× market, today
   }
@@ -565,17 +614,24 @@ function assemble(history) {
   // roster); carrying those forward alongside today's funds double-counts the
   // layer — it once reported 102% of the entire listed 2× market. Ignore
   // anything outside FUND_CODES.
-  const universe = new Set(FUND_CODES);
-  const etfByDay = {};
-  const lastAum = {};
-  for (const day of dates) {
-    const funds = history[day]?.funds ?? {};
-    for (const [code, aum] of Object.entries(funds)) {
-      if (universe.has(code) && Number.isFinite(aum)) lastAum[code] = aum;
+  const carriedFundTotals = (field, codes) => {
+    const universe = new Set(codes);
+    const totals = {};
+    const lastAum = {};
+    for (const day of dates) {
+      for (const [code, aum] of Object.entries(history[day]?.[field] ?? {})) {
+        if (universe.has(code) && Number.isFinite(aum)) lastAum[code] = aum;
+      }
+      const current = Object.keys(lastAum);
+      if (current.length) totals[day] = round(current.reduce((sum, code) => sum + lastAum[code], 0));
     }
-    const codes = Object.keys(lastAum);
-    if (codes.length) etfByDay[day] = round(codes.reduce((s, c) => s + lastAum[c], 0));
-  }
+    return { totals, lastAum };
+  };
+  const { totals: etfByDay, lastAum } = carriedFundTotals('funds', FUND_CODES);
+  const { totals: reverseEtfByDay, lastAum: lastReverseAum } = carriedFundTotals(
+    'reverseFunds',
+    REVERSE_FUND_CODES,
+  );
 
   for (const day of dates) {
     for (const key of keys) {
@@ -593,6 +649,7 @@ function assemble(history) {
     return Number.isFinite(a) || Number.isFinite(b) ? round((a ?? 0) + (b ?? 0)) : null;
   });
   const total = dates.map((_, i) => round((margin[i] ?? 0) + (series.etf[i] ?? 0)));
+  const reverseEtf = dates.map(day => reverseEtfByDay[day] ?? null);
 
   // A ratio is only valid when every component is present. The amount chart can
   // tolerate a temporarily missing layer by carrying it forward, but treating a
@@ -615,6 +672,16 @@ function assemble(history) {
   const funds = Object.entries(lastAum)
     .map(([code, aum]) => ({ code, name: names[code] ?? code, aum: round(aum) }))
     .sort((a, b) => b.aum - a.aum);
+  const lastReverseDay = [...dates].reverse().find(d => history[d]?.reverseFunds);
+  const reverseNames = history.reverseNames ?? {};
+  const reverseFunds = Object.entries(lastReverseAum)
+    .map(([code, aum]) => ({
+      code,
+      name: reverseNames[code] ?? code,
+      kind: 'reverse-index',
+      aum: round(aum),
+    }))
+    .sort((a, b) => b.aum - a.aum);
 
   const i = dates.length - 1;
   const marketSizeDate = [...dates].reverse().find(d =>
@@ -625,6 +692,7 @@ function assemble(history) {
     marginListed: series.marginListed,
     marginOtc: series.marginOtc,
     etf: series.etf,
+    reverseEtf,
     total,
     marketSize,
     marketSizeListed: series.marketSizeListed,
@@ -633,6 +701,8 @@ function assemble(history) {
     marketSizeDate,
     funds,
     fundsDate: lastDay ?? null,
+    reverseFunds,
+    reverseFundsDate: lastReverseDay ?? null,
     // Whole listed 2× market today, so the page can say what share of it the
     // Yuanta-only ETF layer represents.
     etfMarket: history.etfMarket ?? null,
@@ -643,6 +713,7 @@ function assemble(history) {
       marginListed: series.marginListed[i] ?? null,
       marginOtc: series.marginOtc[i] ?? null,
       etf: series.etf[i] ?? null,
+      reverseEtf: reverseEtf[i] ?? null,
       total: total[i] ?? null,
       marketSize: marketSize[i] ?? null,
       marketSizeListed: series.marketSizeListed[i] ?? null,

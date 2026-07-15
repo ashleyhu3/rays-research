@@ -1,5 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useOptionsReport } from '../../context/OptionsReportContext';
+import EarningsCalendar from './Calendar';
+
+// Sentinel `selected` value for the Calendar nav item — distinct from any
+// ticker symbol so it can share the same sidebar list and selection state.
+const CALENDAR_ID = '__calendar__';
 
 // A ticker's call/put flow "surge": today's summed contract volume is a large
 // step up from the prior trading day. Mirrors the up/down arrows in the pricing
@@ -172,7 +177,8 @@ export default function Alerts() {
     const total = t => (t.flow?.callToday ?? 0) + (t.flow?.putToday ?? 0);
     return total(b) - total(a);
   });
-  const active = tickers.find(t => t.ticker === selected) ?? tickers[0] ?? null;
+  const showCalendar = selected === CALENDAR_ID;
+  const active = showCalendar ? null : (tickers.find(t => t.ticker === selected) ?? tickers[0] ?? null);
 
   return (
     <div className="alerts-page">
@@ -180,29 +186,38 @@ export default function Alerts() {
         <div className="alerts-note err" style={{ marginBottom: 14, maxWidth: 'none' }}>{msg.text}</div>
       )}
 
-      {loading && !report ? (
-        <div className="or-status">Loading the latest report…</div>
-      ) : !active ? (
-        <div className="or-status">
-          No report has been generated yet. It builds automatically at 7:45 AM Hong Kong time — or click “Refresh now”.
-        </div>
-      ) : (
-        <div className="or-layout">
-          <nav className="or-nav" aria-label="Tickers">
-            {tickers.map(t => (
-              <TickerNavItem
-                key={t.ticker}
-                t={t}
-                active={t.ticker === active.ticker}
-                onSelect={setSelected}
-              />
-            ))}
-          </nav>
-          <div className="or-report">
+      <div className="or-layout">
+        <nav className="or-nav" aria-label="Tickers">
+          <button
+            type="button"
+            className={`or-nav-item or-nav-item--calendar${showCalendar ? ' active' : ''}`}
+            onClick={() => setSelected(CALENDAR_ID)}
+          >
+            <span className="or-nav-name">Calendar</span>
+          </button>
+          {tickers.map(t => (
+            <TickerNavItem
+              key={t.ticker}
+              t={t}
+              active={!showCalendar && t.ticker === active?.ticker}
+              onSelect={setSelected}
+            />
+          ))}
+        </nav>
+        <div className="or-report">
+          {showCalendar ? (
+            <EarningsCalendar />
+          ) : loading && !report ? (
+            <div className="or-status">Loading the latest report…</div>
+          ) : !active ? (
+            <div className="or-status">
+              No report has been generated yet. It builds automatically at 7:45 AM Hong Kong time — or click “Refresh now”.
+            </div>
+          ) : (
             <TickerReport t={active} />
-          </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

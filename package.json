@@ -42,7 +42,7 @@
     "test:transcripts": "node --test server/transcripts/*.test.js server/transcripts/*.test.mjs",
     "test:mailer": "node --test server/mailer.test.js",
     "test:options-report": "node --test server/earningsDates.test.js server/optionsReportChart.test.js server/optionsScraper.test.js",
-    "test:leverage": "node --test server/scrapers/taiwanLeverage.test.js"
+    "test:leverage": "node --test server/scrapers/koreaLeverage.test.js server/scrapers/taiwanLeverage.test.js"
   },
   "dependencies": {
     "@aws-sdk/client-pricing": "^3.1069.0",

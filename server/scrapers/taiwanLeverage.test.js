@@ -47,3 +47,22 @@ test('assemble leaves the ratio null for a missing numerator or zero denominator
 
   assert.deepEqual(data.leverageRatio, [null, null]);
 });
+
+test('assemble sums reverse funds separately and carries each issuer through gaps', () => {
+  const data = _test.assemble({
+    reverseNames: {
+      '00632R': 'Yuanta Taiwan 50 Bear -1×',
+      '00676R': 'Fubon TAIEX Bear -1×',
+    },
+    '2026-01-02': {
+      reverseFunds: { '00632R': 200, '00676R': 20 },
+    },
+    '2026-01-05': {
+      reverseFunds: { '00632R': 210 },
+    },
+  });
+
+  assert.deepEqual(data.reverseEtf, [220, 230]);
+  assert.equal(data.latest.reverseEtf, 230);
+  assert.deepEqual(data.reverseFunds.map(fund => fund.code), ['00632R', '00676R']);
+});

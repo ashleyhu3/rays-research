@@ -138,6 +138,26 @@ function setup() {
   cron.schedule('30 */6 * * *', () => warmOptions());
   setTimeout(() => warmOptions().catch(e => console.warn('[warmOptions] startup warm failed:', e.message)), 20000);
 
+  // Tech-sector earnings calendar (Alerts page Calendar view): FMP re-seeds the
+  // display window for free on the first run after it rolls over, then a small Alpha
+  // Vantage batch fills in whatever FMP's capped feed doesn't cover — spread
+  // across days rather than done all at once, since ~60 tickers would burst
+  // past Alpha Vantage's 25-request daily cap. See techEarningsCalendar.js.
+  cron.schedule('0 4 * * *', async () => {
+    try {
+      const { runDailyBatch } = require('./techEarningsCalendar');
+      const state = await runDailyBatch();
+      console.log(`[tech-earnings-calendar] ${state.range ?? state.month}: ${Object.keys(state.events).length} events, ${state.pending.length} pending`);
+    } catch (e) {
+      console.error('[tech-earnings-calendar] daily batch failed:', e.message);
+    }
+  }, { timezone: 'Asia/Hong_Kong' });
+  setTimeout(() => {
+    require('./techEarningsCalendar').runDailyBatch()
+      .then(state => console.log(`[tech-earnings-calendar] startup batch: ${state.range ?? state.month}, ${Object.keys(state.events).length} events, ${state.pending.length} pending`))
+      .catch(e => console.warn('[tech-earnings-calendar] startup batch failed:', e.message));
+  }, 25000);
+
   // Daily options report: scrape options data and generate the web-visible
   // report at 7:45am Hong Kong time. The GitHub workflow runs the same task for
   // sleeping deployments.

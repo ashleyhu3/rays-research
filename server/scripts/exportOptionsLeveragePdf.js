@@ -11,6 +11,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { renderPdf } = require('./renderPdf');
+const storage = require('../storage');
 
 const ROOT = path.join(__dirname, '..', '..');
 const OUT = path.resolve(process.argv[2] || path.join(
@@ -25,10 +26,15 @@ const OUT = path.resolve(process.argv[2] || path.join(
 const OPTIONS_FILE = process.env.OPTIONS_PAYLOAD
   ?? path.join(ROOT, 'server', 'data', 'optionsChartPayload.json');
 const TICKERS = ['TSM', 'SOXX', 'ASML'];
+const LEVERAGE_BLOBS = [
+  { name: 'koreaLeverageHistory', file: path.join(ROOT, 'server', 'data', 'koreaLeverageHistory.json') },
+  { name: 'taiwanLeverageHistory', file: path.join(ROOT, 'server', 'data', 'taiwanLeverageHistory.json') },
+];
 
 const BLUE = '#4577b4';
 const ORANGE = '#ad622d';
 const PURPLE = '#7864b4';
+const REVERSE = '#b24a2f';
 const INK = '#1f2328';
 const MUTED = '#5b6570';
 const SURFACE = '#ffffff';
@@ -43,7 +49,8 @@ const MARKETS = [
     layers: [
       { key: 'collateral', label: 'Securities-collateral loans', color: BLUE },
       { key: 'margin', label: 'Margin loans', color: ORANGE },
-      { key: 'etf', label: '2× leveraged ETFs', color: PURPLE },
+      { key: 'etf', label: '2× leveraged ETFs', color: PURPLE, table: 'long' },
+      { key: 'reverseEtf', label: 'Reverse 2× ETFs', color: REVERSE, table: 'reverse' },
     ],
   },
   {
@@ -54,7 +61,8 @@ const MARKETS = [
     scale: 0.1,
     layers: [
       { key: 'margin', label: 'Margin loans', color: ORANGE },
-      { key: 'etf', label: '2× leveraged ETFs', color: PURPLE },
+      { key: 'etf', label: '2× leveraged ETFs', color: PURPLE, table: 'long' },
+      { key: 'reverseEtf', label: 'Reverse ETFs (-1×)', color: REVERSE, table: 'reverse' },
     ],
   },
 ];
@@ -140,27 +148,35 @@ function leverageCharts() {
         data: (raw[layer.key] ?? []).slice(from).map(value => (
           Number.isFinite(value) ? value * market.scale : null
         )),
-      }));
+    }));
     const fmt = value => (Number.isFinite(value) ? `${value.toFixed(1)}${market.unit}` : '—');
+    const fmtFund = value => {
+      if (!Number.isFinite(value)) return '—';
+      return `${value < 0.1 ? value.toFixed(2) : value.toFixed(1)}${market.unit}`;
+    };
 
-    // The ETF layer is the only one made of named funds, so it is the only chart
-    // that carries the page's fund table. Shares are of that layer's latest total,
-    // which is the height of the band the table sits under.
+    // Both ETF charts carry a fund table. Each share is calculated against the
+    // aggregate line immediately above it, so the graph and table use one total.
     const etfLatest = layers.find(layer => layer.key === 'etf')?.data.at(-1) ?? null;
-    const funds = (raw.funds ?? []).map(fund => ({
+    const reverseEtfLatest = layers.find(layer => layer.key === 'reverseEtf')?.data.at(-1) ?? null;
+    const describeFunds = (rows, latest) => rows.map(fund => ({
       code: fund.code,
       name: fund.name,
       kind: fund.kind ?? null,
       launched: LAUNCHES[fund.code] ? shortDate(LAUNCHES[fund.code]) : '—',
-      aum: fmt(fund.aum * market.scale),
-      share: etfLatest ? `${(((fund.aum * market.scale) / etfLatest) * 100).toFixed(1)}%` : '—',
+      aum: fmtFund(fund.aum * market.scale),
+      share: latest ? `${(((fund.aum * market.scale) / latest) * 100).toFixed(1)}%` : '—',
     }));
+    const funds = describeFunds(raw.funds ?? [], etfLatest);
+    const reverseFunds = describeFunds(raw.reverseFunds ?? [], reverseEtfLatest);
 
     return {
       ...market,
       dates,
       fundsDate: raw.fundsDate ?? null,
       funds,
+      reverseFundsDate: raw.reverseFundsDate ?? null,
+      reverseFunds,
       // One chart per layer, each carrying its own labelled sessions rather than a
       // row of cards above the section: the two marked dates and the latest point,
       // labelled with the date and the figure standing on it.
@@ -195,6 +211,7 @@ function leverageCharts() {
 function fundKind(kind) {
   if (kind === 'hk') return 'Single-stock 2× (HK)';
   if (kind === 'single') return 'Single-stock 2×';
+  if (kind === 'reverse-index') return 'Index -2×';
   return 'Index 2×';
 }
 
@@ -236,11 +253,14 @@ function optionPage(charts) {
     </section>`;
 }
 
-function fundsTable(market) {
+function fundsTable(market, layer) {
   const showKind = market.id === 'korea';
+  const reverse = layer.table === 'reverse';
+  const funds = reverse ? market.reverseFunds : market.funds;
+  const date = reverse ? market.reverseFundsDate : market.fundsDate;
   return `
     <table class="funds">
-      <caption>2× leveraged ETF layer, by fund · ${escapeHtml(market.fundsDate ?? '—')}</caption>
+      <caption>${escapeHtml(layer.label)}, by fund · ${escapeHtml(date ?? '—')}</caption>
       <thead>
         <tr>
           <th>Fund</th>
@@ -252,7 +272,7 @@ function fundsTable(market) {
         </tr>
       </thead>
       <tbody>
-        ${market.funds.map(fund => `
+        ${funds.map(fund => `
           <tr>
             <td>${escapeHtml(fund.name)}</td>
             <td class="code">${escapeHtml(fund.code)}</td>
@@ -269,9 +289,9 @@ function fundsTable(market) {
 // its own latest value at the final point, and the ETF chart carries the table of
 // the funds that make it up.
 function leveragePage(market, index) {
-  // Each market's charts take whatever height its own page has left: three layers
-  // plus a seven-fund table is a tighter budget than two layers and two funds.
-  const height = market.layers.length > 2 ? 190 : 330;
+  // Korea has one additional credit layer and a longer long-ETF table. Give its
+  // four plots a little less height while retaining the same chart treatment.
+  const height = market.layers.length > 3 ? 140 : 220;
   return `
     <section class="page leverage-page">
       <header class="page-head">
@@ -287,7 +307,7 @@ function leveragePage(market, index) {
             height="${height}"
             style="height:${height}px"
           ></canvas>
-          ${layer.key === 'etf' ? fundsTable(market) : ''}
+          ${layer.table ? fundsTable(market, layer) : ''}
         </div>`).join('')}
     </section>`;
 }
@@ -312,7 +332,7 @@ function buildHtml(options, markets) {
   <meta charset="utf-8">
   <title>Options and Leverage</title>
   <style>
-    @page { size: 297mm 250mm; margin: 0; }
+    @page { size: 297mm 280mm; margin: 0; }
     * { box-sizing: border-box; }
     html, body { margin: 0; background: #fefefe; color: ${INK}; }
     body {
@@ -324,7 +344,7 @@ function buildHtml(options, markets) {
       position: relative;
       isolation: isolate;
       width: 297mm;
-      height: 250mm;
+      height: 280mm;
       padding: 6mm 12mm;
       overflow: hidden;
       page-break-after: always;
@@ -534,11 +554,13 @@ function buildHtml(options, markets) {
 }
 
 async function main() {
-  const options = optionsCharts();
-  const markets = leverageCharts();
-  const htmlPath = path.join(os.tmpdir(), `options-leverage-${Date.now()}.html`);
-  fs.writeFileSync(htmlPath, buildHtml(options, markets));
+  await storage.init(LEVERAGE_BLOBS);
+  let htmlPath = null;
   try {
+    const options = optionsCharts();
+    const markets = leverageCharts();
+    htmlPath = path.join(os.tmpdir(), `options-leverage-${Date.now()}.html`);
+    fs.writeFileSync(htmlPath, buildHtml(options, markets));
     await renderPdf({
       htmlPath,
       pdfPath: OUT,
@@ -546,7 +568,8 @@ async function main() {
       margin: { top: 0, bottom: 0, left: 0, right: 0 },
     });
   } finally {
-    fs.rmSync(htmlPath, { force: true });
+    if (htmlPath) fs.rmSync(htmlPath, { force: true });
+    await storage.close();
   }
   console.log(OUT);
 }

@@ -12,10 +12,10 @@ const storage = require('../storage');
  *     EC2 DescribeSpotPriceHistory — see scripts/backfillAwsSpot.js. Those days
  *     carry `x: true` (exact) and the script stores an implied on-demand price in
  *     `_meta.onDemand`, calibrated so the forward series joins on continuously.
- *   • FORWARD (daily, free, no credentials): the public Spot Instance Advisor
- *     feed gives each accelerator's spot savings % (`s`) and interruption rating
- *     (`r`). Spot $ for the day is reconstructed as onDemand × (1 − savings) so
- *     the price line keeps moving without any paid API or AWS key.
+ *   • FORWARD (daily, free, no credentials): the public EC2 spot pricing table
+ *     gives current spot prices by region and instance type. Spot Advisor still
+ *     supplies spot savings % (`s`) and interruption rating (`r`), and acts as a
+ *     derived-price fallback if the pricing table is unavailable.
  *
  * Everything the forward path needs is a no-auth HTTPS GET, so it costs nothing
  * to keep running.
@@ -23,6 +23,7 @@ const storage = require('../storage');
 const HISTORY_FILE = path.join(__dirname, '..', 'data', 'awsHistory.json');
 const BLOB = 'awsHistory';
 const ADVISOR_URL = 'https://spot-bid-advisor.s3.amazonaws.com/spot-advisor-data.json';
+const PUBLIC_SPOT_URL = 'https://website.spot.ec2.aws.a2z.com/spot.json';
 const DAY_MS = 86400000;
 
 // Accelerator → the EC2 instance types that carry it and the chip count each.
@@ -35,6 +36,11 @@ const ACCEL = {
   Inferentia2: { 'inf2.48xlarge': 12 },
 };
 const REGIONS = ['us-east-1', 'us-west-2', 'us-east-2'];
+
+const INSTANCE = {};
+for (const [accel, instances] of Object.entries(ACCEL)) {
+  for (const [it, chips] of Object.entries(instances)) INSTANCE[it] = { accel, chips };
+}
 
 const isoDay = ms => new Date(ms).toISOString().slice(0, 10);
 const median = a => { const s = a.filter(Number.isFinite).sort((x, y) => x - y); return s.length ? s[Math.floor(s.length / 2)] : null; };
@@ -58,6 +64,44 @@ function advisorStat(advisor, instances) {
   }
   const s = median(sv), r = median(rt);
   return { savings: s, interrupt: r == null ? null : Math.round(r) };
+}
+
+function linuxUsd(row) {
+  const v = row?.valueColumns?.find(c => c.name === 'linux')?.prices?.USD;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+function parseSpotPayload(data) {
+  if (typeof data === 'string') {
+    const trimmed = data.trim();
+    const m = trimmed.match(/^callback\(([\s\S]*)\);?$/);
+    data = JSON.parse(m ? m[1] : trimmed);
+  }
+  const byAccel = {};
+  for (const region of data?.config?.regions ?? []) {
+    if (!REGIONS.includes(region.region)) continue;
+    for (const group of region.instanceTypes ?? []) {
+      for (const row of group.sizes ?? []) {
+        const meta = INSTANCE[row.size];
+        if (!meta) continue;
+        const price = linuxUsd(row);
+        if (!Number.isFinite(price)) continue;
+        (byAccel[meta.accel] ??= []).push(price / meta.chips);
+      }
+    }
+  }
+  return Object.fromEntries(
+    Object.entries(byAccel)
+      .map(([accel, prices]) => [accel, median(prices)])
+      .filter(([, price]) => Number.isFinite(price))
+      .map(([accel, price]) => [accel, +price.toFixed(2)])
+  );
+}
+
+async function publicSpotPrices() {
+  const { data } = await axios.get(PUBLIC_SPOT_URL, { timeout: 30000 });
+  return parseSpotPayload(data);
 }
 
 function dailyDates(start, end) {
@@ -98,27 +142,46 @@ async function getAwsData() {
   let advisor;
   try { ({ data: advisor } = await axios.get(ADVISOR_URL, { timeout: 25000 })); }
   catch (e) { console.warn('[aws] spot advisor fetch failed:', e.message); advisor = null; }
+  let exactSpot = {};
+  try { exactSpot = await publicSpotPrices(); }
+  catch (e) { console.warn('[aws] public spot price fetch failed:', e.message); exactSpot = {}; }
 
   const hist = loadHistory();
   const meta = hist._meta ?? {};
   const today = isoDay(Date.now());
   const current = {};
 
-  if (advisor) {
+  if (advisor || Object.keys(exactSpot).length) {
+    const onDemand = { ...(meta.onDemand ?? {}) };
     for (const [accel, instances] of Object.entries(ACCEL)) {
-      const { savings, interrupt } = advisorStat(advisor, instances);
-      if (savings == null && interrupt == null) continue;
+      const { savings, interrupt } = advisor ? advisorStat(advisor, instances) : { savings: null, interrupt: null };
+      const spot = exactSpot[accel];
+      if (savings == null && interrupt == null && spot == null) continue;
       const existing = hist[today]?.[accel] ?? {};
       const entry = { ...existing };
       if (savings != null) entry.savings = Math.round(savings);
       if (interrupt != null) entry.interrupt = interrupt;
-      // Derive today's spot from on-demand × (1 − savings), unless an exact
-      // (backfilled) spot already exists for today.
-      const od = meta.onDemand?.[accel];
-      if (!existing.x && od != null && savings != null) entry.spot = +(od * (1 - savings / 100)).toFixed(2);
-      current[accel] = { savings: entry.savings ?? null, interrupt: entry.interrupt ?? null, spot: entry.spot ?? existing.spot ?? null, onDemand: od ?? null };
+      if (spot != null) {
+        entry.spot = spot;
+        entry.x = true;
+        entry.source = 'aws-public-spot-json';
+        if (savings != null && savings < 100) onDemand[accel] = +(spot / (1 - savings / 100)).toFixed(2);
+      } else {
+        // Derive today's spot from on-demand × (1 − savings), unless an exact
+        // spot was already written for today.
+        const od = onDemand[accel];
+        if (!existing.x && od != null && savings != null) entry.spot = +(od * (1 - savings / 100)).toFixed(2);
+      }
+      current[accel] = {
+        savings: entry.savings ?? null,
+        interrupt: entry.interrupt ?? null,
+        spot: entry.spot ?? existing.spot ?? null,
+        onDemand: onDemand[accel] ?? null,
+        source: entry.source ?? (entry.x ? 'aws-ec2-spot-history' : 'aws-spot-advisor-derived'),
+      };
       (hist[today] ??= {})[accel] = entry;
     }
+    hist._meta = { ...meta, onDemand, publicSpotUpdatedAt: today };
     saveHistory(hist);
   }
 
@@ -131,7 +194,7 @@ async function getAwsData() {
     history,
     ranges: advisor?.ranges ?? null,   // interruption rating index → label
     asOf: today,
-    methodology: 'AWS accelerator spot economics. Spot $/accelerator: exact EC2 DescribeSpotPriceHistory backfill (≤90d), continued forward as on-demand × (1 − spot savings). Savings % and interruption frequency: AWS Spot Instance Advisor (median across us-east-1/us-west-2/us-east-2). Per-accelerator = per-instance price ÷ chip count. Trainium/Inferentia are AWS in-house AI chips.',
+    methodology: 'AWS accelerator spot economics. Current spot $/accelerator: public EC2 spot pricing table (no AWS key), median across us-east-1/us-west-2/us-east-2 and divided by accelerator count. Historical exact backfill can still use EC2 DescribeSpotPriceHistory (≤90d, AWS credentials required); if the public table is unavailable, the scraper falls back to on-demand × (1 − Spot Advisor savings). Savings % and interruption frequency: AWS Spot Instance Advisor.',
   };
 }
 

@@ -29,7 +29,14 @@ const PRIOR_CACHE_MAX = 1200;
 // seen, so the count is the run's dominant cost.
 const EXPIRATION_COUNT = 3;
 
-const DEFAULT_TICKERS = ['TSM', 'ASML', 'INTC', 'TXN', 'STM', 'TEL', 'GOOG', 'NOK', 'SOXX'];
+const DEFAULT_TICKERS = [
+  'TSM', 'ASML', 'INTC', 'TXN', 'STM', 'TEL', 'GOOG', 'NOK', 'SOXX',
+  // Added 2026-07 (semis, semicap, EMS/interconnect, mega-cap software). Their
+  // current + prior-cycle chains are seeded by backfillOptionsReportTickers.js,
+  // so the daily run re-pairs cached prior chains rather than re-scraping them.
+  'QRVO', 'UMC', 'STX', 'RMBS', 'KLAC', 'TER', 'LRCX', 'NXPI', 'FLEX', 'APH',
+  'GLW', 'FORM', 'AMKR', 'SANM', 'CLS', 'ARM', 'CDNS', 'MSFT', 'META',
+];
 const BASE = 'https://api.massive.com';
 const CALL_COLOR = '#059669';
 const PUT_COLOR = '#dc2626';
@@ -826,7 +833,7 @@ async function fetchTradingDays(ticker, end, count) {
   return days.slice(-count);
 }
 
-async function enrichExpirationData(data, reportDate) {
+async function enrichExpirationData(data, reportDate, { skipPriors = false } = {}) {
   const allCalls = (data.calls ?? []).map(row => ({ ...row, side: 'call' }));
   const allPuts = (data.puts ?? []).map(row => ({ ...row, side: 'put' }));
   const topCalls = topByVolume(allCalls);
@@ -879,9 +886,15 @@ async function enrichExpirationData(data, reportDate) {
   const tableCalls = topCalls.map(rowWithHistory);
   const tablePuts = topPuts.map(rowWithHistory);
 
-  const { anchors, alignment } =
-    (await buildCycleAlignment(data.ticker, data.selectedDate))
-    ?? fallbackAlignment(data.selectedDate);
+  // Stage-1 backfill of a newly tracked ticker draws bars + tables only, so it
+  // skips the earnings-anchored prior cycles entirely — that leaves the whole
+  // prior-chain scrape (thousands of Massive calls) and the Alpha Vantage
+  // earnings lookup for the later line-plot pass. `nextEarnings` is null here,
+  // so the chart carries no "next call" note until that pass runs.
+  const { anchors, alignment } = skipPriors
+    ? { anchors: null, alignment: {} }
+    : ((await buildCycleAlignment(data.ticker, data.selectedDate))
+      ?? fallbackAlignment(data.selectedDate));
   const dte = sessionsToExpiry(chartDates, effectiveDate, data.selectedDate);
 
   // One series per side per cycle. A cycle with no alignment (the fallback has no
@@ -899,8 +912,8 @@ async function enrichExpirationData(data, reportDate) {
   }
 
   const seriesResults = await Promise.allSettled([
-    priorSeriesFor('call'),
-    priorSeriesFor('put'),
+    skipPriors ? Promise.resolve([]) : priorSeriesFor('call'),
+    skipPriors ? Promise.resolve([]) : priorSeriesFor('put'),
     buildCurrentChainRows(
       data.ticker, 'call', data.selectedDate, allCalls, chartDates, effectiveDate, reportDate,
     ),
@@ -1746,7 +1759,7 @@ function renderMarkdown(report, outPath) {
   return `${lines.join('\n').replace(/\n{3,}/g, '\n\n')}\n`;
 }
 
-async function fetchTickerReport(ticker, reportDate, maxExpirations = EXPIRATION_COUNT) {
+async function fetchTickerReport(ticker, reportDate, maxExpirations = EXPIRATION_COUNT, options = {}) {
   const first = await getOptionsData(ticker);
   const expirations = (first.expirations ?? []).slice(0, maxExpirations);
   const byDate = [];
@@ -1758,7 +1771,7 @@ async function fetchTickerReport(ticker, reportDate, maxExpirations = EXPIRATION
     } else {
       data = await getOptionsData(ticker, expiration);
     }
-    byDate.push(await enrichExpirationData(data, reportDate));
+    byDate.push(await enrichExpirationData(data, reportDate, options));
   }
 
   return {
@@ -1769,7 +1782,7 @@ async function fetchTickerReport(ticker, reportDate, maxExpirations = EXPIRATION
 
 async function generateDailyOptionsReport({
   date = today(), tickers = DEFAULT_TICKERS, out = null, format = null,
-  maxExpirations = EXPIRATION_COUNT,
+  maxExpirations = EXPIRATION_COUNT, skipPriors = false,
 } = {}) {
   const outPath = path.resolve(out ?? `daily-options-data-${date}.html`);
   const outputFormat = format ?? (path.extname(outPath).toLowerCase() === '.md' ? 'md' : 'html');
@@ -1778,7 +1791,7 @@ async function generateDailyOptionsReport({
   try {
     for (const ticker of tickers) {
       try {
-        tickerReports.push(await fetchTickerReport(ticker, date, maxExpirations));
+        tickerReports.push(await fetchTickerReport(ticker, date, maxExpirations, { skipPriors }));
       } finally {
         // Histories are memoized only to share work across one ticker's three
         // expirations. Persistent aggregate totals carry the useful state between

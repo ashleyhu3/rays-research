@@ -122,6 +122,10 @@ const DOMESTIC_SINGLE_CODES = new Set([
   'A0195R0',   // TIGER 단일종목레버리지 삼성전자
 ]);
 const DOMESTIC_CODES = new Set([DOMESTIC_INDEX_CODE, ...DOMESTIC_SINGLE_CODES]);
+const DOMESTIC_REVERSE_CODES = new Set([
+  'A252670',   // KODEX 200 Futures Inverse 2×
+  'A252710',   // TIGER 200 Futures Inverse 2×
+]);
 
 async function daumJson(url) {
   const res = await fetch(url, { headers: DAUM_HEADERS, signal: AbortSignal.timeout(30000) });
@@ -134,6 +138,7 @@ async function daumJson(url) {
 const TERMS = [
   [/SK하이닉스/g, 'SK Hynix'],
   [/삼성전자/g, 'Samsung Electronics'],
+  [/200선물인버스2X/g, 'KOSPI200 Futures Inverse 2×'],
   [/단일종목레버리지/g, 'Single-Stock 2×'],
   [/레버리지/g, 'KOSPI200 2×'],
 ];
@@ -146,16 +151,22 @@ function englishName(name) {
 
 async function leverageUniverse() {
   const json = await daumJson('https://finance.daum.net/api/etfs?page=1&perPage=1000&fieldName=marketCap&order=desc&pagination=true');
-  const funds = (json.data ?? [])
-    .filter(r => DOMESTIC_CODES.has(r.symbolCode))
-    .map(r => ({
+  const listed = json.data ?? [];
+  const describe = (r, kind) => ({
       code: r.symbolCode,
       name: englishName(r.name),
       nameKo: r.name,
-      kind: r.symbolCode === DOMESTIC_INDEX_CODE ? 'index' : 'single',
-    }));
+      kind,
+    });
+  const funds = listed
+    .filter(r => DOMESTIC_CODES.has(r.symbolCode))
+    .map(r => describe(r, r.symbolCode === DOMESTIC_INDEX_CODE ? 'index' : 'single'));
+  const reverseFunds = listed
+    .filter(r => DOMESTIC_REVERSE_CODES.has(r.symbolCode))
+    .map(r => describe(r, 'reverse-index'));
   if (!funds.length) throw new Error('Daum ETF list returned no leveraged funds');
-  return funds;
+  if (!reverseFunds.length) throw new Error('Daum ETF list returned no reverse 2× funds');
+  return { funds, reverseFunds };
 }
 
 // Daily AUM (조원) for one fund back to `from`, straight from price × shares.
@@ -324,7 +335,7 @@ async function getKoreaLeverage(days = 30) {
   const start = new Date(today.getTime() - days * 86400000);
   const from = iso(start);
 
-  const [credit, domesticFunds, hkexAum, usdKrw] = await Promise.all([
+  const [credit, domesticUniverse, hkexAum, usdKrw] = await Promise.all([
     kofiaCredit(compact(from), compact(iso(today))),
     leverageUniverse(),
     hkexFundHistory(from).catch(e => {
@@ -337,7 +348,9 @@ async function getKoreaLeverage(days = 30) {
     }),
   ]);
 
+  const { funds: domesticFunds, reverseFunds } = domesticUniverse;
   const domesticSeries = await mapPool(domesticFunds, 4, f => fundHistory(f.code, from));
+  const reverseSeries = await mapPool(reverseFunds, 4, f => fundHistory(f.code, from));
 
   // Fold the two HK legs into the same shape as the domestic funds: USD AUM ×
   // that day's USD/KRW rate (or the last known rate, if HK and Korea's
@@ -368,6 +381,7 @@ async function getKoreaLeverage(days = 30) {
   const days_ = new Set([
     ...Object.keys(credit.margin), ...Object.keys(credit.collateral),
     ...fundSeries.flatMap(s => Object.keys(s)),
+    ...reverseSeries.flatMap(s => Object.keys(s)),
   ]);
 
   for (const day of days_) {
@@ -377,20 +391,35 @@ async function getKoreaLeverage(days = 30) {
       const aum = fundSeries[i][day];
       if (Number.isFinite(aum)) perFund[f.code] = round(aum);
     });
+    const perReverseFund = {};
+    reverseFunds.forEach((f, i) => {
+      const aum = reverseSeries[i][day];
+      if (Number.isFinite(aum)) perReverseFund[f.code] = round(aum);
+    });
     const etfDay = Object.keys(perFund).length
       ? round(Object.values(perFund).reduce((a, b) => a + b, 0))
       : prev.etf;
+    const reverseEtfDay = Object.keys(perReverseFund).length
+      ? round(Object.values(perReverseFund).reduce((a, b) => a + b, 0))
+      : prev.reverseEtf;
 
     history[day] = {
       ...prev,
       ...(Number.isFinite(credit.margin[day])     ? { margin:     round(credit.margin[day])     } : {}),
       ...(Number.isFinite(credit.collateral[day]) ? { collateral: round(credit.collateral[day]) } : {}),
       ...(Number.isFinite(etfDay) ? { etf: etfDay, funds: { ...(prev.funds ?? {}), ...perFund } } : {}),
+      ...(Number.isFinite(reverseEtfDay) ? {
+        reverseEtf: reverseEtfDay,
+        reverseFunds: { ...(prev.reverseFunds ?? {}), ...perReverseFund },
+      } : {}),
     };
   }
   // Names live alongside the series so a read-only assemble (no scrape) can
   // still label the fund table.
   history.names = Object.fromEntries(funds.map(f => [f.code, { name: f.name, kind: f.kind }]));
+  history.reverseNames = Object.fromEntries(
+    reverseFunds.map(f => [f.code, { name: f.name, kind: f.kind }]),
+  );
   saveHistory(history);
 
   return assemble(history, funds);
@@ -404,6 +433,20 @@ function round(v) { return Math.round(v * 100) / 100; }
 // carrying those forward alongside today's universe would double-count the
 // layer against the redefinition, so assemble() ignores anything outside it.
 const ETF_UNIVERSE = new Set([...DOMESTIC_CODES, ...HKEX_FUNDS.map(f => f.code)]);
+const REVERSE_ETF_UNIVERSE = new Set(DOMESTIC_REVERSE_CODES);
+
+function carriedFundTotals(history, dates, field, universe) {
+  const totals = {};
+  const lastAum = {};
+  for (const day of dates) {
+    for (const [code, aum] of Object.entries(history[day]?.[field] ?? {})) {
+      if (universe.has(code) && Number.isFinite(aum)) lastAum[code] = aum;
+    }
+    const codes = Object.keys(lastAum);
+    if (codes.length) totals[day] = round(codes.reduce((sum, code) => sum + lastAum[code], 0));
+  }
+  return { totals, lastAum };
+}
 
 /**
  * Turn the history blob into the payload the Leverage page draws.
@@ -424,15 +467,13 @@ function assemble(history, funds = []) {
   // did report invents a drop in the layer that is really a data gap. Carry each
   // fund's own last value, and count a fund only from the day it first appears —
   // so a fund that hasn't listed yet reads as absent, not as zero.
-  const etfByDay = {};
-  const lastAum = {};
-  for (const day of dates) {
-    for (const [code, aum] of Object.entries(history[day]?.funds ?? {})) {
-      if (ETF_UNIVERSE.has(code) && Number.isFinite(aum)) lastAum[code] = aum;
-    }
-    const codes = Object.keys(lastAum);
-    if (codes.length) etfByDay[day] = round(codes.reduce((s, c) => s + lastAum[c], 0));
-  }
+  const { totals: etfByDay, lastAum } = carriedFundTotals(history, dates, 'funds', ETF_UNIVERSE);
+  const { totals: reverseEtfByDay, lastAum: lastReverseAum } = carriedFundTotals(
+    history,
+    dates,
+    'reverseFunds',
+    REVERSE_ETF_UNIVERSE,
+  );
 
   for (const day of dates) {
     for (const key of Object.keys(layers)) {
@@ -445,6 +486,7 @@ function assemble(history, funds = []) {
 
   const total = dates.map((_, i) =>
     ['collateral', 'margin', 'etf'].reduce((s, k) => s + (layers[k][i] ?? 0), 0));
+  const reverseEtf = dates.map(day => reverseEtfByDay[day] ?? null);
 
   // Latest per-fund breakdown, biggest first — the tiles above the chart. Uses
   // each fund's last known value, matching how the layer itself is summed.
@@ -453,18 +495,35 @@ function assemble(history, funds = []) {
   const fundRows = Object.entries(lastAum)
     .map(([code, aum]) => ({ code, name: byName[code]?.name ?? code, kind: byName[code]?.kind ?? 'single', aum: round(aum) }))
     .sort((a, b) => b.aum - a.aum);
+  const lastReverseDay = [...dates].reverse().find(d => history[d]?.reverseFunds);
+  const byReverseName = {
+    ...(history.reverseNames ?? {}),
+    ...Object.fromEntries(funds.filter(f => REVERSE_ETF_UNIVERSE.has(f.code)).map(f => [f.code, f])),
+  };
+  const reverseFundRows = Object.entries(lastReverseAum)
+    .map(([code, aum]) => ({
+      code,
+      name: byReverseName[code]?.name ?? code,
+      kind: byReverseName[code]?.kind ?? 'reverse-index',
+      aum: round(aum),
+    }))
+    .sort((a, b) => b.aum - a.aum);
 
   return {
     dates,
     ...layers,
+    reverseEtf,
     total: total.map(round),
     funds: fundRows,
     fundsDate: lastDay ?? null,
+    reverseFunds: reverseFundRows,
+    reverseFundsDate: lastReverseDay ?? null,
     // Days whose layer value is the previous publication carried forward.
     carriedFrom: carried,
     latest: {
       date: dates[dates.length - 1] ?? null,
       ...Object.fromEntries(Object.keys(layers).map(k => [k, layers[k][dates.length - 1] ?? null])),
+      reverseEtf: reverseEtf[dates.length - 1] ?? null,
       total: round(total[total.length - 1] ?? 0),
     },
     updatedAt: new Date().toISOString(),
@@ -477,4 +536,4 @@ function readKoreaLeverage() {
   return assemble(loadHistory());
 }
 
-module.exports = { getKoreaLeverage, readKoreaLeverage };
+module.exports = { getKoreaLeverage, readKoreaLeverage, _test: { assemble } };

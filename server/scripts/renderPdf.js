@@ -20,14 +20,26 @@ function findChrome() {
   for (const c of candidates) {
     try { fs.accessSync(c, fs.constants.X_OK); return c; } catch { /* next */ }
   }
-  // Fall back to any playwright chromium build present.
-  try {
-    const base = path.join(process.env.HOME || '/root', '.cache/ms-playwright');
-    for (const d of fs.readdirSync(base)) {
-      const p = path.join(base, d, 'chrome-linux64', 'chrome');
-      if (fs.existsSync(p)) return p;
-    }
-  } catch { /* none */ }
+  // Fall back to any Playwright Chromium build present. Linux stores these in
+  // ~/.cache; macOS uses ~/Library/Caches and wraps the browser in an app bundle.
+  const home = process.env.HOME || '/root';
+  const playwrightBases = [
+    path.join(home, '.cache', 'ms-playwright'),
+    path.join(home, 'Library', 'Caches', 'ms-playwright'),
+  ];
+  for (const base of playwrightBases) {
+    try {
+      for (const d of fs.readdirSync(base)) {
+        const builds = [
+          path.join(base, d, 'chrome-linux64', 'chrome'),
+          path.join(base, d, 'chrome-mac-arm64', 'Google Chrome for Testing.app', 'Contents', 'MacOS', 'Google Chrome for Testing'),
+          path.join(base, d, 'chrome-headless-shell-mac-arm64', 'chrome-headless-shell'),
+        ];
+        const executable = builds.find(p => fs.existsSync(p));
+        if (executable) return executable;
+      }
+    } catch { /* next cache root */ }
+  }
   throw new Error('No Chrome/Chromium found. Set PDF_CHROME_PATH.');
 }
 

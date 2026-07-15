@@ -32,8 +32,11 @@ const DAUM_HEADERS = {
   'X-Requested-With': 'XMLHttpRequest',
 };
 
-const KOREA_CODES = ['A122630', 'A0193T0', 'A0193W0', 'A0195S0', 'A0195R0'];
-const TAIWAN_CODES = ['00631L', '00675L'];
+const KOREA_CODES = [
+  'A122630', 'A0193T0', 'A0193W0', 'A0195S0', 'A0195R0',
+  'A252670', 'A252710',
+];
+const TAIWAN_CODES = ['00631L', '00675L', '00632R', '00676R'];
 const HK_CODES = ['7709', '7747'];
 
 /**
@@ -85,6 +88,10 @@ const ISSUER_LISTINGS = {
   A0193W0:  { date: '2026-05-27', src: 'https://www.samsungfund.com/etf/insight/newsroom/view.do?seq=76354' },
   A0195S0:  { date: '2026-05-27', src: 'https://investments.miraeasset.com/tigeretf/ko/insight/etf-insight/view.do?detailsKey=687' },
   A0195R0:  { date: '2026-05-27', src: 'https://investments.miraeasset.com/tigeretf/ko/product/search/detail/index.do?ksdFund=KR70195R0008' },
+  A252670:  { date: '2016-09-22', src: 'https://finance.daum.net/quotes/A252670' },
+  A252710:  { date: '2016-09-22', src: 'https://finance.daum.net/quotes/A252710' },
+  '00632R': { date: '2014-10-31', src: 'https://www.yuantaetfs.com/product/detail/00632R/Basic_information' },
+  '00676R': { date: '2016-10-05', src: 'https://websys.fsit.com.tw/FubonETF/Fund/Profile.aspx?stkId=00676R' },
 };
 
 // Yahoo states the quantity outright: the first session the note ever traded. It

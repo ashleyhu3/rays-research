@@ -490,38 +490,12 @@ function dailyMainstreamDram(dram) {
   return { dates: hist.dates, values };
 }
 
-// Daily mainstream GPU rental benchmark: vast.ai's index where it exists, with
-// the earlier period filled by an AWS-spot composite (H100/H200/A100) rebased to
-// vast.ai's level at the join day — a port of Pricing.jsx's gpuIndexData so the
-// report and the website agree. AWS supplies the multi-month history vast.ai lacks.
-const AWS_GPU_KEYS = ['H100', 'H200', 'A100'];
-function dailyGpuBenchmark(gpu, aws) {
+// Daily mainstream GPU rental benchmark: actual vast.ai on-demand medians only.
+// AWS / OCPI are spot-price sources and are intentionally excluded here.
+function dailyGpuBenchmark(gpu) {
   const gH = gpu?.history;
   if (!gH?.dates?.length) return { dates: [], values: [] };
-  const vIdx = Object.fromEntries(gH.dates.map((d, i) => [d, gH.index?.[i]]));
-  const aH = aws?.history;
-  if (!aH?.dates?.length) return { dates: gH.dates, values: gH.index ?? [] };
-
-  const present = AWS_GPU_KEYS.filter(k => aH.spotSeries?.[k]?.some(Number.isFinite));
-  let joinI = -1;
-  for (let i = 0; i < aH.dates.length; i += 1) {
-    const v = vIdx[aH.dates[i]];
-    if (Number.isFinite(v) && present.every(k => Number.isFinite(aH.spotSeries[k][i]))) { joinI = i; break; }
-  }
-  if (joinI < 0 || !present.length) {
-    return { dates: aH.dates, values: aH.dates.map(d => (Number.isFinite(vIdx[d]) ? vIdx[d] : null)) };
-  }
-  const vAtJoin = vIdx[aH.dates[joinI]];
-  const awsAtJoin = Object.fromEntries(present.map(k => [k, aH.spotSeries[k][joinI]]));
-  const values = aH.dates.map((d, i) => {
-    const v = vIdx[d];
-    if (Number.isFinite(v)) return v;
-    const ratios = present.map(k => aH.spotSeries[k][i] / awsAtJoin[k]).filter(Number.isFinite);
-    if (!ratios.length) return null;
-    const rel = ratios.reduce((a, b) => a + b, 0) / ratios.length;
-    return +(vAtJoin * rel).toFixed(2);
-  });
-  return { dates: aH.dates, values };
+  return { dates: gH.dates, values: gH.index ?? [] };
 }
 
 // Every pricing sector as a WEEKLY series (avg of that week's daily datapoints),
@@ -529,7 +503,7 @@ function dailyGpuBenchmark(gpu, aws) {
 // too-short daily series. Table shows the three most recent week-over-week moves.
 function buildPricingTable(data) {
   const mem = dailyMainstreamDram(data.dram);
-  const gpu = dailyGpuBenchmark(data.gpu, data.aws);
+  const gpu = dailyGpuBenchmark(data.gpu);
   const weekly = {
     Memory: weeklyFromDaily(mem.dates, mem.values),
     GPU: weeklyFromDaily(gpu.dates, gpu.values),
@@ -637,6 +611,14 @@ function backfillLeading(arr) {
   return arr.map((v, i) => (i < first ? fv : v));
 }
 
+function averageAlignedSeries(seriesMap, keys, length, requireAll = false) {
+  return Array.from({ length }, (_, i) => {
+    const vals = keys.map(k => seriesMap?.[k]?.[i]).filter(Number.isFinite);
+    if (requireAll && vals.length !== keys.length) return null;
+    return vals.length ? +(vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(3) : null;
+  });
+}
+
 function nandCapacityGb(product) {
   const m = String(product ?? '').match(/(\d+(?:\.\d+)?)\s*Gb\b/i);
   return m ? Number(m[1]) : NaN;
@@ -711,7 +693,7 @@ function buildNandSpotChart(nand, weeks) {
   };
 }
 
-function buildGpuSpotChart(gpu, aws, weeks) {
+function combinedGpuSpotSeries(gpu, aws) {
   const aH = aws?.history;
   const gH = gpu?.history;
   const allDates = [...new Set([...(aH?.dates ?? []), ...(gH?.dates ?? [])])].sort();
@@ -735,26 +717,26 @@ function buildGpuSpotChart(gpu, aws, weeks) {
   const fullSeries = {};
   for (const vk of GPU_SPOT_MODEL_KEYS) {
     const ak = GPU_AWS_SPOT_KEYS[vk];
-    let scale = 1;
-    if (ak) {
-      for (const d of allDates) {
-        const v = vastVal(vk, d);
-        const av = awsVal(ak, d);
-        if (Number.isFinite(v) && Number.isFinite(av) && av !== 0) { scale = v / av; break; }
-      }
-    }
     const combined = allDates.map((d) => {
+      if (ak) {
+        const av = awsVal(ak, d);
+        if (Number.isFinite(av)) return av;
+      }
       const v = vastVal(vk, d);
-      if (Number.isFinite(v)) return v;
-      if (!ak) return null;
-      const av = awsVal(ak, d);
-      return Number.isFinite(av) ? +(av * scale).toFixed(2) : null;
+      return Number.isFinite(v) ? v : null;
     });
     if (combined.some(Number.isFinite)) fullSeries[vk] = combined;
   }
 
   const present = GPU_SPOT_MODEL_KEYS.filter(k => fullSeries[k]?.some(Number.isFinite));
   if (!present.length) return null;
+  return { allDates, fullSeries, present };
+}
+
+function buildGpuSpotChart(gpu, aws, weeks) {
+  const combo = combinedGpuSpotSeries(gpu, aws);
+  if (!combo) return null;
+  const { allDates, fullSeries, present } = combo;
 
   const start = dateWindowStart(allDates, weeks);
   const dates = allDates.slice(start);
@@ -778,12 +760,34 @@ function buildGpuSpotChart(gpu, aws, weeks) {
   };
 }
 
+function buildGpuSpotAverageChart(gpu, aws, weeks) {
+  const combo = combinedGpuSpotSeries(gpu, aws);
+  if (!combo) return null;
+  const { allDates, fullSeries } = combo;
+  const values = averageAlignedSeries(fullSeries, GPU_SPOT_MODEL_KEYS, allDates.length, true);
+  if (!values.some(Number.isFinite)) return null;
+  const start = dateWindowStart(allDates, weeks);
+  const dates = allDates.slice(start);
+  const windowed = values.slice(start);
+  if (!windowed.some(Number.isFinite)) return null;
+  return {
+    id: 'gpu-spot-average',
+    title: 'Aggregate five-model GPU spot average',
+    yFmt: v => `$${v.toFixed(2)}/hr`,
+    labels: dates.map(d => priceHistoryLabel(d, weeks)),
+    dates,
+    datasets: [lineDataset('Five-model GPU spot average', C.slate, windowed)],
+    tiles: [],
+  };
+}
+
 function buildPricingCharts(data, weeks = PRICING_WEEKS) {
   return [
     buildDramSpotChart(data.dram, 'chip', 'DRAM chip spot prices', weeks),
     buildDramSpotChart(data.dram, 'module', 'Memory module spot prices', weeks),
     buildNandSpotChart(data.nand, weeks),
     buildGpuSpotChart(data.gpu, data.aws, weeks),
+    buildGpuSpotAverageChart(data.gpu, data.aws, weeks),
   ].filter(Boolean);
 }
 

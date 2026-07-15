@@ -172,6 +172,7 @@ const GPU_LABELS = {
 
 const GPU_SPOT_MODEL_KEYS = ['H100_SXM', 'H200', 'B200', 'A100_SXM', 'RTX_5090'];
 const GPU_AWS_SPOT_KEYS = { H100_SXM: 'H100', H200: 'H200', A100_SXM: 'A100' };
+const GPU_SPOT_AVG_LABEL = 'Five-model GPU spot average';
 
 // ── GPU rental price by model (vast.ai on-demand $/hr) ──────────────────────
 // Same treatment as the DRAM by-model charts: tiles + one line per GPU. Driven
@@ -217,6 +218,14 @@ function gpuModelLineData(series, dates, keys, W) {
       pointRadius: 0,
     })),
   };
+}
+
+function averageAlignedSeries(seriesMap, keys, length, requireAll = false) {
+  return Array.from({ length }, (_, i) => {
+    const vals = keys.map(k => seriesMap?.[k]?.[i]).filter(Number.isFinite);
+    if (requireAll && vals.length !== keys.length) return null;
+    return vals.length ? +(vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(3) : null;
+  });
 }
 
 // Fill only the LEADING nulls of a windowed series with its first real value, so
@@ -353,11 +362,10 @@ function usePricingCharts(W) {
   // AWS-exclusive AI chips (no vast.ai equivalent) — shown as raw AWS spot.
   const awsChipData = useMemo(() => awsLineChart(aws?.history?.spotSeries, ['Trainium', 'Inferentia2']), [aws, awsWindow]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Combined GPU spot line: vast.ai's actual spot price where it exists, falling
-  // back to vast.ai on-demand for models with no bid-floor quote. H100/H200/A100
-  // keep the existing AWS spot SHAPE rebased ("indexed") before vast.ai history
-  // begins. B200 / RTX 5090 have no AWS equivalent, so they start at the first
-  // real vast.ai quote and then accrue daily.
+  // Combined GPU spot line: AWS exact/public spot prices win for H100/H200/A100
+  // where EC2 has the accelerator. Missing days fall back to the marketplace /
+  // OCPI chart history in gpuHistory. B200 / RTX 5090 have no AWS equivalent, so
+  // they remain marketplace / OCPI-backed until a better public source exists.
   const combinedSpot = useMemo(() => {
     const aH = aws?.history, gH = gpuHist;
     const allDates = [...new Set([...(aH?.dates ?? []), ...(gH?.dates ?? [])])].sort();
@@ -386,21 +394,13 @@ function usePricingCharts(W) {
     const freshnessSeries = {};
     for (const vk of GPU_SPOT_MODEL_KEYS) {
       const ak = GPU_AWS_SPOT_KEYS[vk];
-      let scale = 1;
-      if (ak) {
-        // Scale = vast.ai ÷ AWS at the earliest day both have a real price.
-        for (const d of allDates) {
-          const v = vastVal(vk, d);
-          const av = awsVal(ak, d);
-          if (Number.isFinite(v) && Number.isFinite(av) && av !== 0) { scale = v / av; break; }
-        }
-      }
       const combined = allDates.map(d => {
+        if (ak) {
+          const av = awsVal(ak, d);
+          if (Number.isFinite(av)) return av;
+        }
         const v = vastVal(vk, d);
-        if (Number.isFinite(v)) return v; // vast.ai actual (spot, else on-demand fallback)
-        if (!ak) return null;
-        const av = awsVal(ak, d);
-        return Number.isFinite(av) ? +(av * scale).toFixed(2) : null; // indexed AWS
+        return Number.isFinite(v) ? v : null;
       });
       if (combined.some(Number.isFinite)) fullSeries[vk] = combined;
       freshnessSeries[vk] = ak ? combined : allDates.map(d => rawVastVal(vk, d));
@@ -412,76 +412,38 @@ function usePricingCharts(W) {
       k,
       GPU_AWS_SPOT_KEYS[k] ? backfillLeading(fullSeries[k].slice(start)) : fullSeries[k].slice(start),
     ]));
+    const avgFull = averageAlignedSeries(fullSeries, GPU_SPOT_MODEL_KEYS, allDates.length, true);
+    const avgWindowed = avgFull.slice(start);
+    const avgData = avgWindowed.some(Number.isFinite)
+      ? {
+          labels: dates.map(d => historyLabel(d, W)),
+          datasets: [{ ...mkDs(GPU_SPOT_AVG_LABEL, C.slate, avgWindowed, true), spanGaps: true, pointRadius: 0 }],
+        }
+      : null;
     return {
       data: gpuModelLineData(windowed, dates, present, W),
       tiles: gpuTilesOf(fullSeries, allDates, present, freshnessSeries),
+      averageData: avgData,
     };
   }, [aws, gpuHist, W]); // eslint-disable-line react-hooks/exhaustive-deps
   const combinedSpotData = combinedSpot?.data;
   const combinedSpotTiles = combinedSpot?.tiles ?? [];
+  const spotAverageData = combinedSpot?.averageData;
 
-  // Mainstream GPU rental benchmark — vast.ai's average $/hr index where it
-  // exists, with the earlier period filled by AWS spot. We build an AWS
-  // composite shape (the average of the H100/H200/A100 spot series, each
-  // normalised to its level on the join day) and rebase it to the vast.ai
-  // index level at the join, so the pre-vast.ai portion follows AWS's historical
-  // SHAPE at vast.ai's level — an indexed estimate, not literal vast.ai prices.
-  const AWS_GPU_KEYS = ['H100', 'H200', 'A100'];
+  // Mainstream GPU rental benchmark — actual vast.ai on-demand medians only.
+  // It intentionally does not use AWS or OCPI spot data; those feed the spot
+  // charts below. The scraper's history.index is the smoothed average of the
+  // tracked GPU rental medians.
   const gpuIndexData = useMemo(() => {
     if (!gpuHist?.dates?.length) return null;
-    const vIdx = Object.fromEntries(gpuHist.dates.map((d, i) => [d, gpuHist.index?.[i]]));
-
-    // Without an AWS axis, fall back to the plain vast.ai index window.
-    if (!aws?.history?.dates?.length || !awsWindow) {
-      if (!gpuWindow) return null;
-      return {
-        labels: gpuWindow.dates.map(d => historyLabel(d, W)),
-        datasets: [{ ...mkDs('Mainstream GPU rental benchmark', C.openai, gpuHist.index.slice(gpuWindow.start), true), pointRadius: 0 }],
-      };
-    }
-
-    const aH = aws.history;
-    const present = AWS_GPU_KEYS.filter(k => aH.spotSeries?.[k]?.some(Number.isFinite));
-
-    // Join day = earliest AWS date where vast.ai has a real index value AND we
-    // can read every present AWS series, so the composite is rebased cleanly.
-    let joinI = -1;
-    for (let i = 0; i < aH.dates.length; i++) {
-      const v = vIdx[aH.dates[i]];
-      if (Number.isFinite(v) && present.every(k => Number.isFinite(aH.spotSeries[k][i]))) { joinI = i; break; }
-    }
-
-    // No usable overlap → just show the raw vast.ai index over the AWS window.
-    if (joinI < 0 || present.length === 0) {
-      const series = awsWindow.dates.map(d => (Number.isFinite(vIdx[d]) ? vIdx[d] : null));
-      if (!series.some(Number.isFinite)) return null;
-      return {
-        labels: awsWindow.dates.map(d => historyLabel(d, W)),
-        datasets: [{ ...mkDs('Mainstream GPU rental benchmark', C.openai, series, true), spanGaps: true, pointRadius: 0 }],
-      };
-    }
-
-    const vAtJoin = vIdx[aH.dates[joinI]];
-    const awsAtJoin = Object.fromEntries(present.map(k => [k, aH.spotSeries[k][joinI]]));
-
-    const combined = aH.dates.map((d, i) => {
-      const v = vIdx[d];
-      if (Number.isFinite(v)) return v;                 // vast.ai actual
-      // AWS composite: average of each present series indexed to its join value.
-      const ratios = present
-        .map(k => aH.spotSeries[k][i] / awsAtJoin[k])
-        .filter(Number.isFinite);
-      if (ratios.length === 0) return null;
-      const rel = ratios.reduce((a, b) => a + b, 0) / ratios.length;
-      return +(vAtJoin * rel).toFixed(2);               // indexed AWS estimate
-    }).slice(awsWindow.start);
-
-    if (!combined.some(Number.isFinite)) return null;
+    if (!gpuWindow) return null;
+    const values = (gpuHist.index ?? []).slice(gpuWindow.start);
+    if (!values.some(Number.isFinite)) return null;
     return {
-      labels: awsWindow.dates.map(d => historyLabel(d, W)),
-      datasets: [{ ...mkDs('Mainstream GPU rental benchmark', C.openai, combined, true), spanGaps: true, pointRadius: 0 }],
+      labels: gpuWindow.dates.map(d => historyLabel(d, W)),
+      datasets: [{ ...mkDs('Mainstream GPU rental benchmark', C.openai, values, true), spanGaps: true, pointRadius: 0 }],
     };
-  }, [aws, gpuHist, gpuWindow, awsWindow, W]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [gpuHist, gpuWindow, W]);
 
   /* ── CPU spot pricing (AWS Spot Advisor) ──────────────────────────── */
   const cpuData = liveData?.cpu;
@@ -527,7 +489,7 @@ function usePricingCharts(W) {
   return {
     dramIndex, dramIndexData, chipData, chips, chipTiles, moduleData, modules, moduleTiles, dramAsOf,
     nandData, nandTiles, nandAsOf,
-    gpuIndexData, combinedSpotData, combinedSpotTiles, awsChipData,
+    gpuIndexData, combinedSpotData, combinedSpotTiles, spotAverageData, awsChipData,
     cpuHistData, tpuHistData,
   };
 }
@@ -600,8 +562,8 @@ export function PricingMemory({ weeks: W = 52 }) {
 
 // ── Page: GPU ─────────────────────────────────────────────────────────────
 export function PricingGPU({ weeks: W = 52 }) {
-  const { gpuIndexData, combinedSpotData, combinedSpotTiles } = usePricingCharts(W);
-  const anyData = gpuIndexData || combinedSpotData;
+  const { gpuIndexData, combinedSpotData, combinedSpotTiles, spotAverageData } = usePricingCharts(W);
+  const anyData = gpuIndexData || combinedSpotData || spotAverageData;
 
   return (
     <EditableGrid viewId="pricing-gpu">
@@ -618,6 +580,12 @@ export function PricingGPU({ weeks: W = 52 }) {
           height={260} span2
         >
           <Line data={combinedSpotData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
+        </ChartCard>
+      )}
+
+      {spotAverageData && (
+        <ChartCard chartId="gpu-spot-average" height={260} span2>
+          <Line data={spotAverageData} options={baseOpts(v => `$${v.toFixed(2)}`)} />
         </ChartCard>
       )}
 
