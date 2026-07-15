@@ -466,6 +466,29 @@ app.get('/api/options/:ticker', async (req, res) => {
   }
 });
 
+/* ── Per-company TWSE margin & short balances (Leverage page search) ──── */
+const { getTwseCompanyMargin } = require('./scrapers/twseCompanyMargin');
+
+app.get('/api/taiwan-margin/:code', async (req, res) => {
+  const code = (req.params.code ?? '').trim();
+  if (!/^\d{4,6}[A-Za-z]?$/.test(code))
+    return res.status(400).json({ error: 'Invalid TWSE stock code' });
+
+  const cacheKey = `taiwanMargin:${code}`;
+  const cached   = cache.get(cacheKey);
+  if (cached !== null) return res.json(cached);
+
+  try {
+    const data = await getTwseCompanyMargin(code);
+    // Source updates once daily after the Taipei close — no reason to hammer it.
+    cache.set(cacheKey, data, 60 * 60 * 1000);
+    res.json(data);
+  } catch (e) {
+    console.error('[taiwan-margin]', code, e.message);
+    res.status(500).json({ error: `Could not load margin data for ${code}: ${e.message}` });
+  }
+});
+
 /* ── Daily options report (Alerts page) ──────────────────────────────── */
 const optionsReportStore = require('./optionsReportStore');
 

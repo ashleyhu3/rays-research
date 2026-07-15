@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Line } from 'react-chartjs-2';
 import ChartCard from '../../components/chart/ChartCard';
+import TaiwanMarginSearch from './TaiwanMargin';
 
 const BLUE = '#4577b4';
 const ORANGE = '#ad622d';
@@ -15,54 +16,55 @@ function alpha(hex, a) {
   return `rgba(${r},${g},${b},${a})`;
 }
 
-const LATEST_POINT_LABEL = {
-  id: 'leverageLatestPointLabel',
+const MARKED_POINTS = {
+  id: 'leverageMarkedPoints',
   afterDatasetsDraw(chart, _args, options) {
-    const datasetIndex = chart.data.datasets.findIndex((_, index) => chart.isDatasetVisible(index));
-    if (datasetIndex < 0) return;
-
-    const dataset = chart.data.datasets[datasetIndex];
-    let pointIndex = dataset.data.length - 1;
-    while (pointIndex >= 0 && !Number.isFinite(dataset.data[pointIndex])) pointIndex -= 1;
-    if (pointIndex < 0) return;
-
-    const point = chart.getDatasetMeta(datasetIndex).data[pointIndex];
-    if (!point || point.skip) return;
-
     const { ctx, chartArea } = chart;
-    const label = options.label ?? String(dataset.data[pointIndex]);
-    const color = options.color ?? dataset.borderColor;
-    const boxHeight = 22;
-    const paddingX = 7;
+    const points = chart.getDatasetMeta(0).data;
+    const color = options.color ?? chart.data.datasets[0].borderColor;
 
     ctx.save();
-    ctx.font = "600 11px 'Inter', sans-serif";
-    const boxWidth = Math.ceil(ctx.measureText(label).width) + paddingX * 2;
-    let x = point.x + 8;
-    if (x + boxWidth > chartArea.right) x = point.x - boxWidth - 8;
-    x = Math.max(chartArea.left + 4, Math.min(x, chartArea.right - boxWidth - 4));
+    for (const mark of options.marks ?? []) {
+      const point = points[mark.index];
+      if (!point || point.skip) continue;
 
-    let y = point.y - boxHeight - 8;
-    if (y < chartArea.top) y = point.y + 8;
-    y = Math.max(chartArea.top + 4, Math.min(y, chartArea.bottom - boxHeight - 4));
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.globalAlpha = 0.55;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 4]);
+      ctx.beginPath();
+      ctx.moveTo(point.x, chartArea.top);
+      ctx.lineTo(point.x, chartArea.bottom);
+      ctx.stroke();
+      ctx.restore();
 
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.arc(point.x, point.y, 3.5, 0, Math.PI * 2);
-    ctx.fill();
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, 3.5, 0, Math.PI * 2);
+      ctx.fill();
 
-    ctx.beginPath();
-    ctx.roundRect(x, y, boxWidth, boxHeight, 4);
-    ctx.fillStyle = 'rgba(17,20,25,.96)';
-    ctx.fill();
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 1;
-    ctx.stroke();
+      ctx.lineWidth = 3.5;
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = SURFACE;
+      ctx.textAlign = mark.anchor === 'right' ? 'right' : 'center';
+      const x = mark.anchor === 'right' ? point.x - 2 : point.x;
 
-    ctx.fillStyle = INK;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(label, x + boxWidth / 2, y + boxHeight / 2);
+      const valueAbove = point.y - chartArea.top > 25;
+      ctx.font = "700 11px 'Inter', sans-serif";
+      ctx.textBaseline = valueAbove ? 'bottom' : 'top';
+      const valueY = valueAbove ? point.y - 7 : point.y + 7;
+      ctx.strokeText(mark.value, x, valueY);
+      ctx.fillStyle = color;
+      ctx.fillText(mark.value, x, valueY);
+
+      ctx.font = "700 10px 'Inter', sans-serif";
+      ctx.textBaseline = 'top';
+      const dateY = chartArea.bottom + 21;
+      ctx.strokeText(mark.date, x, dateY);
+      ctx.fillStyle = color;
+      ctx.fillText(mark.date, x, dateY);
+    }
     ctx.restore();
   },
 };
@@ -77,16 +79,19 @@ const MARKETS = {
     layers: [
       {
         key: 'collateral', label: 'Securities-collateral loans', color: BLUE,
+        lag: 'Typically T+2; T+1–T+3 observed',
         srcLabel: 'KOFIA credit balances',
         srcUrl: 'https://freesis.kofia.or.kr/stat/FreeSIS.do?parentDivId=MSIS10000000000000&serviceId=STATSCU0100000070',
       },
       {
         key: 'margin', label: 'Margin loans', color: ORANGE,
+        lag: 'Typically T+2; T+1–T+3 observed',
         srcLabel: 'KOFIA credit balances',
         srcUrl: 'https://freesis.kofia.or.kr/stat/FreeSIS.do?parentDivId=MSIS10000000000000&serviceId=STATSCU0100000070',
       },
       {
         key: 'etf', label: '2× leveraged ETFs', color: PURPLE,
+        lag: 'T+0 close',
         srcLabel: 'Daum ETF data',
         srcUrl: 'https://finance.daum.net/domestic/etf',
         srcExtra: {
@@ -97,6 +102,7 @@ const MARKETS = {
     ],
     reverseLayer: {
       key: 'reverseEtf', label: 'Reverse 2× ETFs', color: REVERSE,
+      lag: 'T+0 close',
       srcLabel: 'Daum ETF data',
       srcUrl: 'https://finance.daum.net/domestic/etf',
     },
@@ -111,6 +117,7 @@ const MARKETS = {
     layers: [
       {
         key: 'margin', label: 'Margin loans', color: ORANGE,
+        lag: 'T close; available by T+1 open',
         srcLabel: 'TWSE margin data',
         srcUrl: 'https://www.twse.com.tw/zh/trading/margin/mi-margn.html',
         srcExtra: {
@@ -120,6 +127,7 @@ const MARKETS = {
       },
       {
         key: 'etf', label: '2× leveraged ETFs', color: PURPLE,
+        lag: 'T close; available by T+1 open',
         srcLabel: 'Yuanta fund data',
         srcUrl: 'https://www.yuantaetfs.com/tradeInfo/comparison/00631L/historical',
         srcExtra: {
@@ -132,6 +140,7 @@ const MARKETS = {
     // though this panel occupies the same place as Korea's reverse 2× panel.
     reverseLayer: {
       key: 'reverseEtf', label: 'Reverse ETFs (-1×)', color: REVERSE,
+      lag: 'T close; available by T+1 open',
       srcLabel: 'Yuanta fund data',
       srcUrl: 'https://www.yuantaetfs.com/tradeInfo/comparison/00632R/historical',
       srcExtra: {
@@ -150,8 +159,11 @@ const RANGES = [
   { id: '3m', label: '3M', days: 92 },
   { id: 'ytd', label: 'YTD', days: null },
   { id: '12m', label: '12M', days: 366 },
+  { id: '18m', label: '18M', days: 548 },
   { id: '5y', label: '5Y', days: 1830 },
 ];
+
+const MARKED_DATES = ['2025-04-07', '2026-03-30'];
 
 function dayLabel(iso) {
   return new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-US', {
@@ -163,6 +175,20 @@ function monthLabel(iso) {
   const d = new Date(`${iso}T00:00:00Z`);
   const month = d.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' });
   return `${month} '${String(d.getUTCFullYear()).slice(-2)}`;
+}
+
+function markedDate(iso) {
+  const [year, month, day] = iso.split('-');
+  return `${year.slice(-2)}/${month}/${day}`;
+}
+
+function sessionIndex(dates, target) {
+  let found = -1;
+  for (let index = 0; index < dates.length; index += 1) {
+    if (dates[index] <= target) found = index;
+    else break;
+  }
+  return found;
 }
 
 function allLayers(market) {
@@ -260,18 +286,43 @@ function layerChartData(win, layer) {
   };
 }
 
-function layerChartOptions(win, market, layer, formatValue) {
+function layerMarks(win, layer, formatValue) {
   const values = win.layers[layer.key] ?? [];
-  const latest = [...values].reverse().find(Number.isFinite);
+  const marks = MARKED_DATES.map(target => {
+    const index = sessionIndex(win.dates, target);
+    if (index < 0 || !Number.isFinite(values[index])) return null;
+    return {
+      index,
+      date: markedDate(win.dates[index]),
+      value: formatValue(values[index]),
+      anchor: 'center',
+    };
+  }).filter(Boolean);
+
+  let latestIndex = values.length - 1;
+  while (latestIndex >= 0 && !Number.isFinite(values[latestIndex])) latestIndex -= 1;
+  if (latestIndex >= 0) {
+    marks.push({
+      index: latestIndex,
+      date: markedDate(win.dates[latestIndex]),
+      value: formatValue(values[latestIndex]),
+      anchor: 'right',
+    });
+  }
+  return marks;
+}
+
+function layerChartOptions(win, market, layer, formatValue) {
   return {
     responsive: true,
     maintainAspectRatio: false,
     animation: { duration: 300 },
     interaction: { mode: 'index', intersect: false },
+    layout: { padding: { top: 16, right: 8, bottom: 18 } },
     plugins: {
       legend: { display: false },
-      leverageLatestPointLabel: {
-        label: formatValue(latest),
+      leverageMarkedPoints: {
+        marks: layerMarks(win, layer, formatValue),
         color: layer.color,
       },
       tooltip: {
@@ -295,6 +346,7 @@ function layerChartOptions(win, market, layer, formatValue) {
           maxTicksLimit: 12,
           autoSkip: true,
           maxRotation: 0,
+          padding: 3,
           font: { size: 10 },
         },
       },
@@ -316,12 +368,13 @@ export function LeverageKorea() { return <Leverage marketId="korea" />; }
 export function LeverageTaiwan() { return <Leverage marketId="taiwan" />; }
 
 export default function Leverage({ marketId = 'korea' }) {
-  const [rangeId, setRangeId] = useState('12m');
+  const [rangeId, setRangeId] = useState('18m');
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
 
   const market = MARKETS[marketId];
-  const range = RANGES.find(item => item.id === rangeId) ?? RANGES[2];
+  const range = RANGES.find(item => item.id === rangeId)
+    ?? RANGES.find(item => item.id === '18m');
   const formatValue = value => (value == null ? '—' : `${value.toFixed(1)}${market.unit}`);
 
   useEffect(() => {
@@ -338,6 +391,10 @@ export default function Leverage({ marketId = 'korea' }) {
   }, [market]);
 
   const win = useMemo(() => windowed(data, market, range), [data, market, range]);
+
+  // The per-stock TWSE margin/short search sits above the aggregate firepower
+  // charts, but only for Taiwan — its data source is TWSE-listed codes.
+  const marginSearch = marketId === 'taiwan' ? <TaiwanMarginSearch /> : null;
 
   const toggles = (
     <div className="lev-toggles">
@@ -358,6 +415,7 @@ export default function Leverage({ marketId = 'korea' }) {
   if (error || !data || !win) {
     return (
       <>
+        {marginSearch}
         <div className="lev-head"><div />{toggles}</div>
         <div className="empty">
           {error
@@ -371,6 +429,7 @@ export default function Leverage({ marketId = 'korea' }) {
   const latest = data.latest ?? {};
   return (
     <>
+      {marginSearch}
       <div className="lev-head">
         <div className="lev-stats">
           <Tile label="Total firepower" value={formatValue(latest.total ?? win.total.at(-1))} color={INK} />
@@ -411,7 +470,7 @@ function LayerPanel({ market, marketId, layer, win, data, formatValue }) {
     <Line
       data={layerChartData(win, layer)}
       options={layerChartOptions(win, market, layer, formatValue)}
-      plugins={[LATEST_POINT_LABEL]}
+      plugins={[MARKED_POINTS]}
     />
   );
 
@@ -421,6 +480,7 @@ function LayerPanel({ market, marketId, layer, win, data, formatValue }) {
       title={`${market.label} · ${layer.label}`}
       src={<SourceLinks layers={[layer]} />}
       freq="Daily"
+      lag={layer.lag}
       span2
       height={hasTable ? Math.max(430, 340 + funds.length * 32) : 320}
       legend={[[layer.label, layer.color]]}

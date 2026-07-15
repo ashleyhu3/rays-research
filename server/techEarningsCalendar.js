@@ -23,12 +23,18 @@ const WATCHLIST = [...new Set([...TECH_SECTOR_TICKERS, ...EXTRA_TICKERS])];
 const BATCH_SIZE = 8;
 const CALENDAR_MONTHS = 2;
 
-// Researched July 15, 2026 from FMP's August earnings-calendar rows filtered
-// by FMP profile sector=Technology, then cross-checked against Yahoo Finance's
-// calendarEvents feed where available. Cached/vendor refreshes override these
-// by ticker, but the overlay lets the Calendar page show August immediately if
-// Mongo still holds the previous one-month cache shape.
-const RESEARCHED_AUGUST_2026_EVENTS = [
+// Researched July 15, 2026 from FMP's earnings-calendar rows filtered by FMP
+// profile sector=Technology; August names were also cross-checked against Yahoo
+// Finance's calendarEvents feed where available. Cached/vendor refreshes
+// override these by ticker, but the overlay lets the Calendar page show the
+// current + August window immediately if Mongo still holds the previous
+// one-month cache shape or local dev starts without network.
+const RESEARCHED_CALENDAR_EVENTS = [
+  { ticker: 'TSM',  date: '2026-07-16', time: 'bmo', confirmed: true, source: 'fmp-research' },
+  { ticker: 'INTC', date: '2026-07-23', time: 'amc', confirmed: true, source: 'fmp-research' },
+  { ticker: 'NOK',  date: '2026-07-23', time: 'bmo', confirmed: false, source: 'fmp-research' },
+  { ticker: 'MSFT', date: '2026-07-29', time: 'amc', confirmed: true, source: 'fmp-research' },
+  { ticker: 'AAPL', date: '2026-07-30', time: 'amc', confirmed: true, source: 'fmp-research' },
   { ticker: 'PLTR', date: '2026-08-03', time: 'amc', confirmed: true, source: 'fmp-yahoo-research' },
   { ticker: 'AMD',  date: '2026-08-04', time: 'amc', confirmed: true, source: 'fmp-yahoo-research' },
   { ticker: 'SHOP', date: '2026-08-05', time: 'bmo', confirmed: true, source: 'fmp-yahoo-research' },
@@ -223,7 +229,7 @@ function getStoredEvents() {
   const window = calendarWindow(new Date());
   const state = readCache();
   const byTicker = new Map();
-  for (const ev of RESEARCHED_AUGUST_2026_EVENTS) {
+  for (const ev of RESEARCHED_CALENDAR_EVENTS) {
     if (ev.date >= window.from && ev.date <= window.to) byTicker.set(ev.ticker, ev);
   }
   for (const ev of Object.values(state.events ?? {})) {
