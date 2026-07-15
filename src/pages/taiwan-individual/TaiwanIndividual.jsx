@@ -1,20 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Chart } from 'react-chartjs-2';
-import { Chart as ChartJS, BarController, LineController } from 'chart.js';
+import { Line } from 'react-chartjs-2';
 import { GRID, TICK, BORD } from '../../utils/chartHelpers';
 import { fa } from '../../config/colors';
-
-// The combo charts mix a line (days-of-volume) with bars (daily change). The app
-// registers the elements/scales globally (chartSetup.js) but not these two
-// controllers, so the mixed <Chart type="bar"> needs them explicitly.
-ChartJS.register(BarController, LineController);
 
 const SAMPLES = ['2383', '2330', '2317', '2454', '3231', '2382'];
 
 const MARGIN_COLOR = '#4577b4';   // 融資
 const SHORT_COLOR  = '#c65d57';   // 融券
-const UP_COLOR     = '#10b981';   // balance rising (position building)
-const DOWN_COLOR   = '#e0894a';   // balance falling (unwinding)
 
 const RANGES = [
   { id: '3m', label: '3M', days: 92 },
@@ -68,33 +60,19 @@ function windowed(side, range) {
 function chartData(win, color) {
   return {
     labels: win.dates.map(dayLabel),
-    datasets: [
-      {
-        type: 'line',
-        label: 'Balance ÷ daily volume',
-        data: win.daysOfVolume,
-        yAxisID: 'y',
-        borderColor: color,
-        backgroundColor: fa(color, 0.10),
-        borderWidth: 2,
-        pointRadius: 0,
-        pointHoverRadius: 4,
-        pointHoverBackgroundColor: color,
-        tension: 0.25,
-        fill: true,
-        spanGaps: false,
-        order: 0,
-      },
-      {
-        type: 'bar',
-        label: 'Daily change',
-        data: win.changeLots,
-        yAxisID: 'y1',
-        backgroundColor: win.changeLots.map(v => fa((v ?? 0) >= 0 ? UP_COLOR : DOWN_COLOR, 0.55)),
-        borderWidth: 0,
-        order: 1,
-      },
-    ],
+    datasets: [{
+      label: 'Balance ÷ daily volume',
+      data: win.daysOfVolume,
+      borderColor: color,
+      backgroundColor: fa(color, 0.10),
+      borderWidth: 2,
+      pointRadius: 0,
+      pointHoverRadius: 4,
+      pointHoverBackgroundColor: color,
+      tension: 0.25,
+      fill: true,
+      spanGaps: false,
+    }],
   };
 }
 
@@ -105,11 +83,7 @@ function chartOptions(win) {
     animation: { duration: 300 },
     interaction: { mode: 'index', intersect: false },
     plugins: {
-      legend: {
-        display: true,
-        position: 'bottom',
-        labels: { color: '#c8c8c0', font: { size: 10, family: "'Inter',sans-serif" }, padding: 10, boxWidth: 12 },
-      },
+      legend: { display: false },
       tooltip: {
         backgroundColor: '#1a1f2a',
         borderColor: 'rgba(255,255,255,.12)',
@@ -119,17 +93,14 @@ function chartOptions(win) {
         bodyFont: { family: "'Inter',sans-serif", size: 11 },
         callbacks: {
           title: items => (items.length ? win.dates[items[0].dataIndex] : ''),
-          label: c => {
-            const i = c.dataIndex;
-            if (c.dataset.type === 'bar') {
-              const chg = win.changeLots[i];
-              return ` Daily change: ${chg == null ? '—' : (chg >= 0 ? '+' : '') + chg.toLocaleString()} 張`;
-            }
-            return ` Balance: ${fmtLots(win.balanceLots[i])} · ${fmtRatio(win.daysOfVolume[i])} vol`;
-          },
+          label: c => ` ${fmtRatio(c.raw)} daily volume`,
           afterBody: items => {
             const i = items[0]?.dataIndex;
-            return i == null ? '' : `Volume: ${fmtShares(win.dayVolume[i])} shares`;
+            if (i == null) return '';
+            return [
+              `Balance: ${fmtLots(win.balanceLots[i])}`,
+              `Volume: ${fmtShares(win.dayVolume[i])} shares`,
+            ];
           },
         },
       },
@@ -141,20 +112,12 @@ function chartOptions(win) {
         border: BORD,
       },
       y: {
-        position: 'left',
         beginAtZero: true,
         grace: '5%',
         grid: GRID,
         ticks: { ...TICK, callback: v => `${v}×`, font: { size: 10 } },
         border: BORD,
         title: { display: true, text: 'Balance ÷ daily volume', color: '#8a8a84', font: { size: 10, family: "'Inter',sans-serif" } },
-      },
-      y1: {
-        position: 'right',
-        grid: { drawOnChartArea: false },
-        ticks: { ...TICK, callback: v => `${Number(v).toLocaleString()}`, font: { size: 10 } },
-        border: BORD,
-        title: { display: true, text: 'Daily change (張)', color: '#8a8a84', font: { size: 10, family: "'Inter',sans-serif" } },
       },
     },
   };
@@ -181,15 +144,14 @@ function SideChart({ title, side, color, range }) {
         </div>
       </div>
       <div className="tm-chart-canvas">
-        <Chart type="bar" data={chartData(win, color)} options={chartOptions(win)} />
+        <Line data={chartData(win, color)} options={chartOptions(win)} />
       </div>
     </div>
   );
 }
 
 /* One company's margin/short panel — owns its own fetch, so each code in a
-   multi-code search behaves independently. Exported so the combined Markets/
-   Sentiment view could embed it later the same way the options panel is. */
+   multi-code search behaves independently. */
 export function MarginPanel({ code }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -246,8 +208,18 @@ export function MarginPanel({ code }) {
   );
 }
 
-/* Search bar + results, embedded at the top of the Taiwan Leverage page. */
-export default function TaiwanMarginSearch() {
+function WaveIcon() {
+  return (
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+    </svg>
+  );
+}
+
+/* Standalone "Taiwan individual" page — search any TWSE-listed stock code and
+   see its 融資 / 融券 balance measured against that stock's own daily volume. */
+export default function TaiwanIndividual() {
   const [input, setInput] = useState('');
   const [codes, setCodes] = useState([]);
   const inputRef = useRef(null);
@@ -259,15 +231,10 @@ export default function TaiwanMarginSearch() {
     setCodes(list);
   }
 
+  const isEmpty = codes.length === 0;
+
   return (
-    <div className="tm-search">
-      <div className="tm-search-intro">
-        <h3 className="tm-search-title">Per-stock margin &amp; short balances</h3>
-        <p className="tm-search-sub">
-          Search TWSE-listed codes to see each stock's 融資 / 融券 balance measured against its
-          own daily trading volume — how many sessions of volume the borrowed position represents.
-        </p>
-      </div>
+    <div className="opts-page">
       <form className="opts-search-row" onSubmit={e => { e.preventDefault(); search(); }}>
         <input
           ref={inputRef}
@@ -280,11 +247,21 @@ export default function TaiwanMarginSearch() {
         />
         <button className="opts-search-btn" type="submit" disabled={!input.trim()}>Search</button>
       </form>
-      {codes.length === 0 ? (
-        <div className="tm-samples">
-          {SAMPLES.map(c => (
-            <button key={c} className="opts-sample" onClick={() => search(c)}>{c}</button>
-          ))}
+
+      {isEmpty ? (
+        <div className="opts-empty">
+          <div className="opts-empty-icon"><WaveIcon /></div>
+          <h2>Taiwan Individual</h2>
+          <p>
+            Per-stock 融資 (margin) and 融券 (short-sale) balances for any TWSE-listed code, shown
+            as a multiple of that stock's own daily trading volume — how many sessions of volume the
+            borrowed position represents. Search several codes at once (comma-separated). One year of history.
+          </p>
+          <div className="opts-samples">
+            {SAMPLES.map(c => (
+              <button key={c} className="opts-sample" onClick={() => search(c)}>{c}</button>
+            ))}
+          </div>
         </div>
       ) : (
         <div className="opts-multi tm-results">

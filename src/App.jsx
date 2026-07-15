@@ -48,6 +48,7 @@ import Alerts, { OptionsReportTitle, OptionsReportControls } from './pages/alert
 import { OptionsReportProvider } from './context/OptionsReportContext';
 import DataValidity from './pages/data-validity/DataValidity';
 import { LeverageKorea, LeverageTaiwan } from './pages/leverage/Leverage';
+import TaiwanIndividual from './pages/taiwan-individual/TaiwanIndividual';
 import Transcripts from './pages/transcripts/Transcripts';
 // Source-specific signal pages
 import PyPI          from './pages/sources/PyPI';
@@ -114,6 +115,7 @@ const VIEW_COMPONENTS = {
   'sources':          DataValidity,
   'leverage-korea':   LeverageKorea,
   'leverage-taiwan':  LeverageTaiwan,
+  'taiwan-individual': TaiwanIndividual,
   'transcripts':      Transcripts,
   'demand-openai':    DemandOpenAI,
   'demand-anthropic': DemandAnthropic,

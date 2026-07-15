@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Line } from 'react-chartjs-2';
 import ChartCard from '../../components/chart/ChartCard';
-import TaiwanMarginSearch from './TaiwanMargin';
 
 const BLUE = '#4577b4';
 const ORANGE = '#ad622d';
@@ -392,10 +391,6 @@ export default function Leverage({ marketId = 'korea' }) {
 
   const win = useMemo(() => windowed(data, market, range), [data, market, range]);
 
-  // The per-stock TWSE margin/short search sits above the aggregate firepower
-  // charts, but only for Taiwan — its data source is TWSE-listed codes.
-  const marginSearch = marketId === 'taiwan' ? <TaiwanMarginSearch /> : null;
-
   const toggles = (
     <div className="lev-toggles">
       <div className="view-toggle">
@@ -415,7 +410,6 @@ export default function Leverage({ marketId = 'korea' }) {
   if (error || !data || !win) {
     return (
       <>
-        {marginSearch}
         <div className="lev-head"><div />{toggles}</div>
         <div className="empty">
           {error
@@ -429,7 +423,6 @@ export default function Leverage({ marketId = 'korea' }) {
   const latest = data.latest ?? {};
   return (
     <>
-      {marginSearch}
       <div className="lev-head">
         <div className="lev-stats">
           <Tile label="Total firepower" value={formatValue(latest.total ?? win.total.at(-1))} color={INK} />
