@@ -48,6 +48,7 @@ const INFRA_VIEWS   = new Set([
 ]);
 const TOOL_VIEWS    = new Set(['options']);
 const ALERTS_VIEWS  = new Set(['alerts']);
+const US_PERF_VIEWS = new Set(['us-performance']);
 const PRICING_VIEWS = new Set(['pricing-memory', 'pricing-gpu', 'pricing-cpu', 'pricing-tpu']);
 const SENTIMENT_VIEWS = new Set(['sentiment']);
 const SOURCES_VIEWS   = new Set(['sources']);
@@ -68,7 +69,8 @@ export default function Navbar({ onNavigate, currentView }) {
   const isSources   = SOURCES_VIEWS.has(currentView);
   const isTranscripts = TRANSCRIPT_VIEWS.has(currentView);
   const isLeverage  = LEVERAGE_VIEWS.has(currentView);
-  const isDemand    = !isChat && !isSupply && !isInfra && !isOptions && !isAlerts && !isPricing && !isSentiment && !isSources && !isTranscripts && !isLeverage;
+  const isUsPerf    = US_PERF_VIEWS.has(currentView);
+  const isDemand    = !isChat && !isSupply && !isInfra && !isOptions && !isAlerts && !isPricing && !isSentiment && !isSources && !isTranscripts && !isLeverage && !isUsPerf;
 
   const title = loading
     ? 'Updating live data…'
@@ -117,6 +119,12 @@ export default function Navbar({ onNavigate, currentView }) {
           onClick={() => onNavigate('alerts')}
         >
           Alerts
+        </button>
+        <button
+          className={`nlink${isUsPerf ? ' active' : ''}`}
+          onClick={() => onNavigate('us-performance')}
+        >
+          US Performance
         </button>
         <button
           className={`nlink${isLeverage ? ' active' : ''}`}

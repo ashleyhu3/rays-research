@@ -10,6 +10,7 @@ const {
   buildCurrentChainRows,
   buildVolumeChartSvg,
   currentRowsFromTotals,
+  nearestExpirationFlowDays,
   pairsFromSessions,
   sessionsToExpiry,
   sumDailyVolumes,
@@ -306,7 +307,7 @@ test('a failed required history request is not persisted as zero volume', async 
   assert.equal(saves, 0, 'partial backfills must be retried on the next run');
 });
 
-test('sidebar flow is derived from full-chain chart bars, not top-three tables', () => {
+test('aggregate flow is derived from full-chain chart bars, not top-three tables', () => {
   const report = {
     expirations: [
       {
@@ -332,6 +333,43 @@ test('sidebar flow is derived from full-chain chart bars, not top-three tables',
     putToday: 230,
     putYesterday: 100,
   });
+});
+
+test('sidebar flow dots use the last three sessions from the front expiration only', () => {
+  const report = {
+    expirations: [
+      {
+        selectedDate: '2026-07-17',
+        volumeCharts: {
+          call: { rows: [
+            { date: '2026-07-10', volume: 10 },
+            { date: '2026-07-13', volume: 50 },
+            { date: '2026-07-14', volume: 20 },
+            { date: '2026-07-15', volume: 80 },
+          ] },
+          put: { rows: [
+            { date: '2026-07-10', volume: 20 },
+            { date: '2026-07-13', volume: 40 },
+            { date: '2026-07-14', volume: 25 },
+            { date: '2026-07-15', volume: 10 },
+          ] },
+        },
+      },
+      {
+        selectedDate: '2026-07-24',
+        volumeCharts: {
+          call: { rows: [{ date: '2026-07-15', volume: 1 }] },
+          put: { rows: [{ date: '2026-07-15', volume: 99999 }] },
+        },
+      },
+    ],
+  };
+
+  assert.deepEqual(nearestExpirationFlowDays(report), [
+    { date: '2026-07-13', callVolume: 50, putVolume: 40, netVolume: 10, leader: 'call' },
+    { date: '2026-07-14', callVolume: 20, putVolume: 25, netVolume: -5, leader: 'put' },
+    { date: '2026-07-15', callVolume: 80, putVolume: 10, netVolume: 70, leader: 'call' },
+  ]);
 });
 
 test('a session the prior chain never traded still gets its bar', () => {

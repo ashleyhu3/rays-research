@@ -1,0 +1,581 @@
+<title>Token Demand × AI Equities — Pilot</title>
+<style>
+  :root{
+    --paper:#f7f8fa; --surface:#fcfcfd; --surface-2:#f1f3f6;
+    --ink:#11151c; --ink-2:#4a5361; --muted:#7b8494;
+    --grid:#e4e8ee; --axis:#c7ccd6; --border:rgba(17,21,28,.10);
+    --accent:#2a78d6; --accent-soft:#e7f0fb;
+    --neg:#d03b3b; --pos:#2a78d6; --mid:#eef0f3;
+    --ser-budget:#eb6834; --ser-premium:#2a78d6;
+    --good:#0ca30c; --warn:#c98500;
+    --shadow:0 1px 2px rgba(17,21,28,.04),0 8px 24px rgba(17,21,28,.05);
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,"JetBrains Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    --tab:tabular-nums;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --paper:#0c0e12; --surface:#14171d; --surface-2:#191d24;
+      --ink:#f3f5f8; --ink-2:#b6bdc9; --muted:#7f8794;
+      --grid:#242932; --axis:#333944; --border:rgba(255,255,255,.10);
+      --accent:#3987e5; --accent-soft:#182534;
+      --neg:#e66767; --pos:#3987e5; --mid:#242932;
+      --ser-budget:#d95926; --ser-premium:#3987e5;
+      --good:#3ac13a; --warn:#e0a52a;
+      --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.4);
+    }
+  }
+  :root[data-theme="light"]{
+    --paper:#f7f8fa; --surface:#fcfcfd; --surface-2:#f1f3f6; --ink:#11151c; --ink-2:#4a5361;
+    --muted:#7b8494; --grid:#e4e8ee; --axis:#c7ccd6; --border:rgba(17,21,28,.10);
+    --accent:#2a78d6; --accent-soft:#e7f0fb; --neg:#d03b3b; --pos:#2a78d6; --mid:#eef0f3;
+    --ser-budget:#eb6834; --ser-premium:#2a78d6; --good:#0ca30c; --warn:#c98500;
+    --shadow:0 1px 2px rgba(17,21,28,.04),0 8px 24px rgba(17,21,28,.05);
+  }
+  :root[data-theme="dark"]{
+    --paper:#0c0e12; --surface:#14171d; --surface-2:#191d24; --ink:#f3f5f8; --ink-2:#b6bdc9;
+    --muted:#7f8794; --grid:#242932; --axis:#333944; --border:rgba(255,255,255,.10);
+    --accent:#3987e5; --accent-soft:#182534; --neg:#e66767; --pos:#3987e5; --mid:#242932;
+    --ser-budget:#d95926; --ser-premium:#3987e5; --good:#3ac13a; --warn:#e0a52a;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.4);
+  }
+
+  *{box-sizing:border-box}
+  body{background:var(--paper);color:var(--ink);font-family:var(--sans);
+    line-height:1.55;-webkit-font-smoothing:antialiased;margin:0;}
+  .wrap{max-width:920px;margin:0 auto;padding:0 24px 96px;}
+  a{color:var(--accent);text-decoration:none;}
+
+  .eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--muted);}
+  h1{font-size:clamp(28px,4.6vw,44px);line-height:1.06;letter-spacing:-.02em;
+    font-weight:760;margin:.28em 0 .18em;text-wrap:balance;}
+  h2{font-size:22px;letter-spacing:-.01em;font-weight:720;margin:0;text-wrap:balance;}
+  h3{font-size:15px;font-weight:680;margin:0 0 2px;letter-spacing:-.005em;}
+  p{color:var(--ink-2);margin:.5em 0;max-width:66ch;}
+  .lede{font-size:18px;color:var(--ink-2);max-width:64ch;}
+  strong{color:var(--ink);font-weight:660;}
+
+  /* header */
+  header.top{padding:56px 0 28px;border-bottom:1px solid var(--border);}
+  .metarow{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px;}
+  .chip{font-family:var(--mono);font-size:11.5px;color:var(--ink-2);
+    background:var(--surface);border:1px solid var(--border);border-radius:999px;
+    padding:5px 11px;display:inline-flex;gap:6px;align-items:center;}
+  .chip b{color:var(--ink);font-weight:640;}
+  .dot{width:7px;height:7px;border-radius:50%;display:inline-block;}
+
+  /* verdict banner */
+  .verdict{margin-top:30px;background:var(--surface);border:1px solid var(--border);
+    border-radius:16px;padding:22px 24px;box-shadow:var(--shadow);}
+  .verdict .tag{font-family:var(--mono);font-size:11px;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--warn);font-weight:600;}
+  .verdict p{margin:.4em 0 0;color:var(--ink);font-size:16.5px;max-width:70ch;}
+
+  /* stat tiles */
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:20px;}
+  @media(max-width:720px){.tiles{grid-template-columns:repeat(2,1fr);}}
+  .tile{background:var(--surface);border:1px solid var(--border);border-radius:14px;
+    padding:16px 16px 15px;box-shadow:var(--shadow);}
+  .tile .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--muted);}
+  .tile .v{font-size:27px;font-weight:720;letter-spacing:-.02em;margin-top:6px;
+    font-variant-numeric:var(--tab);}
+  .tile .s{font-size:12.5px;color:var(--ink-2);margin-top:2px;}
+  .v.neg{color:var(--neg);} .v.pos{color:var(--good);}
+
+  section{padding-top:52px;}
+  .sec-head{display:flex;align-items:baseline;gap:12px;margin-bottom:6px;}
+  .sec-head .id{font-family:var(--mono);font-size:12px;color:var(--accent);
+    font-weight:600;letter-spacing:.02em;}
+  .sec-sub{color:var(--ink-2);max-width:70ch;margin-top:2px;}
+
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;
+    padding:20px 22px;box-shadow:var(--shadow);margin-top:20px;}
+  .card-head{display:flex;justify-content:space-between;align-items:baseline;
+    gap:12px;margin-bottom:14px;flex-wrap:wrap;}
+  .card-head .cap{font-size:12.5px;color:var(--muted);font-family:var(--mono);}
+
+  /* legend */
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-2);
+    font-family:var(--mono);}
+  .legend span{display:inline-flex;align-items:center;gap:7px;}
+  .swatch{width:11px;height:11px;border-radius:3px;display:inline-block;}
+  .swatch.line{height:3px;width:16px;border-radius:2px;}
+
+  /* svg charts */
+  .chart{width:100%;overflow-x:auto;}
+  svg{display:block;width:100%;height:auto;}
+  .gridline{stroke:var(--grid);stroke-width:1;}
+  .axisline{stroke:var(--axis);stroke-width:1;}
+  .zeroline{stroke:var(--axis);stroke-width:1.5;stroke-dasharray:none;}
+  .tick{fill:var(--muted);font-size:11px;font-family:var(--mono);}
+  .tick.y{text-anchor:end;} .axtitle{fill:var(--muted);font-size:11px;font-family:var(--mono);}
+
+  /* tooltip */
+  .tip{position:fixed;pointer-events:none;z-index:50;background:var(--ink);
+    color:var(--paper);font-family:var(--mono);font-size:11.5px;line-height:1.45;
+    padding:8px 10px;border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.25);
+    opacity:0;transition:opacity .09s;max-width:230px;}
+  .tip b{color:var(--paper);}
+  .tip .muted{color:#9aa3b2;}
+
+  /* table */
+  .tbl-wrap{overflow-x:auto;margin-top:4px;}
+  table{border-collapse:collapse;width:100%;font-size:13px;}
+  th,td{padding:9px 12px;text-align:right;font-variant-numeric:var(--tab);
+    border-bottom:1px solid var(--border);white-space:nowrap;}
+  th:first-child,td:first-child{text-align:left;}
+  thead th{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--muted);font-weight:600;border-bottom:1px solid var(--axis);}
+  tbody tr:hover{background:var(--surface-2);}
+  td.tk{font-family:var(--mono);font-weight:600;color:var(--ink);}
+  .sig{font-family:var(--mono);font-size:11px;padding:2px 7px;border-radius:999px;
+    background:var(--surface-2);color:var(--muted);border:1px solid var(--border);}
+  .sig.on{background:var(--accent-soft);color:var(--accent);border-color:transparent;}
+  .num.neg{color:var(--neg);} .num.pos{color:var(--good);}
+
+  .foot{margin-top:16px;font-size:12.5px;color:var(--muted);}
+  .callout{border-left:3px solid var(--accent);padding:2px 0 2px 16px;margin:16px 0;
+    color:var(--ink-2);font-size:14.5px;}
+  ul.tight{margin:.4em 0;padding-left:20px;color:var(--ink-2);}
+  ul.tight li{margin:.3em 0;max-width:68ch;}
+  .divider{height:1px;background:var(--border);margin:0;border:0;}
+  hr.rule{border:0;border-top:1px solid var(--border);margin:48px 0 0;}
+  code{font-family:var(--mono);font-size:.92em;background:var(--surface-2);
+    padding:1px 5px;border-radius:5px;color:var(--ink);}
+</style>
+
+<div class="wrap">
+<header class="top">
+  <div class="eyebrow">Quant pilot · OpenRouter demand × equities</div>
+  <h1>Does AI token demand move AI stocks?</h1>
+  <p class="lede">A pilot correlation study on 25 weeks of H1&nbsp;2026: weekly OpenRouter
+  token volume against the returns of the chips, hyperscalers, and model-maker proxies
+  that are supposed to ride the same wave.</p>
+  <div class="metarow" id="metarow"></div>
+
+  <div class="verdict">
+    <div class="tag">Bottom line</div>
+    <p id="verdictText"></p>
+  </div>
+
+  <div class="tiles" id="tiles"></div>
+</header>
+
+<!-- BACKDROP -->
+<section id="backdrop">
+  <div class="sec-head"><span class="id">Backdrop</span><h2>The demand curve went vertical</h2></div>
+  <p class="sec-sub">Before asking whether token growth <em>predicts</em> anything, the raw
+  series: total weekly tokens routed through OpenRouter, reconstructed from the platform's
+  own weekly report. Any correlation result has to be read against this near-monotonic ramp.</p>
+  <div class="card">
+    <div class="card-head">
+      <div><h3>Total weekly tokens</h3><div class="cap" id="backdropCap"></div></div>
+    </div>
+    <div class="chart" id="chartRamp"></div>
+  </div>
+</section>
+
+<!-- E1 -->
+<section id="e1">
+  <div class="sec-head"><span class="id">E1</span><h2>Token growth vs AI-infra equities</h2></div>
+  <p class="sec-sub">Weekly log-change in total tokens against weekly log-returns of each name.
+  Contemporaneous Pearson, then a 12-week rolling window and a lead–lag scan. Everything on
+  returns, not levels — both series trend up, so a level correlation would be a spurious ~1.</p>
+
+  <div class="card">
+    <div class="card-head">
+      <div><h3>Contemporaneous correlation</h3><div class="cap">Pearson r · same-week returns · n=25</div></div>
+    </div>
+    <div class="chart" id="chartCorr"></div>
+    <div class="foot">Bars show Pearson r. ◆ marks a raw p&lt;0.05; <strong>none survive
+    Benjamini–Hochberg FDR correction</strong> across the eight tests (lowest adjusted p ≈ 0.18).</div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <div><h3>12-week rolling correlation vs NVDA &amp; SMH</h3><div class="cap">is the sign stable?</div></div>
+      <div class="legend">
+        <span><i class="swatch line" style="background:var(--ser-premium)"></i>NVDA</span>
+        <span><i class="swatch line" style="background:var(--ser-budget)"></i>SMH</span>
+      </div>
+    </div>
+    <div class="chart" id="chartRolling"></div>
+    <div class="foot">The mild negative relationship is not a one-week artifact — it holds
+    across the whole rolling window (roughly −0.25 to −0.46 vs NVDA).</div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <div><h3>Lead–lag cross-correlation</h3><div class="cap">tokens vs QQQ · lag&gt;0 ⇒ tokens lead the market</div></div>
+    </div>
+    <div class="chart" id="chartLeadlag"></div>
+    <div class="foot">The interesting result would be a positive bar to the <em>right</em>
+    (token growth leading equity moves). Instead the only notable bar is at lag −1: last week's
+    market return inversely precedes this week's token growth — the relationship runs backwards,
+    and it is fragile (see E5).</div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><div><h3>Full E1 statistics</h3></div></div>
+    <div class="tbl-wrap"><table id="tblE1"><thead><tr>
+      <th>Ticker</th><th>Pearson r</th><th>p (raw)</th><th>p (FDR)</th><th>Spearman ρ</th><th>Signif.</th>
+    </tr></thead><tbody></tbody></table></div>
+  </div>
+</section>
+
+<!-- E2 -->
+<section id="e2">
+  <div class="sec-head"><span class="id">E2</span><h2>Provider share vs its stock proxy</h2></div>
+  <p class="sec-sub">Using each provider's <em>share</em> of platform tokens removes overall
+  platform growth; using the stock's return <em>relative to QQQ</em> removes market beta. Only two
+  providers in this report map to a public ticker — Google→GOOGL and OpenAI→MSFT (a weak proxy).</p>
+  <div class="card">
+    <div class="tbl-wrap"><table id="tblE2"><thead><tr>
+      <th>Provider → Proxy</th><th>Pearson r</th><th>p</th><th>Spearman ρ</th><th>n</th><th>Read</th>
+    </tr></thead><tbody></tbody></table></div>
+    <div class="foot">Both null. The private model-makers that would give a cleaner test
+    (Alibaba/Qwen→BABA, Baidu→BIDU, Tencent→TCEHY, Meta→META) aren't broken out in this report's
+    provider set — they need the full API-keyed series.</div>
+  </div>
+</section>
+
+<!-- E3 -->
+<section id="e3">
+  <div class="sec-head"><span class="id">E3</span><h2>Commoditization: mix vs realized price</h2></div>
+  <p class="sec-sub">The cheap-inference thesis says usage should tilt toward budget/open-weight
+  models and drag the blended price down. Share shows the tilt clearly; the blended price does not
+  yet confirm it.</p>
+  <div class="card">
+    <div class="card-head">
+      <div><h3>Budget vs premium share of tokens</h3><div class="cap">budget = DeepSeek + Zhipu + MiniMax · premium = OpenAI + Anthropic</div></div>
+      <div class="legend">
+        <span><i class="swatch line" style="background:var(--ser-budget)"></i>Budget / open-weight</span>
+        <span><i class="swatch line" style="background:var(--ser-premium)"></i>Premium closed</span>
+      </div>
+    </div>
+    <div class="chart" id="chartShare"></div>
+  </div>
+  <div class="tiles" id="tilesE3" style="grid-template-columns:repeat(3,1fr)"></div>
+  <div class="callout" id="e3note"></div>
+</section>
+
+<!-- E5 -->
+<section id="e5">
+  <div class="sec-head"><span class="id">E5</span><h2>Granger-style lagged regression</h2></div>
+  <p class="sec-sub">Regress each stock's return on 1–3 week lags of token growth (and the reverse),
+  with Newey–West/HAC standard errors. The F-test asks whether the lag block adds predictive power.</p>
+  <div class="card">
+    <div class="tbl-wrap"><table id="tblE5"><thead><tr>
+      <th>Model</th><th>R²</th><th>F p-value</th><th>Best lag (p)</th><th>Read</th>
+    </tr></thead><tbody></tbody></table></div>
+    <div class="foot">The one model that flirts with significance is <strong>NVDA → tokens</strong>
+    (R²=0.25, lag-1 p=0.02, joint F p=0.06): market moves weakly precede token-growth changes, not
+    the other way round. With n≈22 and a heavily autocorrelated token ramp, treat even this as
+    provisional — a single test that would not survive the multiple-comparison bar E1 held it to.</p>
+  </div>
+</section>
+
+<!-- METHOD -->
+<section id="method">
+  <div class="sec-head"><span class="id">Method &amp; caveats</span><h2>How to read this</h2></div>
+  <div class="card">
+    <ul class="tight">
+      <li><strong>This is a 25-week pilot, not the 80-week study.</strong> The full daily
+      rankings history (back to 2025-01-01) sits behind OpenRouter's paid dataset key, which isn't
+      present in this environment. The token series here was reconstructed — losslessly to ~0.1px —
+      from the exact SVG bar heights in the platform's 2026-07-10 weekly report, covering
+      2025-12-29 → 2026-06-15.</li>
+      <li><strong>Low power by construction.</strong> ~24 weekly return observations. The plan's
+      guardrails — FDR correction, split-half stability — are applied where possible, but small-n
+      means "no signal" ≠ "no relationship."</li>
+      <li><strong>OpenRouter is a small, enthusiast-skewed slice</strong> of total inference demand.
+      A null here means no signal <em>in this slice</em>.</li>
+      <li><strong>Blended price is mix-blended, not a true price series.</strong> It applies today's
+      list prices to historical volume, so its motion reflects model-mix shift, not real price cuts.
+      A genuine list-price history only began accruing 2026-07-09.</li>
+      <li><strong>Stocks:</strong> weekly adjusted closes from Yahoo Finance, aligned to the same ISO
+      Monday grid; the in-progress final week is dropped.</li>
+    </ul>
+    <hr class="divider" style="margin:16px 0">
+    <p style="margin:0"><strong>To upgrade this to the real study:</strong> drop in an
+    <code>OPENROUTER_API_KEY</code> and the pipeline extends to ~80 weeks and unlocks the two
+    experiments this slice can't support — E4 (daily event study on demand shocks) and E6
+    (cross-sectional token momentum).</p>
+  </div>
+  <p class="foot" id="genstamp"></p>
+</section>
+
+<hr class="rule">
+</div>
+
+<div class="tip" id="tip"></div>
+
+<script id="payload" type="application/json">__PAYLOAD__</script>
+<script>
+const D = JSON.parse(document.getElementById('payload').textContent);
+const cssv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const fmtPct = x => (x>=0?'+':'')+(x*100).toFixed(1)+'%';
+const fmtR = x => (x>=0?'+':'')+x.toFixed(3);
+const shortDate = s => { const d=new Date(s+'T00:00'); return d.toLocaleDateString('en-US',{month:'short',day:'numeric'}); };
+
+/* ---------- header ---------- */
+const nWeeks = D.weeks.length;
+document.getElementById('metarow').innerHTML = [
+  ['Window','H1 2026 · 25 wks','var(--accent)'],
+  ['Token source','OpenRouter weekly report','var(--good)'],
+  ['Stocks','Yahoo · weekly','var(--good)'],
+  ['Design','Pilot · reduced power','var(--warn)'],
+].map(([k,v,c])=>`<span class="chip"><i class="dot" style="background:${c}"></i>${k} <b>${v}</b></span>`).join('');
+
+const g0=D.tokenTotalT[0], g1=D.tokenTotalT[D.tokenTotalT.length-1];
+const tot=(g1/g0-1);
+const budgetShift=(D.e3.budget_share_latest-D.e3.budget_share_first);
+document.getElementById('verdictText').innerHTML =
+  `Over H1 2026, OpenRouter token demand exploded <strong>${fmtPct(tot).replace('+','+')}</strong> — yet
+   weekly token growth shows <strong>no robust link to AI-equity returns</strong>. Every contemporaneous
+   correlation is mildly <em>negative</em> (r ≈ −0.11 to −0.45) and <strong>none survive
+   multiple-testing correction</strong>. There is no evidence that token growth <em>leads</em> stocks;
+   the only near-significant signal runs backwards and doesn't hold up. Read it as a clean null on this
+   enthusiast-skewed slice — the real test needs the full 80-week series.`;
+
+const worst = Object.entries(D.e1).sort((a,b)=>a[1].pearson-b[1].pearson)[0];
+document.getElementById('tiles').innerHTML = [
+  {k:'Token demand H1',v:fmtPct(tot),s:`${g0.toFixed(1)}T → ${g1.toFixed(1)}T weekly`,cls:'pos'},
+  {k:'Median E1 corr',v:fmtR(median(Object.values(D.e1).map(x=>x.pearson))),s:'token growth vs infra',cls:'neg'},
+  {k:'Survive FDR',v:'0 / 8',s:'pairs significant after correction',cls:''},
+  {k:'Budget share',v:fmtPct(budgetShift),s:`${(D.e3.budget_share_first*100).toFixed(0)}% → ${(D.e3.budget_share_latest*100).toFixed(0)}% of tokens`,cls:'pos'},
+].map(t=>`<div class="tile"><div class="k">${t.k}</div><div class="v ${t.cls}">${t.v}</div><div class="s">${t.s}</div></div>`).join('');
+function median(a){a=[...a].sort((x,y)=>x-y);const m=a.length>>1;return a.length%2?a[m]:(a[m-1]+a[m])/2;}
+
+document.getElementById('backdropCap').textContent =
+  `${shortDate(D.weeks[0])} → ${shortDate(D.weeks[nWeeks-1])} 2026 · reconstructed from report SVG`;
+document.getElementById('genstamp').textContent = 'Generated '+D.meta.generated.replace('T',' ')+' · analysis/ pipeline (extract_tokens.py · analysis.py)';
+
+/* ---------- tooltip ---------- */
+const tip=document.getElementById('tip');
+function showTip(html,e){tip.innerHTML=html;tip.style.opacity=1;moveTip(e);}
+function moveTip(e){const p=12;let x=e.clientX+p,y=e.clientY+p;
+  const r=tip.getBoundingClientRect();
+  if(x+r.width>innerWidth)x=e.clientX-r.width-p;
+  if(y+r.height>innerHeight)y=e.clientY-r.height-p;
+  tip.style.left=x+'px';tip.style.top=y+'px';}
+function hideTip(){tip.style.opacity=0;}
+
+/* ---------- svg helpers ---------- */
+const NS='http://www.w3.org/2000/svg';
+function el(n,a){const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);return e;}
+function mount(id,w,h){const c=document.getElementById(id);c.innerHTML='';
+  const s=el('svg',{viewBox:`0 0 ${w} ${h}`,role:'img'});c.appendChild(s);return s;}
+
+/* ===== 1. RAMP (area) ===== */
+(function(){
+  const W=860,H=300,mL=52,mR=18,mT=16,mB=34;
+  const svg=mount('chartRamp',W,H);
+  const vals=D.tokenTotalT, wks=D.weeks;
+  const maxV=Math.ceil(Math.max(...vals)/10)*10;
+  const x=i=>mL+(W-mL-mR)*(i/(vals.length-1));
+  const y=v=>mT+(H-mT-mB)*(1-v/maxV);
+  for(let g=0;g<=maxV;g+=10){svg.appendChild(el('line',{class:'gridline',x1:mL,x2:W-mR,y1:y(g),y2:y(g)}));
+    const t=el('text',{class:'tick y',x:mL-8,y:y(g)+3.5});t.textContent=g+'T';svg.appendChild(t);}
+  // area
+  let dp=`M ${x(0)} ${y(vals[0])}`;vals.forEach((v,i)=>dp+=` L ${x(i)} ${y(v)}`);
+  const area=dp+` L ${x(vals.length-1)} ${y(0)} L ${x(0)} ${y(0)} Z`;
+  const grad=el('linearGradient',{id:'gr',x1:0,y1:0,x2:0,y2:1});
+  grad.appendChild(el('stop',{offset:0,'stop-color':cssv('--accent'),'stop-opacity':.22}));
+  grad.appendChild(el('stop',{offset:1,'stop-color':cssv('--accent'),'stop-opacity':.02}));
+  svg.appendChild(grad);
+  svg.appendChild(el('path',{d:area,fill:'url(#gr)'}));
+  svg.appendChild(el('path',{d:dp,fill:'none',stroke:cssv('--accent'),'stroke-width':2.4,'stroke-linejoin':'round'}));
+  // endpoint
+  svg.appendChild(el('circle',{cx:x(vals.length-1),cy:y(vals[vals.length-1]),r:4,fill:cssv('--accent'),stroke:cssv('--surface'),'stroke-width':2}));
+  const lbl=el('text',{x:x(vals.length-1)-6,y:y(vals[vals.length-1])-10,'text-anchor':'end',fill:cssv('--ink'),'font-size':13,'font-weight':700});
+  lbl.textContent=vals[vals.length-1].toFixed(1)+'T';svg.appendChild(lbl);
+  // x ticks every 4
+  wks.forEach((w,i)=>{if(i%4===0||i===wks.length-1){const t=el('text',{class:'tick',x:x(i),y:H-12,'text-anchor':'middle'});t.textContent=shortDate(w);svg.appendChild(t);}});
+  svg.appendChild(el('line',{class:'axisline',x1:mL,x2:W-mR,y1:y(0),y2:y(0)}));
+  // hover
+  const hv=el('line',{x1:0,x2:0,y1:mT,y2:y(0),stroke:cssv('--axis'),'stroke-width':1,opacity:0});svg.appendChild(hv);
+  const hd=el('circle',{r:4.5,fill:cssv('--accent'),stroke:cssv('--surface'),'stroke-width':2,opacity:0});svg.appendChild(hd);
+  const rect=el('rect',{x:mL,y:mT,width:W-mL-mR,height:H-mT-mB,fill:'transparent'});svg.appendChild(rect);
+  rect.addEventListener('pointermove',e=>{const b=svg.getBoundingClientRect();const px=(e.clientX-b.left)/b.width*W;
+    let i=Math.round((px-mL)/(W-mL-mR)*(vals.length-1));i=Math.max(0,Math.min(vals.length-1,i));
+    hv.setAttribute('x1',x(i));hv.setAttribute('x2',x(i));hv.setAttribute('opacity',1);
+    hd.setAttribute('cx',x(i));hd.setAttribute('cy',y(vals[i]));hd.setAttribute('opacity',1);
+    const gr=D.tokenGrowth[i];
+    showTip(`<b>${shortDate(wks[i])} 2026</b><br>${vals[i].toFixed(2)}T tokens${gr!=null?`<br><span class="muted">WoW growth</span> ${fmtPct(gr)}`:''}`,e);});
+  rect.addEventListener('pointerleave',()=>{hideTip();hv.setAttribute('opacity',0);hd.setAttribute('opacity',0);});
+})();
+
+/* ===== 2. E1 diverging correlation bars ===== */
+(function(){
+  const items=Object.entries(D.e1).map(([t,c])=>({t,r:c.pearson,p:c.p,fdr:c.fdr,sp:c.spearman}))
+    .sort((a,b)=>a.r-b.r);
+  const W=860,rowH=34,mT=28,mB=10,mL=64,mR=64;
+  const H=mT+mB+items.length*rowH;
+  const svg=mount('chartCorr',W,H);
+  const lo=-0.55, hi=0.15;
+  const x=v=>mL+(W-mL-mR)*((v-lo)/(hi-lo));
+  // gridlines
+  [-0.5,-0.4,-0.3,-0.2,-0.1,0,0.1].forEach(g=>{
+    svg.appendChild(el('line',{class:g===0?'zeroline':'gridline',x1:x(g),x2:x(g),y1:mT-6,y2:H-mB}));
+    const t=el('text',{class:'tick',x:x(g),y:mT-12,'text-anchor':'middle'});t.textContent=g.toFixed(1);svg.appendChild(t);});
+  items.forEach((it,i)=>{
+    const cy=mT+i*rowH+rowH/2;
+    const x0=x(0), xv=x(it.r);
+    const col=it.r<0?cssv('--neg'):cssv('--pos');
+    const xL=Math.min(x0,xv), w=Math.abs(xv-x0);
+    const rr=el('rect',{x:xL,y:cy-8,width:Math.max(w,1),height:16,rx:4,fill:col,opacity:.92});
+    // round only the data end: approximate with rx on whole bar (fine)
+    svg.appendChild(rr);
+    const lab=el('text',{x:mL-10,y:cy+4,'text-anchor':'end',class:'tick',fill:cssv('--ink'),'font-weight':600});
+    lab.textContent=it.t;lab.setAttribute('font-size',12.5);svg.appendChild(lab);
+    const val=el('text',{x:it.r<0?xL-7:xL+w+7,y:cy+4,'text-anchor':it.r<0?'end':'start',
+      fill:cssv('--ink-2'),'font-size':12,'font-family':cssv('--mono')});
+    val.textContent=fmtR(it.r)+(it.p<0.05?' ◆':'');svg.appendChild(val);
+    // hover
+    rr.style.cursor='pointer';
+    rr.addEventListener('pointermove',e=>showTip(`<b>${it.t}</b><br><span class="muted">Pearson</span> ${fmtR(it.r)}<br><span class="muted">Spearman</span> ${fmtR(it.sp)}<br><span class="muted">p raw / FDR</span> ${it.p.toFixed(3)} / ${it.fdr.toFixed(3)}`,e));
+    rr.addEventListener('pointerleave',hideTip);
+  });
+})();
+
+/* ===== 3. rolling correlation lines ===== */
+(function(){
+  const sa=D.e1RollingNVDA, sb=D.e1RollingSMH;
+  const keys=Object.keys(sa);
+  const idx=keys.map((k,i)=>({k,a:sa[k],b:sb[k]})).filter(o=>o.a!=null||o.b!=null);
+  const W=860,H=260,mL=52,mR=16,mT=16,mB=34;
+  const svg=mount('chartRolling',W,H);
+  const lo=-0.6,hi=0.2;
+  const x=i=>mL+(W-mL-mR)*(i/(idx.length-1));
+  const y=v=>mT+(H-mT-mB)*(1-(v-lo)/(hi-lo));
+  [-0.6,-0.4,-0.2,0,0.2].forEach(g=>{svg.appendChild(el('line',{class:g===0?'zeroline':'gridline',x1:mL,x2:W-mR,y1:y(g),y2:y(g)}));
+    const t=el('text',{class:'tick y',x:mL-8,y:y(g)+3.5});t.textContent=g.toFixed(1);svg.appendChild(t);});
+  function draw(key,color){let started=false,dp='';
+    idx.forEach((o,i)=>{const v=o[key];if(v==null)return;dp+=(started?' L':'M')+` ${x(i)} ${y(v)}`;started=true;});
+    svg.appendChild(el('path',{d:dp,fill:'none',stroke:color,'stroke-width':2.2,'stroke-linejoin':'round'}));}
+  draw('a',cssv('--ser-premium')); draw('b',cssv('--ser-budget'));
+  idx.forEach((o,i)=>{if(i%3===0||i===idx.length-1){const t=el('text',{class:'tick',x:x(i),y:H-12,'text-anchor':'middle'});t.textContent=shortDate(o.k);svg.appendChild(t);}});
+  // hover
+  const rect=el('rect',{x:mL,y:mT,width:W-mL-mR,height:H-mT-mB,fill:'transparent'});svg.appendChild(rect);
+  const hv=el('line',{x1:0,x2:0,y1:mT,y2:H-mB,stroke:cssv('--axis'),'stroke-width':1,opacity:0});svg.appendChild(hv);
+  rect.addEventListener('pointermove',e=>{const b=svg.getBoundingClientRect();const px=(e.clientX-b.left)/b.width*W;
+    let i=Math.round((px-mL)/(W-mL-mR)*(idx.length-1));i=Math.max(0,Math.min(idx.length-1,i));
+    hv.setAttribute('x1',x(i));hv.setAttribute('x2',x(i));hv.setAttribute('opacity',1);
+    const o=idx[i];
+    showTip(`<b>${shortDate(o.k)} 2026</b><br><span class="muted">vs NVDA</span> ${o.a!=null?fmtR(o.a):'—'}<br><span class="muted">vs SMH</span> ${o.b!=null?fmtR(o.b):'—'}`,e);});
+  rect.addEventListener('pointerleave',()=>{hideTip();hv.setAttribute('opacity',0);});
+})();
+
+/* ===== 4. lead-lag bars (QQQ) ===== */
+(function(){
+  const ll=D.e1.QQQ.leadlag; // {lag:val}
+  const lags=Object.keys(ll).map(Number).sort((a,b)=>a-b);
+  const W=860,H=260,mL=44,mR=16,mT=24,mB=42;
+  const svg=mount('chartLeadlag',W,H);
+  const lo=-0.6,hi=0.3;
+  const bw=(W-mL-mR)/lags.length;
+  const y=v=>mT+(H-mT-mB)*(1-(v-lo)/(hi-lo));
+  [-0.6,-0.4,-0.2,0,0.2].forEach(g=>{svg.appendChild(el('line',{class:g===0?'zeroline':'gridline',x1:mL,x2:W-mR,y1:y(g),y2:y(g)}));
+    const t=el('text',{class:'tick y',x:mL-8,y:y(g)+3.5});t.textContent=g.toFixed(1);svg.appendChild(t);});
+  lags.forEach((L,i)=>{
+    const v=ll[L];if(v==null)return;
+    const cx=mL+bw*i+bw/2;
+    const hl=(L===-1);
+    const col=hl?cssv('--warn'):(v<0?cssv('--neg'):cssv('--pos'));
+    const y0=y(0),yv=y(v);
+    svg.appendChild(el('rect',{x:cx-bw*0.32,y:Math.min(y0,yv),width:bw*0.64,height:Math.max(Math.abs(yv-y0),1),rx:3,fill:col,opacity:hl?1:.85}));
+    const t=el('text',{class:'tick',x:cx,y:H-24,'text-anchor':'middle'});t.textContent=(L>0?'+':'')+L;svg.appendChild(t);
+  });
+  // axis labels
+  const la=el('text',{class:'axtitle',x:mL,y:H-6,'text-anchor':'start'});la.textContent='◄ market leads tokens';svg.appendChild(la);
+  const lb=el('text',{class:'axtitle',x:W-mR,y:H-6,'text-anchor':'end'});lb.textContent='tokens lead market ►';svg.appendChild(lb);
+})();
+
+/* ---------- E1 table ---------- */
+(function(){
+  const tb=document.querySelector('#tblE1 tbody');
+  Object.entries(D.e1).sort((a,b)=>a[1].pearson-b[1].pearson).forEach(([t,c])=>{
+    const sig=c.fdr<0.1?'FDR':(c.p<0.05?'raw p<.05':'ns');
+    const on=c.fdr<0.1;
+    tb.insertAdjacentHTML('beforeend',
+      `<tr><td class="tk">${t}</td>
+       <td class="num neg">${fmtR(c.pearson)}</td>
+       <td>${c.p.toFixed(3)}</td><td>${c.fdr.toFixed(3)}</td>
+       <td class="num ${c.spearman<0?'neg':'pos'}">${fmtR(c.spearman)}</td>
+       <td><span class="sig ${on?'on':''}">${sig}</span></td></tr>`);
+  });
+})();
+
+/* ---------- E2 table ---------- */
+(function(){
+  const tb=document.querySelector('#tblE2 tbody');
+  Object.entries(D.e2).forEach(([p,c])=>{
+    tb.insertAdjacentHTML('beforeend',
+      `<tr><td class="tk">${p} → ${c.ticker}</td>
+       <td class="num ${c.pearson<0?'neg':'pos'}">${fmtR(c.pearson)}</td>
+       <td>${c.p.toFixed(3)}</td>
+       <td class="num ${c.spearman<0?'neg':'pos'}">${fmtR(c.spearman)}</td>
+       <td>${c.n}</td><td><span class="sig">null</span></td></tr>`);
+  });
+})();
+
+/* ===== E3 share lines ===== */
+(function(){
+  const bs=D.e3series.budget_share, ps=D.e3series.premium_share;
+  const keys=Object.keys(bs);
+  const W=860,H=270,mL=48,mR=16,mT=16,mB=34;
+  const svg=mount('chartShare',W,H);
+  const x=i=>mL+(W-mL-mR)*(i/(keys.length-1));
+  const y=v=>mT+(H-mT-mB)*(1-v/0.4);
+  for(let g=0;g<=0.4;g+=0.1){svg.appendChild(el('line',{class:'gridline',x1:mL,x2:W-mR,y1:y(g),y2:y(g)}));
+    const t=el('text',{class:'tick y',x:mL-8,y:y(g)+3.5});t.textContent=(g*100).toFixed(0)+'%';svg.appendChild(t);}
+  function draw(obj,color){let dp='';keys.forEach((k,i)=>dp+=(i?' L':'M')+` ${x(i)} ${y(obj[k])}`);
+    svg.appendChild(el('path',{d:dp,fill:'none',stroke:color,'stroke-width':2.4,'stroke-linejoin':'round'}));
+    const li=keys.length-1;svg.appendChild(el('circle',{cx:x(li),cy:y(obj[keys[li]]),r:3.5,fill:color,stroke:cssv('--surface'),'stroke-width':2}));}
+  draw(bs,cssv('--ser-budget')); draw(ps,cssv('--ser-premium'));
+  keys.forEach((k,i)=>{if(i%4===0||i===keys.length-1){const t=el('text',{class:'tick',x:x(i),y:H-12,'text-anchor':'middle'});t.textContent=shortDate(k);svg.appendChild(t);}});
+  const rect=el('rect',{x:mL,y:mT,width:W-mL-mR,height:H-mT-mB,fill:'transparent'});svg.appendChild(rect);
+  const hv=el('line',{x1:0,x2:0,y1:mT,y2:H-mB,stroke:cssv('--axis'),'stroke-width':1,opacity:0});svg.appendChild(hv);
+  rect.addEventListener('pointermove',e=>{const b=svg.getBoundingClientRect();const px=(e.clientX-b.left)/b.width*W;
+    let i=Math.round((px-mL)/(W-mL-mR)*(keys.length-1));i=Math.max(0,Math.min(keys.length-1,i));
+    hv.setAttribute('x1',x(i));hv.setAttribute('x2',x(i));hv.setAttribute('opacity',1);
+    showTip(`<b>${shortDate(keys[i])} 2026</b><br><span class="muted">budget</span> ${(bs[keys[i]]*100).toFixed(1)}%<br><span class="muted">premium</span> ${(ps[keys[i]]*100).toFixed(1)}%`,e);});
+  rect.addEventListener('pointerleave',()=>{hideTip();hv.setAttribute('opacity',0);});
+})();
+
+/* E3 tiles + note */
+(function(){
+  const e=D.e3;
+  document.getElementById('tilesE3').innerHTML=[
+    {k:'Budget share',v:`${(e.budget_share_first*100).toFixed(0)}% → ${(e.budget_share_latest*100).toFixed(0)}%`,s:'DeepSeek+Zhipu+MiniMax',cls:'pos'},
+    {k:'Premium share',v:`${(e.premium_share_first*100).toFixed(0)}% → ${(e.premium_share_latest*100).toFixed(0)}%`,s:'OpenAI+Anthropic · flat',cls:''},
+    {k:'Blended $/M',v:`$${e.blended_price_first.toFixed(2)} → $${e.blended_price_latest.toFixed(2)}`,s:'mix-blended at today’s prices',cls:''},
+  ].map(t=>`<div class="tile"><div class="k">${t.k}</div><div class="v ${t.cls}" style="font-size:22px">${t.v}</div><div class="s">${t.s}</div></div>`).join('');
+  document.getElementById('e3note').innerHTML=
+    `Budget/open-weight usage <strong>doubled</strong> its share of tokens — the commoditization tilt is real.
+     But the mix-blended price barely moved (<strong>+${((e.blended_price_latest/e.blended_price_first-1)*100).toFixed(0)}%</strong>):
+     volume also grew in mid-priced names, offsetting the cheap-model shift. And because it prices history at
+     today's rates, it can't see actual price cuts — the true-price test is impossible until the list-price
+     history matures.`;
+})();
+
+/* ---------- E5 table ---------- */
+(function(){
+  const tb=document.querySelector('#tblE5 tbody');
+  const label={'tokens->NVDA':'Tokens → NVDA','tokens->SMH':'Tokens → SMH','tokens->AVGO':'Tokens → AVGO','NVDA->tokens':'NVDA → Tokens'};
+  const reads={'tokens->NVDA':'null','tokens->SMH':'null','tokens->AVGO':'weak','NVDA->tokens':'nominal (reverse)'};
+  Object.entries(D.e5).forEach(([k,m])=>{
+    const ps=Object.entries(m.pvalues).filter(([n])=>n!=='const').sort((a,b)=>a[1]-b[1])[0];
+    const on=m.f_pvalue<0.06;
+    tb.insertAdjacentHTML('beforeend',
+      `<tr><td class="tk">${label[k]||k}</td>
+       <td>${m.r2.toFixed(3)}</td>
+       <td>${m.f_pvalue.toFixed(3)}</td>
+       <td>${ps[0].replace('x_l','lag ')} · ${ps[1].toFixed(3)}</td>
+       <td><span class="sig ${on?'on':''}">${reads[k]||''}</span></td></tr>`);
+  });
+})();
+</script>

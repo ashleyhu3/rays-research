@@ -5,21 +5,70 @@ import EarningsCalendar from './Calendar';
 // Sentinel `selected` value for the Calendar nav item — distinct from any
 // ticker symbol so it can share the same sidebar list and selection state.
 const CALENDAR_ID = '__calendar__';
+const FLOW_DOT_COUNT = 3;
 
-// A ticker's call/put flow "surge": today's summed contract volume is a large
-// step up from the prior trading day. Mirrors the up/down arrows in the pricing
-// and AI-demand sidebars — here a green dot means calls surged, red means puts.
-const SURGE_MULTIPLE = 1.6;   // today ≥ 1.6× the prior day
-const SURGE_MIN_ABS  = 200;   // and at least +200 contracts, to ignore thin names
+const volumeFmt = new Intl.NumberFormat('en-US');
 
-function flowSurge(flow) {
-  if (!flow) return { calls: false, puts: false };
-  const surged = (today, prior) =>
-    prior > 0 && today >= prior * SURGE_MULTIPLE && today - prior >= SURGE_MIN_ABS;
-  return {
-    calls: surged(flow.callToday, flow.callYesterday),
-    puts:  surged(flow.putToday, flow.putYesterday),
-  };
+function flowDotSide(day) {
+  if (day?.leader === 'call' || day?.leader === 'put' || day?.leader === 'flat') return day.leader;
+  const callVolume = Number(day?.callVolume);
+  const putVolume = Number(day?.putVolume);
+  if (!Number.isFinite(callVolume) || !Number.isFinite(putVolume)) return 'flat';
+  if (callVolume > putVolume) return 'call';
+  if (putVolume > callVolume) return 'put';
+  return 'flat';
+}
+
+function legacyFlowDays(flow) {
+  if (!flow) return [];
+  const days = [];
+  if (flow.callYesterday != null || flow.putYesterday != null) {
+    days.push({
+      label: 'Prior day',
+      callVolume: flow.callYesterday ?? 0,
+      putVolume: flow.putYesterday ?? 0,
+    });
+  }
+  if (flow.callToday != null || flow.putToday != null) {
+    days.push({
+      label: 'Latest day',
+      callVolume: flow.callToday ?? 0,
+      putVolume: flow.putToday ?? 0,
+    });
+  }
+  return days;
+}
+
+function navFlowDays(t) {
+  const source = Array.isArray(t.flowDays) && t.flowDays.length
+    ? [...t.flowDays].sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')))
+    : legacyFlowDays(t.flow);
+  const days = source.slice(-FLOW_DOT_COUNT);
+  return [
+    ...Array.from({ length: Math.max(0, FLOW_DOT_COUNT - days.length) }, () => ({ empty: true })),
+    ...days,
+  ];
+}
+
+function formatFlowDate(iso) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+  if (!m) return null;
+  return `${Number(m[2])}/${Number(m[3])}`;
+}
+
+function flowDotText(day, expiry) {
+  if (day.empty) return 'No call/put flow data';
+  const side = flowDotSide(day);
+  const date = formatFlowDate(day.date) || day.label || 'Flow day';
+  const callVolume = volumeFmt.format(Number(day.callVolume ?? 0));
+  const putVolume = volumeFmt.format(Number(day.putVolume ?? 0));
+  const direction = side === 'call'
+    ? 'calls above puts'
+    : side === 'put'
+      ? 'puts above calls'
+      : 'calls equal puts';
+  const expiryText = expiry ? `, ${expiry} expiry` : '';
+  return `${date}${expiryText}: ${direction} (${callVolume} calls vs ${putVolume} puts)`;
 }
 
 // One contract table (calls or puts). The side (CALL/PUT) and strike price get
@@ -137,11 +186,10 @@ function TickerReport({ t }) {
   );
 }
 
-// Sidebar entry for one ticker. A green dot flags a day-over-day surge in call
-// volume, a red dot a surge in put volume — analogous to the trend arrows in the
-// pricing / AI-demand sidebars.
+// Sidebar entry for one ticker. The three dots show the last three sessions in
+// the front expiration, left-to-right from earliest to latest.
 function TickerNavItem({ t, active, onSelect }) {
-  const surge = flowSurge(t.flow);
+  const dots = navFlowDays(t);
   return (
     <button
       className={`or-nav-item${active ? ' active' : ''}`}
@@ -149,22 +197,27 @@ function TickerNavItem({ t, active, onSelect }) {
     >
       <span className="or-nav-name">{t.ticker}</span>
       <span className="or-nav-dots">
-        {surge.calls && (
-          <span className="or-dot call" title="Large jump in call volume vs. yesterday" aria-label="Call volume surge" />
-        )}
-        {surge.puts && (
-          <span className="or-dot put" title="Large jump in put volume vs. yesterday" aria-label="Put volume surge" />
-        )}
+        {dots.map((day, index) => {
+          const side = flowDotSide(day);
+          const text = flowDotText(day, t.flowExpiration);
+          return (
+            <span
+              key={`${day.date || day.label || 'empty'}-${index}`}
+              className={`or-dot ${side}`}
+              title={text}
+              aria-label={text}
+            />
+          );
+        })}
       </span>
     </button>
   );
 }
 
 // The Alerts view is the daily options report. Each ticker gets its own page,
-// switched via the left sidebar; a coloured dot next to a ticker flags a
-// day-over-day call (green) or put (red) volume surge. Title, date and action
-// buttons live in the Topbar (see App.jsx). Data is scraped from Massive and
-// stored in Mongo once a day at 7:45 AM Hong Kong time.
+// switched via the left sidebar. Title, date and action buttons live in the
+// Topbar (see App.jsx). Data is scraped from Massive and stored in Mongo once a
+// day at 7:45 AM Hong Kong time.
 export default function Alerts() {
   const { report, loading, msg, load } = useOptionsReport();
   const [selected, setSelected] = useState(null);

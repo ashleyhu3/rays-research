@@ -10,6 +10,7 @@ const htmlTemplate = require('./htmlTemplate');
 const { chat } = require('./chat');
 const { getOptionsData }             = require('./scrapers/options');
 const { getStockHistory }            = require('./scrapers/stocks');
+const { getUsPerformance }           = require('./scrapers/usPerformance');
 const { keywordRolling }             = require('./stocktwitsStore');
 
 const app   = express();
@@ -444,6 +445,39 @@ app.get('/api/stocks/:ticker', async (req, res) => {
     if (rateLimited)
       return res.status(503).json({ error: 'Yahoo Finance is rate-limiting. Please try again in a moment.' });
     res.status(500).json({ error: `Could not load data for ${ticker}: ${e.message}` });
+  }
+});
+
+/* ── US Performance — sector ETFs vs SPX, rebased client-side (1-hour cache) */
+app.get('/api/us-performance', async (req, res) => {
+  const raw = (req.query.start ?? '').trim();
+  const oneYearAgo = new Date();
+  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+
+  let start = oneYearAgo.toISOString().slice(0, 10);
+  if (raw) {
+    const parsed = new Date(raw);
+    if (isNaN(parsed.getTime()) || !/^\d{4}-\d{2}-\d{2}$/.test(raw))
+      return res.status(400).json({ error: 'Invalid start date' });
+    if (parsed.getTime() > Date.now())
+      return res.status(400).json({ error: 'Start date cannot be in the future' });
+    start = raw;
+  }
+
+  const cacheKey = `us-performance:${start}`;
+  const cached   = cache.get(cacheKey);
+  if (cached !== null) return res.json(cached);
+
+  try {
+    const data = await getUsPerformance(start);
+    cache.set(cacheKey, data, 60 * 60 * 1000); // 1-hour TTL
+    res.json(data);
+  } catch (e) {
+    console.error('[us-performance]', start, e.message);
+    const rateLimited = e.message?.includes('429') || /Too Many Requests|crumb/i.test(e.message ?? '');
+    if (rateLimited)
+      return res.status(503).json({ error: 'Yahoo Finance is rate-limiting. Please try again in a moment.' });
+    res.status(500).json({ error: `Could not load US performance data: ${e.message}` });
   }
 });
 

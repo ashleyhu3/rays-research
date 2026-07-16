@@ -1,0 +1,15 @@
+{
+  "OpenAI": 1.75,
+  "xAI": 1.25,
+  "Tencent": 0.14,
+  "Anthropic": 5.0,
+  "Google": 0.4,
+  "Zhipu": 0.6,
+  "Moonshot AI": 0.6,
+  "Alibaba (Qwen)": 0.195,
+  "MiniMax": 0.3,
+  "Mistral": 0.3,
+  "DeepSeek": 0.27,
+  "Baidu": 0.42,
+  "Meta": 0.13
+}

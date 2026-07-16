@@ -1,0 +1,441 @@
+<title>Does AI compute demand move AI stocks?</title>
+<style>
+:root{
+  --page:#eceef1; --surface:#ffffff; --surface-2:#f6f7f9; --ink:#141820; --ink-2:#565c66;
+  --muted:#878d97; --hair:#e4e6ea; --hair-2:#eef0f3;
+  --accent:#2a78d6; --neg:#e34948; --reflex:#eb6834; --good:#0a7d33;
+  --grid:#e6e8ec; --axis:#c7cbd2;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,sans-serif;
+  --mono:ui-monospace,"SF Mono","SFMono-Regular",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root{
+  --page:#0a0c10; --surface:#14171d; --surface-2:#191d24; --ink:#f2f4f6; --ink-2:#a7adb8;
+  --muted:#7b818c; --hair:#262b33; --hair-2:#1e232a;
+  --accent:#3987e5; --neg:#e66767; --reflex:#e0703c; --good:#37c463;
+  --grid:#23282f; --axis:#333941;
+}}
+:root[data-theme="dark"]{
+  --page:#0a0c10; --surface:#14171d; --surface-2:#191d24; --ink:#f2f4f6; --ink-2:#a7adb8;
+  --muted:#7b818c; --hair:#262b33; --hair-2:#1e232a;
+  --accent:#3987e5; --neg:#e66767; --reflex:#e0703c; --good:#37c463;
+  --grid:#23282f; --axis:#333941;
+}
+:root[data-theme="light"]{
+  --page:#eceef1; --surface:#ffffff; --surface-2:#f6f7f9; --ink:#141820; --ink-2:#565c66;
+  --muted:#878d97; --hair:#e4e6ea; --hair-2:#eef0f3;
+  --accent:#2a78d6; --neg:#e34948; --reflex:#eb6834; --good:#0a7d33;
+  --grid:#e6e8ec; --axis:#c7cbd2;
+}
+*{box-sizing:border-box}
+body{margin:0}
+.wrap{background:var(--page);color:var(--ink);font-family:var(--sans);
+  -webkit-font-smoothing:antialiased;line-height:1.65;padding:clamp(20px,5vw,64px) 20px 96px;}
+.col{max-width:1060px;margin:0 auto}
+.prose{max-width:680px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+h1{font-size:clamp(2.1rem,5.2vw,3.5rem);line-height:1.04;font-weight:800;letter-spacing:-.022em;
+  margin:.5rem 0 0;text-wrap:balance}
+h2{font-size:clamp(1.35rem,2.6vw,1.7rem);font-weight:750;letter-spacing:-.015em;margin:0;text-wrap:balance}
+.lede{font-size:clamp(1.08rem,1.7vw,1.24rem);color:var(--ink-2);max-width:720px;margin:1.4rem 0 0;font-weight:420}
+p{margin:1rem 0}
+a{color:var(--accent)}
+.sec{margin-top:clamp(56px,7vw,92px)}
+.sec-head{display:flex;gap:16px;align-items:baseline;border-top:1px solid var(--hair);padding-top:22px;margin-bottom:26px}
+.sec-num{font-family:var(--mono);font-size:13px;color:var(--accent);font-weight:600;min-width:34px}
+.kicker{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.strong{color:var(--ink);font-weight:600}
+.neg{color:var(--neg);font-weight:600}
+.pos{color:var(--accent);font-weight:600}
+.refl{color:var(--reflex);font-weight:600}
+.mono{font-family:var(--mono)}
+.num{font-variant-numeric:tabular-nums}
+
+/* verdict banner */
+.verdict{background:var(--surface);border:1px solid var(--hair);border-radius:16px;
+  padding:clamp(22px,3vw,34px);margin-top:34px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+.chip{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12px;
+  letter-spacing:.08em;text-transform:uppercase;padding:5px 11px;border-radius:999px;font-weight:600}
+.chip.null{background:color-mix(in srgb,var(--neg) 14%,transparent);color:var(--neg)}
+.chip-dot{width:7px;height:7px;border-radius:50%;background:currentColor}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--hair);
+  border:1px solid var(--hair);border-radius:14px;overflow:hidden;margin-top:30px}
+.tile{background:var(--surface);padding:20px 20px 18px}
+.tile .v{font-family:var(--mono);font-size:clamp(1.7rem,3vw,2.3rem);font-weight:600;letter-spacing:-.02em;
+  line-height:1;font-variant-numeric:tabular-nums}
+.tile .l{font-size:.82rem;color:var(--ink-2);margin-top:9px;line-height:1.35}
+.tile.accent .v{color:var(--reflex)}
+@media(max-width:720px){.tiles{grid-template-columns:repeat(2,1fr)}}
+
+/* figure */
+figure{margin:0}
+.fig{background:var(--surface);border:1px solid var(--hair);border-radius:16px;
+  padding:clamp(16px,2.4vw,26px);box-shadow:0 1px 2px rgba(0,0,0,.03)}
+.fig-title{font-weight:650;font-size:1.02rem;letter-spacing:-.01em}
+.fig-sub{color:var(--ink-2);font-size:.9rem;margin-top:3px}
+figcaption{color:var(--ink-2);font-size:.86rem;margin-top:16px;max-width:760px}
+.chartbox{width:100%;overflow-x:auto}
+svg{display:block;width:100%;height:auto}
+.legend{display:flex;gap:18px;flex-wrap:wrap;font-family:var(--mono);font-size:12px;color:var(--ink-2);margin-top:4px}
+.lg{display:inline-flex;align-items:center;gap:7px}
+.lg .m{width:11px;height:11px;border-radius:3px;display:inline-block}
+.lg .mo{width:11px;height:11px;display:inline-block;transform:rotate(45deg)}
+
+/* table */
+.tbl{width:100%;border-collapse:collapse;font-size:.92rem;margin-top:6px}
+.tbl th{font-family:var(--mono);font-weight:600;font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--muted);text-align:right;padding:10px 12px;border-bottom:1px solid var(--hair)}
+.tbl th:first-child{text-align:left}
+.tbl td{padding:12px;border-bottom:1px solid var(--hair-2);text-align:right;font-variant-numeric:tabular-nums;font-family:var(--mono)}
+.tbl td:first-child{text-align:left;font-family:var(--sans)}
+.tbl tr:last-child td{border-bottom:none}
+.tag{font-family:var(--mono);font-size:10.5px;padding:2px 7px;border-radius:5px;font-weight:600;letter-spacing:.03em}
+.tag.art{background:color-mix(in srgb,var(--neg) 13%,transparent);color:var(--neg)}
+.tag.rfl{background:color-mix(in srgb,var(--reflex) 15%,transparent);color:var(--reflex)}
+.tag.nul{background:color-mix(in srgb,var(--muted) 16%,transparent);color:var(--ink-2)}
+
+.two{display:grid;grid-template-columns:1.15fr .85fr;gap:34px;align-items:start}
+@media(max-width:820px){.two{grid-template-columns:1fr;gap:22px}}
+ul.clean{padding-left:0;list-style:none;margin:1rem 0}
+ul.clean li{position:relative;padding-left:20px;margin:.55rem 0;color:var(--ink-2)}
+ul.clean li::before{content:"";position:absolute;left:2px;top:.62em;width:6px;height:6px;border-radius:50%;background:var(--accent)}
+ul.clean li.x::before{background:var(--neg)}
+.footnote{border-top:1px solid var(--hair);margin-top:70px;padding-top:22px;font-size:.85rem;color:var(--muted);font-family:var(--mono);line-height:1.7}
+
+/* tooltip */
+#tt{position:fixed;pointer-events:none;z-index:50;background:var(--ink);color:var(--page);
+  font-family:var(--mono);font-size:11.5px;line-height:1.5;padding:8px 10px;border-radius:8px;
+  opacity:0;transition:opacity .09s;box-shadow:0 6px 24px rgba(0,0,0,.25);max-width:260px}
+#tt .tk{color:var(--muted)}
+:root[data-theme="dark"] #tt,@media (prefers-color-scheme:dark){#tt{box-shadow:0 6px 24px rgba(0,0,0,.6)}}
+</style>
+
+<div class="wrap">
+<div class="col">
+
+  <header>
+    <div class="eyebrow">Signal Research · Empirical note · 2026-07-15</div>
+    <h1>Does AI compute demand move AI stocks?</h1>
+    <p class="lede">A pre-registered test across <span class="strong">79 weeks</span> of OpenRouter token volume and five orthogonal compute-demand channels, against the AI-hardware equity complex. The honest answer — and the two big correlations that turned out to be mirages.</p>
+
+    <div class="verdict">
+      <span class="chip null"><span class="chip-dot"></span>Null for fundamentals</span>
+      <p style="margin:16px 0 0;font-size:1.05rem;max-width:820px">
+        Rebuilt from a nulled 25-week pilot to the full daily OpenRouter history plus DRAM/NAND spot prices, GPU rental, cloud-capacity tightness, and sentiment breadth. After confound controls, <span class="strong">no fundamental AI-demand signal reliably co-moves with — or predicts — AI-equity returns</span> at weekly-to-monthly frequency. The one positive correlation is retail <span class="refl">sentiment breadth</span>, which is reflexive, not a demand fundamental. And the two results that looked like wins both dissolved under scrutiny.
+      </p>
+      <div class="tiles">
+        <div class="tile"><div class="v">79</div><div class="l">weeks tested<br>Jan 2025 – Jul 2026</div></div>
+        <div class="tile"><div class="v">6</div><div class="l">orthogonal demand channels combined</div></div>
+        <div class="tile"><div class="v">0<span style="color:var(--muted)">/112</span></div><div class="l">fundamental tests significant at&nbsp;FDR&lt;0.10</div></div>
+        <div class="tile accent"><div class="v">+0.45</div><div class="l">only robust positive — reflexive sentiment&nbsp;↔&nbsp;price</div></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- 1 -->
+  <section class="sec">
+    <div class="sec-head"><div class="sec-num">01</div><div><div class="kicker">The foundation</div><h2>A real dataset, not an SVG reconstruction</h2></div></div>
+    <div class="two">
+      <div class="prose">
+        <p>The pilot that returned nulls had one fatal weakness: its token series was <span class="strong">25 weeks</span> reverse-engineered from a report's chart bars. Detecting a weak correlation at n=25 is hopeless. So the first job was data.</p>
+        <p>Pulling OpenRouter's daily rankings dataset gives <span class="strong">79 complete weeks</span> of platform token volume — which grew <span class="mono">~100×</span>, from 0.5T to 52.6T tokens per week. Alongside it, five physical-demand channels from the existing Mongo store: server DRAM and NAND spot prices, datacenter GPU rental rates, AWS spot-capacity tightness, and StockTwits sentiment breadth across 18 AI-hardware tickers.</p>
+        <p class="mono" style="font-size:.84rem;color:var(--ink-2)">Two channels the plan wanted turned out to be unusable as time series — short-interest history (1–2 points per name) and options positioning (~7 days). Only current snapshots exist, so "positioning as the outcome" had no history to test.</p>
+      </div>
+      <figure class="fig">
+        <div class="fig-title">OpenRouter weekly token volume</div>
+        <div class="fig-sub">Trillions of tokens · the raw AI-usage demand signal</div>
+        <div class="chartbox"><div id="c-tokens"></div></div>
+      </figure>
+    </div>
+  </section>
+
+  <!-- 2 -->
+  <section class="sec">
+    <div class="sec-head"><div class="sec-num">02</div><div><div class="kicker">Pre-registered tests</div><h2>Five hypotheses, declared before looking</h2></div></div>
+    <div class="prose"><p>Each demand signal was transformed to its <span class="strong">innovation</span> — the surprise left after removing trend and last week's level — because markets price the expected part in advance. Correlations use Pearson with Newey–West (HAC) standard errors and a Benjamini–Hochberg FDR correction across the set. One result stands out; hold that thought.</p></div>
+    <figure class="fig">
+      <div class="chartbox">
+        <table class="tbl">
+          <thead><tr><th>Hypothesis (demand → outcome)</th><th>n</th><th>r</th><th>p</th><th>HAC p</th><th>FDR</th><th>verdict</th></tr></thead>
+          <tbody id="tbl-body"></tbody>
+        </table>
+      </div>
+      <figcaption>Contemporaneous unless a horizon is noted. "rel QQQ" = return net of the Nasdaq-100, to strip market beta. Only the DRAM row clears significance — and that is exactly the result that fails inspection next.</figcaption>
+    </figure>
+  </section>
+
+  <!-- 3 -->
+  <section class="sec">
+    <div class="sec-head"><div class="sec-num">03</div><div><div class="kicker">Mirage #1</div><h2>The DRAM correlation was a sampling artifact</h2></div></div>
+    <div class="two">
+      <div class="prose">
+        <p>DRAM spot prices → memory stocks came back at <span class="pos">r = +0.52, p &lt; 0.001</span>. Physically it's the dream result: memory prices <em>are</em> memory-makers' revenue line. But DRAM prints on <span class="strong">irregular dates</span> — sometimes weekly, sometimes a month apart — and each test paired the price change with the stock return <em>over the same gap</em>.</p>
+        <p>That builds in a confound: longer gaps mechanically accumulate a bigger price move <span class="strong">and</span> a bigger stock move, and in a bull market both drift up together. The correlation was measuring elapsed time, not demand.</p>
+        <p>Three controls dissolve it: dividing both sides by interval length (<span class="mono">per-day rate</span>), partialling out the gap, and re-running on a clean fixed monthly grid. The partial correlation confirms it — it's the <span class="neg">interval length</span> that's significant (p=0.09), not DRAM (p=0.69).</p>
+      </div>
+      <figure class="fig">
+        <div class="fig-title">Same data, three ways to measure it</div>
+        <div class="fig-sub">Correlation of DRAM spot Δ with the memory basket</div>
+        <div class="chartbox"><div id="c-dram"></div></div>
+        <figcaption>Remove the shared time-length and the +0.52 collapses to noise.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- 4 -->
+  <section class="sec">
+    <div class="sec-head"><div class="sec-num">04</div><div><div class="kicker">Mirage #2</div><h2>The "demand leads price by a month" signal is noise</h2></div></div>
+    <div class="two">
+      <div class="prose">
+        <p>The best fundamental hit in the whole search: launch-adjusted <span class="strong">organic</span> token growth → the compute basket four weeks later, <span class="pos">r = +0.28, p = 0.02</span>. Tempting — a forward-looking, causally sensible lead.</p>
+        <p>But a real economic lead shows a <span class="strong">smooth hump</span> across nearby horizons. This one <span class="neg">flips sign between adjacent weeks</span>: −0.24 at three weeks, +0.28 at four. That oscillation is the fingerprint of an overfit lag, not a lead — and split-half confirms it decays out of sample (0.34 → 0.18). With 112 fundamental cells tested, a lone p=0.02 is what chance produces.</p>
+      </div>
+      <figure class="fig">
+        <div class="fig-title">Organic token growth vs compute basket, by lead</div>
+        <div class="fig-sub">Correlation at each horizon · demand leads price to the right of 0</div>
+        <div class="chartbox"><div id="c-lead"></div></div>
+        <figcaption>A genuine lead is a smooth curve. An adjacent-week sign flip is noise dressed as signal.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- 5 -->
+  <section class="sec">
+    <div class="sec-head"><div class="sec-num">05</div><div><div class="kicker">What does correlate</div><h2>The only positive is reflexive sentiment</h2></div></div>
+    <div class="two">
+      <div class="prose">
+        <p>The composite index (ACDI) <em>does</em> correlate with the AI complex, at <span class="pos">r = +0.33</span>. But decomposing it is decisive. Strip the sentiment channel — leaving tokens plus physical compute prices, the true fundamentals — and the correlation <span class="neg">inverts to −0.10</span>. Sentiment alone carries <span class="refl">+0.45</span>.</p>
+        <p>So the positive is entirely StockTwits bull/bear breadth on the same tickers. That is <span class="strong">reflexive</span>: bullish chatter and rising prices are two faces of one mood, measured contemporaneously. It's a real correlation — but it's attention co-moving with price, not compute demand driving it. And it has no predictive edge: every forward horizon is null.</p>
+      </div>
+      <figure class="fig">
+        <div class="fig-title">What drives the composite's correlation with AI stocks</div>
+        <div class="fig-sub">ACDI decomposed vs AI complex (rel QQQ)</div>
+        <div class="chartbox"><div id="c-decomp"></div></div>
+        <figcaption>Fundamentals-only ≈ zero. The signal is the sentiment channel — reflexive, not causal.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- 6 -->
+  <section class="sec">
+    <div class="sec-head"><div class="sec-num">06</div><div><div class="kicker">The whole search</div><h2>196 tests, one honest picture</h2></div></div>
+    <div class="prose"><p>Every demand channel × equity basket × horizon, on one plot: correlation strength against statistical significance. The dashed line is p = 0.05; nothing clears the multiple-testing bar (FDR). The fundamentals <span class="strong">hug zero</span>. The only points that climb are <span class="refl">reflexive sentiment</span>, and only contemporaneously.</p></div>
+    <figure class="fig">
+      <div class="legend">
+        <span class="lg"><span class="m" style="background:var(--accent)"></span>Fundamental demand (tokens, DRAM, NAND, GPU, cloud)</span>
+        <span class="lg"><span class="mo" style="background:var(--reflex)"></span>Sentiment / composite (reflexive)</span>
+      </div>
+      <div class="chartbox"><div id="c-volcano"></div></div>
+      <figcaption>Volcano plot of all 196 demand→return tests. Higher = more significant; right = stronger positive correlation. A real fundamental signal would sit top-right — that quadrant is empty of blue.</figcaption>
+    </figure>
+  </section>
+
+  <!-- 7 -->
+  <section class="sec">
+    <div class="sec-head"><div class="sec-num">07</div><div><div class="kicker">Interpretation</div><h2>What this means, and what would actually work</h2></div></div>
+    <div class="two">
+      <div class="prose">
+        <p>This is the efficient-market result in one heavily-watched theme. By the time an AI-demand number prints weekly, the surprise is already in the price — so contemporaneous fundamentals show nothing and forward tests show less. The honest prior held: mega-cap and even pure-play weekly price is a fast, well-arbitraged surface.</p>
+        <p>The value delivered is negative-result rigor plus two artifacts caught before they could mislead. What could still work isn't a weekly correlation at all:</p>
+      </div>
+      <div>
+        <div class="kicker">Where the edge might actually be</div>
+        <ul class="clean">
+          <li><span class="strong">Daily launch-shock event studies.</span> Model releases are discrete demand shocks; a daily archive (now accruing) can measure the price reaction in the ±3-day window, where weekly aggregation destroys the signal.</li>
+          <li><span class="strong">Physical prices at their native cadence.</span> DRAM/NAND vs memory names on a clean monthly grid, with more months — the confound-free version, given time to accumulate n.</li>
+          <li><span class="strong">Sentiment breadth as a positioning tool</span>, understood as reflexive attention — useful for regime/risk, not as a fundamental predictor.</li>
+        </ul>
+        <ul class="clean">
+          <li class="x"><span class="strong">Dropped as dead ends:</span> short-interest and options-positioning history (snapshots only), and mega-cap weekly price vs any single demand channel.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <div class="footnote">
+    METHOD — Demand innovations: residual of yₜ = a + b·t + c·yₜ₋₁ on log levels. Returns: weekly log returns, baskets equal-weighted, "rel QQQ" = excess of Nasdaq-100. Inference: Pearson + Spearman, Newey–West HAC(3) SEs, Benjamini–Hochberg FDR across the pre-registered set and across the 196-cell sweep. Robustness: per-day-rate & partial controls, fixed-cadence monthly, split-half stability. Sources: OpenRouter rankings-daily (79 wks); DRAM/NAND/GPU/AWS/StockTwits via project Mongo; equity closes via yfinance. Repro: analysis/analysis2.py.<br>
+    Baskets — Memory: MU SNDK WDC STX · Compute: NVDA AVGO TSM AMD MRVL · Optics: COHR LITE AAOI CIEN GLW · Power: VRT.
+  </div>
+
+</div>
+</div>
+<div id="tt"></div>
+
+<script>
+const DATA = __DATA__;
+const SVGNS="http://www.w3.org/2000/svg";
+function E(t,a={},kids=[]){const e=document.createElementNS(SVGNS,t);for(const k in a)e.setAttribute(k,a[k]);
+  for(const c of [].concat(kids))if(c)e.appendChild(typeof c==="string"?document.createTextNode(c):c);return e;}
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const tt=document.getElementById('tt');
+function showTip(html,x,y){tt.innerHTML=html;tt.style.opacity=1;const r=tt.getBoundingClientRect();
+  let nx=x+14,ny=y+14;if(nx+r.width>innerWidth-8)nx=x-r.width-14;if(ny+r.height>innerHeight-8)ny=y-r.height-14;
+  tt.style.left=nx+'px';tt.style.top=ny+'px';}
+function hideTip(){tt.style.opacity=0;}
+const fmtR=v=>(v>=0?'+':'−')+Math.abs(v).toFixed(2);
+const fmtP=p=>p<0.001?p.toExponential(1):p.toFixed(3);
+
+/* ---------- 1. token area ---------- */
+function tokenChart(){
+  const W=560,H=300,m={t:14,r:16,b:30,l:40};const d=DATA.token_total;
+  const iw=W-m.l-m.r,ih=H-m.t-m.b;const n=d.length;const ymax=55;
+  const X=i=>m.l+iw*i/(n-1),Y=v=>m.t+ih*(1-v/ymax);
+  const svg=E('svg',{viewBox:`0 0 ${W} ${H}`,role:'img'});
+  [0,10,20,30,40,50].forEach(g=>{svg.appendChild(E('line',{x1:m.l,x2:W-m.r,y1:Y(g),y2:Y(g),stroke:css('--grid'),'stroke-width':1}));
+    svg.appendChild(E('text',{x:m.l-8,y:Y(g)+3.5,'text-anchor':'end','font-family':css('--mono'),'font-size':10,fill:css('--muted')},g+'T'));});
+  // area + line
+  let dp='',ap=`M ${X(0)} ${Y(0)}`;
+  d.forEach((p,i)=>{const x=X(i),y=Y(p.v);dp+=(i?' L':'M')+` ${x.toFixed(1)} ${y.toFixed(1)}`;ap+=` L ${x.toFixed(1)} ${y.toFixed(1)}`;});
+  ap+=` L ${X(n-1)} ${Y(0)} Z`;
+  const grad=E('linearGradient',{id:'ga',x1:0,y1:0,x2:0,y2:1});
+  grad.appendChild(E('stop',{offset:0,'stop-color':css('--accent'),'stop-opacity':.28}));
+  grad.appendChild(E('stop',{offset:1,'stop-color':css('--accent'),'stop-opacity':0}));
+  svg.appendChild(E('defs',{},[grad]));
+  svg.appendChild(E('path',{d:ap,fill:'url(#ga)'}));
+  svg.appendChild(E('path',{d:dp,fill:'none',stroke:css('--accent'),'stroke-width':2,'stroke-linejoin':'round'}));
+  svg.appendChild(E('circle',{cx:X(n-1),cy:Y(d[n-1].v),r:3.5,fill:css('--accent')}));
+  // x labels (quarters)
+  [0,13,26,39,52,65,78].forEach(i=>{if(i<n)svg.appendChild(E('text',{x:X(i),y:H-9,'text-anchor':'middle','font-family':css('--mono'),'font-size':10,fill:css('--muted')},d[i].d.slice(0,7)));});
+  // hover
+  const hl=E('line',{y1:m.t,y2:m.t+ih,stroke:css('--axis'),'stroke-width':1,opacity:0});
+  const hd=E('circle',{r:4,fill:css('--accent'),stroke:css('--surface'),'stroke-width':1.5,opacity:0});
+  svg.appendChild(hl);svg.appendChild(hd);
+  const hit=E('rect',{x:m.l,y:m.t,width:iw,height:ih,fill:'transparent'});
+  hit.addEventListener('mousemove',ev=>{const r=svg.getBoundingClientRect();const px=(ev.clientX-r.left)/r.width*W;
+    let i=Math.round((px-m.l)/iw*(n-1));i=Math.max(0,Math.min(n-1,i));const x=X(i),y=Y(d[i].v);
+    hl.setAttribute('x1',x);hl.setAttribute('x2',x);hl.setAttribute('opacity',1);
+    hd.setAttribute('cx',x);hd.setAttribute('cy',y);hd.setAttribute('opacity',1);
+    showTip(`<span class="tk">week of</span> ${d[i].d}<br><b>${d[i].v.toFixed(2)} T</b> <span class="tk">tokens</span>`,ev.clientX,ev.clientY);});
+  hit.addEventListener('mouseleave',()=>{hideTip();hl.setAttribute('opacity',0);hd.setAttribute('opacity',0);});
+  svg.appendChild(hit);
+  document.getElementById('c-tokens').appendChild(svg);
+}
+
+/* ---------- diverging horizontal bars ---------- */
+function divBars(mount,rows,opt={}){
+  const rmin=opt.min??-0.2,rmax=opt.max??0.6;const W=560,rowH=64,padT=10,padB=34,m={l:14,r:14};
+  const H=padT+rows.length*rowH+padB;const iw=W-m.l-m.r;
+  const X=v=>m.l+iw*(v-rmin)/(rmax-rmin);const z=X(0);
+  const svg=E('svg',{viewBox:`0 0 ${W} ${H}`});
+  // gridlines
+  const ticks=opt.ticks||[-0.2,0,0.2,0.4,0.6];
+  ticks.forEach(t=>{if(t<rmin||t>rmax)return;svg.appendChild(E('line',{x1:X(t),x2:X(t),y1:padT,y2:H-padB,stroke:t===0?css('--axis'):css('--grid'),'stroke-width':t===0?1.5:1}));
+    svg.appendChild(E('text',{x:X(t),y:H-padB+18,'text-anchor':'middle','font-family':css('--mono'),'font-size':10,fill:css('--muted')},fmtR(t)));});
+  rows.forEach((row,i)=>{
+    const cy=padT+i*rowH+rowH/2;const pos=row.r>=0;const col=pos?css('--accent'):css('--neg');
+    const bx=Math.min(z,X(row.r)),bw=Math.abs(X(row.r)-z);
+    const bh=17;
+    svg.appendChild(E('rect',{x:bx,y:cy-bh/2,width:Math.max(bw,1.5),height:bh,rx:4,fill:col,opacity:row.dim?0.45:1}));
+    // label above
+    svg.appendChild(E('text',{x:m.l,y:cy-16,'font-family':css('--sans'),'font-size':13,'font-weight':600,fill:css('--ink')},row.label));
+    // value at bar end
+    const vx=pos?X(row.r)+8:X(row.r)-8;
+    svg.appendChild(E('text',{x:vx,y:cy+4.5,'text-anchor':pos?'start':'end','font-family':css('--mono'),'font-size':13,'font-weight':600,fill:col},fmtR(row.r)));
+    if(row.note)svg.appendChild(E('text',{x:m.l,y:cy+22,'font-family':css('--mono'),'font-size':10.5,fill:css('--muted')},row.note));
+    const hit=E('rect',{x:m.l,y:cy-rowH/2,width:iw,height:rowH,fill:'transparent'});
+    hit.addEventListener('mousemove',ev=>showTip(`<b>${row.label}</b><br><span class="tk">r =</span> ${fmtR(row.r)} &nbsp; <span class="tk">p =</span> ${fmtP(row.p)}${row.n?` &nbsp;<span class="tk">n =</span> ${row.n}`:''}`,ev.clientX,ev.clientY));
+    hit.addEventListener('mouseleave',hideTip);svg.appendChild(hit);
+  });
+  document.getElementById(mount).appendChild(svg);
+}
+
+/* ---------- lead-lag line ---------- */
+function leadChart(){
+  const d=DATA.lead_profile;const W=560,H=300,m={t:16,r:18,b:38,l:42};
+  const iw=W-m.l-m.r,ih=H-m.t-m.b;const hmin=-2,hmax=7;const ymin=-0.35,ymax=0.4;
+  const X=h=>m.l+iw*(h-hmin)/(hmax-hmin),Y=v=>m.t+ih*(1-(v-ymin)/(ymax-ymin));
+  const svg=E('svg',{viewBox:`0 0 ${W} ${H}`});
+  [-0.2,0,0.2,0.4].forEach(g=>{svg.appendChild(E('line',{x1:m.l,x2:W-m.r,y1:Y(g),y2:Y(g),stroke:g===0?css('--axis'):css('--grid'),'stroke-width':g===0?1.5:1}));
+    svg.appendChild(E('text',{x:m.l-8,y:Y(g)+3.5,'text-anchor':'end','font-family':css('--mono'),'font-size':10,fill:css('--muted')},fmtR(g)});});
+  // x ticks
+  for(let h=hmin;h<=hmax;h++){svg.appendChild(E('text',{x:X(h),y:H-20,'text-anchor':'middle','font-family':css('--mono'),'font-size':10,fill:css('--muted')},h));}
+  svg.appendChild(E('text',{x:m.l+iw/2,y:H-5,'text-anchor':'middle','font-family':css('--mono'),'font-size':10.5,fill:css('--ink-2')},'demand leads price  →  (weeks)'));
+  // line
+  let dp='';d.forEach((p,i)=>{dp+=(i?' L':'M')+` ${X(p.h).toFixed(1)} ${Y(p.r).toFixed(1)}`;});
+  svg.appendChild(E('path',{d:dp,fill:'none',stroke:css('--ink-2'),'stroke-width':2,'stroke-linejoin':'round',opacity:.55}));
+  // points colored by sign
+  d.forEach(p=>{const col=p.r>=0?css('--accent'):css('--neg');
+    const g=E('g',{});g.appendChild(E('circle',{cx:X(p.h),cy:Y(p.r),r:p.h===3||p.h===4?6:4.5,fill:col,stroke:css('--surface'),'stroke-width':1.5}));
+    const hit=E('circle',{cx:X(p.h),cy:Y(p.r),r:13,fill:'transparent'});
+    hit.addEventListener('mousemove',ev=>showTip(`<span class="tk">lead</span> ${p.h>=0?'+':''}${p.h}w<br><span class="tk">r =</span> ${fmtR(p.r)} &nbsp;<span class="tk">p =</span> ${fmtP(p.p)}`,ev.clientX,ev.clientY));
+    hit.addEventListener('mouseleave',hideTip);g.appendChild(hit);svg.appendChild(g);});
+  // annotate the flip
+  const ax=X(3.5);
+  svg.appendChild(E('text',{x:ax,y:Y(0.4)+2,'text-anchor':'middle','font-family':css('--mono'),'font-size':10.5,'font-weight':600,fill:css('--neg')},'sign flip'));
+  svg.appendChild(E('line',{x1:X(3),x2:X(3),y1:Y(-0.24)+8,y2:Y(0.32),stroke:css('--neg'),'stroke-width':1,'stroke-dasharray':'2 2',opacity:.5}));
+  svg.appendChild(E('line',{x1:X(4),x2:X(4),y1:Y(0.28)-8,y2:Y(0.32),stroke:css('--neg'),'stroke-width':1,'stroke-dasharray':'2 2',opacity:.5}));
+  document.getElementById('c-lead').appendChild(svg);
+}
+
+/* ---------- volcano ---------- */
+function volcano(){
+  const d=DATA.volcano;const W=560,H=360,m={t:18,r:16,b:44,l:44};
+  const iw=W-m.l-m.r,ih=H-m.t-m.b;const xmin=-0.4,xmax=0.55,ymax=3.3;
+  const X=v=>m.l+iw*(v-xmin)/(xmax-xmin),Y=v=>m.t+ih*(1-v/ymax);
+  const svg=E('svg',{viewBox:`0 0 ${W} ${H}`});
+  // grid x
+  [-0.4,-0.2,0,0.2,0.4].forEach(t=>{svg.appendChild(E('line',{x1:X(t),x2:X(t),y1:m.t,y2:m.t+ih,stroke:t===0?css('--axis'):css('--grid'),'stroke-width':t===0?1.5:1}));
+    svg.appendChild(E('text',{x:X(t),y:H-24,'text-anchor':'middle','font-family':css('--mono'),'font-size':10,fill:css('--muted')},fmtR(t)});});
+  [1,2,3].forEach(g=>{svg.appendChild(E('line',{x1:m.l,x2:W-m.r,y1:Y(g),y2:Y(g),stroke:css('--grid'),'stroke-width':1}));
+    svg.appendChild(E('text',{x:m.l-8,y:Y(g)+3.5,'text-anchor':'end','font-family':css('--mono'),'font-size':10,fill:css('--muted')},g});});
+  // significance line p=0.05
+  const sy=Y(-Math.log10(0.05));
+  svg.appendChild(E('line',{x1:m.l,x2:W-m.r,y1:sy,y2:sy,stroke:css('--ink-2'),'stroke-width':1.2,'stroke-dasharray':'4 3',opacity:.7}));
+  svg.appendChild(E('text',{x:W-m.r,y:sy-6,'text-anchor':'end','font-family':css('--mono'),'font-size':10,fill:css('--ink-2')},'p = 0.05'));
+  // axis titles
+  svg.appendChild(E('text',{x:m.l+iw/2,y:H-8,'text-anchor':'middle','font-family':css('--mono'),'font-size':10.5,fill:css('--ink-2')},'correlation  r'));
+  svg.appendChild(E('text',{x:13,y:m.t+ih/2,'text-anchor':'middle','font-family':css('--mono'),'font-size':10.5,fill:css('--ink-2'),transform:`rotate(-90 13 ${m.t+ih/2})`},'significance  −log₁₀ p'));
+  // points: fundamentals first (under), reflexive on top
+  const draw=(p)=>{const x=X(Math.max(xmin,Math.min(xmax,p.r))),y=Y(Math.min(ymax,p.nlp));
+    let node;if(p.fund){node=E('circle',{cx:x,cy:y,r:3.6,fill:css('--accent'),'fill-opacity':.62,stroke:css('--accent'),'stroke-width':.5});}
+    else{node=E('rect',{x:x-3.6,y:y-3.6,width:7.2,height:7.2,fill:css('--reflex'),'fill-opacity':.72,transform:`rotate(45 ${x} ${y})`,stroke:css('--reflex'),'stroke-width':.5});}
+    const g=E('g',{});g.appendChild(node);
+    const hit=E('circle',{cx:x,cy:y,r:9,fill:'transparent'});
+    hit.addEventListener('mousemove',ev=>showTip(`<b>${p.demand}</b> → ${p.outcome}<br><span class="tk">lead</span> +${p.h}w &nbsp; <span class="tk">r</span> ${fmtR(p.r)} &nbsp; <span class="tk">p</span> ${fmtP(Math.pow(10,-p.nlp))}`,ev.clientX,ev.clientY));
+    hit.addEventListener('mouseleave',hideTip);g.appendChild(hit);svg.appendChild(g);};
+  d.filter(p=>p.fund).forEach(draw);
+  d.filter(p=>!p.fund).forEach(draw);
+  // annotate empty quadrant
+  svg.appendChild(E('text',{x:X(0.42),y:Y(2.9),'text-anchor':'middle','font-family':css('--mono'),'font-size':10,'font-weight':600,fill:css('--reflex')},'reflexive only'));
+  document.getElementById('c-volcano').appendChild(svg);
+}
+
+/* ---------- table ---------- */
+function buildTable(){
+  const verdict=r=>{
+    if(r.name.startsWith('DRAM'))return '<span class="tag art">artifact</span>';
+    if(r.fdr<0.10)return '<span class="tag rfl">holds</span>';
+    return '<span class="tag nul">null</span>';};
+  const tb=document.getElementById('tbl-body');
+  DATA.primary_table.forEach(r=>{
+    const tr=document.createElement('tr');
+    const rc=r.r>=0?'var(--accent)':'var(--neg)';
+    tr.innerHTML=`<td>${r.name}</td><td>${r.n}</td><td style="color:${rc};font-weight:600">${fmtR(r.r)}</td>
+      <td>${fmtP(r.p)}</td><td>${fmtP(r.hac)}</td><td>${fmtP(r.fdr)}</td><td>${verdict(r)}</td>`;
+    tb.appendChild(tr);
+  });
+}
+
+tokenChart();
+buildTable();
+divBars('c-dram',[
+  {label:'Naive · same interval',r:DATA.dram_collapse[0].r,p:DATA.dram_collapse[0].p,n:49,note:'irregular gaps — confounded'},
+  {label:'Per-day rate',r:DATA.dram_collapse[1].r,p:DATA.dram_collapse[1].p,n:49,note:'length removed',dim:true},
+  {label:'Monthly · fixed cadence',r:DATA.dram_collapse[2].r,p:DATA.dram_collapse[2].p,n:12,note:'clean grid',dim:true},
+],{min:-0.2,max:0.6,ticks:[-0.2,0,0.2,0.4,0.6]});
+divBars('c-decomp',[
+  {label:'ACDI · full composite',r:DATA.decomp[0].r,p:DATA.decomp[0].p,note:'tokens + physical + sentiment'},
+  {label:'Fundamentals only',r:DATA.decomp[1].r,p:DATA.decomp[1].p,note:'tokens + physical, no sentiment'},
+  {label:'Sentiment only',r:DATA.decomp[2].r,p:DATA.decomp[2].p,note:'reflexive attention'},
+],{min:-0.2,max:0.6,ticks:[-0.2,0,0.2,0.4,0.6]});
+leadChart();
+volcano();
+
+// re-render on theme toggle so CSS-var colors update
+new MutationObserver(()=>{document.querySelectorAll('#c-tokens,#c-dram,#c-decomp,#c-lead,#c-volcano').forEach(n=>n.innerHTML='');
+  document.getElementById('tbl-body').innerHTML='';
+  tokenChart();buildTable();
+  divBars('c-dram',[{label:'Naive · same interval',r:DATA.dram_collapse[0].r,p:DATA.dram_collapse[0].p,n:49,note:'irregular gaps — confounded'},{label:'Per-day rate',r:DATA.dram_collapse[1].r,p:DATA.dram_collapse[1].p,n:49,note:'length removed',dim:true},{label:'Monthly · fixed cadence',r:DATA.dram_collapse[2].r,p:DATA.dram_collapse[2].p,n:12,note:'clean grid',dim:true}],{min:-0.2,max:0.6,ticks:[-0.2,0,0.2,0.4,0.6]});
+  divBars('c-decomp',[{label:'ACDI · full composite',r:DATA.decomp[0].r,p:DATA.decomp[0].p,note:'tokens + physical + sentiment'},{label:'Fundamentals only',r:DATA.decomp[1].r,p:DATA.decomp[1].p,note:'tokens + physical, no sentiment'},{label:'Sentiment only',r:DATA.decomp[2].r,p:DATA.decomp[2].p,note:'reflexive attention'}],{min:-0.2,max:0.6,ticks:[-0.2,0,0.2,0.4,0.6]});
+  leadChart();volcano();
+}).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+</script>

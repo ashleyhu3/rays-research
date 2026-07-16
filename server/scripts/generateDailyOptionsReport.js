@@ -1765,13 +1765,20 @@ async function fetchTickerReport(ticker, reportDate, maxExpirations = EXPIRATION
   const byDate = [];
 
   for (const expiration of expirations) {
-    let data;
-    if (expiration === first.selectedDate) {
-      data = first;
-    } else {
-      data = await getOptionsData(ticker, expiration);
+    const startedAt = Date.now();
+    console.log(`[options-report] ${ticker} ${expiration} start`);
+    try {
+      let data;
+      if (expiration === first.selectedDate) {
+        data = first;
+      } else {
+        data = await getOptionsData(ticker, expiration);
+      }
+      byDate.push(await enrichExpirationData(data, reportDate, options));
+      console.log(`[options-report] ${ticker} ${expiration} done (${Math.round((Date.now() - startedAt) / 1000)}s)`);
+    } finally {
+      persistPriorCache();
     }
-    byDate.push(await enrichExpirationData(data, reportDate, options));
   }
 
   return {
@@ -1790,9 +1797,15 @@ async function generateDailyOptionsReport({
 
   try {
     for (const ticker of tickers) {
+      const startedAt = Date.now();
+      console.log(`[options-report] ${ticker} start`);
       try {
         tickerReports.push(await fetchTickerReport(ticker, date, maxExpirations, { skipPriors }));
+        console.log(`[options-report] ${ticker} done (${Math.round((Date.now() - startedAt) / 1000)}s)`);
       } finally {
+        // Persist after every ticker so a late failure does not make the next run
+        // repeat all completed full-chain backfills.
+        persistPriorCache();
         // Histories are memoized only to share work across one ticker's three
         // expirations. Persistent aggregate totals carry the useful state between
         // runs, so retaining thousands of per-contract arrays would only leak memory
@@ -1849,6 +1862,39 @@ function aggregateFlow(tickerReport) {
   return flow;
 }
 
+// The Alerts sidebar shows one dot for each of the last three sessions in the
+// front expiration: green when that day's full-chain call volume beats put
+// volume, red when puts lead.
+function nearestExpirationFlowDays(tickerReport, count = 3) {
+  const nearest = tickerReport.expirations?.[0];
+  if (!nearest) return [];
+
+  const byDate = new Map();
+  function addRows(rows, key) {
+    for (const row of rows ?? []) {
+      if (!row?.date) continue;
+      const entry = byDate.get(row.date) ?? { date: row.date, callVolume: 0, putVolume: 0 };
+      entry[key] = Number(row.volume ?? 0);
+      byDate.set(row.date, entry);
+    }
+  }
+
+  addRows(nearest.volumeCharts?.call?.rows, 'callVolume');
+  addRows(nearest.volumeCharts?.put?.rows, 'putVolume');
+
+  return [...byDate.values()]
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .slice(-count)
+    .map(day => {
+      const netVolume = day.callVolume - day.putVolume;
+      return {
+        ...day,
+        netVolume,
+        leader: netVolume > 0 ? 'call' : netVolume < 0 ? 'put' : 'flat',
+      };
+    });
+}
+
 function structuredContractRow(row) {
   return {
     side: row.side,
@@ -1878,10 +1924,11 @@ function buildStructuredReport(report, { generatedAt = new Date().toISOString(),
         priceText: fmtUsd(nearest?.price),
         change: fmtChange(nearest?.priceChange, nearest?.changePct),
         priceChange: nearest?.priceChange ?? null,
-        // Raw call/put volume totals (today vs the prior trading day, summed across
-        // the tracked expirations) so the web sidebar can flag day-over-day surges
-        // in call or put flow with a coloured dot next to the ticker.
+        // Raw call/put volume totals still drive the sidebar sort; flowDays drives
+        // the three call-vs-put direction dots for the front expiration.
         flow: aggregateFlow(tickerReport),
+        flowExpiration: nearest?.selectedDate ?? null,
+        flowDays: nearestExpirationFlowDays(tickerReport),
         expirations: (tickerReport.expirations ?? []).map(exp => ({
           selectedDate: exp.selectedDate,
           expiryLabel: fmtExpiry(exp.selectedDate),
@@ -1906,6 +1953,7 @@ module.exports = {
   buildVolumeChartSvg,
   currentRowsFromTotals,
   generateDailyOptionsReport,
+  nearestExpirationFlowDays,
   pairsFromSessions,
   renderHtml,
   renderMarkdown,
