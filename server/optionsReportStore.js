@@ -18,9 +18,11 @@ const BLOB = {
 };
 const DEFAULT_TIME_ZONE = 'Asia/Hong_Kong';
 // Keep a rolling archive of past daily reports in Mongo so the daily job only
-// scrapes today and prior days are reused/served straight from storage. Capped
-// so the single blob document stays well under Mongo's 16MB limit.
-const MAX_ARCHIVE_DAYS = 90;
+// scrapes today and prior days are reused/served straight from storage. Mongo
+// caps a single document at 16MB, and one 80+-ticker report is ~6MB, so the
+// archive is pruned by total serialized SIZE rather than a fixed day count — a
+// day-count cap couldn't know that a few large days would blow past the limit.
+const MAX_BLOB_BYTES = 14 * 1024 * 1024;
 
 function dateInTimeZone(date = new Date(), timeZone = DEFAULT_TIME_ZONE) {
   const parts = new Intl.DateTimeFormat('en-US', {
@@ -60,21 +62,35 @@ function writeLatestDailyOptionsReport(report) {
   });
 }
 
-// Store one day's structured report as `latest` and in the per-date archive,
-// pruning to the most recent MAX_ARCHIVE_DAYS so prior days stay reusable.
+function blobSize(obj) {
+  return Buffer.byteLength(JSON.stringify(obj));
+}
+
+// Store one day's structured report as `latest`, keeping prior days under
+// `byDate`. `latest` already holds today's full report, so today is NOT also
+// copied into byDate — doing that (as this used to) stored the largest day
+// twice and, at 80+ tickers, pushed the whole document past Mongo's 16MB cap so
+// every write silently failed. Reads already fall back to `latest` for today's
+// date, so byDate only needs the *previous* days. The archive is then trimmed
+// oldest-first until the whole document fits under MAX_BLOB_BYTES.
 function writeDailyReport(payload) {
   const current = storage.read(BLOB.name, BLOB.file);
   const byDate = { ...(current.byDate || {}) };
-  byDate[payload.date] = payload;
-  for (const date of Object.keys(byDate).sort().slice(0, -MAX_ARCHIVE_DAYS)) {
-    delete byDate[date];
+
+  // Roll the outgoing day into the archive when the date advances, so history is
+  // kept without ever holding the current day in two places.
+  if (current.latest?.date && current.latest.date !== payload.date) {
+    byDate[current.latest.date] = current.latest;
   }
-  storage.write(BLOB.name, BLOB.file, {
-    ...current,
-    latest: payload,
-    byDate,
-    updatedAt: payload.generatedAt,
-  });
+  delete byDate[payload.date]; // current day is served from `latest`
+
+  const next = { ...current, latest: payload, byDate, updatedAt: payload.generatedAt };
+
+  const dates = Object.keys(next.byDate).sort(); // oldest first
+  for (let i = 0; i < dates.length && blobSize(next) > MAX_BLOB_BYTES; i += 1) {
+    delete next.byDate[dates[i]];
+  }
+  storage.write(BLOB.name, BLOB.file, next);
 }
 
 // Read a specific date's archived report, or the latest when no date is given.
