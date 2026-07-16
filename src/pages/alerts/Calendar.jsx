@@ -10,11 +10,11 @@ const TIME_LABELS = { bmo: 'before market open', amc: 'after market close' };
 const DISPLAY_MONTHS = 2;
 
 // Tooltip text for one event: ticker, market timing (FMP-sourced events only),
-// and whether the date is FMP-confirmed vs. a projected/estimated anchor.
+// and whether the date is company-confirmed vs. a calendar-projected estimate.
 function eventTitle(ev) {
   const parts = [`${ev.ticker} earnings call`];
   if (ev.time && TIME_LABELS[ev.time]) parts.push(TIME_LABELS[ev.time]);
-  if (ev.confirmed === false) parts.push('estimated date');
+  parts.push(ev.status === 'confirmed' ? 'confirmed' : 'expected date');
   return parts.join(' — ');
 }
 
@@ -109,7 +109,7 @@ export default function EarningsCalendar() {
                       <div className="cal-events">
                         {(eventsByDate[cell.iso] ?? []).map(ev => (
                           <span
-                            className={`cal-event${ev.confirmed === false ? ' estimated' : ''}`}
+                            className={`cal-event ${ev.status === 'confirmed' ? 'confirmed' : 'expected'}`}
                             key={`${ev.date}-${ev.ticker}`}
                             title={eventTitle(ev)}
                           >

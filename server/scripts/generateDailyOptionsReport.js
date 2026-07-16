@@ -36,6 +36,15 @@ const DEFAULT_TICKERS = [
   // so the daily run re-pairs cached prior chains rather than re-scraping them.
   'QRVO', 'UMC', 'STX', 'RMBS', 'KLAC', 'TER', 'LRCX', 'NXPI', 'FLEX', 'APH',
   'GLW', 'FORM', 'AMKR', 'SANM', 'CLS', 'ARM', 'CDNS', 'MSFT', 'META',
+  // Added 2026-08 (broader semis/analog, networking/optical, systems &
+  // distribution, telecom/cloud). Same seeding pattern via
+  // backfillOptionsReportTickers.js. TSM, ASML already present above.
+  'AAPL', 'AMD', 'SWKS', 'QCOM', 'NVDA', 'MRVL', 'AVGO', 'TSEM', 'GFS', 'WDC',
+  'SNDK', 'MU', 'ONTO', 'AMAT', 'KEYS', 'VIAV', 'CAMT', 'NVMI', 'ALGM', 'MCHP',
+  'MPWR', 'POWI', 'ON', 'ADI', 'IFNNY', 'VRT', 'TTMI', 'FN', 'LITE', 'COHR',
+  'MTSI', 'ALAB', 'CSCO', 'ANET', 'CRDO', 'AXTI', 'CIEN', 'ASX', 'SMCI', 'DELL',
+  'HPQ', 'HPE', 'JBL', 'SNPS', 'ARW', 'AVT', 'ORCL', 'PLTR', 'AMZN', 'NFLX',
+  'APP', 'T', 'VZ', 'TMUS', 'ERIC', 'CALX',
 ];
 const BASE = 'https://api.massive.com';
 const CALL_COLOR = '#059669';
@@ -742,10 +751,33 @@ async function pairsForExpiry(ticker, expirationDate, priorExpiry, dte, chartDat
 //
 // Returns null when the ticker's earnings dates can't be established, and the caller
 // falls back to the plain 52-week calendar shift.
+//
+// The anchors (next / last-quarter / year-ago call dates) are a property of the
+// ticker, not the expiration, but buildCycleAlignment runs once per expiration
+// (3×/ticker). earningsDates.js already caches across days — weekly for the
+// estimate, quarterly for settled history — so the daily job rarely hits the
+// network here; this per-run memo just avoids re-reading and re-deriving the
+// same anchors three times within a single run.
+const earningsAnchorMemo = new Map();
+
+function clearEarningsAnchorMemo() {
+  earningsAnchorMemo.clear();
+}
+
+function memoizedEarningsAnchors(ticker) {
+  if (!earningsAnchorMemo.has(ticker)) {
+    const promise = getEarningsAnchors(ticker);
+    // Don't let a rejection stick in the memo — a later expiration can retry.
+    promise.catch(() => earningsAnchorMemo.delete(ticker));
+    earningsAnchorMemo.set(ticker, promise);
+  }
+  return earningsAnchorMemo.get(ticker);
+}
+
 async function buildCycleAlignment(ticker, expirationDate) {
   let anchors;
   try {
-    anchors = await getEarningsAnchors(ticker);
+    anchors = await memoizedEarningsAnchors(ticker);
   } catch (error) {
     console.warn(`[options-report] earnings dates unavailable for ${ticker}: ${error.message}`);
     return null;
@@ -804,7 +836,7 @@ async function fetchContractVolumeHistory(contractSymbol, reportDate) {
 // underlying stock trades every session, so its bars give the true calendar.
 const sessionCache = new Map();
 
-async function fetchSessions(ticker, start, end) {
+async function fetchSessionsDirect(ticker, start, end) {
   const key = `${ticker}|${start}|${end}`;
   if (sessionCache.has(key)) return sessionCache.get(key);
 
@@ -822,6 +854,47 @@ async function fetchSessions(ticker, start, end) {
   promise.catch(() => sessionCache.delete(key));
   sessionCache.set(key, promise);
   return promise;
+}
+
+// Every ticker in the report is a US-listed equity, ADR or ETF, so they all
+// trade the same NYSE/Nasdaq sessions: the set of open days in a date range is
+// identical no matter which ticker we ask about. Rather than pay a Massive
+// stock-aggregate call for each (ticker, range) pair — which, across ~80
+// tickers × 3 expirations × the current axis + two prior-cycle pairings, is
+// dozens of identical-answer calls — fetch the calendar ONCE per run from a
+// single liquid reference symbol and slice it for everyone. Falls back to a
+// direct per-ticker fetch whenever the shared calendar can't answer, so the
+// behaviour is never worse than before.
+const MARKET_CALENDAR_SYMBOL = process.env.OPTIONS_REPORT_CALENDAR_SYMBOL || 'SPY';
+const MARKET_CALENDAR_LOOKBACK_DAYS = 460; // spans the year-ago prior-cycle pairings
+let marketCalendar = null; // { start, end, sessions } for the current run
+
+function resetMarketCalendar() {
+  marketCalendar = null;
+}
+
+// Fetch the shared calendar for [reportDate-460d, reportDate] up front. A liquid
+// ETF trades every session, so a short/empty result means the pull was throttled
+// or the symbol isn't on the plan — don't cache a broken calendar for the whole
+// run in that case, just leave callers on the per-ticker path.
+async function primeMarketCalendar(reportDate) {
+  const start = addDays(reportDate, -MARKET_CALENDAR_LOOKBACK_DAYS);
+  try {
+    const sessions = await fetchSessionsDirect(MARKET_CALENDAR_SYMBOL, start, reportDate);
+    if (sessions.length > 30) marketCalendar = { start, end: reportDate, sessions };
+    else console.warn(`[options-report] shared market calendar too sparse (${sessions.length} sessions) — using per-ticker calendars`);
+  } catch (error) {
+    console.warn(`[options-report] shared market calendar unavailable (${error.message}) — using per-ticker calendars`);
+  }
+}
+
+async function fetchSessions(ticker, start, end) {
+  // Serve from the shared calendar whenever it spans the requested range; the
+  // answer is identical to a per-ticker fetch because the US calendar is shared.
+  if (marketCalendar && start >= marketCalendar.start && end <= marketCalendar.end) {
+    return marketCalendar.sessions.filter(date => date >= start && date <= end);
+  }
+  return fetchSessionsDirect(ticker, start, end);
 }
 
 async function fetchTradingDays(ticker, end, count) {
@@ -1795,6 +1868,14 @@ async function generateDailyOptionsReport({
   const outputFormat = format ?? (path.extname(outPath).toLowerCase() === '.md' ? 'md' : 'html');
   const tickerReports = [];
 
+  // Fetch the shared US trading calendar once for the whole run (see
+  // fetchSessions). skipPriors runs don't draw prior-cycle lines but still need
+  // the current axis, so this helps them too. Reset first so a long-lived server
+  // process picks up each new trading day rather than reusing yesterday's.
+  resetMarketCalendar();
+  clearEarningsAnchorMemo();
+  await primeMarketCalendar(date);
+
   try {
     for (const ticker of tickers) {
       const startedAt = Date.now();
@@ -1863,9 +1944,11 @@ function aggregateFlow(tickerReport) {
 }
 
 // The Alerts sidebar shows one dot for each of the last three sessions in the
-// front expiration: green when that day's full-chain call volume beats put
-// volume, red when puts lead.
-function nearestExpirationFlowDays(tickerReport, count = 3) {
+// front expiration, colored by the day-over-day change in the call/put
+// volume spread (see flowDotSide in Alerts.jsx). That comparison needs the
+// session before the earliest shown day too, so this returns one extra day
+// of buffer — count=4, not the 3 actually displayed.
+function nearestExpirationFlowDays(tickerReport, count = 4) {
   const nearest = tickerReport.expirations?.[0];
   if (!nearest) return [];
 

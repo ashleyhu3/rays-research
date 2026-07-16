@@ -60,13 +60,24 @@ function currentBarRowsFromSvg(svg, side) {
     .filter(row => row.volume != null);
 }
 
-function flowDotSide(day) {
-  if (day?.leader === 'call' || day?.leader === 'put' || day?.leader === 'flat') return day.leader;
+// Call-put spread (calls minus puts) for a single day; null if volumes are missing.
+function flowDiff(day) {
   const callVolume = Number(day?.callVolume);
   const putVolume = Number(day?.putVolume);
-  if (!Number.isFinite(callVolume) || !Number.isFinite(putVolume)) return 'flat';
-  if (callVolume > putVolume) return 'call';
-  if (putVolume > callVolume) return 'put';
+  if (!Number.isFinite(callVolume) || !Number.isFinite(putVolume)) return null;
+  return callVolume - putVolume;
+}
+
+// Dot color reflects day-over-day change in the call-put spread, not the
+// spread's sign: green if the spread widened toward calls since the prior
+// day, red if it narrowed / flipped toward puts.
+function flowDotSide(day) {
+  if (!day || day.empty) return 'flat';
+  const diff = flowDiff(day);
+  const prevDiff = flowDiff(day.prevDay);
+  if (diff == null || prevDiff == null) return 'flat';
+  if (diff > prevDiff) return 'call';
+  if (diff < prevDiff) return 'put';
   return 'flat';
 }
 
@@ -94,7 +105,10 @@ function svgFlowDays(t) {
   const nearest = t.expirations?.[0];
   const callRows = currentBarRowsFromSvg(nearest?.callChartSvg, 'call');
   const putRows = currentBarRowsFromSvg(nearest?.putChartSvg, 'put');
-  const count = Math.min(FLOW_DOT_COUNT, callRows.length, putRows.length);
+  // Pull one extra day beyond what's shown so the earliest visible dot has a
+  // prior day to diff against too — the chart itself has far more history
+  // than FLOW_DOT_COUNT, we're just not displaying all of it.
+  const count = Math.min(FLOW_DOT_COUNT + 1, callRows.length, putRows.length);
   if (!count) return [];
 
   const calls = callRows.slice(-count);
@@ -115,9 +129,13 @@ function navFlowDays(t) {
     source = fromSvg.length ? fromSvg : legacyFlowDays(t.flow);
   }
   const days = source.slice(-FLOW_DOT_COUNT);
+  // Each day needs the session before it (which may fall outside the visible
+  // window) so its dot can compare spreads across the day-over-day change.
+  const startIndex = source.length - days.length;
+  const withPrev = days.map((day, i) => ({ ...day, prevDay: source[startIndex + i - 1] }));
   return [
     ...Array.from({ length: Math.max(0, FLOW_DOT_COUNT - days.length) }, () => ({ empty: true })),
-    ...days,
+    ...withPrev,
   ];
 }
 
@@ -129,17 +147,24 @@ function formatFlowDate(iso) {
 
 function flowDotText(day, expiry) {
   if (day.empty) return 'No call/put flow data';
-  const side = flowDotSide(day);
   const date = formatFlowDate(day.date) || day.label || 'Flow day';
   const callVolume = volumeFmt.format(Number(day.callVolume ?? 0));
   const putVolume = volumeFmt.format(Number(day.putVolume ?? 0));
-  const direction = side === 'call'
-    ? 'calls above puts'
-    : side === 'put'
-      ? 'puts above calls'
-      : 'calls equal puts';
   const expiryText = expiry ? `, ${expiry} expiry` : '';
-  return `${date}${expiryText}: ${direction} (${callVolume} calls vs ${putVolume} puts)`;
+  const diff = flowDiff(day);
+  const prevDiff = flowDiff(day.prevDay);
+  if (diff == null || prevDiff == null) {
+    return `${date}${expiryText}: ${callVolume} calls vs ${putVolume} puts (no prior day to compare)`;
+  }
+  const change = diff > prevDiff
+    ? 'spread widened toward calls'
+    : diff < prevDiff
+      ? 'spread narrowed toward puts'
+      : 'spread unchanged';
+  const prevCallVolume = volumeFmt.format(Number(day.prevDay.callVolume ?? 0));
+  const prevPutVolume = volumeFmt.format(Number(day.prevDay.putVolume ?? 0));
+  return `${date}${expiryText}: ${change} — ${callVolume} calls vs ${putVolume} puts `
+    + `(prior day: ${prevCallVolume} vs ${prevPutVolume})`;
 }
 
 // One contract table (calls or puts). The side (CALL/PUT) and strike price get
@@ -258,7 +283,10 @@ function TickerReport({ t }) {
 }
 
 // Sidebar entry for one ticker. The three dots show the last three sessions in
-// the front expiration, left-to-right from earliest to latest.
+// the front expiration, left-to-right from earliest to latest. Each dot's
+// color is the day-over-day change in the call-put volume spread: green if
+// the spread grew more call-heavy than the prior day, red if it grew more
+// put-heavy.
 function TickerNavItem({ t, active, onSelect }) {
   const dots = navFlowDays(t);
   return (
@@ -288,19 +316,52 @@ function TickerNavItem({ t, active, onSelect }) {
 // The Alerts view is the daily options report. Each ticker gets its own page,
 // switched via the left sidebar. Title, date and action buttons live in the
 // Topbar (see App.jsx). Data is scraped from Massive and stored in Mongo once a
-// day at 7:45 AM Hong Kong time.
+// day at 6:00 AM Hong Kong time.
+// SOXX is the semiconductor index ETF, not a company — it has no earnings
+// call to rank by, so it's pinned above the date-sorted list rather than
+// competing for a slot in it.
+const PINNED_TICKER = 'SOXX';
+
 export default function Alerts() {
   const { report, loading, msg, load } = useOptionsReport();
   const [selected, setSelected] = useState(null);
+  const [calEvents, setCalEvents] = useState([]);
 
   useEffect(() => { load(); }, [load]);
 
-  // Sidebar order: today's total option volume (calls + puts, summed across
-  // all three tracked expirations) from highest to lowest.
-  const tickers = [...(report?.tickers ?? [])].sort((a, b) => {
-    const total = t => (t.flow?.callToday ?? 0) + (t.flow?.putToday ?? 0);
-    return total(b) - total(a);
-  });
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/alerts/earnings-calendar')
+      .then(res => res.json())
+      .then(json => { if (!cancelled) setCalEvents(json.events ?? []); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
+  // Sidebar order: SOXX pinned first, then every other ticker by how soon its
+  // next earnings call is (today counts as the closest). Tickers whose call
+  // already passed or isn't dated yet fall to the end, ranked by today's
+  // total option volume — the previous default ordering — as a fallback.
+  const tickers = (() => {
+    const all = report?.tickers ?? [];
+    const dateByTicker = new Map(calEvents.map(ev => [ev.ticker, ev.date]));
+    const today = new Date().toISOString().slice(0, 10);
+    const totalVolume = t => (t.flow?.callToday ?? 0) + (t.flow?.putToday ?? 0);
+
+    const pinned = all.filter(t => t.ticker === PINNED_TICKER);
+    const rest = all.filter(t => t.ticker !== PINNED_TICKER);
+    rest.sort((a, b) => {
+      const dateA = dateByTicker.get(a.ticker);
+      const dateB = dateByTicker.get(b.ticker);
+      const upcomingA = dateA >= today;
+      const upcomingB = dateB >= today;
+      if (upcomingA && upcomingB) return dateA < dateB ? -1 : dateA > dateB ? 1 : totalVolume(b) - totalVolume(a);
+      if (upcomingA) return -1;
+      if (upcomingB) return 1;
+      return totalVolume(b) - totalVolume(a);
+    });
+    return [...pinned, ...rest];
+  })();
   const showCalendar = selected === CALENDAR_ID;
   const active = showCalendar ? null : (tickers.find(t => t.ticker === selected) ?? tickers[0] ?? null);
 
@@ -335,7 +396,7 @@ export default function Alerts() {
             <div className="or-status">Loading the latest report…</div>
           ) : !active ? (
             <div className="or-status">
-              No report has been generated yet. It builds automatically at 7:45 AM Hong Kong time — or click “Refresh now”.
+              No report has been generated yet. It builds automatically at 6:00 AM Hong Kong time — or click “Refresh now”.
             </div>
           ) : (
             <TickerReport t={active} />

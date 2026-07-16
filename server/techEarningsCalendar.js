@@ -29,21 +29,95 @@ const CALENDAR_MONTHS = 2;
 // override these by ticker, but the overlay lets the Calendar page show the
 // current + August window immediately if Mongo still holds the previous
 // one-month cache shape or local dev starts without network.
+//
+// `status` is 'confirmed' (company/exchange has announced the date — shown
+// green) or 'expected' (public-calendar estimate from historical reporting
+// pattern, not yet formally announced — shown yellow). There is deliberately
+// no third "loosely estimated" tier: anything that unreliable is left off the
+// calendar entirely rather than shown.
 const RESEARCHED_CALENDAR_EVENTS = [
-  { ticker: 'TSM',  date: '2026-07-16', time: 'bmo', confirmed: true, source: 'fmp-research' },
-  { ticker: 'INTC', date: '2026-07-23', time: 'amc', confirmed: true, source: 'fmp-research' },
-  { ticker: 'NOK',  date: '2026-07-23', time: 'bmo', confirmed: false, source: 'fmp-research' },
-  { ticker: 'MSFT', date: '2026-07-29', time: 'amc', confirmed: true, source: 'fmp-research' },
-  { ticker: 'AAPL', date: '2026-07-30', time: 'amc', confirmed: true, source: 'fmp-research' },
-  { ticker: 'PLTR', date: '2026-08-03', time: 'amc', confirmed: true, source: 'fmp-yahoo-research' },
-  { ticker: 'AMD',  date: '2026-08-04', time: 'amc', confirmed: true, source: 'fmp-yahoo-research' },
-  { ticker: 'SHOP', date: '2026-08-05', time: 'bmo', confirmed: true, source: 'fmp-yahoo-research' },
-  { ticker: 'UBER', date: '2026-08-05', time: 'bmo', confirmed: true, source: 'fmp-yahoo-research' },
-  { ticker: 'SONY', date: '2026-08-06', time: 'bmo', confirmed: false, source: 'fmp-research' },
-  { ticker: 'CSCO', date: '2026-08-12', time: 'amc', confirmed: true, source: 'fmp-yahoo-research' },
-  { ticker: 'BILI', date: '2026-08-20', time: 'bmo', confirmed: false, source: 'fmp-research' },
-  { ticker: 'ZM',   date: '2026-08-20', time: 'amc', confirmed: true, source: 'fmp-research' },
-  { ticker: 'NVDA', date: '2026-08-26', time: 'amc', confirmed: true, source: 'fmp-research' },
+  { ticker: 'TSM',  date: '2026-07-16', time: 'bmo', status: 'confirmed', source: 'fmp-research' },
+  { ticker: 'INTC', date: '2026-07-23', time: 'amc', status: 'confirmed', source: 'fmp-research' },
+  { ticker: 'MSFT', date: '2026-07-29', time: 'amc', status: 'confirmed', source: 'fmp-research' },
+  { ticker: 'AAPL', date: '2026-07-30', time: 'amc', status: 'confirmed', source: 'fmp-research' },
+  { ticker: 'SHOP', date: '2026-08-05', time: 'bmo', status: 'confirmed', source: 'fmp-yahoo-research' },
+  { ticker: 'UBER', date: '2026-08-05', time: 'bmo', status: 'confirmed', source: 'fmp-yahoo-research' },
+  { ticker: 'ZM',   date: '2026-08-20', time: 'amc', status: 'confirmed', source: 'fmp-research' },
+  { ticker: 'NVDA', date: '2026-08-26', time: 'amc', status: 'confirmed', source: 'fmp-research' },
+
+  // Researched 2026-07-16 against Nasdaq's earnings calendar + company IR
+  // pages for the 2026-08 backfill batch (see backfillOptionsReportTickers.js).
+  // PLTR/AMD/CSCO were previously guessed 'confirmed' above from an older
+  // pass; this pass found their dates are still calendar-projected only, so
+  // they're downgraded to 'expected' here.
+  { ticker: 'ASML', date: '2026-07-15', status: 'confirmed', source: 'manual-research-2026-07' },
+  { ticker: 'NFLX', date: '2026-07-16', status: 'confirmed', source: 'manual-research-2026-07' },
+  { ticker: 'ERIC', date: '2026-07-17', status: 'confirmed', source: 'manual-research-2026-07' },
+  { ticker: 'VZ',   date: '2026-07-21', status: 'expected',  source: 'manual-research-2026-07' },
+  { ticker: 'CALX', date: '2026-07-21', status: 'expected',  source: 'manual-research-2026-07' },
+  { ticker: 'T',    date: '2026-07-22', status: 'expected',  source: 'manual-research-2026-07' },
+  { ticker: 'ALGM', date: '2026-07-23', status: 'expected',  source: 'manual-research-2026-07' },
+  { ticker: 'ANET', date: '2026-07-27', status: 'expected',  source: 'manual-research-2026-07' },
+  { ticker: 'QCOM', date: '2026-07-28', status: 'expected',  source: 'manual-research-2026-07' },
+  { ticker: 'TTMI', date: '2026-07-29', status: 'expected',  source: 'manual-research-2026-07' },
+  { ticker: 'TMUS', date: '2026-07-29', status: 'expected',  source: 'manual-research-2026-07' },
+  { ticker: 'AMZN', date: '2026-07-30', status: 'expected',  source: 'manual-research-2026-07' },
+  { ticker: 'MPWR', date: '2026-07-30', time: 'amc', status: 'confirmed', source: 'manual-research-2026-07' },
+  { ticker: 'MTSI', date: '2026-07-30', status: 'expected',  source: 'manual-research-2026-07' },
+  { ticker: 'AXTI', date: '2026-07-30', status: 'expected',  source: 'manual-research-2026-07' },
+  { ticker: 'ARW',  date: '2026-07-30', status: 'expected',  source: 'manual-research-2026-07' },
+  { ticker: 'ASX',  date: '2026-07-30', status: 'expected',  source: 'manual-research-2026-07' },
+  { ticker: 'ON',   date: '2026-08-03', status: 'expected',  source: 'manual-research-2026-07' },
+  { ticker: 'PLTR', date: '2026-08-03', time: 'amc', status: 'expected', source: 'manual-research-2026-07' },
+  { ticker: 'AMD',  date: '2026-08-04', time: 'amc', status: 'expected', source: 'manual-research-2026-07' },
+  { ticker: 'GFS',  date: '2026-08-04', status: 'expected',  source: 'manual-research-2026-07' },
+  { ticker: 'WDC',  date: '2026-08-05', status: 'expected',  source: 'manual-research-2026-07' },
+  { ticker: 'SNDK', date: '2026-08-05', status: 'expected',  source: 'manual-research-2026-07' },
+  { ticker: 'MCHP', date: '2026-08-06', status: 'expected',  source: 'manual-research-2026-07' },
+  { ticker: 'ONTO', date: '2026-08-06', status: 'expected',  source: 'manual-research-2026-07' },
+  { ticker: 'CSCO', date: '2026-08-12', time: 'amc', status: 'expected', source: 'manual-research-2026-07' },
+  { ticker: 'AMAT', date: '2026-08-13', status: 'expected',  source: 'manual-research-2026-07' },
+  { ticker: 'SNPS', date: '2026-08-19', status: 'expected',  source: 'manual-research-2026-07' },
+  { ticker: 'DELL', date: '2026-08-27', status: 'expected',  source: 'manual-research-2026-07' },
+  { ticker: 'HPQ',  date: '2026-08-27', status: 'expected',  source: 'manual-research-2026-07' },
+
+  // Sidebar-completeness sweep 2026-07-16: every remaining options-report
+  // ticker without a calendar entry, checked against Nasdaq's free
+  // earnings-date API (api.nasdaq.com/api/analyst/{ticker}/earnings-date).
+  // Nasdaq hedges every date it returns ("is expected*" / "is estimated...by
+  // algorithm") even for companies whose date IS independently confirmed
+  // elsewhere (e.g. AAPL) — so there's no reliable confirmed-vs-not signal in
+  // this source, and everything from it lands in 'expected' rather than
+  // 'confirmed'. Tickers checked and left off deliberately: AVGO/CIEN/CRDO/
+  // HPE/ORCL report in September (outside this window); MU/JBL have no
+  // Nasdaq date at all yet; SOXX is an ETF with no earnings call.
+  { ticker: 'TXN',  date: '2026-07-22', time: 'amc', status: 'expected', source: 'nasdaq-web-2026-07' },
+  { ticker: 'TEL',  date: '2026-07-22', time: 'bmo', status: 'expected', source: 'nasdaq-web-2026-07' },
+  { ticker: 'GOOG', date: '2026-07-22', time: 'amc', status: 'expected', source: 'nasdaq-web-2026-07' },
+  { ticker: 'STM',  date: '2026-07-23', time: 'bmo', status: 'expected', source: 'nasdaq-web-2026-07' },
+  { ticker: 'AMKR', date: '2026-07-27', time: 'amc', status: 'expected', source: 'nasdaq-web-2026-07' },
+  { ticker: 'CDNS', date: '2026-07-27', time: 'amc', status: 'expected', source: 'nasdaq-web-2026-07' },
+  { ticker: 'CLS',  date: '2026-07-27', time: 'amc', status: 'expected', source: 'nasdaq-web-2026-07' },
+  { ticker: 'RMBS', date: '2026-07-27', time: 'amc', status: 'expected', source: 'nasdaq-web-2026-07' },
+  { ticker: 'SANM', date: '2026-07-27', time: 'amc', status: 'expected', source: 'nasdaq-web-2026-07' },
+  { ticker: 'NXPI', date: '2026-07-28', time: 'amc', status: 'expected', source: 'nasdaq-web-2026-07' },
+  { ticker: 'ARM',  date: '2026-07-29', time: 'amc', status: 'expected', source: 'nasdaq-web-2026-07' },
+  { ticker: 'FLEX', date: '2026-07-29', time: 'bmo', status: 'expected', source: 'nasdaq-web-2026-07' },
+  { ticker: 'FORM', date: '2026-07-29', time: 'amc', status: 'expected', source: 'nasdaq-web-2026-07' },
+  { ticker: 'UMC',  date: '2026-07-29', time: 'bmo', status: 'expected', source: 'nasdaq-web-2026-07' },
+  { ticker: 'VRT',  date: '2026-07-29', status: 'expected', source: 'nasdaq-web-2026-07' },
+  { ticker: 'ALAB', date: '2026-08-04', time: 'amc', status: 'expected', source: 'nasdaq-web-2026-07' },
+  { ticker: 'CAMT', date: '2026-08-04', status: 'expected', source: 'nasdaq-web-2026-07' },
+  { ticker: 'QRVO', date: '2026-08-04', status: 'expected', source: 'nasdaq-web-2026-07' },
+  { ticker: 'SMCI', date: '2026-08-04', status: 'expected', source: 'nasdaq-web-2026-07' },
+  { ticker: 'SWKS', date: '2026-08-04', status: 'expected', source: 'nasdaq-web-2026-07' },
+  { ticker: 'APP',  date: '2026-08-05', time: 'amc', status: 'expected', source: 'nasdaq-web-2026-07' },
+  { ticker: 'AVT',  date: '2026-08-05', status: 'expected', source: 'nasdaq-web-2026-07' },
+  { ticker: 'POWI', date: '2026-08-05', status: 'expected', source: 'nasdaq-web-2026-07' },
+  { ticker: 'NVMI', date: '2026-08-06', time: 'bmo', status: 'expected', source: 'nasdaq-web-2026-07' },
+  { ticker: 'FN',   date: '2026-08-17', status: 'expected', source: 'nasdaq-web-2026-07' },
+  { ticker: 'ADI',  date: '2026-08-19', status: 'expected', source: 'nasdaq-web-2026-07' },
+  { ticker: 'MRVL', date: '2026-08-27', status: 'expected', source: 'nasdaq-web-2026-07' },
 ];
 
 const AV_URL = 'https://www.alphavantage.co/query';
@@ -225,6 +299,15 @@ async function runDailyBatch() {
 
 // What the Alerts page's Calendar view reads: a synchronous, no-network call
 // so the request never blocks on Alpha Vantage or FMP.
+// Vendor rows use FMP's own boolean `confirmed` (Alpha Vantage rows set
+// neither field). Fold both onto the same two-tier `status` the calendar
+// renders — there's no third "unconfirmed" tier any more, so FMP's
+// confirmed:false just becomes 'expected' rather than a separate gray style.
+function withStatus(ev) {
+  if (ev.status) return ev;
+  return { ...ev, status: ev.confirmed === true ? 'confirmed' : 'expected' };
+}
+
 function getStoredEvents() {
   const window = calendarWindow(new Date());
   const state = readCache();
@@ -237,6 +320,7 @@ function getStoredEvents() {
   }
   return [...byTicker.values()]
     .filter(ev => ev.date >= window.from && ev.date <= window.to)
+    .map(withStatus)
     .sort((a, b) => `${a.date}:${a.ticker}`.localeCompare(`${b.date}:${b.ticker}`));
 }
 

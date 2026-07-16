@@ -1119,7 +1119,13 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
 .opts-chart-canvas { height: 340px; }
 
 /* ── Options volume alerts page ────────────────────────────────────── */
-.alerts-page { padding: 4px 0 40px; }
+/* Own .content's full (already flex-resolved, so no vh-guessing needed)
+   height so the nav and report panes below scroll independently instead of
+   relying on .content's page-level scroll — with a position:sticky nav
+   riding along an outer scroll, a wheel event that lands even slightly
+   outside the (narrow, 150px) nav column scrolls .content instead, and the
+   stuck nav then just looks frozen. */
+.alerts-page { height: 100%; padding: 4px 0 0; display: flex; flex-direction: column; }
 
 .alerts-hero { text-align: center; padding: 28px 20px 22px; color: var(--ter); }
 .alerts-hero-icon { color: #10b981; margin-bottom: 12px; display: flex; justify-content: center; }
@@ -1216,17 +1222,17 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
    look of the source template. */
 .or-status { color: var(--ter); font-size: 13px; text-align: center; padding: 44px 10px; }
 
-/* Per-ticker layout: a left nav of tickers + the selected ticker's report. */
-.or-layout { display: flex; align-items: flex-start; gap: 20px; }
+/* Per-ticker layout: a left nav of tickers + the selected ticker's report,
+   as two independently-scrolling panes filling .alerts-page's full height —
+   not one scrolling past a sticky nav, so a wheel event anywhere in either
+   column always scrolls the pane the cursor is actually over. */
+.or-layout { display: flex; align-items: stretch; gap: 20px; flex: 1; min-height: 0; }
 .or-nav {
-  flex-shrink: 0; width: 150px; position: sticky; top: 8px;
+  flex-shrink: 0; width: 150px; height: 100%;
   display: flex; flex-direction: column; gap: 1px;
   background: var(--bg-card); border: 1px solid var(--border);
   border-radius: 10px; padding: 6px;
-  /* With ~30 tracked tickers the list outgrows the viewport, so the nav scrolls
-     on its own (pinned in place) rather than stretching the whole page. Height
-     caps to the content area below the 54px topbar. */
-  max-height: calc(100vh - 96px); overflow-y: auto;
+  overflow-y: auto; overscroll-behavior: contain;
   scrollbar-width: thin; scrollbar-color: var(--border-hi) transparent;
 }
 .or-nav::-webkit-scrollbar { width: 6px; }
@@ -1250,7 +1256,10 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
 .or-dot.flat { background: #64748b; box-shadow: 0 0 0 2px rgba(100,116,139,.16); opacity: .6; }
 .or-layout .or-report { flex: 1; min-width: 0; }
 
-.or-report { display: flex; flex-direction: column; gap: 22px; }
+.or-report {
+  display: flex; flex-direction: column; gap: 22px;
+  height: 100%; overflow-y: auto; overscroll-behavior: contain; padding-bottom: 40px;
+}
 
 /* Earnings calendar (Alerts page nav item) */
 .cal-page { display: flex; flex-direction: column; gap: 14px; }
@@ -1280,9 +1289,10 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
 .cal-events { display: flex; flex-direction: column; gap: 3px; }
 .cal-event {
   font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px;
-  background: var(--adim); color: var(--accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.cal-event.estimated { color: var(--sec); background: rgba(255,255,255,.05); border: 1px dashed var(--border-hi); }
+.cal-event.expected  { background: var(--adim); color: var(--accent); }
+.cal-event.confirmed { background: rgba(52,211,153,.14); color: #34d399; }
 @media (min-width: 1180px) {
   .cal-months { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .cal-cell { min-height: 76px; }
@@ -1291,6 +1301,10 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
 .or-ticker {
   background: var(--bg-card); border: 1px solid var(--border);
   border-radius: 10px; padding: 16px 20px 20px; overflow: hidden;
+  /* A flex item whose own overflow isn't visible gets an automatic min-height
+     of 0 (CSS flexbox sizing), so inside .or-report's column flex it would
+     otherwise shrink to fit instead of .or-report scrolling to show it. */
+  flex-shrink: 0;
 }
 .or-ticker-head {
   display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
@@ -1368,13 +1382,15 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
 @media print {
   body * { visibility: hidden !important; }
   .alerts-page, .alerts-page * { visibility: visible !important; }
-  .alerts-page { position: absolute; left: 0; top: 0; width: 100%; max-width: none; margin: 0; padding: 0; }
+  .alerts-page { position: absolute; left: 0; top: 0; width: 100%; max-width: none; margin: 0; padding: 0; height: auto; }
 
-  /* Print only the selected ticker's report, not the ticker nav. */
+  /* Print only the selected ticker's report, not the ticker nav. Screen-only
+     panes each own a bounded height + scroll; print needs everything back to
+     natural, unclipped flow so the whole report actually prints. */
   .or-nav, .or-nav * { visibility: hidden !important; }
   .or-nav { display: none !important; }
   .or-layout { display: block; }
-  .or-report { gap: 26px; }
+  .or-report { gap: 26px; height: auto; overflow: visible; }
   .or-ticker { background: #fff !important; border: none !important; border-radius: 0; padding: 0; overflow: visible; }
   .or-ticker-head { border-bottom: 2px solid #111827 !important; }
   .or-ticker-head h3 {
@@ -1409,6 +1425,21 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
   font-family: var(--font-b); font-size: 11px; color: var(--text);
   background: none; border: 1px solid var(--border-hi); border-radius: 5px;
   padding: 4px 8px; color-scheme: dark;
+}
+.usp-etf-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.usp-etf-grid .cbox { padding: 14px; }
+.usp-etf-grid .ch-title { font-size: 12px; }
+.usp-etf-grid .ch-head { gap: 8px; }
+@media (max-width: 1180px) {
+  .usp-etf-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 760px) {
+  .usp-etf-grid { grid-template-columns: 1fr; }
 }
 
 /* ── Leverage page (Korean retail firepower) ───────────────────────── */

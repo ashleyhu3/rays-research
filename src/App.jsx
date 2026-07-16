@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { VIEW_META, SECTOR_OVERVIEW_IDS, NAV_SECTIONS } from './config/navigation';
-import { US_PERFORMANCE_ETFS, usPerformanceViewId } from './config/usPerformance';
 
 function getModeForView(viewId) {
   for (const s of NAV_SECTIONS) {
@@ -64,13 +63,6 @@ import GitHubActivity from './pages/sources/GitHubActivity';
 import Docker         from './pages/sources/Docker';
 import Community      from './pages/sources/Community';
 
-const US_PERFORMANCE_COMPONENTS = Object.fromEntries(
-  US_PERFORMANCE_ETFS.map(etf => [
-    usPerformanceViewId(etf.ticker),
-    props => <UsPerformance {...props} ticker={etf.ticker} />,
-  ])
-);
-
 /** Views that use EditableGrid and support layout customisation */
 const LAYOUT_EDITABLE = new Set([
   'pypi','github','web','hf','pricing-memory','pricing-gpu','pricing-aws','pricing-cpu','pricing-tpu','datacenter','electricity','chinese',
@@ -121,7 +113,6 @@ const VIEW_COMPONENTS = {
   'options':          Options,
   'alerts':           Alerts,
   'us-performance':   UsPerformance,
-  ...US_PERFORMANCE_COMPONENTS,
   'sentiment':        Sentiment,
   'sources':          DataValidity,
   'leverage-korea':   LeverageKorea,
@@ -162,7 +153,7 @@ export default function App() {
   const sectorId = SECTOR_OVERVIEW_IDS[currentView] ?? null;
   const ViewComponent = sectorId ? null : VIEW_COMPONENTS[currentView];
   const isAlerts = currentView === 'alerts';
-  const showSidebar = currentView !== 'options' && currentView !== 'chat' && currentView !== 'sentiment' && currentView !== 'sources' && currentView !== 'transcripts' && currentView !== 'alerts';
+  const showSidebar = currentView !== 'options' && currentView !== 'chat' && currentView !== 'sentiment' && currentView !== 'sources' && currentView !== 'transcripts' && currentView !== 'alerts' && currentView !== 'us-performance';
 
   return (
     <DashboardProvider>

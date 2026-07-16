@@ -46,9 +46,15 @@ const {
 const { BLOB: EARNINGS_BLOB } = require('../earningsDates');
 
 // The tickers this backfill was written for. Overridable with --tickers.
+// (2026-08 batch — the 2026-07 batch above it is already merged into
+// DEFAULT_TICKERS in generateDailyOptionsReport.js, so Stage 1 skips it.)
 const EXTRA_TICKERS = [
-  'QRVO', 'UMC', 'STX', 'RMBS', 'KLAC', 'TER', 'LRCX', 'NXPI', 'STM', 'FLEX',
-  'APH', 'TEL', 'GLW', 'FORM', 'AMKR', 'SANM', 'CLS', 'ARM', 'CDNS', 'MSFT', 'META',
+  'AAPL', 'AMD', 'SWKS', 'QCOM', 'NVDA', 'MRVL', 'AVGO', 'TSEM', 'GFS', 'WDC',
+  'SNDK', 'MU', 'ONTO', 'AMAT', 'KEYS', 'VIAV', 'CAMT', 'NVMI', 'ALGM', 'MCHP',
+  'MPWR', 'POWI', 'ON', 'ADI', 'IFNNY', 'VRT', 'TTMI', 'FN', 'LITE', 'COHR',
+  'MTSI', 'ALAB', 'CSCO', 'ANET', 'CRDO', 'AXTI', 'CIEN', 'ASX', 'SMCI', 'DELL',
+  'HPQ', 'HPE', 'JBL', 'SNPS', 'ARW', 'AVT', 'ORCL', 'PLTR', 'AMZN', 'NFLX',
+  'APP', 'T', 'VZ', 'TMUS', 'ERIC', 'CALX',
 ];
 
 function parseArgs(argv) {

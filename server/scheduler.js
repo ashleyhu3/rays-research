@@ -159,9 +159,18 @@ function setup() {
   }, 25000);
 
   // Daily options report: scrape options data and generate the web-visible
-  // report at 7:45am Hong Kong time. The GitHub workflow runs the same task for
+  // report at 06:00 Hong Kong time. The GitHub workflow runs the same task for
   // sleeping deployments.
-  cron.schedule('45 7 * * *', async () => {
+  //
+  // Why 06:00 and not later: the report always covers the US session that just
+  // closed, and that session is already closed and settled by the time any HKT
+  // morning run fires — US close is 16:00 ET, i.e. 04:00 HKT in summer / 05:00
+  // HKT in winter — so an earlier start captures the SAME data as the old 07:45
+  // run, it just gives the job ~2 hours to finish before 08:00 instead of ~15
+  // minutes. With the roster now ~80 tickers that headroom is what keeps it
+  // landing on time. 06:00 stays ≥1h past even the winter close so the daily
+  // aggregate bars have settled; nudge later if a season ever proves tight.
+  cron.schedule('0 6 * * *', async () => {
     try {
       const { generateAndStoreDailyOptions } = require('./optionsReportStore');
       const report = await generateAndStoreDailyOptions();

@@ -335,19 +335,21 @@ test('aggregate flow is derived from full-chain chart bars, not top-three tables
   });
 });
 
-test('sidebar flow dots use the last three sessions from the front expiration only', () => {
+test('sidebar flow dots return the last four sessions (three shown + one buffer) from the front expiration only', () => {
   const report = {
     expirations: [
       {
         selectedDate: '2026-07-17',
         volumeCharts: {
           call: { rows: [
+            { date: '2026-07-09', volume: 5 },
             { date: '2026-07-10', volume: 10 },
             { date: '2026-07-13', volume: 50 },
             { date: '2026-07-14', volume: 20 },
             { date: '2026-07-15', volume: 80 },
           ] },
           put: { rows: [
+            { date: '2026-07-09', volume: 7 },
             { date: '2026-07-10', volume: 20 },
             { date: '2026-07-13', volume: 40 },
             { date: '2026-07-14', volume: 25 },
@@ -365,7 +367,11 @@ test('sidebar flow dots use the last three sessions from the front expiration on
     ],
   };
 
+  // Four days, not three: the sidebar shows the last three but colours each dot
+  // by the day-over-day change in the call/put spread, so the earliest shown day
+  // (7/13) needs the session before it (7/10) as a comparison buffer.
   assert.deepEqual(nearestExpirationFlowDays(report), [
+    { date: '2026-07-10', callVolume: 10, putVolume: 20, netVolume: -10, leader: 'put' },
     { date: '2026-07-13', callVolume: 50, putVolume: 40, netVolume: 10, leader: 'call' },
     { date: '2026-07-14', callVolume: 20, putVolume: 25, netVolume: -5, leader: 'put' },
     { date: '2026-07-15', callVolume: 80, putVolume: 10, netVolume: 70, leader: 'call' },
