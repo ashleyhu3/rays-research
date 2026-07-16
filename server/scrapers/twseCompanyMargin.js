@@ -15,7 +15,8 @@
  *
  *   /rwd/IIH/company/overview?code=&start=&end=
  *     chart.data → rows of [openTimestampMs, open, high, low, close, volume],
- *       where volume is in *shares*.
+ *       where volume is in *shares*. Close doubles as the stock-price line
+ *       plotted alongside each side's balance ratio.
  *
  * The adjustment: 1 張 = 1,000 shares, so a balance of N lots is N×1,000 shares.
  * Divided by that day's traded shares, the line reads as "margin balance in days
@@ -68,12 +69,16 @@ function buildCompanyMargin(code, margin, overview) {
     throw new Error(margin?.info?.message || 'TWSE returned no data for this code');
   }
 
-  // Day volume, keyed by calendar date (overview volume is in shares).
+  // Day volume + close price, keyed by calendar date (overview volume is in shares).
   const volumeByDate = {};
+  const closeByDate = {};
   for (const row of overview?.chart?.data ?? []) {
     const day = timestampToDate(row?.[0]);
+    if (!day) continue;
     const volume = Number(row?.[5]);
-    if (day && Number.isFinite(volume) && volume > 0) volumeByDate[day] = volume;
+    if (Number.isFinite(volume) && volume > 0) volumeByDate[day] = volume;
+    const close = Number(row?.[4]);
+    if (Number.isFinite(close)) closeByDate[day] = close;
   }
 
   const build = chart => {
@@ -85,6 +90,7 @@ function buildCompanyMargin(code, margin, overview) {
     const changeLots = [];
     const dayVolume = [];
     const daysOfVolume = [];
+    const close = [];
     categories.forEach((label, i) => {
       const day = normalizeDate(label);
       if (!day) return;
@@ -95,6 +101,7 @@ function buildCompanyMargin(code, margin, overview) {
       balanceLots.push(Number.isFinite(bal) ? bal : null);
       changeLots.push(Number.isFinite(chg) ? chg : null);
       dayVolume.push(vol);
+      close.push(closeByDate[day] ?? null);
       // Null when either component is missing so the line gaps instead of lying.
       daysOfVolume.push(
         Number.isFinite(bal) && Number.isFinite(vol) && vol > 0
@@ -102,7 +109,7 @@ function buildCompanyMargin(code, margin, overview) {
           : null,
       );
     });
-    return { dates, balanceLots, changeLots, dayVolume, daysOfVolume };
+    return { dates, balanceLots, changeLots, dayVolume, daysOfVolume, close };
   };
 
   return {

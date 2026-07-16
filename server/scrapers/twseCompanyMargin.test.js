@@ -46,6 +46,8 @@ test('buildCompanyMargin aligns margin balance to daily volume as days-of-volume
   assert.deepEqual(out.purchase.changeLots, [10, 200]);
   assert.deepEqual(out.purchase.dayVolume, [1_000_000, 600_000]);
   assert.deepEqual(out.purchase.daysOfVolume, [1, 2]);
+  assert.deepEqual(out.purchase.close, [105, 118]);
+  assert.deepEqual(out.shortSale.close, [105, 118]);
 });
 
 test('buildCompanyMargin gaps the ratio (null) on a day with no volume', () => {
@@ -59,6 +61,7 @@ test('buildCompanyMargin gaps the ratio (null) on a day with no volume', () => {
   assert.deepEqual(out.purchase.dayVolume, [1_000_000, null]);
   assert.deepEqual(out.purchase.daysOfVolume, [1, null]);
   assert.deepEqual(out.purchase.balanceLots, [1000, 1200]);
+  assert.deepEqual(out.purchase.close, [105, null]);
 });
 
 test('buildCompanyMargin computes the short side independently', () => {

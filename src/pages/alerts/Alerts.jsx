@@ -6,8 +6,59 @@ import EarningsCalendar from './Calendar';
 // ticker symbol so it can share the same sidebar list and selection state.
 const CALENDAR_ID = '__calendar__';
 const FLOW_DOT_COUNT = 3;
+const CURRENT_BAR_COLORS = { call: '#059669', put: '#dc2626' };
 
 const volumeFmt = new Intl.NumberFormat('en-US');
+
+function textAttrs(raw) {
+  return Object.fromEntries(
+    [...raw.matchAll(/([:\w-]+)="([^"]*)"/g)].map(([, key, value]) => [key, value]),
+  );
+}
+
+function parseShortVolume(text) {
+  const match = String(text || '').trim().toLowerCase().match(/^([\d.]+)([km])?$/);
+  if (!match) return null;
+  const value = Number(match[1]);
+  if (!Number.isFinite(value)) return null;
+  if (match[2] === 'm') return Math.round(value * 1_000_000);
+  if (match[2] === 'k') return Math.round(value * 1_000);
+  return value;
+}
+
+function xKey(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number.toFixed(2) : null;
+}
+
+function currentBarRowsFromSvg(svg, side) {
+  const rows = [];
+  const valuesByX = new Map();
+  const chartColor = CURRENT_BAR_COLORS[side];
+
+  for (const match of String(svg || '').matchAll(/<text\s+([^>]*)>([^<]*)<\/text>/g)) {
+    const attrs = textAttrs(match[1]);
+    const text = match[2].trim();
+    const key = xKey(attrs.x);
+    if (!key) continue;
+
+    if (!attrs['paint-order'] && /^\d{1,2}\/\d{1,2}$/.test(text)) {
+      rows.push({ key, label: text });
+      continue;
+    }
+
+    const volume = parseShortVolume(text);
+    if (volume == null || attrs['paint-order'] !== 'stroke') continue;
+
+    const isCurrentBarLabel = String(attrs.class || '').includes('vc-muted')
+      || String(attrs.fill || '').toLowerCase() === chartColor;
+    if (isCurrentBarLabel) valuesByX.set(key, volume);
+  }
+
+  return rows
+    .map(row => ({ label: row.label, volume: valuesByX.get(row.key) }))
+    .filter(row => row.volume != null);
+}
 
 function flowDotSide(day) {
   if (day?.leader === 'call' || day?.leader === 'put' || day?.leader === 'flat') return day.leader;
@@ -39,10 +90,30 @@ function legacyFlowDays(flow) {
   return days;
 }
 
+function svgFlowDays(t) {
+  const nearest = t.expirations?.[0];
+  const callRows = currentBarRowsFromSvg(nearest?.callChartSvg, 'call');
+  const putRows = currentBarRowsFromSvg(nearest?.putChartSvg, 'put');
+  const count = Math.min(FLOW_DOT_COUNT, callRows.length, putRows.length);
+  if (!count) return [];
+
+  const calls = callRows.slice(-count);
+  const puts = putRows.slice(-count);
+  return calls.map((call, index) => ({
+    label: call.label || puts[index]?.label,
+    callVolume: call.volume,
+    putVolume: puts[index]?.volume ?? 0,
+  }));
+}
+
 function navFlowDays(t) {
-  const source = Array.isArray(t.flowDays) && t.flowDays.length
-    ? [...t.flowDays].sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')))
-    : legacyFlowDays(t.flow);
+  let source;
+  if (Array.isArray(t.flowDays) && t.flowDays.length) {
+    source = [...t.flowDays].sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
+  } else {
+    const fromSvg = svgFlowDays(t);
+    source = fromSvg.length ? fromSvg : legacyFlowDays(t.flow);
+  }
   const days = source.slice(-FLOW_DOT_COUNT);
   return [
     ...Array.from({ length: Math.max(0, FLOW_DOT_COUNT - days.length) }, () => ({ empty: true })),

@@ -7,6 +7,7 @@ const SAMPLES = ['2383', '2330', '2317', '2454', '3231', '2382'];
 
 const MARGIN_COLOR = '#4577b4';   // 融資
 const SHORT_COLOR  = '#c65d57';   // 融券
+const PRICE_COLOR  = '#c9a227';   // stock price, shared across both charts
 
 const RANGES = [
   { id: '3m', label: '3M', days: 92 },
@@ -34,6 +35,7 @@ function dayLabel(iso) {
 const fmtLots = v => (v == null ? '—' : `${Number(v).toLocaleString()} 張`);
 const fmtRatio = v => (v == null ? '—' : `${Number(v).toFixed(2)}×`);
 const fmtShares = v => (v == null ? '—' : Number(v).toLocaleString());
+const fmtPrice = v => (v == null ? '—' : `NT$${Number(v).toFixed(2)}`);
 
 // Slice a side's aligned series down to the selected trailing window.
 function windowed(side, range) {
@@ -54,25 +56,44 @@ function windowed(side, range) {
     changeLots: cut(side.changeLots),
     dayVolume: cut(side.dayVolume),
     daysOfVolume: cut(side.daysOfVolume),
+    close: cut(side.close),
   };
 }
 
 function chartData(win, color) {
   return {
     labels: win.dates.map(dayLabel),
-    datasets: [{
-      label: 'Balance ÷ daily volume',
-      data: win.daysOfVolume,
-      borderColor: color,
-      backgroundColor: fa(color, 0.10),
-      borderWidth: 2,
-      pointRadius: 0,
-      pointHoverRadius: 4,
-      pointHoverBackgroundColor: color,
-      tension: 0.25,
-      fill: true,
-      spanGaps: false,
-    }],
+    datasets: [
+      {
+        label: 'Balance ÷ daily volume',
+        data: win.daysOfVolume,
+        borderColor: color,
+        backgroundColor: fa(color, 0.10),
+        borderWidth: 2,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        pointHoverBackgroundColor: color,
+        tension: 0.25,
+        fill: true,
+        spanGaps: false,
+        yAxisID: 'y',
+      },
+      {
+        label: 'Stock price',
+        data: win.close,
+        borderColor: PRICE_COLOR,
+        backgroundColor: 'transparent',
+        borderWidth: 2,
+        borderDash: [4, 3],
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        pointHoverBackgroundColor: PRICE_COLOR,
+        tension: 0.25,
+        fill: false,
+        spanGaps: true,
+        yAxisID: 'y1',
+      },
+    ],
   };
 }
 
@@ -83,7 +104,12 @@ function chartOptions(win) {
     animation: { duration: 300 },
     interaction: { mode: 'index', intersect: false },
     plugins: {
-      legend: { display: false },
+      legend: {
+        display: true,
+        position: 'top',
+        align: 'end',
+        labels: { color: '#8a8a84', font: { size: 10, family: "'Inter',sans-serif" }, boxWidth: 10, padding: 8 },
+      },
       tooltip: {
         backgroundColor: '#1a1f2a',
         borderColor: 'rgba(255,255,255,.12)',
@@ -93,7 +119,9 @@ function chartOptions(win) {
         bodyFont: { family: "'Inter',sans-serif", size: 11 },
         callbacks: {
           title: items => (items.length ? win.dates[items[0].dataIndex] : ''),
-          label: c => ` ${fmtRatio(c.raw)} daily volume`,
+          label: c => (c.dataset.yAxisID === 'y1'
+            ? ` Price: ${fmtPrice(c.raw)}`
+            : ` ${fmtRatio(c.raw)} daily volume`),
           afterBody: items => {
             const i = items[0]?.dataIndex;
             if (i == null) return '';
@@ -112,12 +140,21 @@ function chartOptions(win) {
         border: BORD,
       },
       y: {
+        position: 'left',
         beginAtZero: true,
         grace: '5%',
         grid: GRID,
         ticks: { ...TICK, callback: v => `${v}×`, font: { size: 10 } },
         border: BORD,
         title: { display: true, text: 'Balance ÷ daily volume', color: '#8a8a84', font: { size: 10, family: "'Inter',sans-serif" } },
+      },
+      y1: {
+        position: 'right',
+        grace: '5%',
+        grid: { drawOnChartArea: false },
+        ticks: { ...TICK, callback: v => `${v}`, font: { size: 10 } },
+        border: BORD,
+        title: { display: true, text: 'Price (NT$)', color: '#8a8a84', font: { size: 10, family: "'Inter',sans-serif" } },
       },
     },
   };
