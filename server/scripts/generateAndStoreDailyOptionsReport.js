@@ -4,6 +4,7 @@ const storage = require('../storage');
 const {
   BLOB,
   generateAndStoreDailyOptions,
+  readDailyReport,
 } = require('../optionsReportStore');
 const { PRIOR_BLOB } = require('../scripts/generateDailyOptionsReport');
 const { BLOB: EARNINGS_BLOB } = require('../earningsDates');
@@ -36,13 +37,46 @@ function parseArgs(argv) {
 
 async function main() {
   await storage.init(BLOBS);
+
+  // storage.init() silently falls back to local-file mode on *any* Mongo problem
+  // — a missing MONGODB_URI, a bad connection string, or (the classic one) the
+  // runner's IP not being allowlisted in MongoDB Atlas — so that the web app can
+  // still boot and serve last-known data. For this job that fallback is a trap:
+  // it would generate the report, write it to the CI runner's ephemeral disk,
+  // flush nothing to the shared database, and still exit 0. That is a green daily
+  // run that persisted nothing — exactly why the stored report kept going stale
+  // until someone hit "Refresh" on the live server. So when this job is meant to
+  // persist (it's running in CI, or a MONGODB_URI was provided), refuse to
+  // continue in file mode and fail loudly instead of reporting a false success.
+  const mode = storage.status().mode;
+  const mustPersist = process.env.GITHUB_ACTIONS === 'true' || !!process.env.MONGODB_URI;
+  if (mustPersist && mode !== 'mongo') {
+    throw new Error(
+      `storage is in "${mode}" mode, not "mongo": the database is unreachable, so the daily `
+      + 'report would be written to ephemeral disk and lost. Check that the MONGODB_URI secret '
+      + 'is set and that the runner IP is allowlisted in MongoDB Atlas → Network Access '
+      + '(GitHub-hosted runners have dynamic IPs, so this needs 0.0.0.0/0). Refusing to report '
+      + 'a false success.',
+    );
+  }
+  console.log(`[options-report:generate] storage mode: ${mode}`);
+
   const result = await generateAndStoreDailyOptions(parseArgs(process.argv));
   await storage.flush();
+
+  // A last guard against a silent no-op: the report we just wrote must actually
+  // be readable back from storage for today's date.
+  const persisted = readDailyReport(result.date);
+  if (mustPersist && persisted?.date !== result.date) {
+    throw new Error(`daily report for ${result.date} did not persist to ${mode} storage`);
+  }
+
   console.log(JSON.stringify({
     date: result.date,
     tickers: result.tickers,
     charts: result.charts,
     generatedAt: result.generatedAt,
+    storageMode: mode,
   }, null, 2));
 }
 

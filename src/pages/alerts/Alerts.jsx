@@ -75,10 +75,17 @@ function flowDotSide(day) {
   if (!day || day.empty) return 'flat';
   const diff = flowDiff(day);
   const prevDiff = flowDiff(day.prevDay);
-  if (diff == null || prevDiff == null) return 'flat';
+  if (diff == null) return 'flat';
+  // Older reports sometimes have only rounded SVG labels available for the
+  // fallback series. If the comparison is missing or rounds to unchanged, keep
+  // the dot colored by the actual call/put skew instead of making a real data
+  // point look like a no-data placeholder.
+  if (prevDiff == null && diff !== 0) return diff > 0 ? 'call' : 'put';
   if (diff > prevDiff) return 'call';
   if (diff < prevDiff) return 'put';
-  return 'flat';
+  if (diff > 0) return 'call';
+  if (diff < 0) return 'put';
+  return day.leader === 'call' || day.leader === 'put' ? day.leader : 'flat';
 }
 
 function legacyFlowDays(flow) {
@@ -121,13 +128,23 @@ function svgFlowDays(t) {
 }
 
 function navFlowDays(t) {
-  let source;
-  if (Array.isArray(t.flowDays) && t.flowDays.length) {
-    source = [...t.flowDays].sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
-  } else {
-    const fromSvg = svgFlowDays(t);
-    source = fromSvg.length ? fromSvg : legacyFlowDays(t.flow);
-  }
+  // We show FLOW_DOT_COUNT sessions, but each dot is coloured by its day-over-day
+  // change, so the earliest shown session needs the session before it as a buffer
+  // — i.e. FLOW_DOT_COUNT + 1 days of source. Reports generated before that was
+  // understood stored only FLOW_DOT_COUNT flowDays (no buffer), which left the
+  // leftmost dot grey. The rendered chart SVG carries ~10 sessions of bars, so
+  // parse it as an alternate series and use whichever source is longest: that
+  // restores the buffer for older reports without needing them re-generated,
+  // while still preferring the server's flowDays whenever it already has enough.
+  const fromFlowDays = Array.isArray(t.flowDays) && t.flowDays.length
+    ? [...t.flowDays].sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')))
+    : [];
+  const fromSvg = svgFlowDays(t);
+  const source = fromFlowDays.length >= FLOW_DOT_COUNT + 1
+    ? fromFlowDays
+    : [fromSvg, fromFlowDays, legacyFlowDays(t.flow)]
+      .reduce((best, cur) => (cur.length > best.length ? cur : best), []);
+
   const days = source.slice(-FLOW_DOT_COUNT);
   // Each day needs the session before it (which may fall outside the visible
   // window) so its dot can compare spreads across the day-over-day change.

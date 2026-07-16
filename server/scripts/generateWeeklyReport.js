@@ -136,6 +136,7 @@ const COMPANIES = [
   { id: '2330', ticker: '2330TT', group: 'foundry', name: '台積電' },
   { id: '2303', ticker: '2303TT', group: 'foundry', name: '聯電' },
   { id: '5347', ticker: '5347TT', group: 'foundry', name: '世界先進' },
+  { id: '3661', ticker: '3661TT', group: 'trainium', name: '世芯-KY' },
   { id: '3533', ticker: '3533TT', group: 'cpu', name: '嘉澤' },
   { id: '5274', ticker: '5274TT', group: 'cpu', name: '信驊' },
   { id: '3044', ticker: '3044TT', group: 'cpu', name: '健鼎' },
@@ -159,6 +160,7 @@ const CHAIN_META = [
   { id: 'equipment', label: 'Equipment', colors: ['#f87171', '#fbbf24', '#4ade80', '#22d3ee', '#818cf8', '#f472b6'] },
   { id: 'memory', label: 'Memory', colors: ['#fbbf24', '#34d399', '#60a5fa', '#fb7185'] },
   { id: 'foundry', label: 'Foundry', colors: ['#38bdf8', '#fb923c', '#4ade80'] },
+  { id: 'trainium', label: 'Trainium', colors: ['#f59e0b'] },
   { id: 'cpu', label: 'CPU', colors: ['#38bdf8', '#fb923c', '#a3e635'] },
   { id: 'odm', label: 'ODM', colors: ['#f87171', '#fbbf24', '#34d399', '#818cf8'] },
 ];

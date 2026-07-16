@@ -56,6 +56,8 @@ const ALL_COMPANIES = [
   { id: '2330', ticker: '2330TT', group: 'foundry', exchange: 'twse', name: '台積電'   },
   { id: '2303', ticker: '2303TT', group: 'foundry', exchange: 'twse', name: '聯電'     },
   { id: '5347', ticker: '5347TT', group: 'foundry', exchange: 'tpex', name: '世界先進' },
+  // Trainium supply chain — custom AI ASIC design services
+  { id: '3661', ticker: '3661TT', group: 'trainium', exchange: 'twse', name: '世芯-KY' },
   // CPU supply chain — CPU socket connectors, BMC controllers, HDI boards
   { id: '3533', ticker: '3533TT', group: 'cpu', exchange: 'twse', name: '嘉澤' },
   { id: '5274', ticker: '5274TT', group: 'cpu', exchange: 'tpex', name: '信驊' },

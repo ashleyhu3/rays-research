@@ -161,7 +161,7 @@ const SOURCE_REGISTRY = {
     upstreamLagMs: 30 * 24 * 3600e3, upstreamLagText: 'up to ~1 month',
     upstreamLagNote: 'Taiwan-listed firms must file the prior month\'s revenue by the 10th of the next month. So a given month only appears ~10 days after it ends — the freshest data point is always up to a month behind.',
     reliabilityGrade: 'B+', reliabilityNote: 'FinMind mirrors official MOPS filings; free tier is rate-limited (300/hr).',
-    ragScope: 'Optics/fiber/CCL/PCB/ABF/MLCC supplier monthly revenue & YoY/MoM.',
+    ragScope: 'Tracked Taiwan AI supplier monthly revenue & YoY/MoM across Trainium, optics, fiber, PCB/materials, MLCC, cooling, power, equipment, memory, foundry, CPU, and ODM.',
     fallback: 'Cached monthly history; new month appears after the filing window.',
     endpointUrl: 'https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockMonthRevenue',
   },

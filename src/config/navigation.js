@@ -39,6 +39,7 @@ export const NAV_SECTIONS = [
       { id: 'ai-supply-equipment', label: 'Equipment supply chain' },
       { id: 'ai-supply-memory',    label: 'Memory supply chain'    },
       { id: 'ai-supply-foundry',   label: 'Foundry supply chain'   },
+      { id: 'ai-supply-trainium',  label: 'Trainium supply chain'  },
       { id: 'ai-supply-cpu',       label: 'CPU supply chain'       },
       { id: 'ai-supply-odm',       label: 'ODM supply chain'       },
     ],
@@ -67,11 +68,11 @@ export const NAV_SECTIONS = [
     ],
   },
   {
-    label: 'US Performance',
+    label: 'Market Performance',
     sectorId: 'us-performance',
     mode: 'us-performance',
     items: [
-      { id: 'us-performance', label: 'Overview' },
+      { id: 'us-performance', label: 'Market Performance' },
     ],
   },
   {
@@ -149,6 +150,7 @@ export const VIEW_META = {
   'ai-supply-equipment': { title: 'AI SUPPLY — EQUIPMENT' },
   'ai-supply-memory':    { title: 'AI SUPPLY — MEMORY' },
   'ai-supply-foundry':   { title: 'AI SUPPLY — FOUNDRY' },
+  'ai-supply-trainium':  { title: 'AI SUPPLY — TRAINIUM' },
   'ai-supply-cpu':       { title: 'AI SUPPLY — CPU' },
   'ai-supply-odm':       { title: 'AI SUPPLY — ODM' },
   'dc-capacity':      { title: 'AI SUPPLY CHAIN — OVERVIEW' },
@@ -166,7 +168,7 @@ export const VIEW_META = {
   options:            { title: 'OPTIONS FLOW' },
   alerts:             { title: 'DAILY OPTIONS REPORT' },
   sentiment:          { title: 'MARKETS — SENTIMENT & OPTIONS' },
-  'us-performance':   { title: 'US PERFORMANCE — OVERVIEW' },
+  'us-performance':   { title: 'MARKET PERFORMANCE' },
   'leverage-korea':   { title: 'LEVERAGE — KOREAN RETAIL FIREPOWER' },
   'leverage-taiwan':  { title: 'LEVERAGE — TAIWAN RETAIL FIREPOWER' },
   'taiwan-individual': { title: 'TAIWAN — INDIVIDUAL STOCK MARGIN' },

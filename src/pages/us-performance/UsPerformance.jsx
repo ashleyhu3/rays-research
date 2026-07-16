@@ -327,7 +327,7 @@ export default function UsPerformance() {
       {controls}
       <div className="cgrid">
         <ChartCard
-          title="US Performance — Sector ETFs vs SPX"
+          title="Aggregate Performance"
           src="Yahoo Finance"
           srcUrl="https://finance.yahoo.com"
           freq="Daily"
@@ -348,7 +348,7 @@ export default function UsPerformance() {
           {relativeCharts.map(({ etf, data }) => (
             <ChartCard
               key={etf.ticker}
-              title={`${etf.label} / SPX — Relative Performance`}
+              title={etf.name}
               src="Yahoo Finance"
               srcUrl="https://finance.yahoo.com"
               freq="Daily"

@@ -34,7 +34,7 @@ import DemandOpenRouter from './pages/market-signals/OpenRouter';
 import {
   AISupplyOptics, AISupplyCCL, AISupplyPCB, AISupplyABF, AISupplyMLCC, AISupplyFiber,
   AISupplyCooling, AISupplyPower, AISupplyEquipment, AISupplyMemory, AISupplyFoundry,
-  AISupplyCPU, AISupplyODM,
+  AISupplyTrainium, AISupplyCPU, AISupplyODM,
 } from './pages/supply-chain/SupplyChain';
 import DcTimelines, {
   DcCapacity,
@@ -96,6 +96,7 @@ const VIEW_COMPONENTS = {
   'ai-supply-equipment': AISupplyEquipment,
   'ai-supply-memory':    AISupplyMemory,
   'ai-supply-foundry':   AISupplyFoundry,
+  'ai-supply-trainium':  AISupplyTrainium,
   'ai-supply-cpu':       AISupplyCPU,
   'ai-supply-odm':       AISupplyODM,
   'dc-capacity':      DcCapacity,

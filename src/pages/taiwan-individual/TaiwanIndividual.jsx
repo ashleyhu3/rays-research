@@ -1,13 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Line } from 'react-chartjs-2';
-import { GRID, TICK, BORD } from '../../utils/chartHelpers';
+import { GRID, TICK, BORD, fmtM } from '../../utils/chartHelpers';
 import { fa } from '../../config/colors';
 
 const SAMPLES = ['2383', '2330', '2317', '2454', '3231', '2382'];
 
-const MARGIN_COLOR = '#4577b4';   // 融資
-const SHORT_COLOR  = '#c65d57';   // 融券
-const PRICE_COLOR  = '#c9a227';   // stock price, shared across both charts
+const MARGIN_COLOR  = '#4577b4';   // 融資
+const SHORT_COLOR   = '#c65d57';   // 融券
+const PRICE_COLOR   = '#c9a227';   // stock price, shared across both charts
+const BALANCE_COLOR = '#39d0b4';   // raw balance in shares, shared across both charts
+
+const SHARES_PER_LOT = 1000; // TWSE unit is 張 (lots); 1 張 = 1,000 shares
 
 const RANGES = [
   { id: '3m', label: '3M', days: 92 },
@@ -36,6 +39,7 @@ const fmtLots = v => (v == null ? '—' : `${Number(v).toLocaleString()} 張`);
 const fmtRatio = v => (v == null ? '—' : `${Number(v).toFixed(2)}×`);
 const fmtShares = v => (v == null ? '—' : Number(v).toLocaleString());
 const fmtPrice = v => (v == null ? '—' : `NT$${Number(v).toFixed(2)}`);
+const fmtBalanceShares = v => (v == null ? '—' : `${Number(v).toLocaleString()} shares`);
 
 // Slice a side's aligned series down to the selected trailing window.
 function windowed(side, range) {
@@ -93,6 +97,21 @@ function chartData(win, color) {
         spanGaps: true,
         yAxisID: 'y1',
       },
+      {
+        label: 'Balance (shares)',
+        data: win.balanceLots.map(v => (Number.isFinite(v) ? v * SHARES_PER_LOT : null)),
+        borderColor: BALANCE_COLOR,
+        backgroundColor: 'transparent',
+        borderWidth: 1.5,
+        borderDash: [2, 2],
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        pointHoverBackgroundColor: BALANCE_COLOR,
+        tension: 0.25,
+        fill: false,
+        spanGaps: false,
+        yAxisID: 'y2',
+      },
     ],
   };
 }
@@ -119,9 +138,11 @@ function chartOptions(win) {
         bodyFont: { family: "'Inter',sans-serif", size: 11 },
         callbacks: {
           title: items => (items.length ? win.dates[items[0].dataIndex] : ''),
-          label: c => (c.dataset.yAxisID === 'y1'
-            ? ` Price: ${fmtPrice(c.raw)}`
-            : ` ${fmtRatio(c.raw)} daily volume`),
+          label: c => {
+            if (c.dataset.yAxisID === 'y1') return ` Price: ${fmtPrice(c.raw)}`;
+            if (c.dataset.yAxisID === 'y2') return ` Balance: ${fmtBalanceShares(c.raw)}`;
+            return ` ${fmtRatio(c.raw)} daily volume`;
+          },
           afterBody: items => {
             const i = items[0]?.dataIndex;
             if (i == null) return '';
@@ -155,6 +176,15 @@ function chartOptions(win) {
         ticks: { ...TICK, callback: v => `${v}`, font: { size: 10 } },
         border: BORD,
         title: { display: true, text: 'Price (NT$)', color: '#8a8a84', font: { size: 10, family: "'Inter',sans-serif" } },
+      },
+      y2: {
+        position: 'right',
+        beginAtZero: true,
+        grace: '5%',
+        grid: { drawOnChartArea: false },
+        ticks: { ...TICK, callback: v => fmtM(v), font: { size: 10 } },
+        border: BORD,
+        title: { display: true, text: 'Balance (shares)', color: '#8a8a84', font: { size: 10, family: "'Inter',sans-serif" } },
       },
     },
   };

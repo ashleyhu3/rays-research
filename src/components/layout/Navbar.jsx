@@ -40,7 +40,7 @@ function TableIcon() {
 const SUPPLY_VIEWS  = new Set([
   'ai-supply-optics', 'ai-supply-fiber', 'ai-supply-ccl', 'ai-supply-pcb', 'ai-supply-abf', 'ai-supply-mlcc',
   'ai-supply-cooling', 'ai-supply-power', 'ai-supply-equipment', 'ai-supply-memory', 'ai-supply-foundry',
-  'ai-supply-cpu', 'ai-supply-odm',
+  'ai-supply-trainium', 'ai-supply-cpu', 'ai-supply-odm',
 ]);
 const INFRA_VIEWS   = new Set([
   'dc-capacity', 'dc-timelines',
@@ -124,7 +124,7 @@ export default function Navbar({ onNavigate, currentView }) {
           className={`nlink${isUsPerf ? ' active' : ''}`}
           onClick={() => onNavigate('us-performance')}
         >
-          US Performance
+          Market Performance
         </button>
         <button
           className={`nlink${isLeverage ? ' active' : ''}`}

@@ -53,6 +53,8 @@ const ALL_COMPANIES = [
   { id: '2330', ticker: '2330TT', group: 'foundry', exchange: 'twse', name: '台積電'   },
   { id: '2303', ticker: '2303TT', group: 'foundry', exchange: 'twse', name: '聯電'     },
   { id: '5347', ticker: '5347TT', group: 'foundry', exchange: 'tpex', name: '世界先進' },
+  // Trainium
+  { id: '3661', ticker: '3661TT', group: 'trainium', exchange: 'twse', name: '世芯-KY' },
   // CPU
   { id: '3533', ticker: '3533TT', group: 'cpu', exchange: 'twse', name: '嘉澤' },
   { id: '5274', ticker: '5274TT', group: 'cpu', exchange: 'tpex', name: '信驊' },
@@ -113,6 +115,10 @@ const CHAINS = {
   foundry: {
     label: 'Foundry',
     colors: ['#38bdf8', '#fb923c', '#4ade80'],
+  },
+  trainium: {
+    label: 'Trainium',
+    colors: ['#f59e0b'],
   },
   cpu: {
     label: 'CPU',
@@ -363,5 +369,6 @@ export function AISupplyPower(props)     { return <SupplyChainPage chain="power"
 export function AISupplyEquipment(props) { return <SupplyChainPage chain="equipment" {...props} />; }
 export function AISupplyMemory(props)    { return <SupplyChainPage chain="memory"    {...props} />; }
 export function AISupplyFoundry(props)   { return <SupplyChainPage chain="foundry"   {...props} />; }
+export function AISupplyTrainium(props)  { return <SupplyChainPage chain="trainium"  {...props} />; }
 export function AISupplyCPU(props)        { return <SupplyChainPage chain="cpu"        {...props} />; }
 export function AISupplyODM(props)        { return <SupplyChainPage chain="odm"        {...props} />; }

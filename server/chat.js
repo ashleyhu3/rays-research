@@ -534,7 +534,7 @@ function buildMops() {
   return {
     id:       'mops',
     title:    'Taiwan AI Supply Chain Revenue',
-    about:    'Monthly revenue for Taiwanese AI supply chain companies across optics, fiber, CCL, PCB, ABF, and MLCC (MOPS filings)',
+    about:    'Monthly revenue for Taiwanese AI supply chain companies across tracked supply-chain groups, including Trainium, optics, fiber, CCL, PCB, ABF, MLCC, cooling, power, equipment, memory, foundry, CPU, and ODM (MOPS filings)',
     source:   'MOPS / FinMind',
     entities: companies.map(c => c.name),
     text:     `### Taiwan AI Supply Chain Revenue (NT$M/month, MOPS)\n${lines.join('\n')}`,
