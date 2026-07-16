@@ -13,8 +13,16 @@ const OptionsReportContext = createContext(null);
 // once a live-generated report includes SOXX on its own.
 function withStaticSoxx(report) {
   if (!report?.tickers) return report;
-  if (report.tickers.some(t => t.ticker === 'SOXX')) return report;
-  return { ...report, tickers: [...report.tickers, soxxStatic] };
+  const tickers = report.tickers.map(ticker => {
+    if (ticker.ticker !== 'SOXX' || ticker.flowDays?.length) return ticker;
+    return {
+      ...ticker,
+      flowExpiration: soxxStatic.flowExpiration,
+      flowDays: soxxStatic.flowDays,
+    };
+  });
+  if (tickers.some(t => t.ticker === 'SOXX')) return { ...report, tickers };
+  return { ...report, tickers: [...tickers, soxxStatic] };
 }
 
 export function OptionsReportProvider({ children }) {

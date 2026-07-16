@@ -74,9 +74,15 @@ async function fetchSeries(yf, ticker, start, end) {
   return quotes.map(q => ({ date: isoDate(q.date), close: q.close }));
 }
 
-async function getUsPerformance(startDate) {
+function inclusiveEndDate(endDate) {
+  const end = new Date(endDate);
+  end.setUTCDate(end.getUTCDate() + 1);
+  return end;
+}
+
+async function getUsPerformance(startDate, endDate = new Date()) {
   const yf  = getYF();
-  const end = new Date();
+  const end = inclusiveEndDate(endDate);
   const start = new Date(startDate);
 
   const results = await mapLimit(TICKERS, 4, async meta => {
@@ -107,7 +113,7 @@ async function getUsPerformance(startDate) {
     };
   });
 
-  return { start: dates[0] ?? isoDate(start), dates, series };
+  return { start: dates[0] ?? isoDate(start), end: dates[dates.length - 1] ?? isoDate(endDate), dates, series };
 }
 
 module.exports = { getUsPerformance, TICKERS };

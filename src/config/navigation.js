@@ -1,3 +1,5 @@
+import { US_PERFORMANCE_ETFS, usPerformanceViewId } from './usPerformance';
+
 /** Sidebar navigation structure */
 export const NAV_SECTIONS = [
   {
@@ -68,9 +70,14 @@ export const NAV_SECTIONS = [
   },
   {
     label: 'US Performance',
-    mode: 'tool',
+    sectorId: 'us-performance',
+    mode: 'us-performance',
     items: [
-      { id: 'us-performance', label: 'Sector ETFs vs SPX' },
+      { id: 'us-performance', label: 'Overview' },
+      ...US_PERFORMANCE_ETFS.map(etf => ({
+        id: usPerformanceViewId(etf.ticker),
+        label: `${etf.label} · ${etf.name}`,
+      })),
     ],
   },
   {
@@ -165,7 +172,11 @@ export const VIEW_META = {
   options:            { title: 'OPTIONS FLOW' },
   alerts:             { title: 'DAILY OPTIONS REPORT' },
   sentiment:          { title: 'MARKETS — SENTIMENT & OPTIONS' },
-  'us-performance':   { title: 'US PERFORMANCE — SECTOR ETFs REBASED TO 100' },
+  'us-performance':   { title: 'US PERFORMANCE — OVERVIEW' },
+  ...Object.fromEntries(US_PERFORMANCE_ETFS.map(etf => [
+    usPerformanceViewId(etf.ticker),
+    { title: `US PERFORMANCE — ${etf.label} / SPX` },
+  ])),
   'leverage-korea':   { title: 'LEVERAGE — KOREAN RETAIL FIREPOWER' },
   'leverage-taiwan':  { title: 'LEVERAGE — TAIWAN RETAIL FIREPOWER' },
   'taiwan-individual': { title: 'TAIWAN — INDIVIDUAL STOCK MARGIN' },

@@ -1,19 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Line } from 'react-chartjs-2';
 import ChartCard from '../../components/chart/ChartCard';
+import { SPX_META, US_PERFORMANCE_ETFS } from '../../config/usPerformance';
 import { GRID, TICK, BORD } from '../../utils/chartHelpers';
-
-// 12-hue categorical palette, one slot per sector ETF, order fixed (never
-// cycled — see the dataviz skill). Generated and validated for CVD
-// separation / lightness band / contrast against this app's dark card
-// surface (#111419) with scripts/validate_palette.js — all checks pass.
-const SECTOR_COLORS = [
-  '#3c8cdd', '#da5a2f', '#198f5e', '#9c7c1c', '#8749df', '#dc386e',
-  '#44981b', '#1f96ad', '#dd40dd', '#89931a', '#4551de', '#da2f2f',
-];
-// SPX is the benchmark, not a 13th competing hue: neutral ink, thicker,
-// dashed, so it reads as "the line everything else is measured against".
-const SPX_COLOR = '#eaeae0';
 
 const PRESETS = [
   { id: 'ytd', label: 'YTD', getStart: () => `${new Date().getFullYear()}-01-01` },
@@ -21,6 +10,8 @@ const PRESETS = [
   { id: '3y',  label: '3Y',  getStart: () => isoYearsAgo(3) },
   { id: '5y',  label: '5Y',  getStart: () => isoYearsAgo(5) },
 ];
+
+const ETF_BY_TICKER = new Map(US_PERFORMANCE_ETFS.map(etf => [etf.ticker, etf]));
 
 function isoYearsAgo(n) {
   const d = new Date();
@@ -66,11 +57,16 @@ const BASELINE_100 = {
   },
 };
 
-function buildChartData(payload) {
+function findSeries(payload, ticker) {
+  return payload.series.find(s => s.ticker === ticker);
+}
+
+function buildOverviewChartData(payload) {
   const labels = payload.dates.map(fmtDate);
   const datasets = payload.series.map((s, i) => {
-    const isSpx = s.ticker === '^GSPC';
-    const color = isSpx ? SPX_COLOR : SECTOR_COLORS[i % SECTOR_COLORS.length];
+    const isSpx = s.ticker === SPX_META.ticker;
+    const etf = ETF_BY_TICKER.get(s.ticker);
+    const color = isSpx ? SPX_META.color : (etf?.color ?? US_PERFORMANCE_ETFS[i % US_PERFORMANCE_ETFS.length].color);
     return {
       label: s.label,
       fullName: s.name,
@@ -89,7 +85,37 @@ function buildChartData(payload) {
   return { labels, datasets };
 }
 
-function chartOptions() {
+function buildRelativeChartData(payload, ticker) {
+  const etfMeta = ETF_BY_TICKER.get(ticker);
+  const etfSeries = findSeries(payload, ticker);
+  const spxSeries = findSeries(payload, SPX_META.ticker);
+  if (!etfMeta || !etfSeries || !spxSeries) return null;
+
+  const ratios = etfSeries.closes.map((close, i) => {
+    const spxClose = spxSeries.closes[i];
+    return close != null && spxClose != null && spxClose !== 0 ? close / spxClose : null;
+  });
+
+  return {
+    labels: payload.dates.map(fmtDate),
+    datasets: [{
+      label: `${etfMeta.label}/SPX`,
+      fullName: `${etfMeta.name} relative to ${SPX_META.name}`,
+      data: rebase(ratios),
+      ratios,
+      borderColor: etfMeta.color,
+      backgroundColor: 'transparent',
+      borderWidth: 2.5,
+      pointRadius: 0,
+      pointHoverRadius: 3,
+      pointHitRadius: 6,
+      tension: 0.15,
+      spanGaps: true,
+    }],
+  };
+}
+
+function chartOptions({ relative = false } = {}) {
   return {
     responsive: true,
     maintainAspectRatio: false,
@@ -118,6 +144,11 @@ function chartOptions() {
             const v = c.parsed.y;
             if (v == null) return ` ${c.dataset.label}: —`;
             const pct = v - 100;
+            if (relative) {
+              const ratio = c.dataset.ratios?.[c.dataIndex];
+              const ratioText = Number.isFinite(ratio) ? `, ratio ${ratio.toFixed(5)}` : '';
+              return ` ${c.dataset.label}: ${v.toFixed(1)} (${pct >= 0 ? '+' : ''}${pct.toFixed(1)}% rel)${ratioText}`;
+            }
             return ` ${c.dataset.label}: ${v.toFixed(1)} (${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%)`;
           },
         },
@@ -130,8 +161,9 @@ function chartOptions() {
   };
 }
 
-export default function UsPerformance() {
+export default function UsPerformance({ ticker = null }) {
   const [startDate, setStartDate] = useState(() => isoYearsAgo(1));
+  const [endDate, setEndDate] = useState(() => todayIso());
   const [payload, setPayload] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -140,35 +172,54 @@ export default function UsPerformance() {
     let live = true;
     setLoading(true);
     setError(null);
-    fetch(`/api/us-performance?start=${startDate}`)
+    const params = new URLSearchParams({ start: startDate, end: endDate });
+    fetch(`/api/us-performance?${params}`)
       .then(response => (response.ok
         ? response.json()
         : response.json().then(body => Promise.reject(new Error(body.error ?? `HTTP ${response.status}`)))))
       .then(data => { if (live) { setPayload(data); setLoading(false); } })
       .catch(fetchError => { if (live) { setError(fetchError.message); setLoading(false); } });
     return () => { live = false; };
-  }, [startDate]);
+  }, [startDate, endDate]);
 
-  const chartData = useMemo(() => (payload ? buildChartData(payload) : null), [payload]);
+  const selectedEtf = ticker ? ETF_BY_TICKER.get(ticker) : null;
+  const chartData = useMemo(() => {
+    if (!payload) return null;
+    return selectedEtf ? buildRelativeChartData(payload, selectedEtf.ticker) : buildOverviewChartData(payload);
+  }, [payload, selectedEtf]);
+  const maxDate = todayIso();
 
   const controls = (
     <div className="usp-head">
-      <label className="usp-date-field">
-        <span>From</span>
-        <input
-          type="date"
-          className="usp-date-input"
-          value={startDate}
-          max={todayIso()}
-          onChange={e => e.target.value && setStartDate(e.target.value)}
-        />
-      </label>
+      <div className="usp-date-fields">
+        <label className="usp-date-field">
+          <span>From</span>
+          <input
+            type="date"
+            className="usp-date-input"
+            value={startDate}
+            max={endDate || maxDate}
+            onChange={e => e.target.value && setStartDate(e.target.value)}
+          />
+        </label>
+        <label className="usp-date-field">
+          <span>To</span>
+          <input
+            type="date"
+            className="usp-date-input"
+            value={endDate}
+            min={startDate}
+            max={maxDate}
+            onChange={e => e.target.value && setEndDate(e.target.value)}
+          />
+        </label>
+      </div>
       <div className="view-toggle">
         {PRESETS.map(p => (
           <button
             key={p.id}
-            className={`vt-btn${p.getStart() === startDate ? ' active' : ''}`}
-            onClick={() => setStartDate(p.getStart())}
+            className={`vt-btn${p.getStart() === startDate && endDate === maxDate ? ' active' : ''}`}
+            onClick={() => { setStartDate(p.getStart()); setEndDate(maxDate); }}
           >
             {p.label}
           </button>
@@ -182,7 +233,7 @@ export default function UsPerformance() {
       {controls}
       <div className="cgrid">
         <ChartCard
-          title="US Performance — Sector ETFs vs SPX"
+          title={selectedEtf ? `${selectedEtf.label} / SPX — Relative Performance` : 'US Performance — Sector ETFs vs SPX'}
           src="Yahoo Finance"
           srcUrl="https://finance.yahoo.com"
           freq="Daily"
@@ -194,7 +245,7 @@ export default function UsPerformance() {
           ) : !chartData ? (
             <div className="empty">{loading ? 'Loading US performance data…' : 'No data'}</div>
           ) : (
-            <Line data={chartData} options={chartOptions()} plugins={[BASELINE_100]} />
+            <Line data={chartData} options={chartOptions({ relative: Boolean(selectedEtf) })} plugins={[BASELINE_100]} />
           )}
         </ChartCard>
       </div>
