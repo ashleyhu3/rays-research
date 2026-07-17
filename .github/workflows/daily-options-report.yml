@@ -1,8 +1,14 @@
 name: Generate daily options report
 
-# Runs at 07:45 Asia/Hong_Kong every day. Hong Kong is UTC+8 year-round, so
-# 07:45 HKT is 23:45 UTC the previous day — stable without daylight-saving
+# Runs at 06:00 Asia/Hong_Kong every day. Hong Kong is UTC+8 year-round, so
+# 06:00 HKT is 22:00 UTC the previous day — stable without daylight-saving
 # adjustments. GitHub Actions cron is always UTC.
+#
+# 06:00 HKT (was 07:45): the report covers the US session that just closed, and
+# that session is already settled well before any HKT-morning run — US close is
+# 16:00 ET = 04:00 HKT summer / 05:00 HKT winter — so starting earlier captures
+# the same data while leaving ~2h of runway for the now ~80-ticker roster to
+# finish, instead of the ~15 minutes the old 07:45 start allowed before 08:00.
 #
 # Required repository secrets:
 #   MASSIVE_API_KEY
@@ -13,10 +19,12 @@ name: Generate daily options report
 # Optional:
 #   MONGODB_DB
 #   OPTIONS_REPORT_TICKERS
+#   OPTIONS_REPORT_CALENDAR_SYMBOL  — liquid reference symbol for the shared US
+#     trading calendar (default SPY); every tracked ticker shares its sessions.
 
 on:
   schedule:
-    - cron: '45 23 * * *'
+    - cron: '0 22 * * *'
   workflow_dispatch:
     inputs:
       report_date:
@@ -50,6 +58,13 @@ jobs:
       - name: Install dependencies
         run: npm ci --omit=dev
 
+      # Retry a few times: the generate step now exits non-zero on a real failure
+      # (a transient Massive/Alpha Vantage hiccup, or an unreachable Mongo — see
+      # the storage-mode guard in generateAndStoreDailyOptionsReport.js) instead
+      # of silently "succeeding" with nothing persisted. A single bad run (e.g.
+      # 2026-07-10) used to leave the report stale for the day; retrying rides out
+      # the transient case, and each attempt resumes from the cached chains the
+      # previous attempt already backfilled, so it isn't starting over.
       - name: Scrape Massive and store the daily report
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
@@ -58,4 +73,16 @@ jobs:
           ALPHAVANTAGE_API_KEY: ${{ secrets.ALPHAVANTAGE_API_KEY }}
           OPTIONS_REPORT_DATE: ${{ inputs.report_date }}
           OPTIONS_REPORT_TICKERS: ${{ inputs.tickers || secrets.OPTIONS_REPORT_TICKERS }}
-        run: npm run options-report:generate
+        run: |
+          for attempt in 1 2 3; do
+            echo "::group::options-report:generate attempt $attempt"
+            if npm run options-report:generate; then
+              echo "::endgroup::"
+              exit 0
+            fi
+            echo "::endgroup::"
+            echo "attempt $attempt failed"
+            [ "$attempt" -lt 3 ] && sleep 120
+          done
+          echo "all attempts failed" >&2
+          exit 1

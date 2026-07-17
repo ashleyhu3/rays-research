@@ -47,17 +47,13 @@ export function OptionsReportProvider({ children }) {
   const refresh = useCallback(async () => {
     setBusy(true); setMsg(null);
     try {
-      const res = await fetch('/api/alerts/daily-options-report/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: '{}',
-      });
+      const res = await fetch('/api/alerts/daily-options-report/reload', { method: 'POST' });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`);
       setReport(normalizeReport(json.report || null));
-      setMsg({ kind: 'ok', text: `Updated the report for ${json.meta?.date || 'today'}.` });
+      setMsg({ kind: 'ok', text: `Reloaded the report for ${json.report?.date || 'today'}.` });
     } catch (err) {
-      setMsg({ kind: 'err', text: `Update failed: ${err.message}` });
+      setMsg({ kind: 'err', text: `Reload failed: ${err.message}` });
     } finally { setBusy(false); }
   }, []);
 

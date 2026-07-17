@@ -100,6 +100,14 @@ function readDailyReport(date) {
   return blob.latest || null;
 }
 
+// Pick up whatever another process (a local script, a different instance)
+// wrote to Mongo, without re-running the scrape — for a "Refresh" action that
+// should be a cheap re-read, not another full generation.
+async function reloadDailyReport(date) {
+  await storage.reload(BLOB.name, BLOB.file);
+  return readDailyReport(date);
+}
+
 // Newest-first list of dates we have a stored report for.
 function readAvailableReportDates() {
   const blob = storage.read(BLOB.name, BLOB.file);
@@ -206,6 +214,10 @@ async function generateAndStoreDailyOptions(options = {}) {
     tickers,
     out: path.join(outDir, `daily-options-data-${date}.html`),
     format: 'html',
+    // Write what's done so far after every ticker, so a long scrape (or one that
+    // fails partway) leaves the site with the growing partial report instead of
+    // nothing until the very end.
+    onTickerDone: partial => writeDailyReport(buildStructuredReport(partial, { generatedAt, timeZone })),
   });
   const payload = buildStructuredReport(generated.report, { generatedAt, timeZone });
   writeDailyReport(payload);
@@ -338,6 +350,7 @@ module.exports = {
   pdfMeta,
   readAvailableReportDates,
   readDailyReport,
+  reloadDailyReport,
   readLatestDailyOptionsReport,
   readLatestDailyOptionsPdf,
   renderHtmlToPdf,

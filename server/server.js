@@ -634,6 +634,20 @@ app.get('/api/alerts/daily-options-report/pdf', (req, res) => {
   });
 });
 
+// Cheap "Refresh": re-read the stored blob from Mongo (picks up whatever the
+// GitHub Action or a manual backfill already wrote) instead of re-running the
+// whole Massive scrape in the request, which is what /generate below does.
+app.post('/api/alerts/daily-options-report/reload', async (req, res) => {
+  try {
+    const date = /^\d{4}-\d{2}-\d{2}$/.test(String(req.body?.date || '')) ? req.body.date : undefined;
+    const report = await optionsReportStore.reloadDailyReport(date);
+    res.json({ report, availableDates: optionsReportStore.readAvailableReportDates() });
+  } catch (e) {
+    console.error('[options-report:reload]', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.post('/api/alerts/daily-options-report/generate', async (req, res) => {
   try {
     const meta = await optionsReportStore.generateAndStoreDailyOptions({

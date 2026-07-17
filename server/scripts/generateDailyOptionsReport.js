@@ -1862,7 +1862,7 @@ async function fetchTickerReport(ticker, reportDate, maxExpirations = EXPIRATION
 
 async function generateDailyOptionsReport({
   date = today(), tickers = DEFAULT_TICKERS, out = null, format = null,
-  maxExpirations = EXPIRATION_COUNT, skipPriors = false,
+  maxExpirations = EXPIRATION_COUNT, skipPriors = false, onTickerDone = null,
 } = {}) {
   const outPath = path.resolve(out ?? `daily-options-data-${date}.html`);
   const outputFormat = format ?? (path.extname(outPath).toLowerCase() === '.md' ? 'md' : 'html');
@@ -1883,6 +1883,10 @@ async function generateDailyOptionsReport({
       try {
         tickerReports.push(await fetchTickerReport(ticker, date, maxExpirations, { skipPriors }));
         console.log(`[options-report] ${ticker} done (${Math.round((Date.now() - startedAt) / 1000)}s)`);
+        // Publish the partial report so a long scrape doesn't leave the site with
+        // nothing until every ticker finishes — see writeDailyReport in
+        // optionsReportStore.js for the atomic-overwrite write this feeds.
+        if (onTickerDone) await onTickerDone({ date, tickers: [...tickerReports] });
       } finally {
         // Persist after every ticker so a late failure does not make the next run
         // repeat all completed full-chain backfills.

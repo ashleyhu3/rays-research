@@ -118,6 +118,22 @@ function write(name, file, obj) {
   }
 }
 
+// Re-read one blob straight from Mongo into the cache, picking up whatever a
+// different process (a script, another instance) wrote directly — without
+// re-running whatever scrape produced it. No-op in file mode: there is only one
+// copy, already in cache. Leaves the cache untouched if Mongo has no doc yet,
+// rather than clobbering good in-memory data with an empty object.
+async function reload(name, file) {
+  if (mode !== 'mongo' || !collection) {
+    const obj = readFileBlob(file);
+    cache.set(name, obj);
+    return obj;
+  }
+  const doc = await collection.findOne({ _id: name });
+  if (doc && doc.data) cache.set(name, doc.data);
+  return cache.get(name);
+}
+
 // Wait for all queued Mongo writes to land (no-op in file mode).
 async function flush() {
   await Promise.allSettled([...pending]);
@@ -150,4 +166,4 @@ function status() {
   return { mode, ready, blobs: [...cache.keys()] };
 }
 
-module.exports = { init, read, write, flush, seedFromFiles, close, status };
+module.exports = { init, read, write, reload, flush, seedFromFiles, close, status };
