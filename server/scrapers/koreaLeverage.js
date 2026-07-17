@@ -122,9 +122,24 @@ const DOMESTIC_SINGLE_CODES = new Set([
   'A0195R0',   // TIGER 단일종목레버리지 삼성전자
 ]);
 const DOMESTIC_CODES = new Set([DOMESTIC_INDEX_CODE, ...DOMESTIC_SINGLE_CODES]);
-const DOMESTIC_REVERSE_CODES = new Set([
+const DOMESTIC_REVERSE_INDEX_CODES = new Set([
   'A252670',   // KODEX 200 Futures Inverse 2×
   'A252710',   // TIGER 200 Futures Inverse 2×
+]);
+// Single-stock inverse 2× is a much thinner field than single-stock leverage:
+// of the issuers running long single-stock 2× funds (KODEX/TIGER/ACE/RISE/SOL/
+// KIWOOM/1Q), only PLUS and SOL each brought out one inverse counterpart —
+// confirmed against both Daum's ETF list and KRX's own finder
+// (dbms/comm/finder/finder_secuprodisu). KODEX/TIGER/ACE/HANARO have none, and
+// "KBSTAR" no longer exists as a brand — KB Asset Management renamed it RISE
+// in 2024, and RISE's single-stock lineup is long-only too.
+const DOMESTIC_REVERSE_SINGLE_CODES = new Set([
+  'A0193L0',   // PLUS 삼성전자선물단일종목인버스2X — the only Samsung Electronics inverse 2× in Korea
+  'A0197X0',   // SOL SK하이닉스선물단일종목인버스2X — the only SK Hynix inverse 2× in Korea
+]);
+const DOMESTIC_REVERSE_CODES = new Set([
+  ...DOMESTIC_REVERSE_INDEX_CODES,
+  ...DOMESTIC_REVERSE_SINGLE_CODES,
 ]);
 
 async function daumJson(url) {
@@ -139,6 +154,7 @@ const TERMS = [
   [/SK하이닉스/g, 'SK Hynix'],
   [/삼성전자/g, 'Samsung Electronics'],
   [/200선물인버스2X/g, 'KOSPI200 Futures Inverse 2×'],
+  [/선물단일종목인버스2X/g, 'Futures Single-Stock Inverse 2×'],
   [/단일종목레버리지/g, 'Single-Stock 2×'],
   [/레버리지/g, 'KOSPI200 2×'],
 ];
@@ -163,7 +179,7 @@ async function leverageUniverse() {
     .map(r => describe(r, r.symbolCode === DOMESTIC_INDEX_CODE ? 'index' : 'single'));
   const reverseFunds = listed
     .filter(r => DOMESTIC_REVERSE_CODES.has(r.symbolCode))
-    .map(r => describe(r, 'reverse-index'));
+    .map(r => describe(r, DOMESTIC_REVERSE_INDEX_CODES.has(r.symbolCode) ? 'reverse-index' : 'reverse-single'));
   if (!funds.length) throw new Error('Daum ETF list returned no leveraged funds');
   if (!reverseFunds.length) throw new Error('Daum ETF list returned no reverse 2× funds');
   return { funds, reverseFunds };
@@ -232,6 +248,15 @@ const HKEX_FUNDS = [
   { code: '7709', stockId: 1000276797, name: 'CSOP SK Hynix 2× (HK)' },
   { code: '7747', stockId: 1000260078, name: 'CSOP Samsung Electronics 2× (HK)' },
 ];
+// CSOP's daily workbook is filed once per issuer, not once per product — the
+// filing found under 7709/7747's stockIds is titled "7747, 7347, 7709 NEWS"
+// and already carries a 7347 column, so the inverse leg needs no stockId of
+// its own to search by (HKEXnews' /search/prefix.do lookup used to resolve
+// stockId is Akamai-gated to real browser sessions; reusing an existing
+// stockId sidesteps that entirely).
+const HKEX_REVERSE_FUNDS = [
+  { code: '7347', name: 'CSOP Samsung Electronics -2× (HK)' },
+];
 const HKEX_HOST = 'https://www1.hkexnews.hk';
 const HKEX_SEARCH = `${HKEX_HOST}/search/titleSearchServlet.do`;
 
@@ -283,13 +308,16 @@ function parseHkexWorkbook(buffer, codes) {
   return out;
 }
 
-// Daily AUM in USD for both HK legs back to `from`. The two funds usually
-// share one workbook, but each is queried by its own stockId and the results
-// de-duped by filing, so neither depends on the other still being bundled in.
+// Daily AUM in USD for all three HK legs (both long funds plus the reverse
+// leg) back to `from`. They share one workbook per issuer, but are searched
+// by whichever stockIds are known and the results de-duped by filing, so a
+// fund with no stockId of its own (the reverse leg) still gets picked up as
+// long as its column shows up in a filing found via the others.
 async function hkexFundHistory(from) {
   const to = iso(new Date());
-  const codes = new Set(HKEX_FUNDS.map(f => f.code));
-  const stockIds = [...new Set(HKEX_FUNDS.map(f => f.stockId))];
+  const allFunds = [...HKEX_FUNDS, ...HKEX_REVERSE_FUNDS];
+  const codes = new Set(allFunds.map(f => f.code));
+  const stockIds = [...new Set(allFunds.map(f => f.stockId).filter(Boolean))];
 
   const filingLists = await Promise.all(stockIds.map(id => hkexFilings(id, from, to).catch(e => {
     console.warn(`[koreaLeverage] HKEXnews search ${id}: ${e.message}`);
@@ -299,7 +327,7 @@ async function hkexFundHistory(from) {
   filingLists.flat().forEach(r => filings.set(r.FILE_LINK, r));
 
   const out = {};
-  HKEX_FUNDS.forEach(f => { out[f.code] = {}; });
+  allFunds.forEach(f => { out[f.code] = {}; });
 
   await mapPool([...filings.values()], 4, async row => {
     try {
@@ -312,7 +340,52 @@ async function hkexFundHistory(from) {
       console.warn(`[koreaLeverage] HKEXnews workbook ${row.FILE_LINK}: ${e.message}`);
     }
   });
-  return out;   // { '7709': { day: aumUsd }, '7747': { day: aumUsd } }
+  return out;   // { '7709': { day: aumUsd }, '7747': { day: aumUsd }, '7347': { day: aumUsd } }
+}
+
+/* ── GraniteShares: SKDD (US-listed, SK Hynix ADR inverse 2×) ─────────── */
+
+const SKDD_PAGE = 'https://graniteshares.com/etfs/skdd/';
+
+// GraniteShares publishes each day's holdings workbook at a CMS-assigned path
+// that isn't predictable from the date alone (e.g. /media/khapjiqj/skdd_holdings_
+// file_20260715.xls) — the only stable way to find today's file is to scrape the
+// fund page for its current "Download Holdings" link. The file itself follows a
+// standard administrator layout (Position Date / Shares Outstanding / NAV per
+// Share repeated on every holding row), so net assets = shares outstanding ×
+// NAV per share, read off whichever row has both populated.
+async function skddFundHistory() {
+  const res = await fetch(SKDD_PAGE, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(30000) });
+  if (!res.ok) throw new Error(`GraniteShares HTTP ${res.status}`);
+  const html = await res.text();
+  const match = html.match(/href="(\/media\/[^"]*skdd_holdings_file_\d{8}\.xls)"/i);
+  if (!match) throw new Error('GraniteShares holdings link not found');
+
+  const fileRes = await fetch(`https://graniteshares.com${match[1]}`, {
+    headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(30000),
+  });
+  if (!fileRes.ok) throw new Error(`GraniteShares holdings file HTTP ${fileRes.status}`);
+  const buffer = Buffer.from(await fileRes.arrayBuffer());
+  const book = XLSX.read(buffer, { type: 'buffer', cellDates: true });
+  const sheet = book.Sheets[book.SheetNames[0]];
+  if (!sheet) throw new Error('GraniteShares holdings file has no sheet');
+  const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true });
+
+  const header = rows[0] ?? [];
+  const dateCol = header.indexOf('Position Date');
+  const sharesCol = header.indexOf('Shares Outstanding');
+  const navCol = header.indexOf('NAV/Share');
+  if (dateCol < 0 || sharesCol < 0 || navCol < 0) throw new Error('GraniteShares holdings file layout changed');
+
+  const dataRow = rows.slice(1).find(r => Number(r[sharesCol]) > 0 && Number(r[navCol]) > 0);
+  if (!dataRow) throw new Error('GraniteShares holdings file has no shares/NAV row');
+
+  const dateCell = dataRow[dateCol];
+  const day = dateCell instanceof Date && Number.isFinite(dateCell.getTime())
+    ? dateCell.toISOString().slice(0, 10) : null;
+  const aumUsd = Number(dataRow[sharesCol]) * Number(dataRow[navCol]);
+  if (!day || !Number.isFinite(aumUsd)) throw new Error('GraniteShares holdings file unparseable');
+  return { [day]: aumUsd };
 }
 
 /* ── History blob ──────────────────────────────────────────────────── */
@@ -335,7 +408,7 @@ async function getKoreaLeverage(days = 30) {
   const start = new Date(today.getTime() - days * 86400000);
   const from = iso(start);
 
-  const [credit, domesticUniverse, hkexAum, usdKrw] = await Promise.all([
+  const [credit, domesticUniverse, hkexAum, usdKrw, skddAumUsd] = await Promise.all([
     kofiaCredit(compact(from), compact(iso(today))),
     leverageUniverse(),
     hkexFundHistory(from).catch(e => {
@@ -346,16 +419,20 @@ async function getKoreaLeverage(days = 30) {
       console.warn(`[koreaLeverage] USD/KRW unavailable (${e.message}) — HK legs will carry forward`);
       return {};
     }),
+    skddFundHistory().catch(e => {
+      console.warn(`[koreaLeverage] GraniteShares SKDD unavailable (${e.message}) — SKDD will carry forward`);
+      return {};
+    }),
   ]);
 
-  const { funds: domesticFunds, reverseFunds } = domesticUniverse;
+  const { funds: domesticFunds, reverseFunds: domesticReverseFunds } = domesticUniverse;
   const domesticSeries = await mapPool(domesticFunds, 4, f => fundHistory(f.code, from));
-  const reverseSeries = await mapPool(reverseFunds, 4, f => fundHistory(f.code, from));
+  const domesticReverseSeries = await mapPool(domesticReverseFunds, 4, f => fundHistory(f.code, from));
 
-  // Fold the two HK legs into the same shape as the domestic funds: USD AUM ×
-  // that day's USD/KRW rate (or the last known rate, if HK and Korea's
-  // trading calendars don't line up on a given day), in 조원 like everything
-  // else in the layer.
+  // Fold the HK and US legs into the same shape as the domestic funds: USD AUM
+  // × that day's USD/KRW rate (or the last known rate, if their trading
+  // calendars don't line up with Korea's on a given day), in 조원 like
+  // everything else in the layer.
   const fxDays = Object.keys(usdKrw).sort();
   const fxOnOrBefore = day => {
     let rate = null;
@@ -365,17 +442,27 @@ async function getKoreaLeverage(days = 30) {
     }
     return rate;
   };
-  const hkexSeries = HKEX_FUNDS.map(f => {
+  const toKrwSeries = byDay => {
     const out = {};
-    for (const [day, aumUsd] of Object.entries(hkexAum[f.code] ?? {})) {
+    for (const [day, aumUsd] of Object.entries(byDay)) {
       const rate = fxOnOrBefore(day);
       if (Number.isFinite(rate)) out[day] = (aumUsd * rate) / TRILLION;
     }
     return out;
-  });
+  };
+  const hkexSeries = HKEX_FUNDS.map(f => toKrwSeries(hkexAum[f.code] ?? {}));
+  const hkexReverseSeries = HKEX_REVERSE_FUNDS.map(f => toKrwSeries(hkexAum[f.code] ?? {}));
+  const skddSeries = toKrwSeries(skddAumUsd);
 
   const funds = [...domesticFunds, ...HKEX_FUNDS.map(f => ({ code: f.code, name: f.name, kind: 'hk' }))];
   const fundSeries = [...domesticSeries, ...hkexSeries];
+
+  const reverseFunds = [
+    ...domesticReverseFunds,
+    ...HKEX_REVERSE_FUNDS.map(f => ({ code: f.code, name: f.name, kind: 'hk-reverse' })),
+    { code: 'SKDD', name: 'GraniteShares SK Hynix -2× (US)', kind: 'us-reverse' },
+  ];
+  const reverseSeries = [...domesticReverseSeries, ...hkexReverseSeries, skddSeries];
 
   const history = loadHistory();
   const days_ = new Set([
@@ -433,7 +520,11 @@ function round(v) { return Math.round(v * 100) / 100; }
 // carrying those forward alongside today's universe would double-count the
 // layer against the redefinition, so assemble() ignores anything outside it.
 const ETF_UNIVERSE = new Set([...DOMESTIC_CODES, ...HKEX_FUNDS.map(f => f.code)]);
-const REVERSE_ETF_UNIVERSE = new Set(DOMESTIC_REVERSE_CODES);
+const REVERSE_ETF_UNIVERSE = new Set([
+  ...DOMESTIC_REVERSE_CODES,
+  ...HKEX_REVERSE_FUNDS.map(f => f.code),
+  'SKDD',
+]);
 
 function carriedFundTotals(history, dates, field, universe) {
   const totals = {};

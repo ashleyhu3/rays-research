@@ -93,10 +93,9 @@ const MARKETS = {
         lag: 'T+0 close',
         srcLabel: 'Daum ETF data',
         srcUrl: 'https://finance.daum.net/domestic/etf',
-        srcExtra: {
-          label: 'HKEXnews filings',
-          url: 'https://www1.hkexnews.hk/search/titlesearch.xhtml?lang=en',
-        },
+        srcExtras: [
+          { label: 'HKEXnews filings', url: 'https://www1.hkexnews.hk/search/titlesearch.xhtml?lang=en' },
+        ],
       },
     ],
     reverseLayer: {
@@ -104,6 +103,10 @@ const MARKETS = {
       lag: 'T+0 close',
       srcLabel: 'Daum ETF data',
       srcUrl: 'https://finance.daum.net/domestic/etf',
+      srcExtras: [
+        { label: 'HKEXnews filings', url: 'https://www1.hkexnews.hk/search/titlesearch.xhtml?lang=en' },
+        { label: 'GraniteShares fund data', url: 'https://graniteshares.com/etfs/skdd/' },
+      ],
     },
   },
   taiwan: {
@@ -119,20 +122,18 @@ const MARKETS = {
         lag: 'T close; available by T+1 open',
         srcLabel: 'TWSE margin data',
         srcUrl: 'https://www.twse.com.tw/zh/trading/margin/mi-margn.html',
-        srcExtra: {
-          label: 'TPEx margin data',
-          url: 'https://www.tpex.org.tw/zh-tw/mainboard/trading/margin-trading/transactions.html',
-        },
+        srcExtras: [
+          { label: 'TPEx margin data', url: 'https://www.tpex.org.tw/zh-tw/mainboard/trading/margin-trading/transactions.html' },
+        ],
       },
       {
         key: 'etf', label: '2× leveraged ETFs', color: PURPLE,
         lag: 'T close; available by T+1 open',
         srcLabel: 'Yuanta fund data',
         srcUrl: 'https://www.yuantaetfs.com/tradeInfo/comparison/00631L/historical',
-        srcExtra: {
-          label: 'Fubon fund data',
-          url: 'https://websys.fsit.com.tw/FubonETF/Trade/Pcf.aspx?stkId=00675L',
-        },
+        srcExtras: [
+          { label: 'Fubon fund data', url: 'https://websys.fsit.com.tw/FubonETF/Trade/Pcf.aspx?stkId=00675L' },
+        ],
       },
     ],
     // Taiwan's listed inverse products are -1×. Keep the label precise even
@@ -142,10 +143,9 @@ const MARKETS = {
       lag: 'T close; available by T+1 open',
       srcLabel: 'Yuanta fund data',
       srcUrl: 'https://www.yuantaetfs.com/tradeInfo/comparison/00632R/historical',
-      srcExtra: {
-        label: 'Fubon fund data',
-        url: 'https://websys.fsit.com.tw/FubonETF/Trade/Pcf.aspx?stkId=00676R',
-      },
+      srcExtras: [
+        { label: 'Fubon fund data', url: 'https://websys.fsit.com.tw/FubonETF/Trade/Pcf.aspx?stkId=00676R' },
+      ],
     },
   },
 };
@@ -486,7 +486,6 @@ function LayerPanel({ market, marketId, layer, win, data, formatValue }) {
               funds={funds}
               layerTotal={layerTotal}
               marketId={marketId}
-              reverse={isReverseEtf}
               formatValue={formatValue}
             />
           </div>
@@ -496,7 +495,7 @@ function LayerPanel({ market, marketId, layer, win, data, formatValue }) {
   );
 }
 
-function FundTable({ funds, layerTotal, marketId, reverse, formatValue }) {
+function FundTable({ funds, layerTotal, marketId, formatValue }) {
   const formatFundValue = value => {
     if (!Number.isFinite(value)) return '—';
     const precision = Math.abs(value) < 0.1 ? 2 : 1;
@@ -518,7 +517,7 @@ function FundTable({ funds, layerTotal, marketId, reverse, formatValue }) {
           <tr key={fund.code}>
             <td>{fund.name} <span className="lev-code">{fund.code}</span></td>
             {marketId === 'korea' && (
-              <td className="lev-kind">{fundKind(fund.kind, reverse)}</td>
+              <td className="lev-kind">{fundKind(fund.kind)}</td>
             )}
             <td className="num">{formatFundValue(fund.aum)}</td>
             <td className="num">
@@ -533,19 +532,22 @@ function FundTable({ funds, layerTotal, marketId, reverse, formatValue }) {
   );
 }
 
-function fundKind(kind, reverse) {
-  if (reverse || kind === 'reverse-index') return 'Index -2×';
-  if (kind === 'hk') return 'Single-stock 2× (HK)';
-  if (kind === 'single') return 'Single-stock 2×';
-  return 'Index 2×';
+function fundKind(kind) {
+  switch (kind) {
+    case 'reverse-index': return 'Index -2×';
+    case 'reverse-single': return 'Single-stock -2×';
+    case 'hk-reverse': return 'Single-stock -2× (HK)';
+    case 'us-reverse': return 'Single-stock -2× (US, ADR)';
+    case 'hk': return 'Single-stock 2× (HK)';
+    case 'single': return 'Single-stock 2×';
+    default: return 'Index 2×';
+  }
 }
 
 function SourceLinks({ layers }) {
   const entries = layers.flatMap(layer => [
     { label: layer.srcLabel, url: layer.srcUrl, color: layer.color },
-    ...(layer.srcExtra
-      ? [{ label: layer.srcExtra.label, url: layer.srcExtra.url, color: layer.color }]
-      : []),
+    ...(layer.srcExtras ?? []).map(extra => ({ label: extra.label, url: extra.url, color: layer.color })),
   ]);
   const seen = new Set();
   const unique = entries.filter(entry => (
