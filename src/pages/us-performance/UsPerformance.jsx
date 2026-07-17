@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Line } from 'react-chartjs-2';
 import ChartCard from '../../components/chart/ChartCard';
-import { SPX_META, US_PERFORMANCE_ETFS } from '../../config/usPerformance';
+import {
+  SPX_META, US_PERFORMANCE_ETFS, EXTRA_TICKERS, TECH_PAIRS, THEME_TICKERS, FACTOR_TICKERS,
+} from '../../config/usPerformance';
 import { GRID, TICK, BORD } from '../../utils/chartHelpers';
 
 const PRESETS = [
@@ -12,9 +14,18 @@ const PRESETS = [
 ];
 
 const ETF_BY_TICKER = new Map(US_PERFORMANCE_ETFS.map(etf => [etf.ticker, etf]));
+const EXTRA_BY_LABEL = new Map(Object.values(EXTRA_TICKERS).map(m => [m.label, m]));
+const SECTOR_TICKERS = new Set([...US_PERFORMANCE_ETFS.map(etf => etf.ticker), SPX_META.ticker]);
 const ROLLING_AVG_DAYS = 50;
 // A 50-session moving average needs extra calendar days to cover weekends and holidays.
 const ROLLING_FETCH_LOOKBACK_DAYS = 80;
+
+// Resolves a display label (e.g. 'SOX', 'SPX', 'XLK') to its ticker metadata,
+// across the sector, SPX, and Tech/Theme/Factor ticker registries.
+function metaForLabel(label) {
+  if (label === SPX_META.label) return SPX_META;
+  return ETF_BY_TICKER.get(label) ?? EXTRA_BY_LABEL.get(label);
+}
 
 function isoYearsAgo(n) {
   const d = new Date();
@@ -39,8 +50,8 @@ function fmtDate(iso) {
 }
 
 // Rebase a raw close-price series to 100 at its first available value —
-// a series that starts trading after `start` (XLSR pre-2019) is simply
-// rebased to its own first print instead of showing nulls throughout.
+// a series that starts trading after `start` (a recently-listed ETF) is
+// simply rebased to its own first print instead of showing nulls throughout.
 function rebase(closes) {
   const baseIdx = closes.findIndex(v => v != null);
   if (baseIdx === -1) return closes.map(() => null);
@@ -122,8 +133,12 @@ function buildOverviewChartData(payload, startDate, endDate) {
   const bounds = visibleBounds(payload.dates, startDate, endDate);
   if (!bounds) return null;
 
+  // Only the sector ETFs + SPX belong in the aggregate chart — the Tech/Theme/
+  // Factor tickers ride along in the same payload but are rendered as their
+  // own ratio-vs-SPX cards below, not overlaid here.
+  const sectorSeries = payload.series.filter(s => SECTOR_TICKERS.has(s.ticker));
   const labels = sliceBounds(payload.dates, bounds).map(fmtDate);
-  const datasets = payload.series.map((s, i) => {
+  const datasets = sectorSeries.map((s, i) => {
     const isSpx = s.ticker === SPX_META.ticker;
     const etf = ETF_BY_TICKER.get(s.ticker);
     const color = isSpx ? SPX_META.color : (etf?.color ?? US_PERFORMANCE_ETFS[i % US_PERFORMANCE_ETFS.length].color);
@@ -145,31 +160,33 @@ function buildOverviewChartData(payload, startDate, endDate) {
   return { labels, datasets };
 }
 
-function buildRelativeChartData(payload, ticker, startDate, endDate) {
-  const etfMeta = ETF_BY_TICKER.get(ticker);
-  const etfSeries = findSeries(payload, ticker);
-  const spxSeries = findSeries(payload, SPX_META.ticker);
-  if (!etfMeta || !etfSeries || !spxSeries) return null;
+// Generalized numerator/denominator ratio chart — used both for the sector
+// ETFs (always vs SPX) and the Tech section's cross pairs (e.g. SOX/IGV).
+function buildPairChartData(payload, numMeta, denMeta, startDate, endDate) {
+  const numSeries = findSeries(payload, numMeta.ticker);
+  const denSeries = findSeries(payload, denMeta.ticker);
+  if (!numSeries || !denSeries) return null;
   const bounds = visibleBounds(payload.dates, startDate, endDate);
   if (!bounds) return null;
 
-  const ratios = etfSeries.closes.map((close, i) => {
-    const spxClose = spxSeries.closes[i];
-    return close != null && spxClose != null && spxClose !== 0 ? close / spxClose : null;
+  const ratios = numSeries.closes.map((close, i) => {
+    const denClose = denSeries.closes[i];
+    return close != null && denClose != null && denClose !== 0 ? close / denClose : null;
   });
   const baseIndex = firstValidIndex(ratios, bounds);
   const rebasedRatios = rebaseAgainstIndex(ratios, baseIndex);
   const rollingAvg = rollingAverage(rebasedRatios, ROLLING_AVG_DAYS);
+  const pairLabel = `${numMeta.label}/${denMeta.label}`;
 
   return {
     labels: sliceBounds(payload.dates, bounds).map(fmtDate),
     datasets: [
       {
-        label: `${etfMeta.name}/SPX`,
-        fullName: `${etfMeta.name} relative to ${SPX_META.name}`,
+        label: pairLabel,
+        fullName: `${numMeta.name} relative to ${denMeta.name}`,
         data: sliceBounds(rebasedRatios, bounds),
         ratios: sliceBounds(ratios, bounds),
-        borderColor: etfMeta.color,
+        borderColor: numMeta.color,
         backgroundColor: 'transparent',
         borderWidth: 2.25,
         pointRadius: 0,
@@ -180,7 +197,7 @@ function buildRelativeChartData(payload, ticker, startDate, endDate) {
       },
       {
         label: '50D avg',
-        fullName: `${etfMeta.label}/SPX rolling 50-day average`,
+        fullName: `${pairLabel} rolling 50-day average`,
         data: sliceBounds(rollingAvg, bounds),
         borderColor: 'rgba(234,234,224,.78)',
         backgroundColor: 'transparent',
@@ -278,7 +295,38 @@ export default function UsPerformance() {
   const relativeCharts = useMemo(() => {
     if (!payload) return [];
     return US_PERFORMANCE_ETFS
-      .map(etf => ({ etf, data: buildRelativeChartData(payload, etf.ticker, startDate, endDate) }))
+      .map(etf => ({ etf, data: buildPairChartData(payload, etf, SPX_META, startDate, endDate) }))
+      .filter(chart => chart.data);
+  }, [payload, startDate, endDate]);
+  const techCharts = useMemo(() => {
+    if (!payload) return [];
+    return TECH_PAIRS
+      .map(([numLabel, denLabel]) => {
+        const numMeta = metaForLabel(numLabel);
+        const denMeta = metaForLabel(denLabel);
+        const data = numMeta && denMeta ? buildPairChartData(payload, numMeta, denMeta, startDate, endDate) : null;
+        return { id: `${numLabel}-${denLabel}`, title: `${numLabel}/${denLabel}`, data };
+      })
+      .filter(chart => chart.data);
+  }, [payload, startDate, endDate]);
+  const themeCharts = useMemo(() => {
+    if (!payload) return [];
+    return THEME_TICKERS
+      .map(label => {
+        const meta = metaForLabel(label);
+        const data = meta ? buildPairChartData(payload, meta, SPX_META, startDate, endDate) : null;
+        return { id: label, title: meta?.name ?? label, data };
+      })
+      .filter(chart => chart.data);
+  }, [payload, startDate, endDate]);
+  const factorCharts = useMemo(() => {
+    if (!payload) return [];
+    return FACTOR_TICKERS
+      .map(label => {
+        const meta = metaForLabel(label);
+        const data = meta ? buildPairChartData(payload, meta, SPX_META, startDate, endDate) : null;
+        return { id: label, title: meta?.name ?? label, data };
+      })
       .filter(chart => chart.data);
   }, [payload, startDate, endDate]);
   const maxDate = todayIso();
@@ -322,9 +370,27 @@ export default function UsPerformance() {
     </div>
   );
 
+  const ratioGrid = (charts) => (
+    <div className="usp-etf-grid">
+      {charts.map(({ id, title, data }) => (
+        <ChartCard
+          key={id}
+          title={title}
+          src="Yahoo Finance"
+          srcUrl="https://finance.yahoo.com"
+          freq="Daily"
+          height={255}
+        >
+          <Line data={data} options={chartOptions({ relative: true, compact: true })} plugins={[BASELINE_100]} />
+        </ChartCard>
+      ))}
+    </div>
+  );
+
   return (
     <>
       {controls}
+      <div className="usp-section-label">Sector</div>
       <div className="cgrid">
         <ChartCard
           title="Aggregate Performance"
@@ -343,21 +409,28 @@ export default function UsPerformance() {
           )}
         </ChartCard>
       </div>
-      {!error && relativeCharts.length > 0 && (
-        <div className="usp-etf-grid">
-          {relativeCharts.map(({ etf, data }) => (
-            <ChartCard
-              key={etf.ticker}
-              title={etf.name}
-              src="Yahoo Finance"
-              srcUrl="https://finance.yahoo.com"
-              freq="Daily"
-              height={255}
-            >
-              <Line data={data} options={chartOptions({ relative: true, compact: true })} plugins={[BASELINE_100]} />
-            </ChartCard>
-          ))}
-        </div>
+      {!error && relativeCharts.length > 0 &&
+        ratioGrid(relativeCharts.map(({ etf, data }) => ({ id: etf.ticker, title: etf.name, data })))}
+
+      {!error && techCharts.length > 0 && (
+        <>
+          <div className="usp-section-label">Tech</div>
+          {ratioGrid(techCharts)}
+        </>
+      )}
+
+      {!error && themeCharts.length > 0 && (
+        <>
+          <div className="usp-section-label">Theme</div>
+          {ratioGrid(themeCharts)}
+        </>
+      )}
+
+      {!error && factorCharts.length > 0 && (
+        <>
+          <div className="usp-section-label">Factor</div>
+          {ratioGrid(factorCharts)}
+        </>
       )}
     </>
   );

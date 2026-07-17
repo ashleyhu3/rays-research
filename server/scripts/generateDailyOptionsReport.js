@@ -922,9 +922,16 @@ async function enrichExpirationData(data, reportDate, { skipPriors = false } = {
   const latestHistoryVolume = latestHistoryDate
     ? rows.reduce((sum, row) => sum + (historyMaps.get(row.contractSymbol)?.get(latestHistoryDate) ?? 0), 0)
     : null;
-  const effectiveDate = latestHistoryDate && latestHistoryVolume === snapshotVolume
-    ? latestHistoryDate
-    : reportDate;
+  // reportDate can already be a real, closed session, or still be one calendar day
+  // ahead of the last one that actually traded (weekends, or an off-schedule run
+  // like an evening manual backfill while Hong Kong is already "tomorrow"). Ground
+  // "today" in the shared trading calendar rather than a per-ticker volume
+  // comparison — one contract's late print used to be enough to flip a single
+  // ticker's "today" to a date that hasn't traded yet while its peers, whose
+  // numbers happened to match exactly, stayed correctly on the prior session.
+  const effectiveDate = marketCalendar
+    ? (marketCalendar.sessions.includes(reportDate) ? reportDate : (latestHistoryDate ?? reportDate))
+    : (latestHistoryDate && latestHistoryVolume === snapshotVolume ? latestHistoryDate : reportDate);
 
   // Ten consecutive sessions, not ten days that happened to trade — a strike with
   // no trades on a session is a real zero, and belongs on the axis as one. If the

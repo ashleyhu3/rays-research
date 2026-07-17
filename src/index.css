@@ -1410,6 +1410,17 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
 }
 
 /* ── US Performance page (sector ETFs vs SPX, rebased to 100) ───────── */
+.usp-section-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--sec, #8b8fa8);
+  border-bottom: 1px solid var(--border, rgba(255,255,255,.07));
+  padding-bottom: 6px;
+  margin: 18px 0 14px;
+}
+.usp-section-label:first-child { margin-top: 0; }
 .usp-head {
   display: flex; align-items: center; justify-content: space-between;
   gap: 16px; margin-bottom: 14px; flex-wrap: wrap;

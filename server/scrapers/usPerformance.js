@@ -35,7 +35,7 @@ function isoDate(d) {
 }
 
 // Bounded-concurrency map, same pattern as generateDailyOptionsReport.js —
-// fetching all 13 tickers fully in parallel is the main source of Yahoo 429s.
+// fetching every ticker fully in parallel is the main source of Yahoo 429s.
 async function mapLimit(items, limit, fn) {
   const out = new Array(items.length);
   let cursor = 0;
@@ -53,6 +53,7 @@ async function mapLimit(items, limit, fn) {
 }
 
 const TICKERS = [
+  // Sector rotation (overview chart + per-sector ratio vs SPX)
   { ticker: 'XLC',   label: 'XLC',  name: 'Communication Services' },
   { ticker: 'XLY',   label: 'XLY',  name: 'Consumer Discretionary' },
   { ticker: 'XLP',   label: 'XLP',  name: 'Consumer Staples' },
@@ -63,9 +64,33 @@ const TICKERS = [
   { ticker: 'XLB',   label: 'XLB',  name: 'Materials' },
   { ticker: 'XLRE',  label: 'XLRE', name: 'Real Estate' },
   { ticker: 'XLK',   label: 'XLK',  name: 'Technology' },
-  { ticker: 'XLSR',  label: 'XLSR', name: 'US Sector Rotation' },
   { ticker: 'XLU',   label: 'XLU',  name: 'Utilities' },
   { ticker: '^GSPC', label: 'SPX',  name: 'S&P 500' },
+
+  // Tech ratio pairs (SOX/SPX, SOX/IGV, SOX/MAGS, MAGS/SPX, IGV/SPX, CIBR/IGV)
+  { ticker: '^SOX', label: 'SOX',  name: 'Semiconductors' },
+  { ticker: 'IGV',  label: 'IGV',  name: 'Software' },
+  { ticker: 'MAGS', label: 'MAGS', name: 'Magnificent Seven' },
+  { ticker: 'CIBR', label: 'CIBR', name: 'Cybersecurity' },
+
+  // Theme ETFs vs SPX
+  { ticker: 'XBI',  label: 'XBI',  name: 'Biotechnology' },
+  { ticker: 'IHI',  label: 'IHI',  name: 'Medical Devices' },
+  { ticker: 'ITA',  label: 'ITA',  name: 'Aerospace & Defense' },
+  { ticker: 'GDX',  label: 'GDX',  name: 'Gold Miners' },
+  { ticker: 'COPX', label: 'COPX', name: 'Copper Miners' },
+  { ticker: 'XHB',  label: 'XHB',  name: 'Homebuilders' },
+  { ticker: 'XRT',  label: 'XRT',  name: 'Retail' },
+  { ticker: 'OIH',  label: 'OIH',  name: 'Oil Services' },
+  { ticker: 'KBE',  label: 'KBE',  name: 'Banks' },
+  { ticker: 'MOO',  label: 'MOO',  name: 'Agribusiness' },
+  { ticker: 'BOTZ', label: 'BOTZ', name: 'Robotics & AI' },
+
+  // Factor ETFs vs SPX
+  { ticker: 'MTUM', label: 'MTUM', name: 'Momentum Factor' },
+  { ticker: 'VLUE', label: 'VLUE', name: 'Value Factor' },
+  { ticker: 'QUAL', label: 'QUAL', name: 'Quality Factor' },
+  { ticker: 'USMV', label: 'USMV', name: 'Min Volatility Factor' },
 ];
 
 async function fetchSeries(yf, ticker, start, end) {
@@ -94,10 +119,11 @@ async function getUsPerformance(startDate, endDate = new Date()) {
     }
   });
 
-  // Union of all trading dates across every series (SPX and the sector ETFs
-  // all trade on NYSE hours, but XLSR only exists since 2019 and any single
-  // feed can be momentarily short a day, so union — not intersect — keeps a
-  // late-listed or partially-failed series from truncating everyone else's).
+  // Union of all trading dates across every series (all trade on NYSE hours,
+  // but several tickers here — e.g. MAGS, BOTZ — listed well after SPX, and
+  // any single feed can be momentarily short a day, so union — not intersect
+  // — keeps a late-listed or partially-failed series from truncating everyone
+  // else's).
   const dateSet = new Set();
   for (const r of results) for (const p of r.points) dateSet.add(p.date);
   const dates = [...dateSet].sort();
