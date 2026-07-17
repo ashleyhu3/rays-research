@@ -48,7 +48,7 @@ const INFRA_VIEWS   = new Set([
 ]);
 const TOOL_VIEWS    = new Set(['options']);
 const ALERTS_VIEWS  = new Set(['alerts']);
-const US_PERF_VIEWS = new Set(['us-performance']);
+const US_PERF_VIEWS = new Set(['us-performance', 'hk-china-performance']);
 const PRICING_VIEWS = new Set(['pricing-memory', 'pricing-gpu', 'pricing-cpu', 'pricing-tpu']);
 const SENTIMENT_VIEWS = new Set(['sentiment']);
 const SOURCES_VIEWS   = new Set(['sources']);

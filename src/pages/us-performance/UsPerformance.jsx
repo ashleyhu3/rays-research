@@ -3,6 +3,7 @@ import { Line } from 'react-chartjs-2';
 import ChartCard from '../../components/chart/ChartCard';
 import {
   SPX_META, US_PERFORMANCE_ETFS, EXTRA_TICKERS, TECH_PAIRS, THEME_TICKERS, FACTOR_TICKERS,
+  SOX_CORRELATION_PAIRS, KWEB_CORRELATION_PAIRS,
 } from '../../config/usPerformance';
 import { GRID, TICK, BORD } from '../../utils/chartHelpers';
 
@@ -17,8 +18,10 @@ const ETF_BY_TICKER = new Map(US_PERFORMANCE_ETFS.map(etf => [etf.ticker, etf]))
 const EXTRA_BY_LABEL = new Map(Object.values(EXTRA_TICKERS).map(m => [m.label, m]));
 const SECTOR_TICKERS = new Set([...US_PERFORMANCE_ETFS.map(etf => etf.ticker), SPX_META.ticker]);
 const ROLLING_AVG_DAYS = 50;
-// A 50-session moving average needs extra calendar days to cover weekends and holidays.
-const ROLLING_FETCH_LOOKBACK_DAYS = 80;
+const CORRELATION_WINDOW = 50;
+// A 50-session moving average / 50-session rolling correlation needs extra calendar
+// days to cover weekends and holidays, plus slack for per-pair inner-join date loss.
+const ROLLING_FETCH_LOOKBACK_DAYS = 100;
 
 // Resolves a display label (e.g. 'SOX', 'SPX', 'XLK') to its ticker metadata,
 // across the sector, SPX, and Tech/Theme/Factor ticker registries.
@@ -213,6 +216,109 @@ function buildPairChartData(payload, numMeta, denMeta, startDate, endDate) {
   };
 }
 
+function pearsonCorrelation(xs, ys) {
+  const n = xs.length;
+  let sumX = 0;
+  let sumY = 0;
+  for (let i = 0; i < n; i += 1) { sumX += xs[i]; sumY += ys[i]; }
+  const meanX = sumX / n;
+  const meanY = sumY / n;
+  let cov = 0;
+  let varX = 0;
+  let varY = 0;
+  for (let i = 0; i < n; i += 1) {
+    const dx = xs[i] - meanX;
+    const dy = ys[i] - meanY;
+    cov += dx * dy;
+    varX += dx * dx;
+    varY += dy * dy;
+  }
+  if (varX === 0 || varY === 0) return null;
+  return cov / Math.sqrt(varX * varY);
+}
+
+// Rolling 50-observation Pearson correlation of daily log returns, computed
+// on adjusted-close prices inner-joined by date so each pair only uses dates
+// where both tickers actually traded — no zero-filling for gaps.
+function buildCorrelationSeries(payload, aMeta, bMeta, windowSize = CORRELATION_WINDOW) {
+  const seriesA = findSeries(payload, aMeta.ticker);
+  const seriesB = findSeries(payload, bMeta.ticker);
+  if (!seriesA || !seriesB) return null;
+
+  const joinedDates = [];
+  const joinedA = [];
+  const joinedB = [];
+  for (let i = 0; i < payload.dates.length; i += 1) {
+    const av = seriesA.adjCloses[i];
+    const bv = seriesB.adjCloses[i];
+    if (av != null && bv != null) {
+      joinedDates.push(payload.dates[i]);
+      joinedA.push(av);
+      joinedB.push(bv);
+    }
+  }
+
+  const returnDates = [];
+  const returnsA = [];
+  const returnsB = [];
+  for (let i = 1; i < joinedDates.length; i += 1) {
+    const prevA = joinedA[i - 1];
+    const curA = joinedA[i];
+    const prevB = joinedB[i - 1];
+    const curB = joinedB[i];
+    if (prevA > 0 && curA > 0 && prevB > 0 && curB > 0) {
+      returnDates.push(joinedDates[i]);
+      returnsA.push(Math.log(curA / prevA));
+      returnsB.push(Math.log(curB / prevB));
+    }
+  }
+
+  const correlations = returnsA.map((_, i) => {
+    if (i < windowSize - 1) return null;
+    return pearsonCorrelation(returnsA.slice(i - windowSize + 1, i + 1), returnsB.slice(i - windowSize + 1, i + 1));
+  });
+
+  return { dates: returnDates, correlations };
+}
+
+function buildCorrelationChartData(payload, pairs, startDate, endDate) {
+  const bounds = visibleBounds(payload.dates, startDate, endDate);
+  if (!bounds) return null;
+  const labelDates = sliceBounds(payload.dates, bounds);
+  const labels = labelDates.map(fmtDate);
+
+  const datasets = pairs.map(([aLabel, bLabel]) => {
+    const aMeta = metaForLabel(aLabel);
+    const bMeta = metaForLabel(bLabel);
+    if (!aMeta || !bMeta) return null;
+    const series = buildCorrelationSeries(payload, aMeta, bMeta);
+    if (!series) return null;
+
+    const valueByDate = new Map(series.dates.map((d, i) => [d, series.correlations[i]]));
+    const data = labelDates.map(d => valueByDate.get(d) ?? null);
+    let latest = null;
+    for (let i = data.length - 1; i >= 0; i -= 1) {
+      if (data[i] != null) { latest = data[i]; break; }
+    }
+    const pairLabel = `${aLabel} vs ${bLabel}`;
+    return {
+      label: latest != null ? `${pairLabel} (${latest.toFixed(2)})` : pairLabel,
+      fullName: `${aMeta.name} vs ${bMeta.name}, 50-day rolling correlation of daily log returns`,
+      data,
+      borderColor: bMeta.color,
+      backgroundColor: 'transparent',
+      borderWidth: 2,
+      pointRadius: 0,
+      pointHoverRadius: 3,
+      pointHitRadius: 6,
+      tension: 0.15,
+      spanGaps: true,
+    };
+  }).filter(Boolean);
+
+  return datasets.length > 0 ? { labels, datasets } : null;
+}
+
 function chartOptions({ relative = false, compact = false } = {}) {
   return {
     responsive: true,
@@ -257,6 +363,70 @@ function chartOptions({ relative = false, compact = false } = {}) {
       y: {
         grid: GRID,
         ticks: { ...TICK, maxTicksLimit: compact ? 5 : 8, callback: v => v.toFixed(0) },
+        border: BORD,
+      },
+    },
+  };
+}
+
+// Dashed reference line at y=0, drawn behind the correlation series.
+const ZERO_LINE = {
+  id: 'usPerfZeroLine',
+  beforeDatasetsDraw(chart) {
+    const { ctx, chartArea, scales } = chart;
+    if (!chartArea || !scales.y) return;
+    const y = scales.y.getPixelForValue(0);
+    ctx.save();
+    ctx.strokeStyle = 'rgba(234,234,224,.25)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(chartArea.left, y);
+    ctx.lineTo(chartArea.right, y);
+    ctx.stroke();
+    ctx.restore();
+  },
+};
+
+function correlationChartOptions() {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: { duration: 300 },
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: {
+        display: true,
+        position: 'bottom',
+        labels: {
+          color: '#c8c8c0',
+          font: { size: 10, family: "'Inter',sans-serif" },
+          padding: 8,
+          boxWidth: 10,
+        },
+      },
+      tooltip: {
+        backgroundColor: '#1a1f2a',
+        borderColor: 'rgba(255,255,255,.12)',
+        borderWidth: 1,
+        titleFont: { family: "'Inter',sans-serif", size: 11 },
+        bodyFont: { family: "'Inter',sans-serif", size: 11 },
+        padding: 10,
+        callbacks: {
+          label: c => {
+            const v = c.parsed.y;
+            return v == null ? ` ${c.dataset.label}: —` : ` ${c.dataset.label}: ${v.toFixed(2)}`;
+          },
+        },
+      },
+    },
+    scales: {
+      x: { grid: GRID, ticks: { ...TICK, maxTicksLimit: 10, autoSkip: true }, border: BORD },
+      y: {
+        min: -1,
+        max: 1,
+        grid: GRID,
+        ticks: { ...TICK, stepSize: 0.5, callback: v => v.toFixed(1) },
         border: BORD,
       },
     },
@@ -329,6 +499,14 @@ export default function UsPerformance() {
       })
       .filter(chart => chart.data);
   }, [payload, startDate, endDate]);
+  const soxCorrelationData = useMemo(
+    () => (payload ? buildCorrelationChartData(payload, SOX_CORRELATION_PAIRS, startDate, endDate) : null),
+    [payload, startDate, endDate]
+  );
+  const kwebCorrelationData = useMemo(
+    () => (payload ? buildCorrelationChartData(payload, KWEB_CORRELATION_PAIRS, startDate, endDate) : null),
+    [payload, startDate, endDate]
+  );
   const maxDate = todayIso();
 
   const controls = (
@@ -430,6 +608,40 @@ export default function UsPerformance() {
         <>
           <div className="usp-section-label">Factor</div>
           {ratioGrid(factorCharts)}
+        </>
+      )}
+
+      {!error && (soxCorrelationData || kwebCorrelationData) && (
+        <>
+          <div className="usp-section-label">Correlation</div>
+          <div className="cgrid">
+            <ChartCard
+              title="SOX Correlations"
+              src="Yahoo Finance"
+              srcUrl="https://finance.yahoo.com"
+              freq="Daily"
+              height={320}
+            >
+              {soxCorrelationData ? (
+                <Line data={soxCorrelationData} options={correlationChartOptions()} plugins={[ZERO_LINE]} />
+              ) : (
+                <div className="empty">No data</div>
+              )}
+            </ChartCard>
+            <ChartCard
+              title="KWEB Correlations"
+              src="Yahoo Finance"
+              srcUrl="https://finance.yahoo.com"
+              freq="Daily"
+              height={320}
+            >
+              {kwebCorrelationData ? (
+                <Line data={kwebCorrelationData} options={correlationChartOptions()} plugins={[ZERO_LINE]} />
+              ) : (
+                <div className="empty">No data</div>
+              )}
+            </ChartCard>
+          </div>
         </>
       )}
     </>

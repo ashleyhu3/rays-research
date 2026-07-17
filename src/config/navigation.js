@@ -69,10 +69,11 @@ export const NAV_SECTIONS = [
   },
   {
     label: 'Market Performance',
-    sectorId: 'us-performance',
+    sectorId: 'market-performance',
     mode: 'us-performance',
     items: [
-      { id: 'us-performance', label: 'Market Performance' },
+      { id: 'us-performance',       label: 'US' },
+      { id: 'hk-china-performance', label: 'HK/China' },
     ],
   },
   {
@@ -169,7 +170,8 @@ export const VIEW_META = {
   options:            { title: 'OPTIONS FLOW' },
   alerts:             { title: 'DAILY OPTIONS REPORT' },
   sentiment:          { title: 'MARKETS — SENTIMENT & OPTIONS' },
-  'us-performance':   { title: 'MARKET PERFORMANCE' },
+  'us-performance':   { title: 'MARKET PERFORMANCE — US' },
+  'hk-china-performance': { title: 'MARKET PERFORMANCE — HK/CHINA' },
   'leverage-korea':   { title: 'LEVERAGE — KOREAN RETAIL FIREPOWER' },
   'leverage-taiwan':  { title: 'LEVERAGE — TAIWAN RETAIL FIREPOWER' },
   'taiwan-individual': { title: 'TAIWAN — INDIVIDUAL STOCK MARGIN' },

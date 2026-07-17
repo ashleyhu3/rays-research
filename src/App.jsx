@@ -46,6 +46,7 @@ import { PricingMemory, PricingGPU, PricingCPU, PricingTPU, PricingAWS } from '.
 import Sentiment from './pages/sentiment/Sentiment';
 import Alerts, { OptionsReportTitle, OptionsReportControls } from './pages/alerts/Alerts';
 import UsPerformance from './pages/us-performance/UsPerformance';
+import HkChinaPerformance from './pages/hk-china-performance/HkChinaPerformance';
 import { OptionsReportProvider } from './context/OptionsReportContext';
 import DataValidity from './pages/data-validity/DataValidity';
 import { LeverageKorea, LeverageTaiwan } from './pages/leverage/Leverage';
@@ -115,6 +116,7 @@ const VIEW_COMPONENTS = {
   'options':          Options,
   'alerts':           Alerts,
   'us-performance':   UsPerformance,
+  'hk-china-performance': HkChinaPerformance,
   'sentiment':        Sentiment,
   'sources':          DataValidity,
   'leverage-korea':   LeverageKorea,
@@ -156,7 +158,7 @@ export default function App() {
   const sectorId = SECTOR_OVERVIEW_IDS[currentView] ?? null;
   const ViewComponent = sectorId ? null : VIEW_COMPONENTS[currentView];
   const isAlerts = currentView === 'alerts';
-  const showSidebar = currentView !== 'options' && currentView !== 'chat' && currentView !== 'sentiment' && currentView !== 'sources' && currentView !== 'transcripts' && currentView !== 'alerts' && currentView !== 'us-performance';
+  const showSidebar = currentView !== 'options' && currentView !== 'chat' && currentView !== 'sentiment' && currentView !== 'sources' && currentView !== 'transcripts' && currentView !== 'alerts';
 
   return (
     <DashboardProvider>

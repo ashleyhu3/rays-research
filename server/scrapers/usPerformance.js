@@ -73,6 +73,10 @@ const TICKERS = [
   { ticker: 'MAGS', label: 'MAGS', name: 'Magnificent Seven' },
   { ticker: 'CIBR', label: 'CIBR', name: 'Cybersecurity' },
 
+  // Correlation section (SOX/KWEB cross-correlations)
+  { ticker: '^NDX', label: 'NDX',  name: 'Nasdaq 100' },
+  { ticker: 'KWEB', label: 'KWEB', name: 'China Internet (KWEB)' },
+
   // Theme ETFs vs SPX
   { ticker: 'XBI',  label: 'XBI',  name: 'Biotechnology' },
   { ticker: 'IHI',  label: 'IHI',  name: 'Medical Devices' },
@@ -96,7 +100,8 @@ const TICKERS = [
 async function fetchSeries(yf, ticker, start, end) {
   const chart = await withRetry(() => yf.chart(ticker, { period1: start, period2: end, interval: '1d' }));
   const quotes = (chart?.quotes ?? []).filter(q => q.date && q.close != null);
-  return quotes.map(q => ({ date: isoDate(q.date), close: q.close }));
+  // adjclose is absent for indices (no dividends to adjust for) — fall back to close.
+  return quotes.map(q => ({ date: isoDate(q.date), close: q.close, adjClose: q.adjclose ?? q.close }));
 }
 
 function inclusiveEndDate(endDate) {
@@ -130,11 +135,13 @@ async function getUsPerformance(startDate, endDate = new Date()) {
 
   const series = results.map(r => {
     const byDate = new Map(r.points.map(p => [p.date, p.close]));
+    const byDateAdj = new Map(r.points.map(p => [p.date, p.adjClose]));
     return {
       ticker: r.ticker,
       label: r.label,
       name: r.name,
       closes: dates.map(d => byDate.get(d) ?? null),
+      adjCloses: dates.map(d => byDateAdj.get(d) ?? null),
       error: r.error,
     };
   });

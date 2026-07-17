@@ -26,6 +26,8 @@ export const EXTRA_TICKERS = {
   IGV:  { ticker: 'IGV',  label: 'IGV',  name: 'Software', color: '#da5a2f' },
   MAGS: { ticker: 'MAGS', label: 'MAGS', name: 'Magnificent Seven', color: '#198f5e' },
   CIBR: { ticker: 'CIBR', label: 'CIBR', name: 'Cybersecurity', color: '#9c7c1c' },
+  NDX:  { ticker: '^NDX', label: 'NDX',  name: 'Nasdaq 100', color: '#dc386e' },
+  KWEB: { ticker: 'KWEB', label: 'KWEB', name: 'China Internet (KWEB)', color: '#8749df' },
 
   XBI:  { ticker: 'XBI',  label: 'XBI',  name: 'Biotechnology', color: '#3c8cdd' },
   IHI:  { ticker: 'IHI',  label: 'IHI',  name: 'Medical Devices', color: '#da5a2f' },
@@ -58,6 +60,19 @@ export const TECH_PAIRS = [
 // Theme and Factor sections are each ticker vs SPX.
 export const THEME_TICKERS = ['XBI', 'IHI', 'ITA', 'GDX', 'COPX', 'XHB', 'XRT', 'OIH', 'KBE', 'MOO', 'BOTZ'];
 export const FACTOR_TICKERS = ['MTUM', 'VLUE', 'QUAL', 'USMV'];
+
+// [seriesA, seriesB] label pairs for the Correlation section's rolling
+// Pearson-correlation charts.
+export const SOX_CORRELATION_PAIRS = [
+  ['SOX', 'NDX'],
+  ['SOX', 'MAGS'],
+  ['SOX', 'IGV'],
+];
+export const KWEB_CORRELATION_PAIRS = [
+  ['KWEB', 'SOX'],
+  ['KWEB', 'NDX'],
+  ['KWEB', 'IGV'],
+];
 
 export function usPerformanceViewId(ticker) {
   return `us-performance-${ticker.toLowerCase()}`;
