@@ -83,6 +83,7 @@ export const NAV_SECTIONS = [
       { id: 'leverage-korea',    label: 'Korea'  },
       { id: 'leverage-taiwan',   label: 'Taiwan' },
       { id: 'taiwan-individual', label: 'Taiwan individual' },
+      { id: 'leverage-china',    label: 'A shares' },
     ],
   },
   {
@@ -172,6 +173,7 @@ export const VIEW_META = {
   'leverage-korea':   { title: 'LEVERAGE — KOREAN RETAIL FIREPOWER' },
   'leverage-taiwan':  { title: 'LEVERAGE — TAIWAN RETAIL FIREPOWER' },
   'taiwan-individual': { title: 'TAIWAN — INDIVIDUAL STOCK MARGIN' },
+  'leverage-china':   { title: 'LEVERAGE — CHINA A-SHARES' },
   transcripts:        { title: 'EARNINGS TRANSCRIPT AGENT' },
   sources:            { title: 'DATA VALIDITY TERMINAL' },
 };

@@ -17,6 +17,7 @@
     "backfill:tft-lcd": "node --env-file=.env server/scripts/backfillTrendforcePrice.js tft-lcd",
     "backfill:korea-leverage": "node --env-file=.env server/scripts/backfillKoreaLeverage.js",
     "backfill:taiwan-leverage": "node --env-file=.env server/scripts/backfillTaiwanLeverage.js",
+    "backfill:china-leverage": "node --env-file=.env server/scripts/backfillChinaLeverage.js",
     "backfill:aws-spot": "node --env-file=.env server/scripts/backfillAwsSpot.js",
     "backfill:cpu-spot": "node --env-file=.env server/scripts/backfillCpuSpot.js",
     "backfill:transcripts:alpha": "node --env-file=.env server/scripts/backfillAlphaVantageTranscripts.js",
@@ -42,7 +43,7 @@
     "test:transcripts": "node --test server/transcripts/*.test.js server/transcripts/*.test.mjs",
     "test:mailer": "node --test server/mailer.test.js",
     "test:options-report": "node --test server/earningsDates.test.js server/optionsReportChart.test.js server/optionsScraper.test.js",
-    "test:leverage": "node --test server/scrapers/koreaLeverage.test.js server/scrapers/taiwanLeverage.test.js"
+    "test:leverage": "node --test server/scrapers/koreaLeverage.test.js server/scrapers/taiwanLeverage.test.js server/scrapers/chinaLeverage.test.js"
   },
   "dependencies": {
     "@aws-sdk/client-pricing": "^3.1069.0",

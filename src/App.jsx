@@ -50,6 +50,7 @@ import { OptionsReportProvider } from './context/OptionsReportContext';
 import DataValidity from './pages/data-validity/DataValidity';
 import { LeverageKorea, LeverageTaiwan } from './pages/leverage/Leverage';
 import TaiwanIndividual from './pages/taiwan-individual/TaiwanIndividual';
+import ChinaLeverage from './pages/china-leverage/ChinaLeverage';
 import Transcripts from './pages/transcripts/Transcripts';
 // Source-specific signal pages
 import PyPI          from './pages/sources/PyPI';
@@ -119,6 +120,7 @@ const VIEW_COMPONENTS = {
   'leverage-korea':   LeverageKorea,
   'leverage-taiwan':  LeverageTaiwan,
   'taiwan-individual': TaiwanIndividual,
+  'leverage-china':   ChinaLeverage,
   'transcripts':      Transcripts,
   'demand-openai':    DemandOpenAI,
   'demand-anthropic': DemandAnthropic,
