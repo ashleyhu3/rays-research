@@ -125,10 +125,68 @@ const TICKERS = [
   { ticker: '512890.SS', label: '512890', name: '红利低波' },
 ];
 
+// Many China A-share fund tickers here (leveraged/thematic ETFs — 512480,
+// 515050, etc.) periodically do a "unit split" to bring per-share NAV back
+// down. Yahoo's adjclose is identical to close for these lightly-covered
+// .SS/.SZ tickers (confirmed: no dividend/split events reported), so a raw
+// close series shows a permanent cliff at the split date. It also has
+// occasional single-day bad ticks that briefly re-report the pre-split
+// price. Both distort the rebased/ratio charts, so we detect and correct
+// for them here rather than trusting Yahoo's fields as-is.
+const GLITCH_MOVE_THRESHOLD = 1.15;   // >15% single-day move away from neighbors
+const GLITCH_REVERT_TOLERANCE = 0.12; // round-trip back within 12% counts as a revert
+const SPLIT_PRICE_THRESHOLD = 1.5;    // >50% single-day move
+const SPLIT_VOLUME_THRESHOLD = 1.5;   // paired with a >50% volume swing
+
+// Repairs isolated single-day bad ticks (a spike that fully reverts the very
+// next day), then back-adjusts history for genuine, volume-confirmed splits
+// so the whole series is continuous — the same idea as dividend-adjusted
+// close, applied to unit splits Yahoo isn't tracking for these tickers.
+function adjustForSplits(points) {
+  const n = points.length;
+  if (n < 3) return points;
+  const closes = points.map(p => p.close);
+  const volumes = points.map(p => p.volume);
+
+  for (let i = 1; i < n - 1; i += 1) {
+    const prev = closes[i - 1];
+    const cur = closes[i];
+    const next = closes[i + 1];
+    if (prev == null || cur == null || next == null) continue;
+    const moveIn = cur / prev;
+    const roundTrip = next / prev;
+    const isBigMove = moveIn > GLITCH_MOVE_THRESHOLD || moveIn < 1 / GLITCH_MOVE_THRESHOLD;
+    const revertsBack = Math.abs(roundTrip - 1) < GLITCH_REVERT_TOLERANCE;
+    if (isBigMove && revertsBack) closes[i] = Math.sqrt(prev * next);
+  }
+
+  const adjusted = new Array(n);
+  adjusted[n - 1] = closes[n - 1];
+  let cumFactor = 1;
+  for (let i = n - 1; i > 0; i -= 1) {
+    const prev = closes[i - 1];
+    const cur = closes[i];
+    if (prev != null && cur != null) {
+      const priceRatio = cur / prev;
+      const volPrev = volumes[i - 1];
+      const volCur = volumes[i];
+      const volRatio = volPrev && volCur ? volCur / volPrev : null;
+      const isBigPriceMove = priceRatio > SPLIT_PRICE_THRESHOLD || priceRatio < 1 / SPLIT_PRICE_THRESHOLD;
+      const isVolumeConfirmed = volRatio != null
+        && (volRatio > SPLIT_VOLUME_THRESHOLD || volRatio < 1 / SPLIT_VOLUME_THRESHOLD);
+      if (isBigPriceMove && isVolumeConfirmed) cumFactor *= priceRatio;
+    }
+    adjusted[i - 1] = closes[i - 1] != null ? closes[i - 1] * cumFactor : null;
+  }
+
+  return points.map((p, i) => ({ ...p, close: adjusted[i] }));
+}
+
 async function fetchSeries(yf, ticker, start, end) {
   const chart = await withRetry(() => yf.chart(ticker, { period1: start, period2: end, interval: '1d' }));
   const quotes = (chart?.quotes ?? []).filter(q => q.date && q.close != null);
-  return quotes.map(q => ({ date: isoDate(q.date), close: q.close }));
+  const points = quotes.map(q => ({ date: isoDate(q.date), close: q.close, volume: q.volume ?? null }));
+  return adjustForSplits(points);
 }
 
 function yyyymmdd(d) {
