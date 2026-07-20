@@ -16,6 +16,33 @@ test('assemble scales the workbook\'s million-yen values into trillion-yen purch
   assert.equal(data.latest.purchases, 7.02);
 });
 
+test('parseCurrentWeeklyWorkbook reads the application date from the title cell and the Total row/value row by the "二市場計" label', () => {
+  const rows = [
+    ['信用取引現在高（2026/7/10申込み現在）'],
+    [],
+    [],
+    [],
+    [],
+    [null, '二市場計\nTotal', '株数Shs.', 285874, 4761, 3805847, -64153, 117254, 3462, 1035, -166, 403128, 8223, 3806882, -64319],
+    [null, null, '金額Val.', 638322, -605, 6728228, -10871, 157202, 10857, 4000, -2112, 795524, 10252, 6732228, -12983],
+  ];
+  const XLSX = require('@e965/xlsx');
+  const sheet = XLSX.utils.aoa_to_sheet(rows);
+  const buffer = XLSX.write({ SheetNames: ['レイアウト'], Sheets: { 'レイアウト': sheet } }, { type: 'buffer', bookType: 'xlsx' });
+
+  const result = _test.parseCurrentWeeklyWorkbook(buffer);
+  assert.deepEqual(result, {
+    day: '2026-07-10', sellShares: 403128, sellValue: 795524, buyShares: 3806882, buyValue: 6732228,
+  });
+});
+
+test('parseCurrentWeeklyWorkbook returns null when the title cell has no recognizable application date', () => {
+  const XLSX = require('@e965/xlsx');
+  const sheet = XLSX.utils.aoa_to_sheet([['not a JPX workbook']]);
+  const buffer = XLSX.write({ SheetNames: ['Sheet1'], Sheets: { Sheet1: sheet } }, { type: 'buffer', bookType: 'xlsx' });
+  assert.equal(_test.parseCurrentWeeklyWorkbook(buffer), null);
+});
+
 test('assemble skips a week whose row is missing a value', () => {
   const data = _test.assemble({
     '2026-06-19': { sellShares: 437974, sellValue: 1016129, buyShares: 3915786, buyValue: 6475640 },
