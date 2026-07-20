@@ -33,6 +33,7 @@ const scrapers = {
   chinaLeverage:    () => require('./scrapers/chinaLeverage').getChinaLeverage(),
   chinaNationalTeamFlow: () => require('./scrapers/chinaNationalTeamFlow').getChinaNationalTeamFlow(),
   japanLeverage:    () => require('./scrapers/japanLeverage').getJapanLeverage(),
+  usLeverage:       () => require('./scrapers/usLeverage').getUsLeverage(),
 };
 
 // TTLs match each source's natural update frequency.
@@ -70,6 +71,7 @@ const TTL = {
   chinaLeverage:  6 * 3600000,  // 6-hourly — SSE/SZSE post margin balances after the close; the HK 2× ETF ticks live
   chinaNationalTeamFlow: 6 * 3600000,  // 6-hourly — same SSE/SZSE post-close settlement cadence as chinaLeverage
   japanLeverage:  24 * 3600000,  // daily — JPX only republishes this workbook once a week; a daily poll picks up the new week
+  usLeverage:      6 * 3600000,  // 6-hourly — ETF net assets move daily; CFTC is weekly and FINRA is monthly
 };
 
 // Hard cap per scraper so one hung source can never wedge a refresh
@@ -135,7 +137,7 @@ function setup() {
   // Every 6 hours: social signals and business data updated throughout the day
   // 12:00 UTC (21:00 KST) is the run that lands after the KRX close, so the
   // day's ETF net assets settle on the closing price rather than an intraday one.
-  cron.schedule('0 */6 * * *', () => refreshAll(['docker', 'openrouterRanks', 'dram', 'nand', 'aws', 'cpu', 'koreaLeverage', 'taiwanLeverage', 'chinaLeverage', 'chinaNationalTeamFlow']));
+  cron.schedule('0 */6 * * *', () => refreshAll(['docker', 'openrouterRanks', 'dram', 'nand', 'aws', 'cpu', 'koreaLeverage', 'taiwanLeverage', 'chinaLeverage', 'chinaNationalTeamFlow', 'usLeverage']));
 
   // Daily at 03:00 UTC: aggregate stats whose sources only publish once per day
   cron.schedule('0 3 * * *', () => refreshAll(['gpu', 'tftLcd', 'tpu', 'epochRevenue', 'sentiment', 'pypi', 'github', 'eia', 'mops', 'githubCommits', 'npm', 'huggingface', 'mcp', 'sec', 'webTraffic', 'customsDrones', 'japanLeverage']));

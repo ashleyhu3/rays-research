@@ -86,6 +86,7 @@ export const NAV_SECTIONS = [
       { id: 'taiwan-individual', label: 'Taiwan individual' },
       { id: 'leverage-china',    label: 'A shares' },
       { id: 'leverage-japan',    label: 'Japan' },
+      { id: 'leverage-us',       label: 'US' },
     ],
   },
   {
@@ -186,6 +187,7 @@ export const VIEW_META = {
   'taiwan-individual': { title: 'TAIWAN — INDIVIDUAL STOCK MARGIN' },
   'leverage-china':   { title: 'LEVERAGE — CHINA A-SHARES' },
   'leverage-japan':   { title: 'LEVERAGE — JAPAN MARGIN TRADING' },
+  'leverage-us':      { title: 'LEVERAGE — US MARGIN, FUTURES & OPTIONS' },
   'liquidity-china-flow': { title: 'LIQUIDITY — CHINA · FLOW: NATIONAL TEAM' },
   transcripts:        { title: 'EARNINGS TRANSCRIPT AGENT' },
   sources:            { title: 'DATA VALIDITY TERMINAL' },

@@ -21,6 +21,7 @@
     "backfill:china-leverage": "node --env-file=.env server/scripts/backfillChinaLeverage.js",
     "backfill:china-national-team-flow": "node --env-file=.env server/scripts/backfillChinaNationalTeamFlow.js",
     "backfill:japan-leverage": "node --env-file=.env server/scripts/backfillJapanLeverage.js",
+    "backfill:us-leverage": "node --env-file=.env server/scripts/backfillUsLeverage.js",
     "backfill:aws-spot": "node --env-file=.env server/scripts/backfillAwsSpot.js",
     "backfill:cpu-spot": "node --env-file=.env server/scripts/backfillCpuSpot.js",
     "backfill:transcripts:alpha": "node --env-file=.env server/scripts/backfillAlphaVantageTranscripts.js",
@@ -46,7 +47,7 @@
     "test:transcripts": "node --test server/transcripts/*.test.js server/transcripts/*.test.mjs",
     "test:mailer": "node --test server/mailer.test.js",
     "test:options-report": "node --test server/earningsDates.test.js server/optionsReportChart.test.js server/optionsScraper.test.js",
-    "test:leverage": "node --test server/scrapers/koreaLeverage.test.js server/scrapers/taiwanLeverage.test.js server/scrapers/chinaLeverage.test.js server/scrapers/japanLeverage.test.js"
+    "test:leverage": "node --test server/scrapers/koreaLeverage.test.js server/scrapers/taiwanLeverage.test.js server/scrapers/chinaLeverage.test.js server/scrapers/japanLeverage.test.js server/scrapers/usLeverage.test.js"
   },
   "dependencies": {
     "@aws-sdk/client-pricing": "^3.1069.0",

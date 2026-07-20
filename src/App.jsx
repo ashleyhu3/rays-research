@@ -53,6 +53,7 @@ import { LeverageKorea, LeverageTaiwan } from './pages/leverage/Leverage';
 import TaiwanIndividual from './pages/taiwan-individual/TaiwanIndividual';
 import ChinaLeverage from './pages/china-leverage/ChinaLeverage';
 import JapanLeverage from './pages/japan-leverage/JapanLeverage';
+import UsLeverage from './pages/us-leverage/UsLeverage';
 import ChinaFlowNationalTeam from './pages/liquidity/ChinaFlowNationalTeam';
 import Transcripts from './pages/transcripts/Transcripts';
 // Source-specific signal pages
@@ -126,6 +127,7 @@ const VIEW_COMPONENTS = {
   'taiwan-individual': TaiwanIndividual,
   'leverage-china':   ChinaLeverage,
   'leverage-japan':   JapanLeverage,
+  'leverage-us':      UsLeverage,
   'liquidity-china-flow': ChinaFlowNationalTeam,
   'transcripts':      Transcripts,
   'demand-openai':    DemandOpenAI,

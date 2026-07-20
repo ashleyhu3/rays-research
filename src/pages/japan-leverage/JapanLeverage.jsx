@@ -8,6 +8,9 @@ const MUTED = '#8a8a84';
 const BLUE = '#4577b4';
 const ORANGE = '#ad622d';
 const GOLD = '#c9a227';
+const PURPLE = '#7864b4';
+
+const ETF_COLOR = PURPLE;
 
 function alpha(hex, a) {
   const n = parseInt(hex.slice(1), 16);
@@ -276,6 +279,193 @@ function MetricPanel({ metric, win }) {
   );
 }
 
+/* ── 2× ETF panel: net assets (AUM) of the nine listed products, summed into
+   one JPY total — same chart + fund-table format as ChinaLeverage.jsx's
+   EtfPanel/EtfFundTable. Every figure is the fund's own officially disclosed
+   AUM; none are estimated from price × shares outstanding. */
+
+const ETF_FMT = v => (v == null ? '—' : `${v.toFixed(2)}B`);
+
+function etfChartData(win) {
+  const long = win.dates.length > 100;
+  return {
+    labels: win.dates.map(long ? monthLabel : dayLabel),
+    datasets: [{
+      label: 'Net assets',
+      data: win.series.total,
+      backgroundColor: alpha(ETF_COLOR, 0.38),
+      borderColor: ETF_COLOR,
+      borderWidth: 2,
+      pointRadius: 0,
+      pointHoverRadius: 4,
+      pointHoverBackgroundColor: ETF_COLOR,
+      pointHoverBorderColor: SURFACE,
+      pointHoverBorderWidth: 2,
+      tension: 0.25,
+      fill: 'origin',
+    }],
+  };
+}
+
+function etfMarks(win) {
+  const values = win.series.total ?? [];
+  const marks = MARKED_DATES.map(target => {
+    const index = sessionIndex(win.dates, target);
+    if (index < 0 || !Number.isFinite(values[index])) return null;
+    return { index, date: markedDate(win.dates[index]), value: ETF_FMT(values[index]), anchor: 'center' };
+  }).filter(Boolean);
+
+  let latestIndex = values.length - 1;
+  while (latestIndex >= 0 && !Number.isFinite(values[latestIndex])) latestIndex -= 1;
+  if (latestIndex >= 0) {
+    marks.push({ index: latestIndex, date: markedDate(win.dates[latestIndex]), value: ETF_FMT(values[latestIndex]), anchor: 'right' });
+  }
+  return marks;
+}
+
+function etfChartOptions(win) {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: { duration: 300 },
+    interaction: { mode: 'index', intersect: false },
+    layout: { padding: { top: 16, right: 8, bottom: 18 } },
+    plugins: {
+      legend: { display: false },
+      japanLeverageMarkedPoints: { marks: etfMarks(win), color: ETF_COLOR },
+      tooltip: {
+        backgroundColor: '#1a1f2a',
+        borderColor: 'rgba(255,255,255,.12)',
+        borderWidth: 1,
+        padding: 10,
+        titleFont: { family: "'Inter',sans-serif", size: 11 },
+        bodyFont: { family: "'Inter',sans-serif", size: 11 },
+        callbacks: {
+          title: items => (items.length ? win.dates[items[0].dataIndex] : ''),
+          label: context => ` Net assets: ${ETF_FMT(context.raw)}`,
+        },
+      },
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: { color: MUTED, maxTicksLimit: 12, autoSkip: true, maxRotation: 0, padding: 3, font: { size: 10 } },
+      },
+      y: {
+        beginAtZero: true,
+        grace: '5%',
+        grid: { color: 'rgba(255,255,255,.07)' },
+        ticks: { color: MUTED, callback: value => ETF_FMT(Number(value)), font: { size: 10 } },
+      },
+    },
+  };
+}
+
+function EtfFundTable({ funds, layerTotal }) {
+  return (
+    <table className="lev-table">
+      <thead>
+        <tr>
+          <th>Fund</th>
+          <th>Market</th>
+          <th>Underlying</th>
+          <th className="num">Net assets</th>
+          <th className="num">Share of total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {funds.map(fund => (
+          <tr key={fund.key}>
+            <td>{fund.label} <span className="lev-code">{fund.code}</span></td>
+            <td className="lev-kind">{fund.market}</td>
+            <td className="lev-kind">{fund.underlying}</td>
+            <td className="num">{ETF_FMT(fund.aum)}</td>
+            <td className="num">
+              {layerTotal ? `${((fund.aum / layerTotal) * 100).toFixed(1)}%` : '—'}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+function EtfSourceLinks() {
+  const sources = [
+    { label: 'Nomura Asset Management', url: 'https://www.nomura-am.co.jp/fund/etf/history/ETF_1570.csv', color: BLUE },
+    { label: 'Amova Asset Management', url: 'https://www.amova-am.com/products/etf/lineup/nleveraged', color: BLUE },
+    { label: 'Rakuten Asset Management', url: 'https://www.rakuten-toushin.co.jp/fund/nav/225bull/', color: BLUE },
+    { label: 'Daiwa Asset Management (iFree)', url: 'https://www.daiwa-am.co.jp/etf/funds/3501/', color: BLUE },
+    { label: 'Simplex Asset Management', url: 'https://www.simplexasset.com/etf/etf1579.html', color: ORANGE },
+    { label: 'HKEXnews L&I disclosures', url: 'https://www1.hkexnews.hk/search/titlesearch.xhtml?lang=en', color: GOLD },
+    { label: 'Nasdaq fund data', url: 'https://www.nasdaq.com/market-activity/etf/ezj', color: PURPLE },
+  ];
+  return (
+    <span className="lev-srcs">
+      {sources.map(entry => (
+        <a key={entry.label} className="ch-src" href={entry.url} target="_blank" rel="noopener noreferrer">
+          <span className="lev-dot" style={{ background: entry.color }} />{entry.label}
+        </a>
+      ))}
+    </span>
+  );
+}
+
+const ETF_NOTE = 'Every figure is the fund\'s own officially disclosed net asset total — never a price × shares-outstanding '
+  + 'estimate. NEXT FUNDS (1570), Listed Index Fund (1358), Rakuten ETF (1458), and both iFreeETF funds (1365, 1367) '
+  + 'publish full daily net-asset history on their own sites; CSOP (7262.HK) publishes full daily history via HKEXnews\' '
+  + 'L&I disclosures. Simplex\'s two funds (1579, 1568) and ProShares\' EZJ only publish a live current-day snapshot with '
+  + 'no historical download, so those three series start wherever this page\'s polling started and build forward — still '
+  + 'official, just not backfillable. EZJ is reported in USD by ProShares/Nasdaq and converted to JPY at that day\'s '
+  + 'close; every other fund already discloses its AUM in JPY.';
+
+function EtfPanel({ win, funds, fundsDate, layerTotal }) {
+  const rows = funds?.length ?? 0;
+
+  if (!win || !win.dates.length) {
+    return (
+      <ChartCard
+        chartId="japan-leverage-etf"
+        title="Japan · 2× Leveraged ETF Net Assets"
+        src={<EtfSourceLinks />}
+        freq="Daily"
+        lag="Issuer sites same-evening; HKEXnews/Nasdaq live"
+        span2
+        height={320}
+        srcNote={ETF_NOTE}
+      >
+        <div className="empty">Loading 2× ETF data...</div>
+      </ChartCard>
+    );
+  }
+
+  const chart = (
+    <Line data={etfChartData(win)} options={etfChartOptions(win)} plugins={[MARKED_POINTS]} />
+  );
+
+  return (
+    <ChartCard
+      chartId="japan-leverage-etf"
+      title="Japan · 2× Leveraged ETF Net Assets"
+      src={<EtfSourceLinks />}
+      freq="Daily"
+      lag="Issuer sites same-evening; HKEXnews/Nasdaq live"
+      span2
+      height={Math.max(430, 340 + rows * 32)}
+      legend={[['Net assets', ETF_COLOR]]}
+      srcNote={ETF_NOTE}
+    >
+      <div className="lev-chart-table">
+        <div className="lev-layer-chart">{chart}</div>
+        <div className="lev-table-wrap">
+          <EtfFundTable funds={funds ?? []} layerTotal={layerTotal} />
+        </div>
+      </div>
+      {fundsDate && <p className="opts-footer">Fund table as of {fundsDate}</p>}
+    </ChartCard>
+  );
+}
+
 function Tile({ label, value, color }) {
   return (
     <div className="lev-tile">
@@ -310,6 +500,11 @@ export default function JapanLeverage() {
   const win = useMemo(() => (data
     ? windowed(data.dates, { purchases: data.purchases, sales: data.sales, ratio: data.ratio }, range)
     : null), [data, range]);
+
+  const etfWin = useMemo(
+    () => (data?.etf ? windowed(data.etf.dates, { total: data.etf.total }, range) : null),
+    [data, range],
+  );
 
   const toggles = (
     <div className="lev-toggles">
@@ -360,6 +555,13 @@ export default function JapanLeverage() {
       {METRICS.map(metric => (
         <MetricPanel key={metric.key} metric={metric} win={win} />
       ))}
+
+      <EtfPanel
+        win={etfWin}
+        funds={data.etf?.funds}
+        fundsDate={data.etf?.fundsDate}
+        layerTotal={data.etf?.total?.at(-1)}
+      />
     </>
   );
 }

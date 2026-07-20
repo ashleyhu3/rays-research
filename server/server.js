@@ -83,6 +83,7 @@ app.get('/api/taiwan-leverage',   cachedRoute('taiwanLeverage',   s.taiwanLevera
 app.get('/api/china-leverage',    cachedRoute('chinaLeverage',    s.chinaLeverage));
 app.get('/api/china-national-team-flow', cachedRoute('chinaNationalTeamFlow', s.chinaNationalTeamFlow));
 app.get('/api/japan-leverage',    cachedRoute('japanLeverage',    s.japanLeverage));
+app.get('/api/us-leverage',       cachedRoute('usLeverage',       s.usLeverage));
 
 // Keyword frequency search — whole-word matches across the StockTwits messages
 // in Mongo (committed-CSV fallback for keyless dev), as trailing-30-day counts
@@ -764,6 +765,7 @@ const STORAGE_BLOBS = [
   { name: 'chinaLeverageHistory', file: path.join(DATA_DIR, 'chinaLeverageHistory.json') },
   { name: 'chinaNationalTeamFlowHistory', file: path.join(DATA_DIR, 'chinaNationalTeamFlowHistory.json') },
   { name: 'japanLeverageHistory', file: path.join(DATA_DIR, 'japanLeverageHistory.json') },
+  { name: 'usLeverageHistory', file: path.join(DATA_DIR, 'usLeverageHistory.json') },
   { name: 'dailyOptionsReport', file: path.join(DATA_DIR, 'dailyOptionsReport.json') },
   // Full-chain volume behind the report charts. Prior cycles are settled; current
   // expirations are backfilled once and then extended from each daily snapshot.
