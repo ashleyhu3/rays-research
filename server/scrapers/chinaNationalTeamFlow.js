@@ -398,7 +398,18 @@ function assemble(history) {
     };
   });
 
-  return { dates, groups, perTicker, updatedAt: new Date().toISOString() };
+  // Full per-ticker series aligned to the shared `dates` axis, so the page
+  // can break each group's stacked total down into its constituent tickers.
+  const tickerSeries = {};
+  for (const ticker of ALL_TICKERS) {
+    tickerSeries[ticker] = dates.map(day => (Number.isFinite(flowsByTicker[ticker][day])
+      ? flowsByTicker[ticker][day]
+      : null));
+  }
+
+  return {
+    dates, groups, perTicker, tickerSeries, tickerGroups: TICKER_GROUPS, updatedAt: new Date().toISOString(),
+  };
 }
 
 function readChinaNationalTeamFlow() { return assemble(loadHistory()); }

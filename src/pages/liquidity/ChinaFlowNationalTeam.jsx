@@ -28,6 +28,22 @@ function alpha(hex, a) {
   return `rgba(${r},${g},${b},${a})`;
 }
 
+// Lighten a base colour towards white by `t` (0 = base, 1 = white) — used to
+// give each ticker within a group its own shade of that group's colour.
+function lighten(hex, t) {
+  const n = parseInt(hex.slice(1), 16);
+  const r = Math.round(((n >> 16) & 255) * (1 - t) + 255 * t);
+  const g = Math.round(((n >> 8) & 255) * (1 - t) + 255 * t);
+  const b = Math.round((n & 255) * (1 - t) + 255 * t);
+  return `#${[r, g, b].map(v => v.toString(16).padStart(2, '0')).join('')}`;
+}
+
+/** One shade per ticker in a group, darkest (base colour) first. */
+function tickerShades(baseHex, count) {
+  if (count <= 1) return [baseHex];
+  return Array.from({ length: count }, (_, i) => lighten(baseHex, (i / (count - 1)) * 0.55));
+}
+
 const RANGES = [
   { id: '1m', label: '1M', days: 31 },
   { id: '3m', label: '3M', days: 92 },
@@ -66,26 +82,28 @@ function rangeFrom(dates, range) {
   return 0;
 }
 
-/** Slice every group's series to the selected trailing window. */
-function windowed(dates, groups, range) {
+/** Slice every group total and every ticker's series to the selected trailing window. */
+function windowed(dates, groups, tickerSeries, range) {
   if (!dates?.length) return null;
   const from = rangeFrom(dates, range);
   const cut = arr => (arr ?? []).slice(from);
   return {
     dates: cut(dates),
-    groups: Object.fromEntries(Object.entries(groups).map(([key, arr]) => [key, cut(arr)])),
+    groups: Object.fromEntries(Object.entries(groups ?? {}).map(([key, arr]) => [key, cut(arr)])),
+    tickerSeries: Object.fromEntries(Object.entries(tickerSeries ?? {}).map(([key, arr]) => [key, cut(arr)])),
   };
 }
 
-function chartData(win) {
+function groupChartData(win, group, tickers) {
   const long = win.dates.length > 90;
+  const shades = tickerShades(GROUP_COLOR[group], tickers.length);
   return {
     labels: win.dates.map(long ? monthLabel : dayLabel),
-    datasets: GROUP_KEYS.map(group => ({
-      label: group,
-      data: win.groups[group],
-      backgroundColor: alpha(GROUP_COLOR[group], 0.75),
-      borderColor: GROUP_COLOR[group],
+    datasets: tickers.map((ticker, i) => ({
+      label: ticker,
+      data: win.tickerSeries[ticker] ?? [],
+      backgroundColor: alpha(shades[i], 0.8),
+      borderColor: shades[i],
       borderWidth: 1,
       borderRadius: 2,
       maxBarThickness: 14,
@@ -93,7 +111,7 @@ function chartData(win) {
   };
 }
 
-function chartOptions(win) {
+function groupChartOptions(win, group, tickers) {
   return {
     responsive: true,
     maintainAspectRatio: false,
@@ -115,8 +133,8 @@ function chartOptions(win) {
           footer: items => {
             const i = items[0]?.dataIndex;
             if (i == null) return '';
-            const total = GROUP_KEYS.reduce((sum, group) => {
-              const v = win.groups[group][i];
+            const total = tickers.reduce((sum, ticker) => {
+              const v = win.tickerSeries[ticker]?.[i];
               return Number.isFinite(v) ? sum + v : sum;
             }, 0);
             return `Total: ${fmtYi(total)}`;
@@ -171,6 +189,24 @@ const SRC_NOTE = 'Estimated, not reported directly: share_change (creations minu
   + 'no computable value for a ticker is left out of that group\'s total for the day rather than counted as '
   + 'zero flow.';
 
+function GroupPanel({ group, tickers, win }) {
+  return (
+    <ChartCard
+      chartId={`china-national-team-flow-${group}`}
+      title={`China · Flow — ${group}`}
+      src={<SourceLinks />}
+      freq="Daily"
+      lag="SSE same-evening; SZSE T+1 morning"
+      span2
+      height={300}
+      legend={tickers.map((ticker, i) => [ticker, tickerShades(GROUP_COLOR[group], tickers.length)[i]])}
+      srcNote={SRC_NOTE}
+    >
+      <Bar data={groupChartData(win, group, tickers)} options={groupChartOptions(win, group, tickers)} />
+    </ChartCard>
+  );
+}
+
 export default function ChinaFlowNationalTeam() {
   const [rangeId, setRangeId] = useState('3m');
   const [data, setData] = useState(null);
@@ -191,7 +227,12 @@ export default function ChinaFlowNationalTeam() {
     return () => { live = false; };
   }, []);
 
-  const win = useMemo(() => (data ? windowed(data.dates, data.groups, range) : null), [data, range]);
+  const win = useMemo(
+    () => (data ? windowed(data.dates, data.groups, data.tickerSeries, range) : null),
+    [data, range],
+  );
+
+  const tickerGroups = data?.tickerGroups ?? {};
 
   const toggles = (
     <div className="lev-toggles">
@@ -240,19 +281,11 @@ export default function ChinaFlowNationalTeam() {
         {toggles}
       </div>
 
-      <ChartCard
-        chartId="china-national-team-flow"
-        title="China · Flow — National Team"
-        src={<SourceLinks />}
-        freq="Daily"
-        lag="SSE same-evening; SZSE T+1 morning"
-        span2
-        height={340}
-        legend={GROUP_KEYS.map(group => [group, GROUP_COLOR[group]])}
-        srcNote={SRC_NOTE}
-      >
-        <Bar data={chartData(win)} options={chartOptions(win)} />
-      </ChartCard>
+      <div className="cgrid">
+        {GROUP_KEYS.map(group => (
+          <GroupPanel key={group} group={group} tickers={tickerGroups[group] ?? []} win={win} />
+        ))}
+      </div>
     </>
   );
 }

@@ -47,6 +47,7 @@ import Sentiment from './pages/sentiment/Sentiment';
 import Alerts, { OptionsReportTitle, OptionsReportControls } from './pages/alerts/Alerts';
 import UsPerformance from './pages/us-performance/UsPerformance';
 import HkChinaPerformance from './pages/hk-china-performance/HkChinaPerformance';
+import HkPerformance from './pages/hk-performance/HkPerformance';
 import { OptionsReportProvider } from './context/OptionsReportContext';
 import DataValidity from './pages/data-validity/DataValidity';
 import { LeverageKorea, LeverageTaiwan } from './pages/leverage/Leverage';
@@ -67,6 +68,9 @@ import Chinese       from './pages/sources/Chinese';
 import GitHubActivity from './pages/sources/GitHubActivity';
 import Docker         from './pages/sources/Docker';
 import Community      from './pages/sources/Community';
+
+/** Views with sidebar-driven subtabs (see NAV_SECTIONS 'Market Performance' subitems) */
+const MARKET_PERF_VIEWS = new Set(['us-performance', 'hk-china-performance', 'hk-performance']);
 
 /** Views that use EditableGrid and support layout customisation */
 const LAYOUT_EDITABLE = new Set([
@@ -120,6 +124,7 @@ const VIEW_COMPONENTS = {
   'alerts':           Alerts,
   'us-performance':   UsPerformance,
   'hk-china-performance': HkChinaPerformance,
+  'hk-performance':   HkPerformance,
   'sentiment':        Sentiment,
   'sources':          DataValidity,
   'leverage-korea':   LeverageKorea,
@@ -145,6 +150,21 @@ export default function App() {
   const [currentView, setCurrentView] = useState('overview');
   const [weeks, setWeeks] = useState(52);
   const [months, setMonths] = useState(12);
+  const [perfSection, setPerfSection] = useState({});
+  const activeSection = perfSection[currentView] ?? null;
+
+  // Navigating to a view resets its subtab back to "none selected" (aggregate-only default).
+  const handleNavigate = (viewId) => {
+    setCurrentView(viewId);
+    setPerfSection(s => ({ ...s, [viewId]: null }));
+  };
+
+  // Subtabs are shown for every market-performance item at all times, so picking one
+  // may belong to a view that isn't currently active — switch to it and select it.
+  const handleNavigateSubtab = (viewId, key) => {
+    setCurrentView(viewId);
+    setPerfSection(s => ({ ...s, [viewId]: key }));
+  };
 
   const meta = VIEW_META[currentView] ?? { title: currentView.toUpperCase() };
   const mode = getModeForView(currentView);
@@ -172,9 +192,17 @@ export default function App() {
         <LayoutProvider>
         <SentimentSearchProvider>
         <OptionsReportProvider>
-        <Navbar onNavigate={setCurrentView} currentView={currentView} />
+        <Navbar onNavigate={handleNavigate} currentView={currentView} />
         <div className="app-body">
-          {showSidebar && <Sidebar currentView={currentView} onNavigate={setCurrentView} mode={mode} />}
+          {showSidebar && (
+            <Sidebar
+              currentView={currentView}
+              onNavigate={handleNavigate}
+              mode={mode}
+              subtabByView={perfSection}
+              onNavigateSubtab={handleNavigateSubtab}
+            />
+          )}
           <main className="main">
             {currentView !== 'chat' && (
               <Topbar
@@ -199,7 +227,13 @@ export default function App() {
                 ? <SectorOverview key={sectorId} sectorId={sectorId} weeks={weeks} />
                 : currentView === 'chat'
                 ? <Chat onNavigate={setCurrentView} />
-                : ViewComponent && <ViewComponent weeks={weeks} months={mode === 'supply' ? months : undefined} />
+                : ViewComponent && (
+                    <ViewComponent
+                      weeks={weeks}
+                      months={mode === 'supply' ? months : undefined}
+                      {...(MARKET_PERF_VIEWS.has(currentView) ? { section: activeSection } : {})}
+                    />
+                  )
               }
             </div>
           </main>

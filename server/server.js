@@ -12,6 +12,7 @@ const { getOptionsData }             = require('./scrapers/options');
 const { getStockHistory }            = require('./scrapers/stocks');
 const { getUsPerformance }           = require('./scrapers/usPerformance');
 const { getHkChinaPerformance }      = require('./scrapers/hkChinaPerformance');
+const { getHkPerformance }           = require('./scrapers/hkPerformance');
 const { keywordRolling }             = require('./stocktwitsStore');
 
 const app   = express();
@@ -544,6 +545,50 @@ app.get('/api/hk-china-performance', async (req, res) => {
     if (rateLimited)
       return res.status(503).json({ error: 'Yahoo Finance is rate-limiting. Please try again in a moment.' });
     res.status(500).json({ error: `Could not load HK/China performance data: ${e.message}` });
+  }
+});
+
+/* ── HK Performance — Hang Seng Composite sub-indices vs HSCI, rebased client-side (1-hour cache) */
+app.get('/api/hk-performance', async (req, res) => {
+  const rawStart = (req.query.start ?? '').trim();
+  const rawEnd = (req.query.end ?? '').trim();
+  const oneYearAgo = new Date();
+  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+
+  let start = oneYearAgo.toISOString().slice(0, 10);
+  if (rawStart) {
+    const parsed = new Date(rawStart);
+    if (isNaN(parsed.getTime()) || !/^\d{4}-\d{2}-\d{2}$/.test(rawStart))
+      return res.status(400).json({ error: 'Invalid start date' });
+    if (parsed.getTime() > Date.now())
+      return res.status(400).json({ error: 'Start date cannot be in the future' });
+    start = rawStart;
+  }
+
+  let end = new Date().toISOString().slice(0, 10);
+  if (rawEnd) {
+    const parsed = new Date(rawEnd);
+    if (isNaN(parsed.getTime()) || !/^\d{4}-\d{2}-\d{2}$/.test(rawEnd))
+      return res.status(400).json({ error: 'Invalid end date' });
+    if (parsed.getTime() > Date.now())
+      return res.status(400).json({ error: 'End date cannot be in the future' });
+    end = rawEnd;
+  }
+
+  if (new Date(start).getTime() > new Date(end).getTime())
+    return res.status(400).json({ error: 'Start date cannot be after end date' });
+
+  const cacheKey = `hk-performance:${start}:${end}`;
+  const cached   = cache.get(cacheKey);
+  if (cached !== null) return res.json(cached);
+
+  try {
+    const data = await getHkPerformance(start, end);
+    cache.set(cacheKey, data, 60 * 60 * 1000); // 1-hour TTL
+    res.json(data);
+  } catch (e) {
+    console.error('[hk-performance]', start, end, e.message);
+    res.status(500).json({ error: `Could not load HK performance data: ${e.message}` });
   }
 });
 

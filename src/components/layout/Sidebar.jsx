@@ -27,7 +27,7 @@ function trendFor(item, ld) {
   return { dir: null };
 }
 
-export default function Sidebar({ currentView, onNavigate, mode = 'demand' }) {
+export default function Sidebar({ currentView, onNavigate, mode = 'demand', subtabByView = {}, onNavigateSubtab }) {
   const { liveData: ld } = useData();
   const sections = NAV_SECTIONS.filter(s => (s.mode ?? 'demand') === mode);
 
@@ -55,19 +55,34 @@ export default function Sidebar({ currentView, onNavigate, mode = 'demand' }) {
             {visibleItems.map((item) => {
               const { dir, kind } = trendFor(item, ld);
               const label = dir ? TREND_LABEL[kind][dir] : null;
+              const isActiveItem = currentView === item.id;
               return (
-                <button
-                  key={item.id}
-                  className={hasGroupLabel ? `nav-item${currentView === item.id ? ' active' : ''}` : `nav-lbl-btn${currentView === item.id ? ' active' : ''}`}
-                  onClick={() => onNavigate(item.id)}
-                >
-                  {item.label}
-                  {dir && (
-                    <span className={`nav-trend ${dir}`} aria-label={label} title={label}>
-                      {TREND_GLYPH[dir]}
-                    </span>
+                <div key={item.id}>
+                  <button
+                    className={hasGroupLabel ? `nav-item${isActiveItem ? ' active' : ''}` : `nav-lbl-btn${isActiveItem ? ' active' : ''}`}
+                    onClick={() => onNavigate(item.id)}
+                  >
+                    {item.label}
+                    {dir && (
+                      <span className={`nav-trend ${dir}`} aria-label={label} title={label}>
+                        {TREND_GLYPH[dir]}
+                      </span>
+                    )}
+                  </button>
+                  {item.subitems && (
+                    <div className="nav-subitems">
+                      {item.subitems.map(sub => (
+                        <button
+                          key={sub.key}
+                          className={`nav-subitem${isActiveItem && subtabByView[item.id] === sub.key ? ' active' : ''}`}
+                          onClick={() => onNavigateSubtab?.(item.id, sub.key)}
+                        >
+                          {sub.label}
+                        </button>
+                      ))}
+                    </div>
                   )}
-                </button>
+                </div>
               );
             })}
           </div>

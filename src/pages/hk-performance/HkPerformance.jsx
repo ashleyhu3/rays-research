@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Line } from 'react-chartjs-2';
 import ChartCard from '../../components/chart/ChartCard';
-import { CSI300_META, HK_CHINA_INDEX_TICKERS, HK_CHINA_SECTIONS } from '../../config/hkChinaPerformance';
+import { HSCI_META, HK_SECTIONS } from '../../config/hkPerformance';
 import { GRID, TICK, BORD } from '../../utils/chartHelpers';
 
 const PRESETS = [
@@ -11,11 +11,6 @@ const PRESETS = [
   { id: '5y',  label: '5Y',  getStart: () => isoYearsAgo(5) },
 ];
 
-const INDEX_TICKERS = new Set([...HK_CHINA_INDEX_TICKERS.map(t => t.ticker), CSI300_META.ticker]);
-// ChiNext and STAR50 are fetched from East Money server-side (see
-// server/scrapers/hkChinaPerformance.js) — Yahoo has no daily history for
-// those two raw index instruments.
-const EASTMONEY_TICKERS = new Set(['399006.SZ', '000688.SS']);
 const ROLLING_AVG_DAYS = 50;
 // A 50-session moving average needs extra calendar days to cover weekends and holidays.
 const ROLLING_FETCH_LOOKBACK_DAYS = 80;
@@ -40,16 +35,6 @@ function isoDaysBefore(iso, n) {
 function fmtDate(iso) {
   const [y, m, d] = iso.split('-').map(Number);
   return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: '2-digit' });
-}
-
-// Rebase a raw close-price series to 100 at its first available value —
-// a series that starts trading after `start` (a recently-listed ETF) is
-// simply rebased to its own first print instead of showing nulls throughout.
-function rebase(closes) {
-  const baseIdx = closes.findIndex(v => v != null);
-  if (baseIdx === -1) return closes.map(() => null);
-  const base = closes[baseIdx];
-  return closes.map((v, i) => (i < baseIdx || v == null ? null : (v / base) * 100));
 }
 
 function rebaseAgainstIndex(values, baseIdx) {
@@ -101,7 +86,7 @@ function firstValidIndex(values, bounds) {
 
 // Dashed reference line at the rebased-100 baseline, drawn behind the series.
 const BASELINE_100 = {
-  id: 'hkChinaPerfBaseline',
+  id: 'hkPerfBaseline',
   beforeDatasetsDraw(chart) {
     const { ctx, chartArea, scales } = chart;
     if (!chartArea || !scales.y) return;
@@ -122,38 +107,7 @@ function findSeries(payload, ticker) {
   return payload.series.find(s => s.ticker === ticker);
 }
 
-function buildOverviewChartData(payload, startDate, endDate) {
-  const bounds = visibleBounds(payload.dates, startDate, endDate);
-  if (!bounds) return null;
-
-  // Only the indices + CSI300 belong in the aggregate chart — the sector
-  // tickers ride along in the same payload but are rendered as their own
-  // ratio-vs-CSI300 cards below, not overlaid here.
-  const indexSeries = payload.series.filter(s => INDEX_TICKERS.has(s.ticker));
-  const labels = sliceBounds(payload.dates, bounds).map(fmtDate);
-  const datasets = indexSeries.map((s, i) => {
-    const isBaseline = s.ticker === CSI300_META.ticker;
-    const meta = HK_CHINA_INDEX_TICKERS.find(t => t.ticker === s.ticker);
-    const color = isBaseline ? CSI300_META.color : (meta?.color ?? HK_CHINA_INDEX_TICKERS[i % HK_CHINA_INDEX_TICKERS.length].color);
-    return {
-      label: isBaseline ? CSI300_META.name : s.name,
-      fullName: s.name,
-      data: rebase(sliceBounds(s.closes, bounds)),
-      borderColor: color,
-      backgroundColor: 'transparent',
-      borderWidth: isBaseline ? 3 : 1.75,
-      borderDash: isBaseline ? [6, 3] : undefined,
-      pointRadius: 0,
-      pointHoverRadius: 3,
-      pointHitRadius: 6,
-      tension: 0.15,
-      spanGaps: true,
-    };
-  });
-  return { labels, datasets };
-}
-
-// Ratio chart for a single ticker vs the CSI300 baseline.
+// Ratio chart for a single ticker vs the HSCI baseline.
 function buildPairChartData(payload, numMeta, denMeta, startDate, endDate) {
   const numSeries = findSeries(payload, numMeta.ticker);
   const denSeries = findSeries(payload, denMeta.ticker);
@@ -255,7 +209,7 @@ function chartOptions({ relative = false, compact = false } = {}) {
   };
 }
 
-export default function HkChinaPerformance({ section = null }) {
+export default function HkPerformance({ section = null }) {
   const [startDate, setStartDate] = useState(() => isoYearsAgo(1));
   const [endDate, setEndDate] = useState(() => todayIso());
   const [payload, setPayload] = useState(null);
@@ -271,7 +225,7 @@ export default function HkChinaPerformance({ section = null }) {
     setLoading(true);
     setError(null);
     const params = new URLSearchParams({ start: fetchStartDate, end: endDate });
-    fetch(`/api/hk-china-performance?${params}`)
+    fetch(`/api/hk-performance?${params}`)
       .then(response => (response.ok
         ? response.json()
         : response.json().then(body => Promise.reject(new Error(body.error ?? `HTTP ${response.status}`)))))
@@ -280,22 +234,12 @@ export default function HkChinaPerformance({ section = null }) {
     return () => { live = false; };
   }, [fetchStartDate, endDate]);
 
-  const overviewChartData = useMemo(
-    () => (payload ? buildOverviewChartData(payload, startDate, endDate) : null),
-    [payload, startDate, endDate]
-  );
-  const indexRatioCharts = useMemo(() => {
-    if (!payload) return [];
-    return HK_CHINA_INDEX_TICKERS
-      .map(meta => ({ meta, data: buildPairChartData(payload, meta, CSI300_META, startDate, endDate) }))
-      .filter(chart => chart.data);
-  }, [payload, startDate, endDate]);
   const sectionCharts = useMemo(() => {
     if (!payload) return [];
-    return HK_CHINA_SECTIONS.map(section => ({
+    return HK_SECTIONS.map(section => ({
       title: section.title,
       charts: section.tickers
-        .map(meta => ({ id: meta.ticker, title: meta.name, data: buildPairChartData(payload, meta, CSI300_META, startDate, endDate) }))
+        .map(meta => ({ id: meta.ticker, title: meta.name, data: buildPairChartData(payload, meta, HSCI_META, startDate, endDate) }))
         .filter(chart => chart.data),
     })).filter(section => section.charts.length > 0);
   }, [payload, startDate, endDate]);
@@ -342,12 +286,11 @@ export default function HkChinaPerformance({ section = null }) {
 
   const ratioGrid = (charts) => (
     <div className="usp-etf-grid">
-      {charts.map(({ id, title, data, src }) => (
+      {charts.map(({ id, title, data }) => (
         <ChartCard
           key={id}
           title={title}
-          src={src ?? 'Yahoo Finance'}
-          srcUrl={src ? undefined : 'https://finance.yahoo.com'}
+          src="East Money"
           freq="Daily"
           height={255}
         >
@@ -362,36 +305,19 @@ export default function HkChinaPerformance({ section = null }) {
   return (
     <>
       {controls}
-      {section == null && (
-        <div className="cgrid">
-          <ChartCard
-            title="Aggregate Performance"
-            src="Yahoo Finance, East Money"
-            freq="Daily"
-            span2
-            height={480}
-          >
-            {error ? (
-              <div className="empty">Could not load HK/China performance data: {error}</div>
-            ) : !overviewChartData ? (
-              <div className="empty">{loading ? 'Loading HK/China performance data…' : 'No data'}</div>
-            ) : (
-              <Line data={overviewChartData} options={chartOptions()} plugins={[BASELINE_100]} />
-            )}
-          </ChartCard>
-        </div>
+      {section != null && <div className="usp-section-label">{section}</div>}
+
+      {error ? (
+        <div className="empty">Could not load HK performance data: {error}</div>
+      ) : section == null ? (
+        <div className="empty">Select a section from the sidebar.</div>
+      ) : !payload ? (
+        <div className="empty">{loading ? 'Loading HK performance data…' : 'No data'}</div>
+      ) : activeSectionCharts ? (
+        ratioGrid(activeSectionCharts.charts)
+      ) : (
+        <div className="empty">No data</div>
       )}
-      {section != null && <div className="usp-section-label">{section === 'all' ? 'Overall' : section}</div>}
-
-      {section === 'all' && !error && indexRatioCharts.length > 0 &&
-        ratioGrid(indexRatioCharts.map(({ meta, data }) => ({
-          id: meta.ticker,
-          title: meta.name,
-          data,
-          src: EASTMONEY_TICKERS.has(meta.ticker) ? 'Yahoo Finance, East Money' : undefined,
-        })))}
-
-      {section !== 'all' && !error && activeSectionCharts && ratioGrid(activeSectionCharts.charts)}
     </>
   );
 }

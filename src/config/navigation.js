@@ -1,3 +1,28 @@
+import { HK_CHINA_SECTIONS } from './hkChinaPerformance';
+import { HK_SECTIONS } from './hkPerformance';
+
+/** Subtabs shown under the "US" market-performance nav item — mirrors the
+ * page sections in src/pages/us-performance/UsPerformance.jsx. */
+const US_PERFORMANCE_SUBTABS = [
+  { key: 'all',         label: 'All Sectors' },
+  { key: 'tech',        label: 'Tech' },
+  { key: 'theme',       label: 'Theme' },
+  { key: 'factor',      label: 'Factor' },
+  { key: 'correlation', label: 'Correlation' },
+];
+
+/** Subtabs shown under the "China" market-performance nav item — "All Sectors"
+ * plus one per HK_CHINA_SECTIONS entry, kept in sync with the page's data. */
+const CHINA_PERFORMANCE_SUBTABS = [
+  { key: 'all', label: 'Overall' },
+  ...HK_CHINA_SECTIONS.map(section => ({ key: section.title, label: section.title })),
+];
+
+/** Subtabs shown under the "HK" market-performance nav item — one per
+ * HK_SECTIONS entry, kept in sync with the page's data. No "All Sectors"
+ * subtab, since this tab has no aggregate/overview chart. */
+const HK_PERFORMANCE_SUBTABS = HK_SECTIONS.map(section => ({ key: section.title, label: section.title }));
+
 /** Sidebar navigation structure */
 export const NAV_SECTIONS = [
   {
@@ -72,8 +97,9 @@ export const NAV_SECTIONS = [
     sectorId: 'market-performance',
     mode: 'us-performance',
     items: [
-      { id: 'us-performance',       label: 'US' },
-      { id: 'hk-china-performance', label: 'HK/China' },
+      { id: 'us-performance',       label: 'US',    subitems: US_PERFORMANCE_SUBTABS },
+      { id: 'hk-china-performance', label: 'China', subitems: CHINA_PERFORMANCE_SUBTABS },
+      { id: 'hk-performance',       label: 'HK',    subitems: HK_PERFORMANCE_SUBTABS },
     ],
   },
   {
@@ -181,7 +207,8 @@ export const VIEW_META = {
   alerts:             { title: 'DAILY OPTIONS REPORT' },
   sentiment:          { title: 'MARKETS — SENTIMENT & OPTIONS' },
   'us-performance':   { title: 'MARKET PERFORMANCE — US' },
-  'hk-china-performance': { title: 'MARKET PERFORMANCE — HK/CHINA' },
+  'hk-china-performance': { title: 'MARKET PERFORMANCE — CHINA' },
+  'hk-performance':       { title: 'MARKET PERFORMANCE — HK' },
   'leverage-korea':   { title: 'LEVERAGE — KOREAN RETAIL FIREPOWER' },
   'leverage-taiwan':  { title: 'LEVERAGE — TAIWAN RETAIL FIREPOWER' },
   'taiwan-individual': { title: 'TAIWAN — INDIVIDUAL STOCK MARGIN' },

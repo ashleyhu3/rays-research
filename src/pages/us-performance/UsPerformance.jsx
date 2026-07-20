@@ -433,7 +433,11 @@ function correlationChartOptions() {
   };
 }
 
-export default function UsPerformance() {
+const SECTION_LABELS = {
+  all: 'All Sectors', tech: 'Tech', theme: 'Theme', factor: 'Factor', correlation: 'Correlation',
+};
+
+export default function UsPerformance({ section = null }) {
   const [startDate, setStartDate] = useState(() => isoYearsAgo(1));
   const [endDate, setEndDate] = useState(() => todayIso());
   const [payload, setPayload] = useState(null);
@@ -568,81 +572,66 @@ export default function UsPerformance() {
   return (
     <>
       {controls}
-      <div className="usp-section-label">Sector</div>
-      <div className="cgrid">
-        <ChartCard
-          title="Aggregate Performance"
-          src="Yahoo Finance"
-          srcUrl="https://finance.yahoo.com"
-          freq="Daily"
-          span2
-          height={480}
-        >
-          {error ? (
-            <div className="empty">Could not load US performance data: {error}</div>
-          ) : !overviewChartData ? (
-            <div className="empty">{loading ? 'Loading US performance data…' : 'No data'}</div>
-          ) : (
-            <Line data={overviewChartData} options={chartOptions()} plugins={[BASELINE_100]} />
-          )}
-        </ChartCard>
-      </div>
-      {!error && relativeCharts.length > 0 &&
+      {section == null && (
+        <div className="cgrid">
+          <ChartCard
+            title="Aggregate Performance"
+            src="Yahoo Finance"
+            srcUrl="https://finance.yahoo.com"
+            freq="Daily"
+            span2
+            height={480}
+          >
+            {error ? (
+              <div className="empty">Could not load US performance data: {error}</div>
+            ) : !overviewChartData ? (
+              <div className="empty">{loading ? 'Loading US performance data…' : 'No data'}</div>
+            ) : (
+              <Line data={overviewChartData} options={chartOptions()} plugins={[BASELINE_100]} />
+            )}
+          </ChartCard>
+        </div>
+      )}
+      {section != null && <div className="usp-section-label">{SECTION_LABELS[section] ?? section}</div>}
+
+      {section === 'all' && !error && relativeCharts.length > 0 &&
         ratioGrid(relativeCharts.map(({ etf, data }) => ({ id: etf.ticker, title: etf.name, data })))}
 
-      {!error && techCharts.length > 0 && (
-        <>
-          <div className="usp-section-label">Tech</div>
-          {ratioGrid(techCharts)}
-        </>
-      )}
+      {section === 'tech' && !error && techCharts.length > 0 && ratioGrid(techCharts)}
 
-      {!error && themeCharts.length > 0 && (
-        <>
-          <div className="usp-section-label">Theme</div>
-          {ratioGrid(themeCharts)}
-        </>
-      )}
+      {section === 'theme' && !error && themeCharts.length > 0 && ratioGrid(themeCharts)}
 
-      {!error && factorCharts.length > 0 && (
-        <>
-          <div className="usp-section-label">Factor</div>
-          {ratioGrid(factorCharts)}
-        </>
-      )}
+      {section === 'factor' && !error && factorCharts.length > 0 && ratioGrid(factorCharts)}
 
-      {!error && (soxCorrelationData || kwebCorrelationData) && (
-        <>
-          <div className="usp-section-label">Correlation</div>
-          <div className="cgrid">
-            <ChartCard
-              title="SOX Correlations"
-              src="Yahoo Finance"
-              srcUrl="https://finance.yahoo.com"
-              freq="Daily"
-              height={320}
-            >
-              {soxCorrelationData ? (
-                <Line data={soxCorrelationData} options={correlationChartOptions()} plugins={[ZERO_LINE]} />
-              ) : (
-                <div className="empty">No data</div>
-              )}
-            </ChartCard>
-            <ChartCard
-              title="KWEB Correlations"
-              src="Yahoo Finance"
-              srcUrl="https://finance.yahoo.com"
-              freq="Daily"
-              height={320}
-            >
-              {kwebCorrelationData ? (
-                <Line data={kwebCorrelationData} options={correlationChartOptions()} plugins={[ZERO_LINE]} />
-              ) : (
-                <div className="empty">No data</div>
-              )}
-            </ChartCard>
-          </div>
-        </>
+      {section === 'correlation' && !error && (soxCorrelationData || kwebCorrelationData) && (
+        <div className="cgrid">
+          <ChartCard
+            title="SOX Correlations"
+            src="Yahoo Finance"
+            srcUrl="https://finance.yahoo.com"
+            freq="Daily"
+            height={320}
+          >
+            {soxCorrelationData ? (
+              <Line data={soxCorrelationData} options={correlationChartOptions()} plugins={[ZERO_LINE]} />
+            ) : (
+              <div className="empty">No data</div>
+            )}
+          </ChartCard>
+          <ChartCard
+            title="KWEB Correlations"
+            src="Yahoo Finance"
+            srcUrl="https://finance.yahoo.com"
+            freq="Daily"
+            height={320}
+          >
+            {kwebCorrelationData ? (
+              <Line data={kwebCorrelationData} options={correlationChartOptions()} plugins={[ZERO_LINE]} />
+            ) : (
+              <div className="empty">No data</div>
+            )}
+          </ChartCard>
+        </div>
       )}
     </>
   );
