@@ -54,6 +54,7 @@ const SENTIMENT_VIEWS = new Set(['sentiment']);
 const SOURCES_VIEWS   = new Set(['sources']);
 const TRANSCRIPT_VIEWS = new Set(['transcripts']);
 const LEVERAGE_VIEWS   = new Set(['leverage-korea', 'leverage-taiwan']);
+const LIQUIDITY_VIEWS  = new Set(['liquidity-china-flow']);
 
 export default function Navbar({ onNavigate, currentView }) {
   const { tableMode, setTableMode } = useUI();
@@ -69,8 +70,9 @@ export default function Navbar({ onNavigate, currentView }) {
   const isSources   = SOURCES_VIEWS.has(currentView);
   const isTranscripts = TRANSCRIPT_VIEWS.has(currentView);
   const isLeverage  = LEVERAGE_VIEWS.has(currentView);
+  const isLiquidity = LIQUIDITY_VIEWS.has(currentView);
   const isUsPerf    = US_PERF_VIEWS.has(currentView);
-  const isDemand    = !isChat && !isSupply && !isInfra && !isOptions && !isAlerts && !isPricing && !isSentiment && !isSources && !isTranscripts && !isLeverage && !isUsPerf;
+  const isDemand    = !isChat && !isSupply && !isInfra && !isOptions && !isAlerts && !isPricing && !isSentiment && !isSources && !isTranscripts && !isLeverage && !isLiquidity && !isUsPerf;
 
   const title = loading
     ? 'Updating live data…'
@@ -131,6 +133,12 @@ export default function Navbar({ onNavigate, currentView }) {
           onClick={() => onNavigate('leverage-korea')}
         >
           Leverage
+        </button>
+        <button
+          className={`nlink${isLiquidity ? ' active' : ''}`}
+          onClick={() => onNavigate('liquidity-china-flow')}
+        >
+          Liquidity
         </button>
         <button
           className={`nlink${isTranscripts ? ' active' : ''}`}

@@ -4,7 +4,8 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "test": "npm run test:mailer && npm run test:transcripts && npm run test:options-report && npm run test:leverage",
+    "test": "npm run test:mailer && npm run test:transcripts && npm run test:options-report && npm run test:leverage && npm run test:national-team-flow",
+    "test:national-team-flow": "node --test server/scrapers/chinaNationalTeamFlow.test.js",
     "dev": "node --env-file=.env server/server.js",
     "build": "vite build",
     "start": "NODE_ENV=production node --env-file-if-exists=.env server/server.js",
@@ -18,6 +19,8 @@
     "backfill:korea-leverage": "node --env-file=.env server/scripts/backfillKoreaLeverage.js",
     "backfill:taiwan-leverage": "node --env-file=.env server/scripts/backfillTaiwanLeverage.js",
     "backfill:china-leverage": "node --env-file=.env server/scripts/backfillChinaLeverage.js",
+    "backfill:china-national-team-flow": "node --env-file=.env server/scripts/backfillChinaNationalTeamFlow.js",
+    "backfill:japan-leverage": "node --env-file=.env server/scripts/backfillJapanLeverage.js",
     "backfill:aws-spot": "node --env-file=.env server/scripts/backfillAwsSpot.js",
     "backfill:cpu-spot": "node --env-file=.env server/scripts/backfillCpuSpot.js",
     "backfill:transcripts:alpha": "node --env-file=.env server/scripts/backfillAlphaVantageTranscripts.js",
@@ -43,7 +46,7 @@
     "test:transcripts": "node --test server/transcripts/*.test.js server/transcripts/*.test.mjs",
     "test:mailer": "node --test server/mailer.test.js",
     "test:options-report": "node --test server/earningsDates.test.js server/optionsReportChart.test.js server/optionsScraper.test.js",
-    "test:leverage": "node --test server/scrapers/koreaLeverage.test.js server/scrapers/taiwanLeverage.test.js server/scrapers/chinaLeverage.test.js"
+    "test:leverage": "node --test server/scrapers/koreaLeverage.test.js server/scrapers/taiwanLeverage.test.js server/scrapers/chinaLeverage.test.js server/scrapers/japanLeverage.test.js"
   },
   "dependencies": {
     "@aws-sdk/client-pricing": "^3.1069.0",

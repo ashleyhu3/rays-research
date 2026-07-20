@@ -85,6 +85,15 @@ export const NAV_SECTIONS = [
       { id: 'leverage-taiwan',   label: 'Taiwan' },
       { id: 'taiwan-individual', label: 'Taiwan individual' },
       { id: 'leverage-china',    label: 'A shares' },
+      { id: 'leverage-japan',    label: 'Japan' },
+    ],
+  },
+  {
+    label: 'Liquidity',
+    sectorId: 'liquidity',
+    mode: 'liquidity',
+    items: [
+      { id: 'liquidity-china-flow', label: 'China' },
     ],
   },
   {
@@ -176,6 +185,8 @@ export const VIEW_META = {
   'leverage-taiwan':  { title: 'LEVERAGE — TAIWAN RETAIL FIREPOWER' },
   'taiwan-individual': { title: 'TAIWAN — INDIVIDUAL STOCK MARGIN' },
   'leverage-china':   { title: 'LEVERAGE — CHINA A-SHARES' },
+  'leverage-japan':   { title: 'LEVERAGE — JAPAN MARGIN TRADING' },
+  'liquidity-china-flow': { title: 'LIQUIDITY — CHINA · FLOW: NATIONAL TEAM' },
   transcripts:        { title: 'EARNINGS TRANSCRIPT AGENT' },
   sources:            { title: 'DATA VALIDITY TERMINAL' },
 };

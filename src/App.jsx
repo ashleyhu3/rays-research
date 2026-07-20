@@ -52,6 +52,8 @@ import DataValidity from './pages/data-validity/DataValidity';
 import { LeverageKorea, LeverageTaiwan } from './pages/leverage/Leverage';
 import TaiwanIndividual from './pages/taiwan-individual/TaiwanIndividual';
 import ChinaLeverage from './pages/china-leverage/ChinaLeverage';
+import JapanLeverage from './pages/japan-leverage/JapanLeverage';
+import ChinaFlowNationalTeam from './pages/liquidity/ChinaFlowNationalTeam';
 import Transcripts from './pages/transcripts/Transcripts';
 // Source-specific signal pages
 import PyPI          from './pages/sources/PyPI';
@@ -123,6 +125,8 @@ const VIEW_COMPONENTS = {
   'leverage-taiwan':  LeverageTaiwan,
   'taiwan-individual': TaiwanIndividual,
   'leverage-china':   ChinaLeverage,
+  'leverage-japan':   JapanLeverage,
+  'liquidity-china-flow': ChinaFlowNationalTeam,
   'transcripts':      Transcripts,
   'demand-openai':    DemandOpenAI,
   'demand-anthropic': DemandAnthropic,

@@ -27,10 +27,6 @@ function alpha(hex, a) {
 
 function round2(v) { return Math.round(v * 100) / 100; }
 
-// Points at the top layer of the stack by default (chart.data.datasets.length
-// - 1), since for a stacked area chart that's the pixel position that
-// actually sits at the combined total's height — dataset 0 alone would only
-// reach the bottom layer's own height.
 const MARKED_POINTS = {
   id: 'chinaLeverageMarkedPoints',
   afterDatasetsDraw(chart, _args, options) {
@@ -85,9 +81,9 @@ const MARKED_POINTS = {
   },
 };
 
-// Three daily metrics, each charted as a stacked SSE + SZSE area (`color`
-// below is just the tile accent — the chart layers themselves always use
-// SSE_COLOR/SZSE_COLOR). Balance/total-balance are trillion-yuan scale;
+// Three daily metrics, each charted as separate SSE and SZSE panels side by
+// side (`color` below is just the tile accent — the panels themselves always
+// use SSE_COLOR/SZSE_COLOR). Balance/total-balance are trillion-yuan scale;
 // lending balance is billion-yuan — so each gets its own formatter rather
 // than one shared axis unit. (Margin purchase/repayment amount and
 // securities lending volume are still computed and stored by the scraper —
@@ -171,34 +167,6 @@ function windowed(dates, seriesMap, range) {
   };
 }
 
-// Two raw (non-cumulative) layers — SSE and SZSE's own values — stacked by
-// the y-axis's `stacked: true` option below, which is what actually draws
-// SZSE on top of SSE rather than the two overlapping.
-function metricChartData(win, sseWin, szseWin, metric) {
-  const long = win.dates.length > 200;
-  const layer = (label, color, data) => ({
-    label,
-    data,
-    backgroundColor: alpha(color, 0.42),
-    borderColor: color,
-    borderWidth: 1.5,
-    pointRadius: 0,
-    pointHoverRadius: 4,
-    pointHoverBackgroundColor: color,
-    pointHoverBorderColor: SURFACE,
-    pointHoverBorderWidth: 2,
-    tension: 0.25,
-    fill: 'origin',
-  });
-  return {
-    labels: win.dates.map(long ? monthLabel : dayLabel),
-    datasets: [
-      layer('SSE', SSE_COLOR, sseWin.series[metric.key]),
-      layer('SZSE', SZSE_COLOR, szseWin.series[metric.key]),
-    ],
-  };
-}
-
 function metricMarks(win, metric) {
   const values = win.series[metric.key] ?? [];
   const marks = MARKED_DATES.map(target => {
@@ -225,7 +193,28 @@ function metricMarks(win, metric) {
   return marks;
 }
 
-function metricChartOptions(win, metric) {
+function exchangeChartData(win, metric, label, color) {
+  const long = win.dates.length > 200;
+  return {
+    labels: win.dates.map(long ? monthLabel : dayLabel),
+    datasets: [{
+      label,
+      data: win.series[metric.key],
+      backgroundColor: alpha(color, 0.38),
+      borderColor: color,
+      borderWidth: 2,
+      pointRadius: 0,
+      pointHoverRadius: 4,
+      pointHoverBackgroundColor: color,
+      pointHoverBorderColor: SURFACE,
+      pointHoverBorderWidth: 2,
+      tension: 0.25,
+      fill: 'origin',
+    }],
+  };
+}
+
+function exchangeChartOptions(win, metric, color) {
   return {
     responsive: true,
     maintainAspectRatio: false,
@@ -234,7 +223,7 @@ function metricChartOptions(win, metric) {
     layout: { padding: { top: 16, right: 8, bottom: 18 } },
     plugins: {
       legend: { display: false },
-      chinaLeverageMarkedPoints: { marks: metricMarks(win, metric), color: metric.color },
+      chinaLeverageMarkedPoints: { marks: metricMarks(win, metric), color },
       tooltip: {
         backgroundColor: '#1a1f2a',
         borderColor: 'rgba(255,255,255,.12)',
@@ -245,24 +234,17 @@ function metricChartOptions(win, metric) {
         callbacks: {
           title: items => (items.length ? win.dates[items[0].dataIndex] : ''),
           label: context => ` ${context.dataset.label}: ${metric.fmt(context.raw)}`,
-          footer: items => {
-            const i = items[0]?.dataIndex;
-            const total = i == null ? null : win.series[metric.key]?.[i];
-            return Number.isFinite(total) ? `Total: ${metric.fmt(total)}` : '';
-          },
         },
       },
     },
     scales: {
       x: {
-        stacked: true,
         grid: { display: false },
         ticks: {
           color: MUTED, maxTicksLimit: 12, autoSkip: true, maxRotation: 0, padding: 3, font: { size: 10 },
         },
       },
       y: {
-        stacked: true,
         beginAtZero: true,
         grace: '5%',
         grid: { color: 'rgba(255,255,255,.07)' },
@@ -272,37 +254,40 @@ function metricChartOptions(win, metric) {
   };
 }
 
-function MarginSourceLinks() {
+function MarginSourceLinks({ exchange }) {
   return (
     <span className="lev-srcs">
-      <a className="ch-src" href="https://www.sse.com.cn/market/othersdata/margin/sum/" target="_blank" rel="noopener noreferrer">
-        <span className="lev-dot" style={{ background: BLUE }} />SSE margin data
-      </a>
-      <a className="ch-src" href="https://www.szse.cn/disclosure/margin/margin/index.html" target="_blank" rel="noopener noreferrer">
-        <span className="lev-dot" style={{ background: ORANGE }} />SZSE margin data
-      </a>
+      {exchange === 'SSE' && (
+        <a className="ch-src" href="https://www.sse.com.cn/market/othersdata/margin/sum/" target="_blank" rel="noopener noreferrer">
+          <span className="lev-dot" style={{ background: BLUE }} />SSE margin data
+        </a>
+      )}
+      {exchange === 'SZSE' && (
+        <a className="ch-src" href="https://www.szse.cn/disclosure/margin/margin/index.html" target="_blank" rel="noopener noreferrer">
+          <span className="lev-dot" style={{ background: ORANGE }} />SZSE margin data
+        </a>
+      )}
     </span>
   );
 }
 
-function MetricPanel({ metric, win, sseWin, szseWin }) {
+function ExchangePanel({ metric, exchange, win, color }) {
   const chart = (
     <Line
-      data={metricChartData(win, sseWin, szseWin, metric)}
-      options={metricChartOptions(win, metric)}
+      data={exchangeChartData(win, metric, exchange, color)}
+      options={exchangeChartOptions(win, metric, color)}
       plugins={[MARKED_POINTS]}
     />
   );
   return (
     <ChartCard
-      chartId={`china-leverage-${metric.key}`}
-      title={`China A-shares · ${metric.label} (${metric.cn})`}
-      src={<MarginSourceLinks />}
+      chartId={`china-leverage-${metric.key}-${exchange.toLowerCase()}`}
+      title={`${exchange} · ${metric.label} (${metric.cn})`}
+      src={<MarginSourceLinks exchange={exchange} />}
       freq="Daily"
-      lag="SSE same-evening; SZSE T+1 morning"
-      span2
+      lag={exchange === 'SSE' ? 'Same-evening' : 'T+1 morning'}
       height={300}
-      legend={[['SSE', SSE_COLOR], ['SZSE', SZSE_COLOR]]}
+      legend={[[exchange, color]]}
     >
       {chart}
     </ChartCard>
@@ -522,11 +507,6 @@ export default function ChinaLeverage() {
     return () => { live = false; };
   }, []);
 
-  const seriesMap = useMemo(
-    () => (data ? Object.fromEntries(METRICS.map(m => [m.key, data[m.key]])) : {}),
-    [data],
-  );
-  const win = useMemo(() => (data ? windowed(data.dates, seriesMap, range) : null), [data, seriesMap, range]);
   const sseWin = useMemo(() => (data ? windowed(data.dates, data.bySse, range) : null), [data, range]);
   const szseWin = useMemo(() => (data ? windowed(data.dates, data.bySzse, range) : null), [data, range]);
   const etfWin = useMemo(
@@ -550,7 +530,7 @@ export default function ChinaLeverage() {
     </div>
   );
 
-  if (error || !data || !win) {
+  if (error || !data || !sseWin || !szseWin) {
     return (
       <>
         <div className="lev-head"><div />{toggles}</div>
@@ -581,7 +561,10 @@ export default function ChinaLeverage() {
       </div>
 
       {METRICS.map(metric => (
-        <MetricPanel key={metric.key} metric={metric} win={win} sseWin={sseWin} szseWin={szseWin} />
+        <div className="cgrid" key={metric.key}>
+          <ExchangePanel metric={metric} exchange="SSE" win={sseWin} color={SSE_COLOR} />
+          <ExchangePanel metric={metric} exchange="SZSE" win={szseWin} color={SZSE_COLOR} />
+        </div>
       ))}
       <EtfPanel
         win={etfWin}
