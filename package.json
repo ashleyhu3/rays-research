@@ -22,6 +22,7 @@
     "backfill:china-national-team-flow": "node --env-file=.env server/scripts/backfillChinaNationalTeamFlow.js",
     "backfill:japan-leverage": "node --env-file=.env server/scripts/backfillJapanLeverage.js",
     "backfill:us-leverage": "node --env-file=.env server/scripts/backfillUsLeverage.js",
+    "backfill:hk-performance": "node --env-file=.env server/scripts/backfillHkPerformance.js",
     "backfill:aws-spot": "node --env-file=.env server/scripts/backfillAwsSpot.js",
     "backfill:cpu-spot": "node --env-file=.env server/scripts/backfillCpuSpot.js",
     "backfill:transcripts:alpha": "node --env-file=.env server/scripts/backfillAlphaVantageTranscripts.js",

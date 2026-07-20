@@ -12,7 +12,7 @@ const { getOptionsData }             = require('./scrapers/options');
 const { getStockHistory }            = require('./scrapers/stocks');
 const { getUsPerformance }           = require('./scrapers/usPerformance');
 const { getHkChinaPerformance }      = require('./scrapers/hkChinaPerformance');
-const { getHkPerformance }           = require('./scrapers/hkPerformance');
+const { readHkPerformance }          = require('./scrapers/hkPerformance');
 const { keywordRolling }             = require('./stocktwitsStore');
 
 const app   = express();
@@ -82,6 +82,36 @@ app.get('/api/customs-drones',    cachedRoute('customsDrones',    s.customsDrone
 app.get('/api/korea-leverage',    cachedRoute('koreaLeverage',    s.koreaLeverage));
 app.get('/api/taiwan-leverage',   cachedRoute('taiwanLeverage',   s.taiwanLeverage));
 app.get('/api/china-leverage',    cachedRoute('chinaLeverage',    s.chinaLeverage));
+
+// One-off deep backfill (~5y, ~1200 SZSE requests at a polite pace — a few
+// minutes) triggered manually from the China Leverage page, since SZSE only
+// answers requests from wherever this server is actually deployed and can't
+// be run from a local dev machine. Runs in the background rather than held
+// open on the request, since a several-minute response would trip Render's
+// proxy timeout; the frontend polls the status route below. Separate from
+// the regular 6-hourly poll (which only fetches the last 30 days) so this
+// doesn't slow down or re-hammer SZSE on every normal refresh.
+let chinaLeverageBackfillState = { running: false, error: null, finishedAt: null, dates: null };
+app.post('/api/china-leverage/backfill', (req, res) => {
+  if (chinaLeverageBackfillState.running) {
+    return res.status(409).json({ ok: false, error: 'Backfill already in progress' });
+  }
+  const days = Math.min(Number(req.body?.days) || 1830, 3650);
+  chinaLeverageBackfillState = { running: true, error: null, finishedAt: null, dates: null };
+  require('./scrapers/chinaLeverage').getChinaLeverage(days)
+    .then(data => {
+      cache.set('chinaLeverage', data, scheduler.TTL.chinaLeverage ?? 3600000);
+      history.snapshot('chinaLeverage', data);
+      snapshotStore.put('chinaLeverage', data);
+      chinaLeverageBackfillState = { running: false, error: null, finishedAt: new Date().toISOString(), dates: data.dates?.length ?? 0 };
+    })
+    .catch(e => {
+      console.error('[china-leverage/backfill]', e.message);
+      chinaLeverageBackfillState = { running: false, error: e.message, finishedAt: new Date().toISOString(), dates: null };
+    });
+  res.status(202).json({ ok: true, started: true, days });
+});
+app.get('/api/china-leverage/backfill', (req, res) => res.json(chinaLeverageBackfillState));
 app.get('/api/china-national-team-flow', cachedRoute('chinaNationalTeamFlow', s.chinaNationalTeamFlow));
 app.get('/api/japan-leverage',    cachedRoute('japanLeverage',    s.japanLeverage));
 app.get('/api/us-leverage',       cachedRoute('usLeverage',       s.usLeverage));
@@ -548,8 +578,11 @@ app.get('/api/hk-china-performance', async (req, res) => {
   }
 });
 
-/* ── HK Performance — Hang Seng Composite sub-indices vs HSCI, rebased client-side (1-hour cache) */
-app.get('/api/hk-performance', async (req, res) => {
+/* ── HK Performance — Hang Seng Composite sub-indices vs HSCI ────────────────
+ * Reads only the Mongo-persisted history (readHkPerformance) — never scrapes
+ * East Money live on a request. A cron job (see scheduler.js) extends the
+ * history daily; see server/scrapers/hkPerformance.js for why. */
+app.get('/api/hk-performance', (req, res) => {
   const rawStart = (req.query.start ?? '').trim();
   const rawEnd = (req.query.end ?? '').trim();
   const oneYearAgo = new Date();
@@ -578,14 +611,16 @@ app.get('/api/hk-performance', async (req, res) => {
   if (new Date(start).getTime() > new Date(end).getTime())
     return res.status(400).json({ error: 'Start date cannot be after end date' });
 
-  const cacheKey = `hk-performance:${start}:${end}`;
-  const cached   = cache.get(cacheKey);
-  if (cached !== null) return res.json(cached);
-
   try {
-    const data = await getHkPerformance(start, end);
-    cache.set(cacheKey, data, 60 * 60 * 1000); // 1-hour TTL
-    res.json(data);
+    const full = readHkPerformance();
+    const dates = full.dates.filter(d => d >= start && d <= end);
+    const startIdx = full.dates.indexOf(dates[0]);
+    const endIdx = full.dates.indexOf(dates[dates.length - 1]);
+    const series = full.series.map(s => ({
+      ...s,
+      closes: startIdx === -1 ? [] : s.closes.slice(startIdx, endIdx + 1),
+    }));
+    res.json({ start: dates[0] ?? null, end: dates[dates.length - 1] ?? null, dates, series });
   } catch (e) {
     console.error('[hk-performance]', start, end, e.message);
     res.status(500).json({ error: `Could not load HK performance data: ${e.message}` });
@@ -811,6 +846,7 @@ const STORAGE_BLOBS = [
   { name: 'chinaNationalTeamFlowHistory', file: path.join(DATA_DIR, 'chinaNationalTeamFlowHistory.json') },
   { name: 'japanLeverageHistory', file: path.join(DATA_DIR, 'japanLeverageHistory.json') },
   { name: 'usLeverageHistory', file: path.join(DATA_DIR, 'usLeverageHistory.json') },
+  { name: 'hkPerformanceHistory', file: path.join(DATA_DIR, 'hkPerformanceHistory.json') },
   { name: 'dailyOptionsReport', file: path.join(DATA_DIR, 'dailyOptionsReport.json') },
   // Full-chain volume behind the report charts. Prior cycles are settled; current
   // expirations are backfilled once and then extended from each daily snapshot.

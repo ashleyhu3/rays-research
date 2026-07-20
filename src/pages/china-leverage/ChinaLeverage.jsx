@@ -491,8 +491,18 @@ export default function ChinaLeverage() {
   const [rangeId, setRangeId] = useState('18m');
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
+  const [backfill, setBackfill] = useState({ running: false, error: null, note: null });
 
   const range = RANGES.find(item => item.id === rangeId) ?? RANGES.find(item => item.id === '18m');
+
+  const loadData = () => {
+    fetch('/api/china-leverage')
+      .then(response => (response.ok
+        ? response.json()
+        : Promise.reject(new Error(`HTTP ${response.status}`))))
+      .then(payload => setData(payload))
+      .catch(fetchError => setError(fetchError.message));
+  };
 
   useEffect(() => {
     let live = true;
@@ -507,6 +517,35 @@ export default function ChinaLeverage() {
     return () => { live = false; };
   }, []);
 
+  // SZSE (Shenzhen) only answers requests from wherever this app is actually
+  // deployed — it isn't reachable from a local dev machine — so the 5-year
+  // history backfill has to run from the live site itself. This button kicks
+  // it off in the background (~1200 SZSE requests at a polite pace, a few
+  // minutes) and polls for completion, since the request itself returns
+  // immediately rather than blocking for the full run.
+  const startBackfill = () => {
+    setBackfill({ running: true, error: null, note: null });
+    fetch('/api/china-leverage/backfill', { method: 'POST' })
+      .then(response => (response.ok
+        ? response.json()
+        : response.json().then(body => Promise.reject(new Error(body.error || `HTTP ${response.status}`)))))
+      .then(() => {
+        const poll = () => {
+          fetch('/api/china-leverage/backfill')
+            .then(r => r.json())
+            .then(status => {
+              if (status.running) { setTimeout(poll, 5000); return; }
+              if (status.error) { setBackfill({ running: false, error: status.error, note: null }); return; }
+              setBackfill({ running: false, error: null, note: `Backfilled ${status.dates} trading days` });
+              loadData();
+            })
+            .catch(pollError => setBackfill({ running: false, error: pollError.message, note: null }));
+        };
+        poll();
+      })
+      .catch(startError => setBackfill({ running: false, error: startError.message, note: null }));
+  };
+
   const sseWin = useMemo(() => (data ? windowed(data.dates, data.bySse, range) : null), [data, range]);
   const szseWin = useMemo(() => (data ? windowed(data.dates, data.bySzse, range) : null), [data, range]);
   const etfWin = useMemo(
@@ -516,6 +555,14 @@ export default function ChinaLeverage() {
 
   const toggles = (
     <div className="lev-toggles">
+      <button
+        className="lev-backfill-btn"
+        onClick={startBackfill}
+        disabled={backfill.running}
+        title="Backfill 5 years of SSE/SZSE margin history (runs on the server, a few minutes)"
+      >
+        {backfill.running ? 'Backfilling 5y history…' : 'Backfill 5y history'}
+      </button>
       <div className="view-toggle">
         {RANGES.map(item => (
           <button
@@ -529,6 +576,12 @@ export default function ChinaLeverage() {
       </div>
     </div>
   );
+
+  const backfillNote = backfill.error
+    ? <div className="lev-backfill-note lev-backfill-note-error">Backfill failed: {backfill.error}</div>
+    : backfill.note
+    ? <div className="lev-backfill-note">{backfill.note}</div>
+    : null;
 
   if (error || !data || !sseWin || !szseWin) {
     return (
@@ -559,6 +612,7 @@ export default function ChinaLeverage() {
         </div>
         {toggles}
       </div>
+      {backfillNote}
 
       {METRICS.map(metric => (
         <div className="cgrid" key={metric.key}>

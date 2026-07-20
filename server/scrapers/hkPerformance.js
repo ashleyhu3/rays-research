@@ -1,5 +1,8 @@
 'use strict';
 
+const path = require('path');
+const storage = require('../storage');
+
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 function isoDate(d) {
@@ -33,6 +36,15 @@ async function mapLimit(items, limit, fn) {
 // sub-indices, fetched from East Money's public kline API instead (secid
 // market "124" = Hang Seng indices). Same flaky-under-load endpoint as
 // hkChinaPerformance.js's ChiNext/STAR50 fallback, so same retry/backoff.
+//
+// East Money is also unreachable from some hosting providers' outbound IP
+// ranges (observed: production returning empty series while this scrape
+// works fine elsewhere) — so results are persisted to a Mongo-backed history
+// blob (see loadHistory/saveHistory) rather than fetched live on every page
+// request. A daily/6-hourly cron job (see server/scheduler.js) re-runs
+// getHkPerformance() to extend the history; the API route reads the stored
+// history only (readHkPerformance), so a page load never depends on East
+// Money being reachable at request time.
 const TICKERS = [
   { ticker: '800701', eastmoneyCode: 'HSCI',   label: '800701', name: 'HSCI' },
 
@@ -54,6 +66,12 @@ const TICKERS = [
   { ticker: '800715', eastmoneyCode: 'HSMI',   label: '800715', name: 'Mid Cap' },
   { ticker: '800716', eastmoneyCode: 'HSSI',   label: '800716', name: 'Small Cap' },
 ];
+
+const BLOB = 'hkPerformanceHistory';
+const HISTORY_FILE = path.join(__dirname, '..', 'data', 'hkPerformanceHistory.json');
+
+function loadHistory() { return storage.read(BLOB, HISTORY_FILE); }
+function saveHistory(h) { storage.write(BLOB, HISTORY_FILE, h); }
 
 async function fetchEastmoneyIndexSeries(eastmoneyCode, start, end, tries = 4) {
   const url = `https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=124.${eastmoneyCode}`
@@ -84,9 +102,31 @@ function inclusiveEndDate(endDate) {
   return end;
 }
 
-async function getHkPerformance(startDate, endDate = new Date()) {
-  const end = inclusiveEndDate(endDate);
-  const start = new Date(startDate);
+// Rebuild the { dates, series } payload from the persisted history blob only —
+// no network calls, so this always succeeds regardless of East Money's
+// reachability from wherever the server happens to run.
+function assemble(history) {
+  const dates = Object.keys(history).filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d)).sort();
+  const series = TICKERS.map(meta => ({
+    ticker: meta.ticker,
+    label: meta.label,
+    name: meta.name,
+    closes: dates.map(d => history[d]?.[meta.ticker] ?? null),
+    error: null,
+  }));
+  return { start: dates[0] ?? null, end: dates[dates.length - 1] ?? null, dates, series };
+}
+
+/**
+ * Scrape the last `days` calendar days of every index, merge into the
+ * persisted history, and return the full assembled series (not just the
+ * freshly-scraped window). `days` defaults to a light daily top-up; the
+ * backfill script passes a much larger window.
+ */
+async function getHkPerformance(days = 30) {
+  const today = new Date();
+  const start = new Date(today.getTime() - days * 86400000);
+  const end = inclusiveEndDate(today);
 
   const results = await mapLimit(TICKERS, 4, async meta => {
     try {
@@ -97,24 +137,22 @@ async function getHkPerformance(startDate, endDate = new Date()) {
     }
   });
 
-  // Union of all trading dates — a single feed momentarily short a day
-  // shouldn't truncate everyone else's.
-  const dateSet = new Set();
-  for (const r of results) for (const p of r.points) dateSet.add(p.date);
-  const dates = [...dateSet].sort();
+  const history = loadHistory();
+  for (const r of results) {
+    for (const p of r.points) {
+      if (!Number.isFinite(p.close)) continue;
+      history[p.date] = { ...(history[p.date] ?? {}), [r.ticker]: p.close };
+    }
+  }
+  saveHistory(history);
 
-  const series = results.map(r => {
-    const byDate = new Map(r.points.map(p => [p.date, p.close]));
-    return {
-      ticker: r.ticker,
-      label: r.label,
-      name: r.name,
-      closes: dates.map(d => byDate.get(d) ?? null),
-      error: r.error,
-    };
-  });
-
-  return { start: dates[0] ?? isoDate(start), end: dates[dates.length - 1] ?? isoDate(endDate), dates, series };
+  return assemble(history);
 }
 
-module.exports = { getHkPerformance, TICKERS };
+// Read-only view of the stored history (no scrape) — used by the API route so
+// a page load never depends on East Money being reachable at request time.
+function readHkPerformance() {
+  return assemble(loadHistory());
+}
+
+module.exports = { getHkPerformance, readHkPerformance, TICKERS };
