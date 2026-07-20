@@ -30,26 +30,19 @@
  * archive hasn't caught up. Verified byte-for-byte identical Total-column
  * values against the archive on a week common to both.
  *
- * Also carries the 2× leveraged ETF layer: net assets (AUM) for the nine
- * listed products tracking Nikkei 225 / TOPIX / MSCI Japan at 2× daily —
- * seven Tokyo-listed, one Hong Kong-listed, one US-listed. Every figure is
- * the fund's own officially disclosed AUM — never a price × shares-outstanding
- * estimate. Six of the nine (next1570, lif1358, rakuten1458, ifree1365,
- * ifree1367, csop7262) publish genuine full daily history from their own
- * site/HKEXnews; the other three (simplex1579, simplex1568, ezj) only expose
- * a live current-value snapshot with no historical download, so their charted
- * history starts wherever this scraper's polling starts and builds forward —
- * still official, just not backfillable.
+ * Also carries the 2× leveraged ETF layer: net assets (AUM) for six listed
+ * products tracking Nikkei 225 / TOPIX at 2× daily — five Tokyo-listed, one
+ * Hong Kong-listed. Every figure is the fund's own officially disclosed AUM —
+ * never a price × shares-outstanding estimate. All six publish genuine full
+ * daily history from their own site/HKEXnews, so the summed total is a
+ * consistent like-for-like series across its whole span.
  *
  *   next1570      1570      NEXT FUNDS Nikkei 225 Leveraged Index ETF          nomura-am.co.jp CSV, full history
  *   lif1358       1358      Listed Index Fund Nikkei Leveraged Index           amova-am.com CSV, full history
  *   rakuten1458   1458      Rakuten ETF Nikkei 225 Leveraged Index             rakuten-toushin.co.jp CSV, full history
  *   ifree1365     1365      iFreeETF Nikkei 225 Leveraged Index                daiwa-am.co.jp CSV, full history
- *   simplex1579   1579      Nikkei 225 Bull 2x ETF                             simplexasset.com CSV, current only
- *   simplex1568   1568      TOPIX Bull 2x ETF                                  simplexasset.com CSV, current only
  *   ifree1367     1367      iFreeETF TOPIX Leveraged (2x) Index                daiwa-am.co.jp CSV, full history
  *   csop7262      7262.HK   CSOP Nikkei 225 Daily (2x) Leveraged Product       HKEXnews L&I workbook, full history
- *   ezj           EZJ       ProShares Ultra MSCI Japan                        Nasdaq quote API, current only (USD, FX'd to JPY)
  */
 const XLSX = require('@e965/xlsx');
 const path = require('path');
@@ -174,11 +167,8 @@ const ETF_PRODUCTS = [
   { key: 'lif1358', label: 'Listed Index Fund Nikkei Leveraged Index', code: '1358', market: 'Tokyo (TSE)', underlying: 'Nikkei 225' },
   { key: 'rakuten1458', label: 'Rakuten ETF Nikkei 225 Leveraged Index', code: '1458', market: 'Tokyo (TSE)', underlying: 'Nikkei 225' },
   { key: 'ifree1365', label: 'iFreeETF Nikkei 225 Leveraged Index', code: '1365', market: 'Tokyo (TSE)', underlying: 'Nikkei 225' },
-  { key: 'simplex1579', label: 'Nikkei 225 Bull 2x ETF', code: '1579', market: 'Tokyo (TSE)', underlying: 'Nikkei 225' },
-  { key: 'simplex1568', label: 'TOPIX Bull 2x ETF', code: '1568', market: 'Tokyo (TSE)', underlying: 'TOPIX' },
   { key: 'ifree1367', label: 'iFreeETF TOPIX Leveraged (2x) Index', code: '1367', market: 'Tokyo (TSE)', underlying: 'TOPIX' },
   { key: 'csop7262', label: 'CSOP Nikkei 225 Daily (2x) Leveraged Product', code: '7262.HK', market: 'Hong Kong', underlying: 'Nikkei 225' },
-  { key: 'ezj', label: 'ProShares Ultra MSCI Japan', code: 'EZJ', market: 'United States', underlying: 'MSCI Japan' },
 ];
 
 // Fetched as raw bytes and decoded latin1 rather than Shift-JIS/UTF-8 — every
@@ -237,24 +227,6 @@ function parseDaiwaCsv(text) {
     if (Number.isFinite(aum)) out[`${cols[0].slice(0, 4)}-${cols[0].slice(4, 6)}-${cols[0].slice(6)}`] = aum;
   }
   return out;
-}
-
-// Simplex (1579, 1568): one shared tab-delimited CSV, current day only, every
-// row a different Simplex ETF. Row is matched by the ticker embedded in the
-// "取引所コード" column's <a>code</a> anchor text rather than the fund name,
-// since that's stable across any relabeling. 純資産総額 is in 億円.
-async function simplexCurrentAum(code) {
-  const res = await fetch('https://www.simplexasset.com/etf/ETFNAV.csv', {
-    headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(30000),
-  });
-  if (!res.ok) throw new Error(`Simplex ETFNAV HTTP ${res.status}`);
-  const text = (await res.text()).replace(/^﻿/, '');
-  const row = text.split(/\r?\n/).find(line => line.includes(`>${code}<`));
-  if (!row) return null;
-  const cols = row.split('\t');
-  const aumM = cols[5]?.match(/^([\d,.]+)億円$/);
-  if (!aumM) return null;
-  return Number(aumM[1].replace(/,/g, '')) * 1e8;
 }
 
 /* HKEXnews: csop7262 (7262.HK) — a workbook CSOP files jointly for its whole
@@ -326,49 +298,12 @@ async function hkexCsop7262History(from, to) {
   return out;
 }
 
-/* Nasdaq: ezj (EZJ) current net assets, USD — same endpoint chinaLeverage.js
-   uses for CHAU. FX'd to JPY via that day's USD/JPY close; no historical AUM
-   is published for this fund, so unlike CHAU there is no back-projected
-   estimate here — only today's genuinely official figure is ever recorded. */
-async function nasdaqCurrentAumUsd(symbol) {
-  const res = await fetch(`https://api.nasdaq.com/api/quote/${symbol}/summary?assetclass=etf`, {
-    headers: { 'User-Agent': UA, Accept: 'application/json' },
-    signal: AbortSignal.timeout(30000),
-  });
-  if (!res.ok) throw new Error(`Nasdaq ${symbol} HTTP ${res.status}`);
-  const json = await res.json();
-  const raw = json?.data?.summaryData?.AUM?.value; // e.g. "12,489" — thousands of USD
-  const thousands = Number(String(raw ?? '').replace(/,/g, ''));
-  if (!Number.isFinite(thousands)) throw new Error(`Nasdaq ${symbol} AUM missing`);
-  return thousands * 1000;
-}
-
-async function yahooDailyClose(symbol, range) {
-  const res = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?range=${range}&interval=1d`, {
-    headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(30000),
-  });
-  if (!res.ok) throw new Error(`Yahoo ${symbol} HTTP ${res.status}`);
-  const json = await res.json();
-  const result = json.chart?.result?.[0];
-  if (!result) throw new Error(`Yahoo ${symbol} returned no data`);
-  const timestamps = result.timestamp ?? [];
-  const closes = result.indicators?.quote?.[0]?.close ?? [];
-  const tz = result.meta?.exchangeTimezoneName ?? 'America/New_York';
-  const out = {};
-  timestamps.forEach((ts, i) => {
-    const close = closes[i];
-    if (!Number.isFinite(close)) return;
-    out[new Date(ts * 1000).toLocaleDateString('en-CA', { timeZone: tz })] = close;
-  });
-  return out;
-}
-
 /**
  * Scrape every product's official AUM and merge into history.etf, keyed by
  * product then day: { aum } in raw yen. `days` widens the HKEXnews date-range
  * fetch for a deep backfill; the issuer CSVs always return their full history
- * regardless, and the current-only sources (Simplex ×2, EZJ) only ever add
- * today's point.
+ * regardless. Every source here publishes genuine daily history, so the summed
+ * total stays like-for-like across its whole span.
  */
 async function scrapeEtfHistory(history, days = 90) {
   history.etf = history.etf ?? {};
@@ -376,7 +311,7 @@ async function scrapeEtfHistory(history, days = 90) {
   const from = compact(iso(new Date(today.getTime() - days * 86400000)));
   const to = compact(iso(today));
 
-  const [nomura, amova, rakuten, daiwa1365, daiwa1367, simplex1579, simplex1568, hkex7262, ezjUsd, usdJpy] = await Promise.all([
+  const [nomura, amova, rakuten, daiwa1365, daiwa1367, hkex7262] = await Promise.all([
     fetchCsvText('https://www.nomura-am.co.jp/fund/etf/history/ETF_1570.csv').then(parseNomuraCsv)
       .catch(e => { console.warn(`[japanLeverage] Nomura 1570: ${e.message}`); return {}; }),
     fetchCsvText('https://www.amova-am.com/products/etf/files/etf/dailydata/etf-funddata-613584.csv').then(parseAmovaCsv)
@@ -387,11 +322,7 @@ async function scrapeEtfHistory(history, days = 90) {
       .catch(e => { console.warn(`[japanLeverage] Daiwa 1365: ${e.message}`); return {}; }),
     fetchCsvText('https://www.daiwa-am.co.jp/funds/detail/csv_out.php?code=3503&type=1').then(parseDaiwaCsv)
       .catch(e => { console.warn(`[japanLeverage] Daiwa 1367: ${e.message}`); return {}; }),
-    simplexCurrentAum('1579').catch(e => { console.warn(`[japanLeverage] Simplex 1579: ${e.message}`); return null; }),
-    simplexCurrentAum('1568').catch(e => { console.warn(`[japanLeverage] Simplex 1568: ${e.message}`); return null; }),
     hkexCsop7262History(from, to).catch(e => { console.warn(`[japanLeverage] HKEXnews 7262: ${e.message}`); return {}; }),
-    nasdaqCurrentAumUsd('EZJ').catch(e => { console.warn(`[japanLeverage] Nasdaq EZJ: ${e.message}`); return null; }),
-    yahooDailyClose('JPY=X', '5d').catch(e => { console.warn(`[japanLeverage] Yahoo JPY=X: ${e.message}`); return {}; }),
   ]);
 
   const assign = (key, dayToYen) => {
@@ -407,20 +338,10 @@ async function scrapeEtfHistory(history, days = 90) {
   assign('ifree1365', daiwa1365);
   assign('ifree1367', daiwa1367);
   assign('csop7262', Object.fromEntries(Object.entries(hkex7262).map(([day, row]) => [day, row.aum])));
-
-  const todayIso = iso(today);
-  if (Number.isFinite(simplex1579)) assign('simplex1579', { [todayIso]: simplex1579 });
-  if (Number.isFinite(simplex1568)) assign('simplex1568', { [todayIso]: simplex1568 });
-
-  if (Number.isFinite(ezjUsd)) {
-    const fxDays = Object.keys(usdJpy).sort();
-    const rate = usdJpy[fxDays.at(-1)];
-    if (Number.isFinite(rate)) assign('ezj', { [todayIso]: ezjUsd * rate });
-  }
 }
 
 /**
- * Fold the nine products' JPY AUM into one billions-JPY total and a
+ * Fold the six products' JPY AUM into one billions-JPY total and a
  * latest-snapshot fund table, carrying each product forward through its own
  * reporting gaps so one product's lag doesn't dent the total — same shape as
  * chinaLeverage.js's assembleEtf.
@@ -450,18 +371,50 @@ function assembleEtf(history) {
     total.push(Number.isFinite(last) ? round2(last / 1e9) : null); // yen -> billions
   }
 
-  const fundsDate = [...dates].reverse().find(day => keys.some(key => history.etf?.[key]?.[day]));
+  // The fund table carries a single "as of" date, so use the OLDEST of the
+  // funds' latest reporting dates — issuers publish at slightly different
+  // times, and this keeps the label true for every row rather than stamping a
+  // fund's carried-forward prior-day figure with a date it hasn't reached.
+  // Funds fresher than this date roll back to their value as of it; a fund
+  // that hadn't started reporting by then is simply omitted from the table.
+  const latestByFund = {};
+  for (const key of keys) {
+    const reported = Object.keys(history.etf?.[key] ?? {})
+      .filter(day => Number.isFinite(history.etf[key][day]?.aum));
+    if (reported.length) latestByFund[key] = reported.sort().at(-1);
+  }
+  const reportedKeys = keys.filter(key => latestByFund[key]);
+  const fundsDate = reportedKeys.length
+    ? reportedKeys.map(key => latestByFund[key]).sort()[0]
+    : null;
+
+  const aumAsOf = {};
+  if (fundsDate) {
+    for (const key of reportedKeys) {
+      const asOf = Object.keys(history.etf[key])
+        .filter(day => day <= fundsDate && Number.isFinite(history.etf[key][day]?.aum))
+        .sort().at(-1);
+      if (asOf) aumAsOf[key] = history.etf[key][asOf].aum;
+    }
+  }
+
   const funds = ETF_PRODUCTS
-    .filter(p => Number.isFinite(lastAum[p.key]))
+    .filter(p => Number.isFinite(aumAsOf[p.key]))
     .map(p => ({
       key: p.key,
       label: p.label,
       code: p.code,
       market: p.market,
       underlying: p.underlying,
-      aum: round2(lastAum[p.key] / 1e9),
+      aum: round2(aumAsOf[p.key] / 1e9),
     }))
     .sort((a, b) => b.aum - a.aum);
+
+  // Total across the same as-of snapshot, so the table's "share of total"
+  // sums over exactly the figures shown rather than the chart's latest point.
+  const fundsTotal = funds.length
+    ? round2(funds.reduce((sum, f) => sum + f.aum, 0))
+    : null;
 
   return {
     dates,
@@ -469,6 +422,7 @@ function assembleEtf(history) {
     carriedFrom: carried,
     funds,
     fundsDate: fundsDate ?? null,
+    fundsTotal, // billions of JPY, summed as of fundsDate
   };
 }
 

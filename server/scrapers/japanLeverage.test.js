@@ -138,7 +138,7 @@ test('parseHkexMultiProductWorkbook locates the requested ticker\'s column group
   assert.equal(result.aum, 2633237592.68); // not 7200's 3076226869.08
 });
 
-test('assembleEtf sums the nine products\' JPY AUM into one billions-JPY total, carrying each through its own gaps', () => {
+test('assembleEtf sums the six products\' JPY AUM into one billions-JPY total, carrying each through its own gaps', () => {
   const data = _test.assembleEtf({
     etf: {
       next1570: { '2026-07-16': { aum: 644135729658 }, '2026-07-17': { aum: 650000000000 } },
@@ -156,14 +156,44 @@ test('assembleEtf sorts the fund table by AUM and carries label/market/underlyin
   const data = _test.assembleEtf({
     etf: {
       next1570: { '2026-07-17': { aum: 644135729658 } },
-      ezj: { '2026-07-17': { aum: 2000000000 } },
+      csop7262: { '2026-07-17': { aum: 2000000000 } },
     },
   });
 
-  assert.deepEqual(data.funds.map(f => f.key), ['next1570', 'ezj']);
-  const ezj = data.funds.find(f => f.key === 'ezj');
-  assert.equal(ezj.market, 'United States');
-  assert.equal(ezj.underlying, 'MSCI Japan');
+  assert.deepEqual(data.funds.map(f => f.key), ['next1570', 'csop7262']);
+  const csop = data.funds.find(f => f.key === 'csop7262');
+  assert.equal(csop.market, 'Hong Kong');
+  assert.equal(csop.underlying, 'Nikkei 225');
+});
+
+test('fund table dates to the oldest fund latest-date, rolling fresher funds back to their value as of it', () => {
+  const data = _test.assembleEtf({
+    etf: {
+      // next1570 latest is 07-16; rakuten1458 posts a fresher 07-17
+      next1570: { '2026-07-16': { aum: 644135729658 } },
+      rakuten1458: { '2026-07-16': { aum: 41000000000 }, '2026-07-17': { aum: 41214000000 } },
+    },
+  });
+
+  // Conservative "as of" = the oldest latest-date across funds (07-16), not 07-17.
+  assert.equal(data.fundsDate, '2026-07-16');
+  // rakuten shows its 07-16 figure (rolled back a day), not its 07-17 figure.
+  const rakuten = data.funds.find(f => f.key === 'rakuten1458');
+  assert.equal(rakuten.aum, round2(41000000000 / 1e9));
+  // fundsTotal sums exactly the displayed as-of figures.
+  assert.equal(data.fundsTotal, round2((644135729658 + 41000000000) / 1e9));
+});
+
+test('a fund that had not started reporting by fundsDate is omitted from the table', () => {
+  const data = _test.assembleEtf({
+    etf: {
+      next1570: { '2026-07-16': { aum: 644135729658 } }, // latest 07-16 -> fundsDate 07-16
+      rakuten1458: { '2026-07-17': { aum: 41214000000 } }, // first point is after fundsDate
+    },
+  });
+
+  assert.equal(data.fundsDate, '2026-07-16');
+  assert.deepEqual(data.funds.map(f => f.key), ['next1570']);
 });
 
 function round2(v) { return Math.round(v * 100) / 100; }

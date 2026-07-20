@@ -279,7 +279,7 @@ function MetricPanel({ metric, win }) {
   );
 }
 
-/* ── 2× ETF panel: net assets (AUM) of the nine listed products, summed into
+/* ── 2× ETF panel: net assets (AUM) of the six listed products, summed into
    one JPY total — same chart + fund-table format as ChinaLeverage.jsx's
    EtfPanel/EtfFundTable. Every figure is the fund's own officially disclosed
    AUM; none are estimated from price × shares outstanding. */
@@ -396,9 +396,7 @@ function EtfSourceLinks() {
     { label: 'Amova Asset Management', url: 'https://www.amova-am.com/products/etf/lineup/nleveraged', color: BLUE },
     { label: 'Rakuten Asset Management', url: 'https://www.rakuten-toushin.co.jp/fund/nav/225bull/', color: BLUE },
     { label: 'Daiwa Asset Management (iFree)', url: 'https://www.daiwa-am.co.jp/etf/funds/3501/', color: BLUE },
-    { label: 'Simplex Asset Management', url: 'https://www.simplexasset.com/etf/etf1579.html', color: ORANGE },
     { label: 'HKEXnews L&I disclosures', url: 'https://www1.hkexnews.hk/search/titlesearch.xhtml?lang=en', color: GOLD },
-    { label: 'Nasdaq fund data', url: 'https://www.nasdaq.com/market-activity/etf/ezj', color: PURPLE },
   ];
   return (
     <span className="lev-srcs">
@@ -414,10 +412,8 @@ function EtfSourceLinks() {
 const ETF_NOTE = 'Every figure is the fund\'s own officially disclosed net asset total — never a price × shares-outstanding '
   + 'estimate. NEXT FUNDS (1570), Listed Index Fund (1358), Rakuten ETF (1458), and both iFreeETF funds (1365, 1367) '
   + 'publish full daily net-asset history on their own sites; CSOP (7262.HK) publishes full daily history via HKEXnews\' '
-  + 'L&I disclosures. Simplex\'s two funds (1579, 1568) and ProShares\' EZJ only publish a live current-day snapshot with '
-  + 'no historical download, so those three series start wherever this page\'s polling started and build forward — still '
-  + 'official, just not backfillable. EZJ is reported in USD by ProShares/Nasdaq and converted to JPY at that day\'s '
-  + 'close; every other fund already discloses its AUM in JPY.';
+  + 'L&I disclosures. All six funds already disclose their AUM in JPY, so the summed total is a consistent like-for-like '
+  + 'series across its whole span.';
 
 function EtfPanel({ win, funds, fundsDate, layerTotal }) {
   const rows = funds?.length ?? 0;
@@ -429,7 +425,7 @@ function EtfPanel({ win, funds, fundsDate, layerTotal }) {
         title="Japan · 2× Leveraged ETF Net Assets"
         src={<EtfSourceLinks />}
         freq="Daily"
-        lag="Issuer sites same-evening; HKEXnews/Nasdaq live"
+        lag="Issuer sites same-evening; HKEXnews live"
         span2
         height={320}
         srcNote={ETF_NOTE}
@@ -449,7 +445,7 @@ function EtfPanel({ win, funds, fundsDate, layerTotal }) {
       title="Japan · 2× Leveraged ETF Net Assets"
       src={<EtfSourceLinks />}
       freq="Daily"
-      lag="Issuer sites same-evening; HKEXnews/Nasdaq live"
+      lag="Issuer sites same-evening; HKEXnews live"
       span2
       height={Math.max(430, 340 + rows * 32)}
       legend={[['Net assets', ETF_COLOR]]}
@@ -560,7 +556,7 @@ export default function JapanLeverage() {
         win={etfWin}
         funds={data.etf?.funds}
         fundsDate={data.etf?.fundsDate}
-        layerTotal={data.etf?.total?.at(-1)}
+        layerTotal={data.etf?.fundsTotal ?? data.etf?.total?.at(-1)}
       />
     </>
   );
