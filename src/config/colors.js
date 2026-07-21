@@ -14,6 +14,7 @@ export const C = {
   baidu:      '#3b82f6',
   xai:        '#e5e7eb',
   qwen:       '#6366f1',
+  tencent:    '#2dd4bf',
   red:        '#f87171',
   teal:       '#39d0b4',
   orange:     '#f0883e',

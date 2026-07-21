@@ -4,21 +4,21 @@ import RevPerTokenCard from '../../components/chart/RevPerTokenCard';
 import EditableGrid from '../../components/chart/EditableGrid';
 import { useData } from '../../context/DataContext';
 
-export default function DemandMiniMax({ weeks: W }) {
+export default function DemandXiaomi({ weeks: W }) {
   const { liveData: ld } = useData();
 
   return (
-    <EditableGrid viewId="demand-minimax">
-      {orComboCard(ld?.openrouterRanks, 'MiniMax', W, C.minimax, 'mm', ld)}
+    <EditableGrid viewId="demand-xiaomi">
+      {orComboCard(ld?.openrouterRanks, 'Xiaomi', W, C.xiaomi, 'xm', ld)}
 
       <RevPerTokenCard
-        chartId="mm-revtoken"
-        provider="MiniMax"
+        chartId="xm-revtoken"
+        provider="Xiaomi"
         ranks={ld?.openrouterRanks}
         liveData={ld}
         weeks={W}
-        color={C.minimax}
-        ticker="0100.HK"
+        color={C.xiaomi}
+        ticker="1810.HK"
       />
     </EditableGrid>
   );

@@ -27,6 +27,11 @@ const REV_COMPANIES = [
   { name: 'DeepSeek',  color: C.deepseek,  fallbackPrice: 0.35 },
   { name: 'Zhipu AI',  color: C.zhipu,     fallbackPrice: 0.40 },
   { name: 'MiniMax',   color: C.minimax,   fallbackPrice: 0.30 },
+  { name: 'xAI',            color: C.xai,     fallbackPrice: 3.00 },
+  { name: 'Moonshot AI',    color: C.kimi,    fallbackPrice: 0.50 },
+  { name: 'Alibaba (Qwen)', color: C.qwen,    fallbackPrice: 0.30 },
+  { name: 'Xiaomi',         color: C.xiaomi,  fallbackPrice: 0.20 },
+  { name: 'Tencent',        color: C.tencent, fallbackPrice: 0.30 },
 ];
 
 // ~6 months of complete weeks.

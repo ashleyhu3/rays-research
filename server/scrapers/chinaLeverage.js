@@ -360,18 +360,32 @@ async function getChinaLeverage(days = 30) {
 
   // SZSE: one request per trading day, skipping days already stored — so the
   // daily poll costs a handful of requests and only a backfill pays in full.
+  // Pace is configurable (env vars) because a deep backfill's ~1200 requests
+  // at the daily poll's brisk 150ms pace previously tripped SZSE's bot
+  // detection into blocking the source IP outright; a slower pace with
+  // periodic longer rests keeps a backfill under the radar. Left at their
+  // defaults, the daily poll's handful of requests behave exactly as before.
+  const szseDelayMs = Number(process.env.CHINA_LEVERAGE_SZSE_DELAY_MS) || 150;
+  const szseRestEvery = Number(process.env.CHINA_LEVERAGE_SZSE_REST_EVERY) || 0;
+  const szseRestMs = Number(process.env.CHINA_LEVERAGE_SZSE_REST_MS) || 0;
   const needSzse = tradingDays.filter(d => !history[d]?.szse);
   if (needSzse.length > 5) console.log(`[chinaLeverage] SZSE: fetching ${needSzse.length} days…`);
   const szseFresh = {};
   let szseOk = 0;
-  for (const day of needSzse) {
+  for (let i = 0; i < needSzse.length; i++) {
+    const day = needSzse[i];
     try {
       const row = await szseMarginDay(day);
       if (row) { szseFresh[day] = row; szseOk++; }
     } catch (e) {
       console.warn(`[chinaLeverage] SZSE ${day}: ${e.message}`);
     }
-    await sleep(150); // be a good citizen
+    if (szseRestEvery && (i + 1) % szseRestEvery === 0) {
+      console.log(`[chinaLeverage] SZSE: resting ${szseRestMs}ms after ${i + 1}/${needSzse.length}…`);
+      await sleep(szseRestMs);
+    } else {
+      await sleep(szseDelayMs); // be a good citizen
+    }
   }
   if (needSzse.length > 5) console.log(`[chinaLeverage] SZSE: got ${szseOk}/${needSzse.length}`);
 

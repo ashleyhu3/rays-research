@@ -10,6 +10,12 @@ const COMPANY_PROVIDERS = {
   'demand-google':    'Google',
   'demand-zhipu':     'Zhipu AI',
   'demand-minimax':   'MiniMax',
+  'demand-xai':       'xAI',
+  'demand-kimi':      'Moonshot AI',
+  'demand-qwen':      'Alibaba (Qwen)',
+  'demand-deepseek':  'DeepSeek',
+  'demand-xiaomi':    'Xiaomi',
+  'demand-tencent':   'Tencent',
 };
 
 const TREND_LABEL = {

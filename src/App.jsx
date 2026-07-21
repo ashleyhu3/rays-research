@@ -26,6 +26,12 @@ import DemandAnthropic from './pages/companies/Anthropic';
 import DemandGoogle    from './pages/companies/Google';
 import DemandZhipu     from './pages/companies/Zhipu';
 import DemandMiniMax   from './pages/companies/MiniMax';
+import DemandXAI       from './pages/companies/XAI';
+import DemandKimi      from './pages/companies/Kimi';
+import DemandQwen      from './pages/companies/Qwen';
+import DemandDeepSeek  from './pages/companies/DeepSeek';
+import DemandXiaomi    from './pages/companies/Xiaomi';
+import DemandTencent   from './pages/companies/Tencent';
 // Market signals
 import MarketSignals    from './pages/market-signals/MarketSignals';
 import DemandGeneral    from './pages/market-signals/InfrastructureOss';
@@ -76,6 +82,7 @@ const MARKET_PERF_VIEWS = new Set(['us-performance', 'hk-china-performance', 'hk
 const LAYOUT_EDITABLE = new Set([
   'pypi','github','web','hf','pricing-memory','pricing-gpu','pricing-aws','pricing-cpu','pricing-tpu','datacenter','electricity','chinese',
   'demand-openai','demand-anthropic','demand-google','demand-zhipu','demand-minimax','demand-general','openrouter-rankings',
+  'demand-xai','demand-kimi','demand-qwen','demand-deepseek','demand-xiaomi','demand-tencent',
   'dc-capacity','dc-timelines',
   'dc-co-aws','dc-co-google','dc-co-microsoft','dc-co-oracle','dc-co-openai','dc-co-nebius','dc-co-meta',
 ]);
@@ -140,6 +147,12 @@ const VIEW_COMPONENTS = {
   'demand-google':    DemandGoogle,
   'demand-zhipu':     DemandZhipu,
   'demand-minimax':   DemandMiniMax,
+  'demand-xai':       DemandXAI,
+  'demand-kimi':      DemandKimi,
+  'demand-qwen':      DemandQwen,
+  'demand-deepseek':  DemandDeepSeek,
+  'demand-xiaomi':    DemandXiaomi,
+  'demand-tencent':   DemandTencent,
   'demand-general':        DemandGeneral,
   'openrouter-rankings':   DemandOpenRouter,
   'market-signals':        MarketSignals,
