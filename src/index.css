@@ -1250,6 +1250,19 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
 .or-nav::-webkit-scrollbar { width: 6px; }
 .or-nav::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 3px; }
 .or-nav::-webkit-scrollbar-track { background: transparent; }
+.or-nav-search {
+  flex-shrink: 0; width: 100%; box-sizing: border-box;
+  padding: 6px 10px; margin-bottom: 5px;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+  font-family: var(--font-b); font-size: 12.5px; color: var(--text);
+  position: sticky; top: 0; z-index: 1;
+}
+.or-nav-search:focus { outline: none; border-color: var(--accent); }
+.or-nav-search::placeholder { color: var(--sec); }
+.or-nav-empty {
+  padding: 10px; font-family: var(--font-b); font-size: 12px;
+  color: var(--sec); text-align: center;
+}
 .or-nav-item {
   display: flex; align-items: center; gap: 8px;
   padding: 5px 10px; border-radius: 6px; cursor: pointer;

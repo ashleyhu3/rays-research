@@ -343,6 +343,7 @@ export default function Alerts() {
   const { report, loading, msg, load } = useOptionsReport();
   const [selected, setSelected] = useState(null);
   const [calEvents, setCalEvents] = useState([]);
+  const [search, setSearch] = useState('');
 
   useEffect(() => { load(); }, [load]);
 
@@ -379,8 +380,14 @@ export default function Alerts() {
     });
     return [...pinned, ...rest];
   })();
+  const query = search.trim().toUpperCase();
+  const filteredTickers = query ? tickers.filter(t => t.ticker.includes(query)) : tickers;
   const showCalendar = selected === CALENDAR_ID;
   const active = showCalendar ? null : (tickers.find(t => t.ticker === selected) ?? tickers[0] ?? null);
+
+  const searchToFirstMatch = () => {
+    if (filteredTickers.length) setSelected(filteredTickers[0].ticker);
+  };
 
   return (
     <div className="alerts-page">
@@ -390,6 +397,15 @@ export default function Alerts() {
 
       <div className="or-layout">
         <nav className="or-nav" aria-label="Tickers">
+          <input
+            type="text"
+            className="or-nav-search"
+            placeholder="Search ticker…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') searchToFirstMatch(); }}
+            aria-label="Search tickers"
+          />
           <button
             type="button"
             className={`or-nav-item or-nav-item--calendar${showCalendar ? ' active' : ''}`}
@@ -397,14 +413,16 @@ export default function Alerts() {
           >
             <span className="or-nav-name">Calendar</span>
           </button>
-          {tickers.map(t => (
+          {filteredTickers.length ? filteredTickers.map(t => (
             <TickerNavItem
               key={t.ticker}
               t={t}
               active={!showCalendar && t.ticker === active?.ticker}
               onSelect={setSelected}
             />
-          ))}
+          )) : (
+            <div className="or-nav-empty">No match for "{search.trim()}"</div>
+          )}
         </nav>
         <div className="or-report">
           {showCalendar ? (
