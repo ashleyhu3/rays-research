@@ -103,13 +103,23 @@ const METRICS = [
   },
 ];
 
-const RANGES = [
-  { id: '3m', label: '3M', days: 92 },
-  { id: 'ytd', label: 'YTD', days: null },
-  { id: '12m', label: '12M', days: 366 },
-  { id: '18m', label: '18M', days: 548 },
-  { id: '5y', label: '5Y', days: 1830 },
+const PRESETS = [
+  { id: '3m', label: '3M', getStart: () => isoMonthsAgo(3) },
+  { id: 'ytd', label: 'YTD', getStart: () => `${new Date().getFullYear()}-01-01` },
+  { id: '12m', label: '12M', getStart: () => isoMonthsAgo(12) },
+  { id: '18m', label: '18M', getStart: () => isoMonthsAgo(18) },
+  { id: '5y', label: '5Y', getStart: () => isoMonthsAgo(60) },
 ];
+
+function todayIso() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function isoMonthsAgo(n) {
+  const d = new Date();
+  d.setMonth(d.getMonth() - n);
+  return d.toISOString().slice(0, 10);
+}
 
 const MARKED_DATES = ['2025-04-07', '2026-03-30'];
 
@@ -139,28 +149,22 @@ function sessionIndex(dates, target) {
   return found;
 }
 
-function rangeFrom(dates, range) {
-  if (!dates.length) return 0;
-  if (range.id === 'ytd') {
-    const year = dates.at(-1).slice(0, 4);
-    const idx = dates.findIndex(d => d >= `${year}-01-01`);
-    return idx < 0 ? 0 : idx;
+function windowBounds(dates, startDate, endDate) {
+  let from = dates.findIndex(d => d >= startDate);
+  if (from < 0) from = 0;
+  let to = dates.length - 1;
+  for (let i = dates.length - 1; i >= 0; i -= 1) {
+    if (dates[i] <= endDate) { to = i; break; }
   }
-  if (range.days) {
-    const cutoff = new Date(
-      new Date(`${dates.at(-1)}T00:00:00Z`).getTime() - range.days * 86400000,
-    ).toISOString().slice(0, 10);
-    const idx = dates.findIndex(d => d >= cutoff);
-    return idx < 0 ? 0 : idx;
-  }
-  return 0;
+  if (to < from) to = dates.length - 1;
+  return { from, to };
 }
 
-/** Slice the six metric series to the selected trailing window. */
-function windowed(dates, seriesMap, range) {
+/** Slice the six metric series to the selected [startDate, endDate] window. */
+function windowed(dates, seriesMap, startDate, endDate) {
   if (!dates?.length) return null;
-  const from = rangeFrom(dates, range);
-  const cut = arr => (arr ?? []).slice(from);
+  const { from, to } = windowBounds(dates, startDate, endDate);
+  const cut = arr => (arr ?? []).slice(from, to + 1);
   return {
     dates: cut(dates),
     series: Object.fromEntries(Object.entries(seriesMap).map(([key, arr]) => [key, cut(arr)])),
@@ -488,12 +492,13 @@ function Tile({ label, value, color }) {
 }
 
 export default function ChinaLeverage() {
-  const [rangeId, setRangeId] = useState('18m');
+  const [startDate, setStartDate] = useState(() => isoMonthsAgo(18));
+  const [endDate, setEndDate] = useState(() => todayIso());
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [backfill, setBackfill] = useState({ running: false, error: null, note: null });
 
-  const range = RANGES.find(item => item.id === rangeId) ?? RANGES.find(item => item.id === '18m');
+  const maxDate = todayIso();
 
   const loadData = () => {
     fetch('/api/china-leverage')
@@ -546,11 +551,17 @@ export default function ChinaLeverage() {
       .catch(startError => setBackfill({ running: false, error: startError.message, note: null }));
   };
 
-  const sseWin = useMemo(() => (data ? windowed(data.dates, data.bySse, range) : null), [data, range]);
-  const szseWin = useMemo(() => (data ? windowed(data.dates, data.bySzse, range) : null), [data, range]);
+  const sseWin = useMemo(
+    () => (data ? windowed(data.dates, data.bySse, startDate, endDate) : null),
+    [data, startDate, endDate],
+  );
+  const szseWin = useMemo(
+    () => (data ? windowed(data.dates, data.bySzse, startDate, endDate) : null),
+    [data, startDate, endDate],
+  );
   const etfWin = useMemo(
-    () => (data?.etf ? windowed(data.etf.dates, { total: data.etf.total }, range) : null),
-    [data, range],
+    () => (data?.etf ? windowed(data.etf.dates, { total: data.etf.total }, startDate, endDate) : null),
+    [data, startDate, endDate],
   );
 
   const toggles = (
@@ -563,14 +574,37 @@ export default function ChinaLeverage() {
       >
         {backfill.running ? 'Backfilling 5y history…' : 'Backfill 5y history'}
       </button>
+      <div className="usp-date-fields">
+        <label className="usp-date-field">
+          <span>From</span>
+          <input
+            type="date"
+            className="usp-date-input"
+            value={startDate}
+            max={endDate || maxDate}
+            onChange={e => e.target.value && setStartDate(e.target.value)}
+          />
+        </label>
+        <label className="usp-date-field">
+          <span>To</span>
+          <input
+            type="date"
+            className="usp-date-input"
+            value={endDate}
+            min={startDate}
+            max={maxDate}
+            onChange={e => e.target.value && setEndDate(e.target.value)}
+          />
+        </label>
+      </div>
       <div className="view-toggle">
-        {RANGES.map(item => (
+        {PRESETS.map(preset => (
           <button
-            key={item.id}
-            className={`vt-btn${item.id === rangeId ? ' active' : ''}`}
-            onClick={() => setRangeId(item.id)}
+            key={preset.id}
+            className={`vt-btn${preset.getStart() === startDate && endDate === maxDate ? ' active' : ''}`}
+            onClick={() => { setStartDate(preset.getStart()); setEndDate(maxDate); }}
           >
-            {item.label}
+            {preset.label}
           </button>
         ))}
       </div>

@@ -1,11 +1,14 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Line } from 'react-chartjs-2';
+import { Fragment, useEffect, useMemo, useState } from 'react';
+import { Bar, Line } from 'react-chartjs-2';
 import ChartCard from '../../components/chart/ChartCard';
 
 const BLUE = '#4577b4';
 const ORANGE = '#ad622d';
 const PURPLE = '#7864b4';
 const REVERSE = '#c65d57';
+// Day-over-day change bars: green for increases (above 0), red for decreases (below 0).
+const UP = '#3f9d6d';
+const DOWN = '#c65d57';
 
 function alpha(hex, a) {
   const n = parseInt(hex.slice(1), 16);
@@ -256,13 +259,23 @@ const SURFACE = '#111419';
 const INK = '#e8e6e3';
 const MUTED = '#8a8a84';
 
-const RANGES = [
-  { id: '3m', label: '3M', days: 92 },
-  { id: 'ytd', label: 'YTD', days: null },
-  { id: '12m', label: '12M', days: 366 },
-  { id: '18m', label: '18M', days: 548 },
-  { id: '5y', label: '5Y', days: 1830 },
+const PRESETS = [
+  { id: '3m', label: '3M', getStart: () => isoMonthsAgo(3) },
+  { id: 'ytd', label: 'YTD', getStart: () => `${new Date().getFullYear()}-01-01` },
+  { id: '12m', label: '12M', getStart: () => isoMonthsAgo(12) },
+  { id: '18m', label: '18M', getStart: () => isoMonthsAgo(18) },
+  { id: '5y', label: '5Y', getStart: () => isoMonthsAgo(60) },
 ];
+
+function todayIso() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function isoMonthsAgo(n) {
+  const d = new Date();
+  d.setMonth(d.getMonth() - n);
+  return d.toISOString().slice(0, 10);
+}
 
 const MARKED_DATES = ['2025-04-07', '2026-03-30'];
 
@@ -353,24 +366,20 @@ function visibleLayers(data, market) {
   ).filter(Number.isFinite).length >= MIN_HISTORY);
 }
 
-/** Slice every series to the selected window while keeping each layer separate. */
-function windowed(data, market, range) {
+/** Slice every series to the selected [startDate, endDate] window, keeping each layer separate. */
+function windowed(data, market, startDate, endDate) {
   if (!data?.dates?.length) return null;
 
   const { dates } = data;
-  let from = 0;
-  if (range.id === 'ytd') {
-    const year = dates.at(-1).slice(0, 4);
-    from = dates.findIndex(date => date >= `${year}-01-01`);
-  } else if (range.days) {
-    const cutoff = new Date(
-      new Date(`${dates.at(-1)}T00:00:00Z`).getTime() - range.days * 86400000,
-    ).toISOString().slice(0, 10);
-    from = dates.findIndex(date => date >= cutoff);
-  }
+  let from = dates.findIndex(date => date >= startDate);
   if (from < 0) from = 0;
+  let to = dates.length - 1;
+  for (let i = dates.length - 1; i >= 0; i -= 1) {
+    if (dates[i] <= endDate) { to = i; break; }
+  }
+  if (to < from) to = dates.length - 1;
 
-  const cut = values => (values ?? []).slice(from);
+  const cut = values => (values ?? []).slice(from, to + 1);
   const shown = visibleLayers(data, market);
   const layers = Object.fromEntries(shown.map(layer => [layer.key, cut(data[layer.key])]));
   const longLayers = shown.filter(layer => market.layers.some(item => item.key === layer.key));
@@ -520,13 +529,13 @@ export function LeverageKorea() { return <Leverage marketId="korea" />; }
 export function LeverageTaiwan() { return <Leverage marketId="taiwan" />; }
 
 export default function Leverage({ marketId = 'korea' }) {
-  const [rangeId, setRangeId] = useState('18m');
+  const [startDate, setStartDate] = useState(() => isoMonthsAgo(18));
+  const [endDate, setEndDate] = useState(() => todayIso());
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
 
   const market = MARKETS[marketId];
-  const range = RANGES.find(item => item.id === rangeId)
-    ?? RANGES.find(item => item.id === '18m');
+  const maxDate = todayIso();
   const formatValue = value => (value == null ? '—' : `${value.toFixed(1)}${market.unit}`);
 
   useEffect(() => {
@@ -542,18 +551,44 @@ export default function Leverage({ marketId = 'korea' }) {
     return () => { live = false; };
   }, [market]);
 
-  const win = useMemo(() => windowed(data, market, range), [data, market, range]);
+  const win = useMemo(
+    () => windowed(data, market, startDate, endDate),
+    [data, market, startDate, endDate],
+  );
 
   const toggles = (
     <div className="lev-toggles">
+      <div className="usp-date-fields">
+        <label className="usp-date-field">
+          <span>From</span>
+          <input
+            type="date"
+            className="usp-date-input"
+            value={startDate}
+            max={endDate || maxDate}
+            onChange={e => e.target.value && setStartDate(e.target.value)}
+          />
+        </label>
+        <label className="usp-date-field">
+          <span>To</span>
+          <input
+            type="date"
+            className="usp-date-input"
+            value={endDate}
+            min={startDate}
+            max={maxDate}
+            onChange={e => e.target.value && setEndDate(e.target.value)}
+          />
+        </label>
+      </div>
       <div className="view-toggle">
-        {RANGES.map(item => (
+        {PRESETS.map(preset => (
           <button
-            key={item.id}
-            className={`vt-btn${item.id === rangeId ? ' active' : ''}`}
-            onClick={() => setRangeId(item.id)}
+            key={preset.id}
+            className={`vt-btn${preset.getStart() === startDate && endDate === maxDate ? ' active' : ''}`}
+            onClick={() => { setStartDate(preset.getStart()); setEndDate(maxDate); }}
           >
-            {item.label}
+            {preset.label}
           </button>
         ))}
       </div>
@@ -592,15 +627,17 @@ export default function Leverage({ marketId = 'korea' }) {
       </div>
 
       {win.shown.map(layer => (
-        <LayerPanel
-          key={layer.key}
-          market={market}
-          marketId={marketId}
-          layer={layer}
-          win={win}
-          data={data}
-          formatValue={formatValue}
-        />
+        <Fragment key={layer.key}>
+          <LayerPanel
+            market={market}
+            marketId={marketId}
+            layer={layer}
+            win={win}
+            data={data}
+            formatValue={formatValue}
+          />
+          {layer.key === 'margin' && <MarginDodPanel market={market} win={win} />}
+        </Fragment>
       ))}
     </>
   );
@@ -644,6 +681,106 @@ function LayerPanel({ market, marketId, layer, win, data, formatValue }) {
           </div>
         </div>
       ) : chart}
+    </ChartCard>
+  );
+}
+
+/**
+ * Short diverging bar chart of the margin-loan day-over-day change, rendered
+ * beneath the margin panel. Zero sits on the mid-line (symmetric y-axis);
+ * increases point up in green, decreases point down in red.
+ */
+function MarginDodPanel({ market, win }) {
+  const values = win.layers.margin ?? [];
+  const long = win.dates.length > 200;
+  const dod = values.map((value, index) => (
+    index === 0 || !Number.isFinite(value) || !Number.isFinite(values[index - 1])
+      ? null
+      : value - values[index - 1]
+  ));
+  const finite = dod.filter(Number.isFinite);
+  const maxAbs = finite.length ? Math.max(...finite.map(Math.abs)) : 1;
+  const bound = (maxAbs || 1) * 1.12;
+
+  const fmt = value => `${value > 0 ? '+' : value < 0 ? '−' : ''}${Math.abs(value).toFixed(1)}${market.unit}`;
+
+  const marginLayer = market.layers.find(layer => layer.key === 'margin');
+
+  const data = {
+    labels: win.dates.map(long ? monthLabel : dayLabel),
+    datasets: [{
+      label: 'DoD change',
+      data: dod,
+      backgroundColor: dod.map(v => (v == null ? 'transparent' : alpha(v >= 0 ? UP : DOWN, 0.8))),
+      borderColor: dod.map(v => (v == null ? 'transparent' : v >= 0 ? UP : DOWN)),
+      borderWidth: 1,
+      borderRadius: 2,
+      barPercentage: 1,
+      categoryPercentage: 0.92,
+    }],
+  };
+
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: { duration: 300 },
+    interaction: { mode: 'index', intersect: false },
+    layout: { padding: { top: 14, right: 8, bottom: 6 } },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#1a1f2a',
+        borderColor: 'rgba(255,255,255,.12)',
+        borderWidth: 1,
+        padding: 10,
+        titleFont: { family: "'Inter',sans-serif", size: 11 },
+        bodyFont: { family: "'Inter',sans-serif", size: 11 },
+        callbacks: {
+          title: items => (items.length ? win.dates[items[0].dataIndex] : ''),
+          label: context => (context.raw == null ? '' : ` DoD change: ${fmt(context.raw)}`),
+        },
+      },
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: {
+          color: MUTED,
+          maxTicksLimit: 12,
+          autoSkip: true,
+          maxRotation: 0,
+          padding: 4,
+          font: { size: 11 },
+        },
+      },
+      y: {
+        min: -bound,
+        max: bound,
+        grid: {
+          color: context => (context.tick.value === 0 ? 'rgba(255,255,255,.32)' : 'rgba(255,255,255,.06)'),
+          lineWidth: context => (context.tick.value === 0 ? 1.4 : 1),
+        },
+        ticks: {
+          color: MUTED,
+          maxTicksLimit: 7,
+          callback: value => fmt(Number(value)),
+          font: { size: 11 },
+        },
+      },
+    },
+  };
+
+  return (
+    <ChartCard
+      chartId={`${market.id}-leverage-margin-dod`}
+      title={`${market.label} · Margin loans — daily change`}
+      src={<SourceLinks layers={[marginLayer]} />}
+      freq="Daily"
+      lag={marginLayer.lag}
+      span2
+      height={320}
+    >
+      <Bar data={data} options={options} />
     </ChartCard>
   );
 }
