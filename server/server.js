@@ -6,13 +6,17 @@ const storage      = require('./storage');
 const history      = require('./history');
 const snapshotStore = require('./snapshotStore');
 const scheduler    = require('./scheduler');
+const STORAGE_BLOBS = require('./storageBlobs');
 const htmlTemplate = require('./htmlTemplate');
 const { chat } = require('./chat');
 const { getOptionsData }             = require('./scrapers/options');
 const { getStockHistory }            = require('./scrapers/stocks');
-const { getUsPerformance }           = require('./scrapers/usPerformance');
-const { getHkChinaPerformance }      = require('./scrapers/hkChinaPerformance');
+const { readUsPerformance }          = require('./scrapers/usPerformance');
+const { readHkChinaPerformance }     = require('./scrapers/hkChinaPerformance');
+const { readChinaEtfPremium }        = require('./scrapers/chinaEtfPremium');
 const { readHkPerformance }          = require('./scrapers/hkPerformance');
+const { readChinaNationalTeamFlow }  = require('./scrapers/chinaNationalTeamFlow');
+const { readChinaLiquidity }         = require('./scrapers/chinaLiquidity');
 const { keywordRolling }             = require('./stocktwitsStore');
 
 const app   = express();
@@ -28,10 +32,17 @@ app.use(express.json());
 // own scrape, which slow rate-limited sources punish badly.
 const inflight = new Map();
 
-function cachedRoute(key, scraper) {
+function cachedRoute(key, scraper, isCurrent = null) {
   return async (req, res) => {
     let data = cache.get(key);
-    if (data !== null) return res.json(data);
+    const staleShape = data !== null && isCurrent && !isCurrent(data) ? data : null;
+    if (data !== null && !staleShape) return res.json(data);
+    if (staleShape) {
+      // A persisted snapshot can be fresh by age but obsolete by schema. Drop
+      // it from memory so this request performs the migration immediately.
+      cache.del(key);
+      data = null;
+    }
     try {
       let pending = inflight.get(key);
       if (!pending) {
@@ -46,11 +57,14 @@ function cachedRoute(key, scraper) {
         snapshotStore.put(key, data);
         try { cache.recordSuccess(key, Buffer.byteLength(JSON.stringify(data))); } catch { cache.recordSuccess(key, 0); }
       }
-      res.json(data ?? {});
+      res.json(data ?? staleShape ?? {});
     } catch (e) {
       const status = /\b429\b|rate.?limit|too many requests/i.test(e.message ?? '') ? 'RATE-LIMITED' : 'DOWN';
       cache.recordFailure(key, status, e.message);
       console.error(`[${key}]`, e.message);
+      // Preserve last-known data if the migration refresh itself is temporarily
+      // unavailable; the next request will retry because it was not re-cached.
+      if (staleShape) return res.json(staleShape);
       res.status(500).json({ error: e.message });
     }
   };
@@ -68,7 +82,11 @@ app.get('/api/mops',           cachedRoute('mops',          s.mops));
 app.get('/api/github-commits', cachedRoute('githubCommits', s.githubCommits));
 app.get('/api/docker',         cachedRoute('docker',        s.docker));
 app.get('/api/hn',             cachedRoute('hn',            s.hn));
-app.get('/api/openrouter-ranks',  cachedRoute('openrouterRanks',  s.openrouterRanks));
+app.get('/api/openrouter-ranks', cachedRoute(
+  'openrouterRanks',
+  s.openrouterRanks,
+  data => data?.schemaVersion === 2 && Array.isArray(data?.dailyLabels) && data.dailyLabels.length > 0,
+));
 app.get('/api/dram',              cachedRoute('dram',             s.dram));
 app.get('/api/nand',              cachedRoute('nand',             s.nand));
 app.get('/api/tft-lcd',           cachedRoute('tftLcd',           s.tftLcd));
@@ -82,6 +100,7 @@ app.get('/api/customs-drones',    cachedRoute('customsDrones',    s.customsDrone
 app.get('/api/korea-leverage',    cachedRoute('koreaLeverage',    s.koreaLeverage));
 app.get('/api/taiwan-leverage',   cachedRoute('taiwanLeverage',   s.taiwanLeverage));
 app.get('/api/china-leverage',    cachedRoute('chinaLeverage',    s.chinaLeverage));
+app.get('/api/macro',             cachedRoute('macro',            s.macro));
 
 // One-off deep backfill (~5y, ~1200 SZSE requests at a polite pace — a few
 // minutes) triggered manually from the China Leverage page, since SZSE only
@@ -112,7 +131,9 @@ app.post('/api/china-leverage/backfill', (req, res) => {
   res.status(202).json({ ok: true, started: true, days });
 });
 app.get('/api/china-leverage/backfill', (req, res) => res.json(chinaLeverageBackfillState));
-app.get('/api/china-national-team-flow', cachedRoute('chinaNationalTeamFlow', s.chinaNationalTeamFlow));
+// Liquidity page reads never scrape upstream; scheduled collectors own writes.
+app.get('/api/china-national-team-flow', (_req, res) => res.json(readChinaNationalTeamFlow()));
+app.get('/api/china-liquidity', (_req, res) => res.json(readChinaLiquidity()));
 app.get('/api/japan-leverage',    cachedRoute('japanLeverage',    s.japanLeverage));
 app.get('/api/us-leverage',       cachedRoute('usLeverage',       s.usLeverage));
 
@@ -484,7 +505,7 @@ app.get('/api/stocks/:ticker', async (req, res) => {
   }
 });
 
-/* ── US Performance — sector ETFs vs SPX, rebased client-side (1-hour cache) */
+/* ── US Rotation — Mongo-persisted daily history, no request-time scrape ── */
 app.get('/api/us-performance', async (req, res) => {
   const rawStart = (req.query.start ?? '').trim();
   const rawEnd = (req.query.end ?? '').trim();
@@ -514,24 +535,15 @@ app.get('/api/us-performance', async (req, res) => {
   if (new Date(start).getTime() > new Date(end).getTime())
     return res.status(400).json({ error: 'Start date cannot be after end date' });
 
-  const cacheKey = `us-performance:${start}:${end}`;
-  const cached   = cache.get(cacheKey);
-  if (cached !== null) return res.json(cached);
-
   try {
-    const data = await getUsPerformance(start, end);
-    cache.set(cacheKey, data, 60 * 60 * 1000); // 1-hour TTL
-    res.json(data);
+    res.json(readUsPerformance(start, end));
   } catch (e) {
     console.error('[us-performance]', start, end, e.message);
-    const rateLimited = e.message?.includes('429') || /Too Many Requests|crumb/i.test(e.message ?? '');
-    if (rateLimited)
-      return res.status(503).json({ error: 'Yahoo Finance is rate-limiting. Please try again in a moment.' });
     res.status(500).json({ error: `Could not load US performance data: ${e.message}` });
   }
 });
 
-/* ── HK/China Performance — sector ETFs vs CSI300, rebased client-side (1-hour cache) */
+/* ── China Rotation — Mongo-persisted daily history, no request-time scrape */
 app.get('/api/hk-china-performance', async (req, res) => {
   const rawStart = (req.query.start ?? '').trim();
   const rawEnd = (req.query.end ?? '').trim();
@@ -561,20 +573,34 @@ app.get('/api/hk-china-performance', async (req, res) => {
   if (new Date(start).getTime() > new Date(end).getTime())
     return res.status(400).json({ error: 'Start date cannot be after end date' });
 
-  const cacheKey = `hk-china-performance:${start}:${end}`;
-  const cached   = cache.get(cacheKey);
-  if (cached !== null) return res.json(cached);
-
   try {
-    const data = await getHkChinaPerformance(start, end);
-    cache.set(cacheKey, data, 60 * 60 * 1000); // 1-hour TTL
-    res.json(data);
+    res.json(readHkChinaPerformance(start, end));
   } catch (e) {
     console.error('[hk-china-performance]', start, end, e.message);
-    const rateLimited = e.message?.includes('429') || /Too Many Requests|crumb/i.test(e.message ?? '');
-    if (rateLimited)
-      return res.status(503).json({ error: 'Yahoo Finance is rate-limiting. Please try again in a moment.' });
     res.status(500).json({ error: `Could not load HK/China performance data: ${e.message}` });
+  }
+});
+
+/* ── China ETF sentiment — 513310/513100 premium to NAV/IOPV ───────────── */
+app.get('/api/china-etf-premium', async (req, res) => {
+  const rawStart = (req.query.start ?? '').trim();
+  const rawEnd = (req.query.end ?? '').trim();
+  const oneYearAgo = new Date();
+  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+  const start = rawStart || oneYearAgo.toISOString().slice(0, 10);
+  const end = rawEnd || new Date().toISOString().slice(0, 10);
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(start) || !/^\d{4}-\d{2}-\d{2}$/.test(end))
+    return res.status(400).json({ error: 'Invalid date' });
+  if (start > end) return res.status(400).json({ error: 'Start date cannot be after end date' });
+  if (new Date(`${end}T23:59:59Z`).getTime() > Date.now() + 24 * 60 * 60 * 1000)
+    return res.status(400).json({ error: 'End date cannot be in the future' });
+
+  try {
+    res.json(readChinaEtfPremium(start, end));
+  } catch (e) {
+    console.error('[china-etf-premium]', start, end, e.message);
+    res.status(500).json({ error: `Could not load China ETF premium data: ${e.message}` });
   }
 });
 
@@ -820,48 +846,6 @@ app.post('/api/chat', async (req, res) => {
 app.get('/api/health', (_, res) => res.json({ ok: true, ts: new Date().toISOString() }));
 
 /* ── Persistent storage (Mongo in prod, JSON files in dev) ──────────── */
-const DATA_DIR = path.join(__dirname, 'data');
-const STORAGE_BLOBS = [
-  { name: 'metricsHistory', file: path.join(DATA_DIR, 'metricsHistory.json') },
-  { name: 'gpuHistory',     file: path.join(DATA_DIR, 'gpuHistory.json') },
-  { name: 'dramHistory',    file: path.join(DATA_DIR, 'dramHistory.json') },
-  { name: 'nandHistory',    file: path.join(DATA_DIR, 'nandHistory.json') },
-  { name: 'tftLcdHistory',  file: path.join(DATA_DIR, 'tftLcdHistory.json') },
-  { name: 'awsHistory',     file: path.join(DATA_DIR, 'awsHistory.json') },
-  // Every history blob a scraper reads/writes MUST be listed here so init()
-  // preloads it from Mongo into the cache. An unlisted blob falls back to the
-  // committed JSON file on read (storage.read), so a scrape appends to a stale/
-  // empty file and then overwrites Mongo — silently truncating history on every
-  // restart. cpu/tpu/cloudGpu/optionsOI/shortInterest were unlisted and lost
-  // their backfill this way; keep this list in sync with the scrapers' BLOBs.
-  { name: 'cpuHistory',     file: path.join(DATA_DIR, 'cpuHistory.json') },
-  { name: 'tpuHistory',     file: path.join(DATA_DIR, 'tpuHistory.json') },
-  { name: 'cloudGpuHistory', file: path.join(DATA_DIR, 'cloudGpuHistory.json') },
-  { name: 'optionsOI',      file: path.join(DATA_DIR, 'optionsOI.json') },
-  { name: 'shortInterestHistory', file: path.join(DATA_DIR, 'shortInterestHistory.json') },
-  { name: 'sentimentData',  file: path.join(DATA_DIR, 'sentiment.json') },
-  { name: 'koreaLeverageHistory', file: path.join(DATA_DIR, 'koreaLeverageHistory.json') },
-  { name: 'taiwanLeverageHistory', file: path.join(DATA_DIR, 'taiwanLeverageHistory.json') },
-  { name: 'chinaLeverageHistory', file: path.join(DATA_DIR, 'chinaLeverageHistory.json') },
-  { name: 'chinaNationalTeamFlowHistory', file: path.join(DATA_DIR, 'chinaNationalTeamFlowHistory.json') },
-  { name: 'japanLeverageHistory', file: path.join(DATA_DIR, 'japanLeverageHistory.json') },
-  { name: 'usLeverageHistory', file: path.join(DATA_DIR, 'usLeverageHistory.json') },
-  { name: 'hkPerformanceHistory', file: path.join(DATA_DIR, 'hkPerformanceHistory.json') },
-  { name: 'dailyOptionsReport', file: path.join(DATA_DIR, 'dailyOptionsReport.json') },
-  // Full-chain volume behind the report charts. Prior cycles are settled; current
-  // expirations are backfilled once and then extended from each daily snapshot.
-  { name: 'optionsPriorYearVolume', file: path.join(DATA_DIR, 'optionsPriorYearVolume.json') },
-  // Earnings-call dates (Alpha Vantage) that the report's comparison lines are
-  // aligned to. Cached for a week — the free tier allows only 25 calls a day.
-  { name: 'earningsDates', file: path.join(DATA_DIR, 'earningsDates.json') },
-  // The Calendar view's tech-sector watchlist — scraped monthly (FMP) plus a
-  // small daily Alpha Vantage batch. See server/techEarningsCalendar.js.
-  { name: 'techEarningsCalendar', file: path.join(DATA_DIR, 'techEarningsCalendar.json') },
-  // Latest scrape per source — loaded into the request cache on boot for an
-  // instant first paint instead of blocking on live re-scrapes.
-  { name: 'latestSnapshots', file: path.join(DATA_DIR, 'latestSnapshots.json') },
-];
-
 /* ── Frontend serving ──────────────────────────────────────────────── */
 async function start() {
   // Connect storage (and seed Mongo from the committed JSON baseline) before
@@ -920,7 +904,10 @@ async function start() {
     // replaced with fresh data. Fire-and-forget so startup isn't delayed; the
     // cache (seeded above) already serves last-known values in the meantime.
     setImmediate(() => {
-      const allKeys = Object.keys(scheduler.scrapers);
+      // Rotation pages read their dedicated Mongo histories immediately and
+      // are refreshed by the scheduled collector; do not burst their market
+      // APIs on every web-service restart.
+      const allKeys = Object.keys(scheduler.scrapers).filter(key => !scheduler.PERSISTED_ONLY.has(key));
       console.log('[warmup] refreshing in background:', allKeys.join(', '));
       scheduler.refreshAll(allKeys).catch(e => console.error('[warmup]', e.message));
     });

@@ -25,7 +25,7 @@ export const HK_SECTIONS = [
     ],
   },
   {
-    title: 'Scale',
+    title: 'Market Cap',
     tickers: [
       { ticker: '800714', label: '800714', name: 'Large Cap', color: '#3c8cdd' },
       { ticker: '800715', label: '800715', name: 'Mid Cap',   color: '#da5a2f' },

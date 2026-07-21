@@ -434,7 +434,7 @@ function correlationChartOptions() {
 }
 
 const SECTION_LABELS = {
-  all: 'All Sectors', tech: 'Tech', theme: 'Theme', factor: 'Factor', correlation: 'Correlation',
+  all: 'Sector', tech: 'Tech', theme: 'Theme', factor: 'Factor', correlation: 'Correlation',
 };
 
 export default function UsPerformance({ section = null }) {

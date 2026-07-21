@@ -19,7 +19,7 @@ export const HK_CHINA_INDEX_TICKERS = [
 // Tech/Theme/Factor sections).
 export const HK_CHINA_SECTIONS = [
   {
-    title: 'TMT & AI',
+    title: 'TMT',
     tickers: [
       { ticker: '512480.SS', label: '512480', name: '全产业链半导体', color: '#3c8cdd' },
       { ticker: '159995.SZ', label: '159995', name: '芯片',           color: '#da5a2f' },
@@ -33,7 +33,7 @@ export const HK_CHINA_SECTIONS = [
     ],
   },
   {
-    title: '新能源',
+    title: 'New Energy',
     tickers: [
       { ticker: '159796.SZ', label: '159796', name: '电池',    color: '#3c8cdd' },
       { ticker: '515790.SS', label: '515790', name: '光伏',    color: '#da5a2f' },
@@ -44,7 +44,7 @@ export const HK_CHINA_SECTIONS = [
     ],
   },
   {
-    title: '医药',
+    title: 'Healthcare',
     tickers: [
       { ticker: '512170.SS', label: '512170', name: '医疗',     color: '#3c8cdd' },
       { ticker: '159992.SZ', label: '159992', name: '创新药',   color: '#da5a2f' },
@@ -53,7 +53,7 @@ export const HK_CHINA_SECTIONS = [
     ],
   },
   {
-    title: '大消费',
+    title: 'Consumer',
     tickers: [
       { ticker: '512690.SS', label: '512690', name: '白酒',     color: '#3c8cdd' },
       { ticker: '159843.SZ', label: '159843', name: '食品饮料', color: '#da5a2f' },
@@ -61,7 +61,7 @@ export const HK_CHINA_SECTIONS = [
     ],
   },
   {
-    title: '金融 & 周期',
+    title: 'Cyclical',
     tickers: [
       { ticker: '512880.SS', label: '512880', name: '证券',       color: '#3c8cdd' },
       { ticker: '512800.SS', label: '512800', name: '银行',       color: '#da5a2f' },
@@ -75,7 +75,7 @@ export const HK_CHINA_SECTIONS = [
     ],
   },
   {
-    title: '机械军工',
+    title: 'Machinery',
     tickers: [
       { ticker: '512680.SS', label: '512680', name: '军工',     color: '#3c8cdd' },
       { ticker: '562500.SS', label: '562500', name: '机器人',   color: '#da5a2f' },

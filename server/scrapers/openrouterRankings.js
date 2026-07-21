@@ -47,6 +47,10 @@ const PROVIDER_NAMES = {
   other:         'Other',
 };
 
+// Dedicated model charts need their history to remain available even if a
+// model later falls outside its provider's recent top-model cutoff.
+const PINNED_DAILY_MODELS = ['anthropic/claude-5-fable'];
+
 function providerFromSlug(slug) {
   if (!slug || slug === 'other') return 'other';
   const prefix = slug.split('/')[0];
@@ -101,6 +105,75 @@ async function getOpenRouterRankings() {
 
   const rows = [...chunk1, ...chunk2];
   if (rows.length === 0) return null;
+
+  // Keep the source's native daily grain for the provider pages. OpenRouter's
+  // provider chart is a daily stack of models; collapsing these rows to weeks
+  // loses the model-mix changes needed to calculate a meaningful blended
+  // token price. To keep the cached response compact we retain the 12 most
+  // used models per provider (ranked over the latest 90 days) and roll every
+  // remaining model into "Other".
+  const dailyBuckets = {};
+  for (const row of rows) {
+    if (!row.date) continue;
+    if (!dailyBuckets[row.date]) dailyBuckets[row.date] = {};
+    const slug = row.model_permaslug || 'other';
+    const tok  = parseInt(row.total_tokens, 10) || 0;
+    dailyBuckets[row.date][slug] = (dailyBuckets[row.date][slug] ?? 0) + tok;
+  }
+  const dailyLabels = Object.keys(dailyBuckets).sort();
+  const recentDates = new Set(dailyLabels.slice(-90));
+  const recentByProvider = {};
+  const allProviderSlugs = {};
+  for (const date of dailyLabels) {
+    for (const [slug, tokens] of Object.entries(dailyBuckets[date])) {
+      const provider = providerFromSlug(slug);
+      if (!allProviderSlugs[provider]) allProviderSlugs[provider] = new Set();
+      allProviderSlugs[provider].add(slug);
+      if (recentDates.has(date)) {
+        if (!recentByProvider[provider]) recentByProvider[provider] = {};
+        recentByProvider[provider][slug] = (recentByProvider[provider][slug] ?? 0) + tokens;
+      }
+    }
+  }
+
+  const providerDaily = {};
+  const providerModelDaily = {};
+  for (const [provider, slugSet] of Object.entries(allProviderSlugs)) {
+    providerDaily[provider] = dailyLabels.map(date => {
+      let total = 0;
+      for (const slug of slugSet) total += dailyBuckets[date]?.[slug] ?? 0;
+      return total;
+    });
+
+    const pinned = [...slugSet].filter(slug =>
+      PINNED_DAILY_MODELS.some(prefix => slug.startsWith(prefix))
+    );
+    const ranked = Object.entries(recentByProvider[provider] ?? {})
+      .filter(([slug]) => slug !== 'other')
+      .sort((a, b) => b[1] - a[1])
+      .map(([slug]) => slug);
+    const kept = [...new Set([...pinned, ...ranked])].slice(0, Math.max(12, pinned.length));
+    const keptSet = new Set(kept);
+    const modelSeries = kept.map(slug => ({
+      slug,
+      name: displayName(slug),
+      tokens: dailyLabels.map(date => dailyBuckets[date]?.[slug] ?? 0),
+    }));
+    const otherTokens = dailyLabels.map(date => {
+      let total = 0;
+      for (const slug of slugSet) {
+        if (!keptSet.has(slug)) total += dailyBuckets[date]?.[slug] ?? 0;
+      }
+      return total;
+    });
+    if (otherTokens.some(Boolean)) {
+      modelSeries.push({ slug: 'other', name: 'Other', tokens: otherTokens });
+    }
+    providerModelDaily[provider] = modelSeries;
+  }
+  const dailyTotals = dailyLabels.map(date =>
+    Object.values(dailyBuckets[date]).reduce((sum, tokens) => sum + tokens, 0)
+  );
 
   // ── 1. Bucket rows into ISO weeks (Mon–Sun) ─────────────────────────
   function isoWeekKey(dateStr) {
@@ -208,12 +281,17 @@ async function getOpenRouterRankings() {
   });
 
   return {
+    schemaVersion: 2,
     topModels:      topModelsWithGrowth,
     trend,
     providers,
     providerWeekly,
     weeklyTotals,
     weekLabels:  allWeeks,   // full history — frontend slices to W weeks
+    dailyLabels,
+    dailyTotals,
+    providerDaily,
+    providerModelDaily,
     latestWeek:  latestWk,
     asOf:        fmt(yesterday),
   };

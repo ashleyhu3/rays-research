@@ -1,5 +1,8 @@
 'use strict';
 
+const path = require('path');
+const { createPersistedSeries, isoDaysAgo } = require('./persistedSeries');
+
 const BROWSER_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
@@ -97,6 +100,13 @@ const TICKERS = [
   { ticker: 'USMV', label: 'USMV', name: 'Min Volatility Factor' },
 ];
 
+const HISTORY = createPersistedSeries({
+  blob: 'usPerformanceHistory',
+  file: path.join(__dirname, '..', 'data', 'usPerformanceHistory.json'),
+  tickers: TICKERS,
+  fields: ['closes', 'adjCloses'],
+});
+
 async function fetchSeries(yf, ticker, start, end) {
   const chart = await withRetry(() => yf.chart(ticker, { period1: start, period2: end, interval: '1d' }));
   const quotes = (chart?.quotes ?? []).filter(q => q.date && q.close != null);
@@ -149,4 +159,14 @@ async function getUsPerformance(startDate, endDate = new Date()) {
   return { start: dates[0] ?? isoDate(start), end: dates[dates.length - 1] ?? isoDate(endDate), dates, series };
 }
 
-module.exports = { getUsPerformance, TICKERS };
+async function updateUsPerformance(days = 45) {
+  const end = new Date().toISOString().slice(0, 10);
+  HISTORY.merge(await getUsPerformance(isoDaysAgo(days), end));
+  return HISTORY.assemble();
+}
+
+function readUsPerformance(startDate, endDate) {
+  return HISTORY.assemble(startDate, endDate);
+}
+
+module.exports = { getUsPerformance, updateUsPerformance, readUsPerformance, TICKERS };

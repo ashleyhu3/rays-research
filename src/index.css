@@ -300,6 +300,19 @@ body { font-family: var(--font-b); background: var(--bg); color: var(--text); }
 .cgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
 .span2 { grid-column: 1 / -1; }
 
+.macro-update {
+  margin: -5px 0 12px; color: var(--ter); font-family: var(--font-m); font-size: 10px;
+  text-align: right;
+}
+.macro-banner {
+  margin-bottom: 14px; padding: 10px 12px; border: 1px solid rgba(239,131,84,.25);
+  border-radius: 8px; color: #efaa8c; background: rgba(239,131,84,.06); font-size: 12px;
+}
+.macro-empty {
+  height: 100%; display: flex; align-items: center; justify-content: center;
+  color: var(--ter); font-size: 11px; font-family: var(--font-m); text-align: center;
+}
+
 .cbox {
   background: var(--bg-card); border: 1px solid var(--border);
   border-radius: 12px; padding: 18px; min-width: 0;

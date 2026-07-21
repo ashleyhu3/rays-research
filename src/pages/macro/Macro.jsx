@@ -1,0 +1,148 @@
+import { useMemo } from 'react';
+import { Line, Bar } from 'react-chartjs-2';
+import ChartCard from '../../components/chart/ChartCard';
+import { useData } from '../../context/DataContext';
+import { baseOpts } from '../../utils/chartHelpers';
+
+const COLORS = ['#e8c547', '#56b4e9', '#5dd39e', '#ef8354', '#b48ead'];
+
+const PAGE_CHARTS = {
+  'macro-us-inflation': [
+    ['CPI inflation — YoY', ['usCpiYoy', 'usCoreCpiYoy'], ['Headline CPI', 'Core CPI']],
+    ['CPI inflation — MoM', ['usCpiMom', 'usCoreCpiMom'], ['Headline CPI', 'Core CPI']],
+    ['Producer prices — YoY', ['usPpiYoy', 'usCorePpiYoy'], ['Headline PPI', 'Core PPI']],
+    ['Producer prices — MoM', ['usPpiMom', 'usCorePpiMom'], ['Headline PPI', 'Core PPI']],
+    ['PCE prices — YoY', ['usPceYoy', 'usCorePceYoy'], ['Headline PCE', 'Core PCE']],
+    ['PCE prices — MoM', ['usPceMom', 'usCorePceMom'], ['Headline PCE', 'Core PCE']],
+  ],
+  'macro-us-labor': [
+    ['Non-farm payrolls', ['usNfp'], ['Monthly change'], 'bar'],
+    ['ADP employment change — monthly', ['usAdpMonthly'], ['Monthly change'], 'bar'],
+    ['ADP employment change — weekly', ['usAdpWeekly'], ['Weekly change'], 'bar'],
+    ['Initial jobless claims', ['usJoblessClaims'], ['Claims']],
+    ['Unemployment rate', ['usUnemployment'], ['Unemployment rate']],
+    ['Average hourly earnings', ['usEarningsYoy', 'usEarningsMom'], ['YoY', 'MoM']],
+  ],
+  'macro-us-pmi': [
+    ['ISM manufacturing & subindices', ['usIsmMfg', 'usIsmMfgEmployment', 'usIsmMfgOrders', 'usIsmMfgPrices'], ['Headline', 'Employment', 'New orders', 'Prices']],
+    ['ISM services & subindices', ['usIsmServices', 'usIsmServicesEmployment', 'usIsmServicesOrders', 'usIsmServicesPrices'], ['Headline', 'Employment', 'New orders', 'Prices']],
+    ['S&P Global PMIs', ['usSpMfg', 'usSpServices'], ['Manufacturing', 'Services']],
+  ],
+  'macro-us-household': [
+    ['University of Michigan consumer sentiment', ['usMichigan'], ['Sentiment']],
+    ['Retail sales', ['usRetailSales'], ['MoM'], 'bar'],
+    ['Personal spending', ['usPersonalSpending'], ['MoM'], 'bar'],
+    ['Existing home sales', ['usExistingHomes'], ['Annualized rate']],
+  ],
+  'macro-cn-inflation': [
+    ['Consumer prices — YoY', ['cnCpiYoy'], ['CPI YoY']],
+    ['Consumer prices — MoM', ['cnCpiMom'], ['CPI MoM'], 'bar'],
+    ['Producer prices — YoY', ['cnPpiYoy'], ['PPI YoY']],
+    ['Producer prices — MoM', ['cnPpiMom'], ['PPI MoM'], 'bar'],
+  ],
+  'macro-cn-pmi': [
+    ['NBS purchasing managers indices', ['cnNbsMfg', 'cnNbsNonMfg'], ['Manufacturing', 'Non-manufacturing']],
+    ['RatingDog purchasing managers indices', ['cnRatingDogMfg', 'cnRatingDogServices'], ['Manufacturing', 'Services']],
+  ],
+  'macro-cn-trade': [
+    ['Exports & imports — YoY', ['cnExportsYoy', 'cnImportsYoy'], ['Exports', 'Imports']],
+  ],
+  'macro-cn-activity': [
+    ['Retail sales', ['cnRetailSales'], ['YoY']],
+    ['Industrial production', ['cnIndustrialProduction'], ['YoY']],
+    ['Fixed asset investment', ['cnFixedAssetInvestment'], ['YTD YoY']],
+    ['New yuan loans', ['cnNewLoans'], ['CNY'], 'bar'],
+  ],
+};
+
+function compact(value) {
+  const abs = Math.abs(value);
+  if (abs >= 1e9) return `${(value / 1e9).toFixed(1)}B`;
+  if (abs >= 1e6) return `${(value / 1e6).toFixed(1)}M`;
+  if (abs >= 1e3) return `${(value / 1e3).toFixed(0)}K`;
+  return Number(value).toFixed(abs < 10 ? 1 : 0);
+}
+
+function fmtDate(iso) {
+  const [year, month, day] = iso.split('-').map(Number);
+  return new Date(year, month - 1, day || 1).toLocaleDateString('en-US', {
+    month: 'short', year: '2-digit', ...(day && day !== 1 ? { day: 'numeric' } : {}),
+  });
+}
+
+function buildData(macro, keys, labels) {
+  const available = keys.map(key => macro?.series?.[key]).filter(Boolean);
+  const dates = [...new Set(available.flatMap(series => series.data.map(point => point.date)))].sort();
+  const dateIndex = new Map(dates.map((date, index) => [date, index]));
+  const datasets = keys.flatMap((key, seriesIndex) => {
+    const series = macro?.series?.[key];
+    if (!series) return [];
+    const values = Array(dates.length).fill(null);
+    series.data.forEach(point => { values[dateIndex.get(point.date)] = point.value; });
+    return [{
+      label: labels[seriesIndex], data: values,
+      borderColor: COLORS[seriesIndex], backgroundColor: `${COLORS[seriesIndex]}55`,
+      borderWidth: seriesIndex === 0 ? 2 : 1.7, pointRadius: 0, pointHoverRadius: 3,
+      tension: 0.2, spanGaps: true,
+    }];
+  });
+  return { labels: dates.map(fmtDate), datasets, available };
+}
+
+function MacroChart({ definition, macro, errors }) {
+  const [title, keys, labels, type = 'line'] = definition;
+  const built = useMemo(() => buildData(macro, keys, labels), [macro, keys, labels]);
+  const unit = built.available[0]?.unit || '';
+  const options = useMemo(() => {
+    const opts = baseOpts(value => `${compact(value)}${/percent/i.test(unit) ? '%' : ''}`);
+    opts.plugins.legend = {
+      display: built.datasets.length > 1,
+      position: 'bottom',
+      labels: { color: '#c8c8c0', boxWidth: 10, padding: 12, font: { size: 10 } },
+    };
+    opts.plugins.tooltip.callbacks.label = context =>
+      ` ${context.dataset.label}: ${compact(context.parsed.y)}${/percent/i.test(unit) ? '%' : ''}`;
+    return opts;
+  }, [built.datasets.length, unit]);
+  const source = built.available[0];
+  const missing = keys.filter(key => !macro?.series?.[key]);
+  const Chart = type === 'bar' ? Bar : Line;
+
+  return (
+    <ChartCard
+      chartId={`macro-${keys.join('-')}`}
+      title={title}
+      src="Trading Economics"
+      srcUrl={source?.sourceUrl || 'https://tradingeconomics.com'}
+      freq={source?.frequency || undefined}
+      lag="updated after release"
+      height={250}
+      srcNote={missing.length ? `${missing.length} series temporarily unavailable` : undefined}
+    >
+      {built.datasets.length
+        ? <Chart data={{ labels: built.labels, datasets: built.datasets }} options={options} />
+        : <div className="macro-empty">{errors ? 'Series temporarily unavailable from Trading Economics.' : 'Loading macro history…'}</div>}
+    </ChartCard>
+  );
+}
+
+export default function Macro({ viewId }) {
+  const { liveData, loading } = useData();
+  const macro = liveData?.macro;
+  const charts = PAGE_CHARTS[viewId] || PAGE_CHARTS['macro-us-inflation'];
+  return (
+    <div className="macro-page">
+      {macro?.fetchedAt && (
+        <div className="macro-update">Trading Economics history · refreshed {new Date(macro.fetchedAt).toLocaleString()}</div>
+      )}
+      {!macro && !loading && <div className="macro-banner">Macro data is unavailable. Use Refresh Data to retry Trading Economics.</div>}
+      <div className="cgrid">
+        {charts.map(definition => (
+          <MacroChart key={definition[0]} definition={definition} macro={macro} errors={macro?.errors} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export { PAGE_CHARTS };

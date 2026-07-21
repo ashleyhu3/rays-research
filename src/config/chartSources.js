@@ -197,7 +197,7 @@ export const CHART_SOURCES = {
   'or-top':       { src: 'openrouter.ai/rankings', srcUrl: 'https://openrouter.ai/rankings', freq: 'weekly', lag: LAG.orRanks },
   'or-provstack': { src: 'openrouter.ai/rankings', srcUrl: 'https://openrouter.ai/rankings', freq: 'weekly', lag: LAG.orRanks },
   'or-revenue-total': { src: 'openrouter.ai/rankings + /models pricing', srcUrl: 'https://openrouter.ai/rankings', freq: 'weekly', lag: LAG.orRanks },
-  'or-combo-price': { src: 'openrouter.ai/rankings + /models pricing', srcUrl: 'https://openrouter.ai/rankings', freq: 'weekly', lag: LAG.orRanks },
+  'or-combo-price': { src: 'openrouter.ai provider rankings + /models pricing', srcUrl: 'https://openrouter.ai/anthropic', freq: 'daily', lag: LAG.orRanks },
   'or-growth':    { src: 'openrouter.ai/rankings', srcUrl: 'https://openrouter.ai/rankings', freq: 'weekly', lag: LAG.orRanks },
 
   // ── Web traffic (SimilarWeb via Apify) ────────────────────────────────

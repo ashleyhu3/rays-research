@@ -331,10 +331,12 @@ async function getChinaNationalTeamFlow(days = 30) {
       if (day >= from && day <= to) knownTradingDays.add(day);
     }
   }
-  for (const ticker of shTickers) {
+  // Different tickers are independent. A small pool keeps a one-year backfill
+  // practical while retaining the per-ticker delay that protects the exchange.
+  await mapPool(shTickers, 3, async ticker => {
     const have = history.shares[ticker] ?? {};
     const missing = [...knownTradingDays].filter(d => !(d in have)).sort();
-    if (!missing.length) continue;
+    if (!missing.length) return;
     if (missing.length > 5) console.log(`[chinaNationalTeamFlow] SSE ${ticker}: backfilling ${missing.length} days…`);
     for (const day of missing) {
       try {
@@ -346,7 +348,7 @@ async function getChinaNationalTeamFlow(days = 30) {
       await sleep(150);
     }
     history.shares[ticker] = have;
-  }
+  });
 
   saveHistory(history);
   return assemble(history);

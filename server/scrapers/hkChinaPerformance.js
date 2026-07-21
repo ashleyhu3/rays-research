@@ -1,5 +1,8 @@
 'use strict';
 
+const path = require('path');
+const { createPersistedSeries, isoDaysAgo } = require('./persistedSeries');
+
 const BROWSER_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
@@ -124,6 +127,13 @@ const TICKERS = [
   // Factor
   { ticker: '512890.SS', label: '512890', name: '红利低波' },
 ];
+
+const HISTORY = createPersistedSeries({
+  blob: 'hkChinaPerformanceHistory',
+  file: path.join(__dirname, '..', 'data', 'hkChinaPerformanceHistory.json'),
+  tickers: TICKERS,
+  fields: ['closes'],
+});
 
 // Many China A-share fund tickers here (leveraged/thematic ETFs — 512480,
 // 515050, etc.) periodically do a "unit split" to bring per-share NAV back
@@ -276,4 +286,14 @@ async function getHkChinaPerformance(startDate, endDate = new Date()) {
   return { start: dates[0] ?? isoDate(start), end: dates[dates.length - 1] ?? isoDate(endDate), dates, series };
 }
 
-module.exports = { getHkChinaPerformance, TICKERS };
+async function updateHkChinaPerformance(days = 45) {
+  const end = new Date().toISOString().slice(0, 10);
+  HISTORY.merge(await getHkChinaPerformance(isoDaysAgo(days), end));
+  return HISTORY.assemble();
+}
+
+function readHkChinaPerformance(startDate, endDate) {
+  return HISTORY.assemble(startDate, endDate);
+}
+
+module.exports = { getHkChinaPerformance, updateHkChinaPerformance, readHkChinaPerformance, TICKERS };

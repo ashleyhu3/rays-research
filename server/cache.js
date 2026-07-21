@@ -30,6 +30,7 @@ function keys() {
 }
 
 function clear() { store.clear(); }
+function del(key) { store.delete(key); }
 
 // ── Telemetry (powers the Data Validity Terminal) ──────────────────────────
 // Operational health per source, updated by the scheduler/route on every
@@ -68,4 +69,4 @@ function recordFailure(id, status, error) {
 
 function getTelemetry(id) { return telemetry.get(id) || null; }
 
-module.exports = { get, set, meta, keys, clear, updateTelemetry, recordSuccess, recordFailure, getTelemetry };
+module.exports = { get, set, meta, keys, clear, del, updateTelemetry, recordSuccess, recordFailure, getTelemetry };

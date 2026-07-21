@@ -12,9 +12,9 @@
  * and added on, rather than dropped to zero. Prices are current (applied to
  * historical volumes), i.e. this is revenue-at-today's-pricing.
  */
-import { C } from '../config/colors';
-import { mkDs } from './chartHelpers';
-import { orWeekLabel, orTokensWithGrowth } from './openrouterProvider';
+import { C } from '../config/colors.js';
+import { mkDs } from './chartHelpers.js';
+import { orWeekLabel, orTokensWithGrowth, orProviderDailyModels } from './openrouterProvider.js';
 
 // Companies with a dedicated demand page, plus DeepSeek. `name` must match the
 // provider display name emitted by server/scrapers/openrouterRankings.js.
@@ -205,6 +205,40 @@ export function buildRevPerToken(ranks, liveData, provider, W = WEEKS_6MO) {
     revenue:  weekRev,
     price:    s.tokens.map((t, i) => (t > 0 ? +((weekRev[i] * 1e6) / t).toFixed(3) : null)),
   };
+}
+
+/**
+ * Native daily model mix for a provider plus its token-weighted input price.
+ * Unlike the old weekly estimate, each point is priced from the models used on
+ * that particular day, so launches and mix shifts move the average naturally.
+ */
+export function buildDailyModelMix(ranks, liveData, provider, W = 12) {
+  const daily = orProviderDailyModels(ranks, provider, W);
+  if (!daily) return null;
+
+  const catalog = liveData?.openrouter?.models ?? liveData?.openrouter?.data?.models ?? [];
+  const tracked = daily.models.filter(m => m.slug !== 'other').map(model => ({
+    ...model,
+    price: livePriceForSlug(model.slug, catalog),
+  }));
+
+  const price = daily.tokens.map((total, i) => {
+    if (!(total > 0)) return null;
+    let pricedTokens = 0;
+    let value = 0;
+    for (const model of tracked) {
+      if (!(model.price > 0)) continue;
+      const tokens = model.tokens[i] ?? 0;
+      pricedTokens += tokens;
+      value += tokens * model.price;
+    }
+    // Unpriced / "Other" models are excluded rather than assigned a constant
+    // fallback. A missing catalog therefore produces a gap, not the misleading
+    // flat price line this daily model-mix chart is intended to replace.
+    return pricedTokens > 0 ? +(value / pricedTokens).toFixed(3) : null;
+  });
+
+  return { ...daily, price };
 }
 
 /** y-axis / tooltip formatter for USD revenue. */

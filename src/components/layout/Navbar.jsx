@@ -55,6 +55,10 @@ const SOURCES_VIEWS   = new Set(['sources']);
 const TRANSCRIPT_VIEWS = new Set(['transcripts']);
 const LEVERAGE_VIEWS   = new Set(['leverage-korea', 'leverage-taiwan']);
 const LIQUIDITY_VIEWS  = new Set(['liquidity-china-flow']);
+const MACRO_VIEWS      = new Set([
+  'macro-us-inflation', 'macro-us-labor', 'macro-us-pmi', 'macro-us-household',
+  'macro-cn-inflation', 'macro-cn-pmi', 'macro-cn-trade', 'macro-cn-activity',
+]);
 
 export default function Navbar({ onNavigate, currentView }) {
   const { tableMode, setTableMode } = useUI();
@@ -72,7 +76,8 @@ export default function Navbar({ onNavigate, currentView }) {
   const isLeverage  = LEVERAGE_VIEWS.has(currentView);
   const isLiquidity = LIQUIDITY_VIEWS.has(currentView);
   const isUsPerf    = US_PERF_VIEWS.has(currentView);
-  const isDemand    = !isChat && !isSupply && !isInfra && !isOptions && !isAlerts && !isPricing && !isSentiment && !isSources && !isTranscripts && !isLeverage && !isLiquidity && !isUsPerf;
+  const isMacro     = MACRO_VIEWS.has(currentView);
+  const isDemand    = !isChat && !isSupply && !isInfra && !isOptions && !isAlerts && !isPricing && !isSentiment && !isSources && !isTranscripts && !isLeverage && !isLiquidity && !isUsPerf && !isMacro;
 
   const title = loading
     ? 'Updating live data…'
@@ -126,7 +131,13 @@ export default function Navbar({ onNavigate, currentView }) {
           className={`nlink${isUsPerf ? ' active' : ''}`}
           onClick={() => onNavigate('us-performance')}
         >
-          Market Performance
+          Rotation
+        </button>
+        <button
+          className={`nlink${isMacro ? ' active' : ''}`}
+          onClick={() => onNavigate('macro-us-inflation')}
+        >
+          Macro
         </button>
         <button
           className={`nlink${isLeverage ? ' active' : ''}`}

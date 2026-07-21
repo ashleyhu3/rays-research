@@ -61,8 +61,9 @@ import TaiwanIndividual from './pages/taiwan-individual/TaiwanIndividual';
 import ChinaLeverage from './pages/china-leverage/ChinaLeverage';
 import JapanLeverage from './pages/japan-leverage/JapanLeverage';
 import UsLeverage from './pages/us-leverage/UsLeverage';
-import ChinaFlowNationalTeam from './pages/liquidity/ChinaFlowNationalTeam';
+import ChinaLiquidity from './pages/liquidity/ChinaLiquidity';
 import Transcripts from './pages/transcripts/Transcripts';
+import Macro from './pages/macro/Macro';
 // Source-specific signal pages
 import PyPI          from './pages/sources/PyPI';
 import GitHub        from './pages/sources/GitHub';
@@ -75,8 +76,8 @@ import GitHubActivity from './pages/sources/GitHubActivity';
 import Docker         from './pages/sources/Docker';
 import Community      from './pages/sources/Community';
 
-/** Views with sidebar-driven subtabs (see NAV_SECTIONS 'Market Performance' subitems) */
-const MARKET_PERF_VIEWS = new Set(['us-performance', 'hk-china-performance', 'hk-performance']);
+/** Views with sidebar-driven subtabs (see NAV_SECTIONS 'Rotation' subitems) */
+const MARKET_PERF_VIEWS = new Set(['us-performance', 'hk-china-performance', 'hk-performance', 'liquidity-china-flow']);
 
 /** Views that use EditableGrid and support layout customisation */
 const LAYOUT_EDITABLE = new Set([
@@ -140,8 +141,16 @@ const VIEW_COMPONENTS = {
   'leverage-china':   ChinaLeverage,
   'leverage-japan':   JapanLeverage,
   'leverage-us':      UsLeverage,
-  'liquidity-china-flow': ChinaFlowNationalTeam,
+  'liquidity-china-flow': ChinaLiquidity,
   'transcripts':      Transcripts,
+  'macro-us-inflation': Macro,
+  'macro-us-labor':     Macro,
+  'macro-us-pmi':       Macro,
+  'macro-us-household': Macro,
+  'macro-cn-inflation': Macro,
+  'macro-cn-pmi':       Macro,
+  'macro-cn-trade':     Macro,
+  'macro-cn-activity':  Macro,
   'demand-openai':    DemandOpenAI,
   'demand-anthropic': DemandAnthropic,
   'demand-google':    DemandGoogle,
@@ -169,7 +178,7 @@ export default function App() {
   // Navigating to a view resets its subtab back to "none selected" (aggregate-only default).
   const handleNavigate = (viewId) => {
     setCurrentView(viewId);
-    setPerfSection(s => ({ ...s, [viewId]: null }));
+    setPerfSection(s => ({ ...s, [viewId]: viewId === 'liquidity-china-flow' ? 'flow' : null }));
   };
 
   // Subtabs are shown for every market-performance item at all times, so picking one
@@ -242,6 +251,7 @@ export default function App() {
                 ? <Chat onNavigate={setCurrentView} />
                 : ViewComponent && (
                     <ViewComponent
+                      viewId={currentView}
                       weeks={weeks}
                       months={mode === 'supply' ? months : undefined}
                       {...(MARKET_PERF_VIEWS.has(currentView) ? { section: activeSection } : {})}

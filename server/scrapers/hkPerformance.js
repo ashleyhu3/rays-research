@@ -11,10 +11,6 @@ function isoDate(d) {
   return isNaN(dt.getTime()) ? null : dt.toISOString().slice(0, 10);
 }
 
-function yyyymmdd(d) {
-  return isoDate(d).replace(/-/g, '');
-}
-
 // Bounded-concurrency map, same pattern as hkChinaPerformance.js.
 async function mapLimit(items, limit, fn) {
   const out = new Array(items.length);
@@ -32,14 +28,9 @@ async function mapLimit(items, limit, fn) {
   return out;
 }
 
-// Hang Seng Composite Index series — no coverage on Yahoo Finance for these
-// sub-indices, fetched from East Money's public kline API instead (secid
-// market "124" = Hang Seng indices). Same flaky-under-load endpoint as
-// hkChinaPerformance.js's ChiNext/STAR50 fallback, so same retry/backoff.
-//
-// East Money is also unreachable from some hosting providers' outbound IP
-// ranges (observed: production returning empty series while this scrape
-// works fine elsewhere) — so results are persisted to a Mongo-backed history
+// Hang Seng Composite Index series have no reliable Yahoo coverage. They are
+// fetched from Hang Seng Indexes' official raw-level chart JSON and persisted
+// to a Mongo-backed history
 // blob (see loadHistory/saveHistory) rather than fetched live on every page
 // request. A daily/6-hourly cron job (see server/scheduler.js) re-runs
 // getHkPerformance() to extend the history; the API route reads the stored
@@ -61,11 +52,29 @@ const TICKERS = [
   { ticker: '800709', eastmoneyCode: 'HSCIUT', label: '800709', name: 'Utilities' },
   { ticker: '800705', eastmoneyCode: 'HSCICO', label: '800705', name: 'Conglomerates' },
 
-  // Scale
+  // Market Cap
   { ticker: '800714', eastmoneyCode: 'HSLI',   label: '800714', name: 'Large Cap' },
   { ticker: '800715', eastmoneyCode: 'HSMI',   label: '800715', name: 'Mid Cap' },
   { ticker: '800716', eastmoneyCode: 'HSSI',   label: '800716', name: 'Small Cap' },
 ];
+
+const HSI_CODES = {
+  '800701': '00011.00',
+  '800706': '00011.10',
+  '800704': '00011.14',
+  '800702': '00011.12',
+  '800703': '00011.13',
+  '800712': '00011.02',
+  '800713': '00011.01',
+  '800708': '00011.08',
+  '800711': '00011.03',
+  '800710': '00011.06',
+  '800709': '00011.07',
+  '800705': '00011.11',
+  '800714': '00012.00',
+  '800715': '00013.00',
+  '800716': '00016.00',
+};
 
 const BLOB = 'hkPerformanceHistory';
 const HISTORY_FILE = path.join(__dirname, '..', 'data', 'hkPerformanceHistory.json');
@@ -73,33 +82,33 @@ const HISTORY_FILE = path.join(__dirname, '..', 'data', 'hkPerformanceHistory.js
 function loadHistory() { return storage.read(BLOB, HISTORY_FILE); }
 function saveHistory(h) { storage.write(BLOB, HISTORY_FILE, h); }
 
-async function fetchEastmoneyIndexSeries(eastmoneyCode, start, end, tries = 4) {
-  const url = `https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=124.${eastmoneyCode}`
-    + '&fields1=f1,f2,f3,f4,f5,f6&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61'
-    + `&klt=101&fqt=0&beg=${yyyymmdd(start)}&end=${yyyymmdd(end)}`;
-
-  for (let i = 1; i <= tries; i++) {
-    try {
-      const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
-      const json = await res.json();
-      const klines = json?.data?.klines ?? [];
-      if (klines.length) {
-        // Each line: date,open,close,high,low,volume,amount,amplitude,pctChg,change,turnover
-        return klines.map(line => {
-          const [date, , close] = line.split(',');
-          return { date, close: Number(close) };
-        });
-      }
-    } catch { /* retry below */ }
-    if (i < tries) await sleep(2000 + i * 2000);
-  }
-  throw new Error(`East Money kline request failed after retries for ${eastmoneyCode}`);
+function rangeForDays(days) {
+  if (days <= 35) return '1m';
+  if (days <= 100) return '3m';
+  if (days <= 200) return '6m';
+  if (days <= 380) return '1y';
+  if (days <= 1200) return '3y';
+  return '5y';
 }
 
-function inclusiveEndDate(endDate) {
-  const end = new Date(endDate);
-  end.setUTCDate(end.getUTCDate() + 1);
-  return end;
+async function fetchHsiIndexSeries(indexCode, days, startIso, tries = 3) {
+  const url = `https://www.hsi.com.hk/data/eng/indexes/${indexCode}/chart.json`;
+  const field = `indexLevels-${rangeForDays(days)}`;
+  for (let i = 1; i <= tries; i++) {
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      const levels = json?.[field] ?? [];
+      if (levels.length) {
+        return levels
+          .map(([timestamp, close]) => ({ date: isoDate(timestamp), close: Number(close) }))
+          .filter(point => point.date >= startIso && Number.isFinite(point.close));
+      }
+    } catch { /* retry below */ }
+    if (i < tries) await sleep(1000 * i);
+  }
+  throw new Error(`Hang Seng Indexes chart request failed after retries for ${indexCode}`);
 }
 
 // Rebuild the { dates, series } payload from the persisted history blob only —
@@ -126,16 +135,20 @@ function assemble(history) {
 async function getHkPerformance(days = 30) {
   const today = new Date();
   const start = new Date(today.getTime() - days * 86400000);
-  const end = inclusiveEndDate(today);
+  const startIso = isoDate(start);
 
   const results = await mapLimit(TICKERS, 4, async meta => {
     try {
-      const points = await fetchEastmoneyIndexSeries(meta.eastmoneyCode, start, end);
+      const points = await fetchHsiIndexSeries(HSI_CODES[meta.ticker], days, startIso);
       return { ...meta, points, error: null };
     } catch (e) {
       return { ...meta, points: [], error: e.message };
     }
   });
+
+  if (!results.some(result => result.points.length > 0)) {
+    throw new Error('Hang Seng Indexes returned no HK Rotation history');
+  }
 
   const history = loadHistory();
   for (const r of results) {

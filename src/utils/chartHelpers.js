@@ -1,4 +1,4 @@
-import { fa } from '../config/colors';
+import { fa } from '../config/colors.js';
 
 /* ─── Shared axis / grid tokens ─────────────────────────────────────── */
 export const GRID = { color: 'rgba(255,255,255,.04)' };

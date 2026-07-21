@@ -1,9 +1,8 @@
 /**
- * Seed the Hang Seng Composite sub-index history from East Money.
+ * Seed the Hang Seng Composite sub-index history from Hang Seng Indexes.
  *
- * East Money's kline endpoint carries the full history for every HSCI
- * sub-index back to their respective listing dates (HSCI itself back to
- * 2019+); one pass rebuilds the whole window.
+ * The official raw-level chart endpoint carries five years of daily history
+ * for every HSCI sector and size index; one pass rebuilds the whole window.
  *
  * Usage: npm run backfill:hk-performance -- [days]      (default 2555 ≈ 7y)
  */

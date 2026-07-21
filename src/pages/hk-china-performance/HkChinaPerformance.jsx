@@ -118,6 +118,25 @@ const BASELINE_100 = {
   },
 };
 
+const PREMIUM_ZERO_LINE = {
+  id: 'chinaEtfPremiumZero',
+  beforeDatasetsDraw(chart) {
+    const { ctx, chartArea, scales } = chart;
+    if (!chartArea || !scales.y) return;
+    const y = scales.y.getPixelForValue(0);
+    if (y < chartArea.top || y > chartArea.bottom) return;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(234,234,224,.35)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(chartArea.left, y);
+    ctx.lineTo(chartArea.right, y);
+    ctx.stroke();
+    ctx.restore();
+  },
+};
+
 function findSeries(payload, ticker) {
   return payload.series.find(s => s.ticker === ticker);
 }
@@ -255,12 +274,74 @@ function chartOptions({ relative = false, compact = false } = {}) {
   };
 }
 
+function buildPremiumChartData(series) {
+  const points = series.points ?? [];
+  return {
+    labels: points.map(point => fmtDate(point.date)),
+    datasets: [{
+      label: `${series.ticker} premium`,
+      data: points.map(point => point.premium),
+      details: points,
+      borderColor: series.color,
+      backgroundColor: 'transparent',
+      borderWidth: 2.25,
+      pointRadius: points.map((_, index) => index === points.length - 1 ? 3.5 : 0),
+      pointHoverRadius: 4,
+      pointHitRadius: 7,
+      tension: 0.15,
+      spanGaps: true,
+    }],
+  };
+}
+
+function premiumChartOptions() {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: { duration: 300 },
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#1a1f2a',
+        borderColor: 'rgba(255,255,255,.12)',
+        borderWidth: 1,
+        titleFont: { family: "'Inter',sans-serif", size: 11 },
+        bodyFont: { family: "'Inter',sans-serif", size: 11 },
+        padding: 10,
+        callbacks: {
+          label: context => {
+            const point = context.dataset.details?.[context.dataIndex];
+            if (!point) return ` Premium: ${context.parsed.y.toFixed(2)}%`;
+            return [
+              ` Premium: ${point.premium >= 0 ? '+' : ''}${point.premium.toFixed(2)}%`,
+              ` Market: ¥${point.marketPrice.toFixed(4)}`,
+              ` ${point.navSource}: ¥${point.nav.toFixed(4)}`,
+            ];
+          },
+        },
+      },
+    },
+    scales: {
+      x: { grid: GRID, ticks: { ...TICK, maxTicksLimit: 7, autoSkip: true }, border: BORD },
+      y: {
+        grid: GRID,
+        ticks: { ...TICK, maxTicksLimit: 7, callback: value => `${Number(value).toFixed(1)}%` },
+        border: BORD,
+      },
+    },
+  };
+}
+
 export default function HkChinaPerformance({ section = null }) {
   const [startDate, setStartDate] = useState(() => isoYearsAgo(1));
   const [endDate, setEndDate] = useState(() => todayIso());
   const [payload, setPayload] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [premiumPayload, setPremiumPayload] = useState(null);
+  const [premiumLoading, setPremiumLoading] = useState(false);
+  const [premiumError, setPremiumError] = useState(null);
   const fetchStartDate = useMemo(
     () => isoDaysBefore(startDate, ROLLING_FETCH_LOOKBACK_DAYS),
     [startDate]
@@ -279,6 +360,21 @@ export default function HkChinaPerformance({ section = null }) {
       .catch(fetchError => { if (live) { setError(fetchError.message); setLoading(false); } });
     return () => { live = false; };
   }, [fetchStartDate, endDate]);
+
+  useEffect(() => {
+    if (section !== 'sentiment') return undefined;
+    let live = true;
+    setPremiumLoading(true);
+    setPremiumError(null);
+    const params = new URLSearchParams({ start: startDate, end: endDate });
+    fetch(`/api/china-etf-premium?${params}`)
+      .then(response => (response.ok
+        ? response.json()
+        : response.json().then(body => Promise.reject(new Error(body.error ?? `HTTP ${response.status}`)))))
+      .then(data => { if (live) { setPremiumPayload(data); setPremiumLoading(false); } })
+      .catch(fetchError => { if (live) { setPremiumError(fetchError.message); setPremiumLoading(false); } });
+    return () => { live = false; };
+  }, [section, startDate, endDate]);
 
   const overviewChartData = useMemo(
     () => (payload ? buildOverviewChartData(payload, startDate, endDate) : null),
@@ -381,7 +477,7 @@ export default function HkChinaPerformance({ section = null }) {
           </ChartCard>
         </div>
       )}
-      {section != null && <div className="usp-section-label">{section === 'all' ? 'Overall' : section}</div>}
+      {section != null && <div className="usp-section-label">{section === 'all' ? 'Index' : section === 'sentiment' ? 'Sentiment' : section}</div>}
 
       {section === 'all' && !error && indexRatioCharts.length > 0 &&
         ratioGrid(indexRatioCharts.map(({ meta, data }) => ({
@@ -392,6 +488,39 @@ export default function HkChinaPerformance({ section = null }) {
         })))}
 
       {section !== 'all' && !error && activeSectionCharts && ratioGrid(activeSectionCharts.charts)}
+
+      {section === 'sentiment' && (
+        premiumError ? (
+          <div className="empty">Could not load ETF premium data: {premiumError}</div>
+        ) : !premiumPayload ? (
+          <div className="empty">{premiumLoading ? 'Loading ETF premium data…' : 'No data'}</div>
+        ) : (
+          <div className="usp-etf-grid">
+            {premiumPayload.series.map(series => {
+              const latest = series.latest;
+              const latestLabel = latest
+                ? ` · ${latest.premium >= 0 ? '+' : ''}${latest.premium.toFixed(2)}%`
+                : '';
+              return (
+                <ChartCard
+                  key={series.ticker}
+                  title={`${series.ticker} · ${series.name}${latestLabel}`}
+                  src="Yahoo Finance / East Money / Tiantian Fund"
+                  srcUrl="https://fund.eastmoney.com"
+                  freq="Daily + live IOPV"
+                  height={300}
+                >
+                  <Line
+                    data={buildPremiumChartData(series)}
+                    options={premiumChartOptions()}
+                    plugins={[PREMIUM_ZERO_LINE]}
+                  />
+                </ChartCard>
+              );
+            })}
+          </div>
+        )
+      )}
     </>
   );
 }

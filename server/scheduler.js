@@ -32,9 +32,14 @@ const scrapers = {
   taiwanLeverage:   () => require('./scrapers/taiwanLeverage').getTaiwanLeverage(),
   chinaLeverage:    () => require('./scrapers/chinaLeverage').getChinaLeverage(),
   chinaNationalTeamFlow: () => require('./scrapers/chinaNationalTeamFlow').getChinaNationalTeamFlow(),
+  chinaLiquidity: () => require('./scrapers/chinaLiquidity').updateChinaLiquidity(),
   japanLeverage:    () => require('./scrapers/japanLeverage').getJapanLeverage(),
   usLeverage:       () => require('./scrapers/usLeverage').getUsLeverage(),
+  usPerformance:    () => require('./scrapers/usPerformance').updateUsPerformance(),
+  hkChinaPerformance: () => require('./scrapers/hkChinaPerformance').updateHkChinaPerformance(),
   hkPerformance:    () => require('./scrapers/hkPerformance').getHkPerformance(),
+  chinaEtfPremium:  () => require('./scrapers/chinaEtfPremium').updateChinaEtfPremium(),
+  macro:            () => require('./scrapers/macro').getMacroData(),
 };
 
 // TTLs match each source's natural update frequency.
@@ -71,10 +76,22 @@ const TTL = {
   taiwanLeverage: 6 * 3600000,  // 6-hourly — TWSE posts the margin balance late evening; the ETF feed is a live snapshot
   chinaLeverage:  6 * 3600000,  // 6-hourly — SSE/SZSE post margin balances after the close; the HK 2× ETF ticks live
   chinaNationalTeamFlow: 6 * 3600000,  // 6-hourly — same SSE/SZSE post-close settlement cadence as chinaLeverage
+  chinaLiquidity: 24 * 3600000,  // daily — A-share turnover plus monthly PBOC M2 YoY
   japanLeverage:  24 * 3600000,  // daily — JPX only republishes this workbook once a week; a daily poll picks up the new week
   usLeverage:      6 * 3600000,  // 6-hourly — ETF net assets move daily; CFTC is weekly and FINRA is monthly
+  usPerformance:   6 * 3600000,  // 6-hourly — persisted Rotation history; catches the US close
+  hkChinaPerformance: 6 * 3600000, // 6-hourly — persisted China Rotation history
   hkPerformance:  6 * 3600000,  // 6-hourly — Hang Seng Composite sub-indices settle after the HKEX close
+  chinaEtfPremium: 6 * 3600000,  // 6-hourly — official NAV plus live IOPV when available
+  macro:          24 * 3600000,  // daily — monthly/weekly macro releases
 };
+
+// These scrapers already write their canonical time series to dedicated Mongo
+// blobs. Avoid duplicating their multi-year payloads in latestSnapshots/history.
+const ROTATION_KEYS = ['usPerformance', 'hkChinaPerformance', 'hkPerformance', 'chinaEtfPremium'];
+const PERSISTED_ONLY = new Set(ROTATION_KEYS);
+PERSISTED_ONLY.add('chinaNationalTeamFlow');
+PERSISTED_ONLY.add('chinaLiquidity');
 
 // Hard cap per scraper so one hung source can never wedge a refresh
 const SCRAPE_TIMEOUT = 5 * 60000;
@@ -90,9 +107,11 @@ async function refreshAll(keys = Object.keys(scrapers)) {
   const results = await Promise.allSettled(keys.map(k => withTimeout(scrapers[k](), SCRAPE_TIMEOUT, k)));
   keys.forEach((k, i) => {
     if (results[i].status === 'fulfilled' && results[i].value != null) {
-      cache.set(k, results[i].value, TTL[k]);
-      history.snapshot(k, results[i].value);
-      snapshotStore.put(k, results[i].value);
+      if (!PERSISTED_ONLY.has(k)) {
+        cache.set(k, results[i].value, TTL[k]);
+        history.snapshot(k, results[i].value);
+        snapshotStore.put(k, results[i].value);
+      }
       try { cache.recordSuccess(k, Buffer.byteLength(JSON.stringify(results[i].value))); } catch { cache.recordSuccess(k, 0); }
       console.log(`[refresh] ✓ ${k}`);
     } else {
@@ -102,6 +121,12 @@ async function refreshAll(keys = Object.keys(scrapers)) {
       console.warn(`[refresh] ✗ ${k}:`, msg);
     }
   });
+}
+
+async function refreshRotation() {
+  // US and China both use Yahoo for many symbols; running them together is a
+  // reliable way to trigger rate limits. Persist each market sequentially.
+  for (const key of ROTATION_KEYS) await refreshAll([key]);
 }
 
 // Options chains are otherwise fetched only on-demand by the Markets tab and
@@ -139,10 +164,13 @@ function setup() {
   // Every 6 hours: social signals and business data updated throughout the day
   // 12:00 UTC (21:00 KST) is the run that lands after the KRX close, so the
   // day's ETF net assets settle on the closing price rather than an intraday one.
-  cron.schedule('0 */6 * * *', () => refreshAll(['docker', 'openrouterRanks', 'dram', 'nand', 'aws', 'cpu', 'koreaLeverage', 'taiwanLeverage', 'chinaLeverage', 'chinaNationalTeamFlow', 'usLeverage', 'hkPerformance']));
+  cron.schedule('0 */6 * * *', async () => {
+    await refreshAll(['docker', 'openrouterRanks', 'dram', 'nand', 'aws', 'cpu', 'koreaLeverage', 'taiwanLeverage', 'chinaLeverage', 'chinaNationalTeamFlow', 'usLeverage']);
+    await refreshRotation().catch(error => console.warn('[rotation] scheduled refresh failed:', error.message));
+  });
 
   // Daily at 03:00 UTC: aggregate stats whose sources only publish once per day
-  cron.schedule('0 3 * * *', () => refreshAll(['gpu', 'tftLcd', 'tpu', 'epochRevenue', 'sentiment', 'pypi', 'github', 'eia', 'mops', 'githubCommits', 'npm', 'huggingface', 'mcp', 'sec', 'webTraffic', 'customsDrones', 'japanLeverage']));
+  cron.schedule('0 3 * * *', () => refreshAll(['gpu', 'tftLcd', 'tpu', 'epochRevenue', 'sentiment', 'pypi', 'github', 'eia', 'mops', 'githubCommits', 'npm', 'huggingface', 'mcp', 'sec', 'webTraffic', 'customsDrones', 'japanLeverage', 'macro', 'chinaLiquidity']));
 
   // Options: warm every 6h, plus once shortly after boot so the RAG has data fast
   cron.schedule('30 */6 * * *', () => warmOptions());
@@ -191,4 +219,4 @@ function setup() {
   }, { timezone: 'Asia/Hong_Kong' });
 }
 
-module.exports = { setup, refreshAll, scrapers, TTL, warmOptions };
+module.exports = { setup, refreshAll, refreshRotation, ROTATION_KEYS, PERSISTED_ONLY, scrapers, TTL, warmOptions };

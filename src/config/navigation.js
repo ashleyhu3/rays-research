@@ -1,25 +1,26 @@
 import { HK_CHINA_SECTIONS } from './hkChinaPerformance';
 import { HK_SECTIONS } from './hkPerformance';
 
-/** Subtabs shown under the "US" market-performance nav item — mirrors the
+/** Subtabs shown under the "US" rotation nav item — mirrors the
  * page sections in src/pages/us-performance/UsPerformance.jsx. */
 const US_PERFORMANCE_SUBTABS = [
-  { key: 'all',         label: 'All Sectors' },
+  { key: 'all',         label: 'Sector' },
   { key: 'tech',        label: 'Tech' },
   { key: 'theme',       label: 'Theme' },
   { key: 'factor',      label: 'Factor' },
   { key: 'correlation', label: 'Correlation' },
 ];
 
-/** Subtabs shown under the "China" market-performance nav item — "All Sectors"
+/** Subtabs shown under the "China" rotation nav item — "Index"
  * plus one per HK_CHINA_SECTIONS entry, kept in sync with the page's data. */
 const CHINA_PERFORMANCE_SUBTABS = [
-  { key: 'all', label: 'Overall' },
+  { key: 'all', label: 'Index' },
   ...HK_CHINA_SECTIONS.map(section => ({ key: section.title, label: section.title })),
+  { key: 'sentiment', label: 'Sentiment' },
 ];
 
-/** Subtabs shown under the "HK" market-performance nav item — one per
- * HK_SECTIONS entry, kept in sync with the page's data. No "All Sectors"
+/** Subtabs shown under the "HK" rotation nav item — one per
+ * HK_SECTIONS entry, kept in sync with the page's data. No aggregate
  * subtab, since this tab has no aggregate/overview chart. */
 const HK_PERFORMANCE_SUBTABS = HK_SECTIONS.map(section => ({ key: section.title, label: section.title }));
 
@@ -99,13 +100,35 @@ export const NAV_SECTIONS = [
     ],
   },
   {
-    label: 'Market Performance',
+    label: 'Rotation',
     sectorId: 'market-performance',
     mode: 'us-performance',
     items: [
       { id: 'us-performance',       label: 'US',    subitems: US_PERFORMANCE_SUBTABS },
       { id: 'hk-china-performance', label: 'China', subitems: CHINA_PERFORMANCE_SUBTABS },
       { id: 'hk-performance',       label: 'HK',    subitems: HK_PERFORMANCE_SUBTABS },
+    ],
+  },
+  {
+    label: 'US',
+    sectorId: 'macro-us',
+    mode: 'macro',
+    items: [
+      { id: 'macro-us-inflation', label: 'Inflation' },
+      { id: 'macro-us-labor',     label: 'Labor' },
+      { id: 'macro-us-pmi',       label: 'PMI' },
+      { id: 'macro-us-household', label: 'Household' },
+    ],
+  },
+  {
+    label: 'China',
+    sectorId: 'macro-china',
+    mode: 'macro',
+    items: [
+      { id: 'macro-cn-inflation', label: 'Inflation' },
+      { id: 'macro-cn-pmi',       label: 'PMI' },
+      { id: 'macro-cn-trade',     label: 'Trade' },
+      { id: 'macro-cn-activity',  label: 'Activity' },
     ],
   },
   {
@@ -126,7 +149,11 @@ export const NAV_SECTIONS = [
     sectorId: 'liquidity',
     mode: 'liquidity',
     items: [
-      { id: 'liquidity-china-flow', label: 'China' },
+      { id: 'liquidity-china-flow', label: 'China', subitems: [
+        { key: 'flow', label: 'Flow' },
+        { key: 'turnover', label: 'Turnover' },
+        { key: 'money-supply', label: 'Money Supply' },
+      ] },
     ],
   },
   {
@@ -218,16 +245,24 @@ export const VIEW_META = {
   options:            { title: 'OPTIONS FLOW' },
   alerts:             { title: 'DAILY OPTIONS REPORT' },
   sentiment:          { title: 'MARKETS — SENTIMENT & OPTIONS' },
-  'us-performance':   { title: 'MARKET PERFORMANCE — US' },
-  'hk-china-performance': { title: 'MARKET PERFORMANCE — CHINA' },
-  'hk-performance':       { title: 'MARKET PERFORMANCE — HK' },
+  'us-performance':   { title: 'ROTATION — US' },
+  'hk-china-performance': { title: 'ROTATION — CHINA' },
+  'hk-performance':       { title: 'ROTATION — HK' },
+  'macro-us-inflation': { title: 'MACRO — US · INFLATION' },
+  'macro-us-labor':     { title: 'MACRO — US · LABOR' },
+  'macro-us-pmi':       { title: 'MACRO — US · PMI' },
+  'macro-us-household': { title: 'MACRO — US · HOUSEHOLD' },
+  'macro-cn-inflation': { title: 'MACRO — CHINA · INFLATION' },
+  'macro-cn-pmi':       { title: 'MACRO — CHINA · PMI' },
+  'macro-cn-trade':     { title: 'MACRO — CHINA · TRADE' },
+  'macro-cn-activity':  { title: 'MACRO — CHINA · ACTIVITY' },
   'leverage-korea':   { title: 'LEVERAGE — KOREAN RETAIL FIREPOWER' },
   'leverage-taiwan':  { title: 'LEVERAGE — TAIWAN RETAIL FIREPOWER' },
   'taiwan-individual': { title: 'TAIWAN — INDIVIDUAL STOCK MARGIN' },
   'leverage-china':   { title: 'LEVERAGE — CHINA A-SHARES' },
   'leverage-japan':   { title: 'LEVERAGE — JAPAN MARGIN TRADING' },
   'leverage-us':      { title: 'LEVERAGE — US MARGIN, FUTURES & OPTIONS' },
-  'liquidity-china-flow': { title: 'LIQUIDITY — CHINA · FLOW: NATIONAL TEAM' },
+  'liquidity-china-flow': { title: 'LIQUIDITY — CHINA' },
   transcripts:        { title: 'EARNINGS TRANSCRIPT AGENT' },
   sources:            { title: 'DATA VALIDITY TERMINAL' },
 };

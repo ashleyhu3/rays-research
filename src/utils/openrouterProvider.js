@@ -13,6 +13,65 @@ export function orWeekLabel(isoDate) {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
 }
 
+/** Human-readable UTC label for OpenRouter's native daily series. */
+export function orDayLabel(isoDate) {
+  if (!isoDate) return '';
+  const d = new Date(isoDate + 'T00:00:00Z');
+  return d.toLocaleDateString('en-US', {
+    month: 'short', day: 'numeric',
+    ...(d.getUTCMonth() === 0 && d.getUTCDate() === 1 ? { year: 'numeric' } : {}),
+    timeZone: 'UTC',
+  });
+}
+
+/**
+ * Daily token totals and per-model stacks for one provider. The scraper keeps
+ * the provider's 12 most-used recent models and an explicit Other remainder.
+ */
+export function orProviderDailyModels(ranks, provider, weeks = 12) {
+  const labels = ranks?.dailyLabels ?? [];
+  const models = ranks?.providerModelDaily?.[provider] ?? [];
+  const totals = ranks?.providerDaily?.[provider] ?? [];
+  if (!labels.length || !models.length || totals.length !== labels.length) return null;
+
+  const days = Math.min(labels.length, Math.max(7, Math.round((weeks || 12) * 7)));
+  return {
+    isoDates: labels.slice(-days),
+    labels: labels.slice(-days).map(orDayLabel),
+    tokens: totals.slice(-days),
+    models: models
+      .map(model => ({ ...model, tokens: (model.tokens ?? []).slice(-days) }))
+      .filter(model => model.tokens.some(Boolean)),
+  };
+}
+
+/**
+ * Full available daily history for one provider model, beginning on its first
+ * observed usage day. Zero-volume dates are returned as null so bar charts
+ * leave genuine gaps instead of drawing or interpolating activity.
+ */
+export function orModelDailySeries(ranks, provider, modelMatch) {
+  const labels = ranks?.dailyLabels ?? [];
+  const models = ranks?.providerModelDaily?.[provider] ?? [];
+  if (!labels.length || !models.length || !modelMatch) return null;
+
+  const needle = String(modelMatch).toLowerCase();
+  const model = models.find(m =>
+    `${m.slug ?? ''} ${m.name ?? ''}`.toLowerCase().includes(needle)
+  );
+  if (!model || model.tokens?.length !== labels.length) return null;
+
+  const first = model.tokens.findIndex(v => v > 0);
+  if (first < 0) return null;
+  return {
+    slug: model.slug,
+    name: model.name,
+    isoDates: labels.slice(first),
+    labels: labels.slice(first).map(orDayLabel),
+    tokens: model.tokens.slice(first).map(v => v > 0 ? v : null),
+  };
+}
+
 /**
  * Build token / share / model series for one provider over the last W weeks.
  * Returns null when rankings data (or this provider) is unavailable.

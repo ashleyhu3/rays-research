@@ -13,26 +13,9 @@
  *
  * Usage: MONGODB_URI=... node server/scripts/collect.js
  */
-const path = require('path');
 const storage = require('../storage');
 const scheduler = require('../scheduler');
-
-const DATA_DIR = path.join(__dirname, '..', 'data');
-const BLOBS = [
-  { name: 'metricsHistory',  file: path.join(DATA_DIR, 'metricsHistory.json') },
-  { name: 'gpuHistory',      file: path.join(DATA_DIR, 'gpuHistory.json') },
-  { name: 'dramHistory',     file: path.join(DATA_DIR, 'dramHistory.json') },
-  { name: 'nandHistory',     file: path.join(DATA_DIR, 'nandHistory.json') },
-  { name: 'tftLcdHistory',   file: path.join(DATA_DIR, 'tftLcdHistory.json') },
-  { name: 'awsHistory',      file: path.join(DATA_DIR, 'awsHistory.json') },
-  { name: 'cpuHistory',      file: path.join(DATA_DIR, 'cpuHistory.json') },
-  { name: 'tpuHistory',      file: path.join(DATA_DIR, 'tpuHistory.json') },
-  { name: 'cloudGpuHistory', file: path.join(DATA_DIR, 'cloudGpuHistory.json') },
-  { name: 'sentimentData',   file: path.join(DATA_DIR, 'sentiment.json') },
-  { name: 'koreaLeverageHistory', file: path.join(DATA_DIR, 'koreaLeverageHistory.json') },
-  { name: 'taiwanLeverageHistory', file: path.join(DATA_DIR, 'taiwanLeverageHistory.json') },
-  { name: 'latestSnapshots', file: path.join(DATA_DIR, 'latestSnapshots.json') },
-];
+const BLOBS = require('../storageBlobs');
 
 async function main() {
   if (!process.env.MONGODB_URI) {
@@ -53,7 +36,10 @@ async function main() {
   // real recompute each run (otherwise the snapshot advances only every ~4 days).
   process.env.SENTIMENT_FORCE = '1';
 
-  await scheduler.refreshAll(keys);   // runs each scraper, snapshots history via storage
+  const rotation = keys.filter(key => scheduler.ROTATION_KEYS.includes(key));
+  const remaining = keys.filter(key => !scheduler.ROTATION_KEYS.includes(key));
+  if (remaining.length) await scheduler.refreshAll(remaining);
+  for (const key of rotation) await scheduler.refreshAll([key]);
 
   await storage.flush();              // ensure all Mongo upserts land before exit
   await storage.close();
