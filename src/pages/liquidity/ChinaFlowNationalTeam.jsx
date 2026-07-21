@@ -28,20 +28,18 @@ function alpha(hex, a) {
   return `rgba(${r},${g},${b},${a})`;
 }
 
-// Lighten a base colour towards white by `t` (0 = base, 1 = white) — used to
-// give each ticker within a group its own shade of that group's colour.
-function lighten(hex, t) {
-  const n = parseInt(hex.slice(1), 16);
-  const r = Math.round(((n >> 16) & 255) * (1 - t) + 255 * t);
-  const g = Math.round(((n >> 8) & 255) * (1 - t) + 255 * t);
-  const b = Math.round((n & 255) * (1 - t) + 255 * t);
-  return `#${[r, g, b].map(v => v.toString(16).padStart(2, '0')).join('')}`;
-}
+// High-contrast palette borrowed from the AI supply-chain page — each ticker in
+// a stacked group gets its own clearly-distinct colour rather than a shade of the
+// group's base hue.
+const PALETTE = [
+  '#f87171', '#38bdf8', '#fbbf24', '#4ade80', '#818cf8', '#fb923c',
+  '#e879f9', '#22d3ee', '#a3e635', '#f472b6', '#c084fc', '#34d399',
+  '#60a5fa', '#fb7185',
+];
 
-/** One shade per ticker in a group, darkest (base colour) first. */
-function tickerShades(baseHex, count) {
-  if (count <= 1) return [baseHex];
-  return Array.from({ length: count }, (_, i) => lighten(baseHex, (i / (count - 1)) * 0.55));
+/** Distinct high-contrast colour per ticker index, cycling the palette. */
+function tickerColors(count) {
+  return Array.from({ length: count }, (_, i) => PALETTE[i % PALETTE.length]);
 }
 
 const RANGES = [
@@ -94,19 +92,75 @@ function windowed(dates, groups, tickerSeries, range) {
   };
 }
 
+// Net flow color by sign — used only by the all-tickers total bar.
+const TOTAL_POS = '#5a9f6b';
+const TOTAL_NEG = '#c65d57';
+
+/** Grand total across every group (i.e. every tracked ticker) for each day. */
+function totalSeries(win) {
+  return win.dates.map((_, i) => {
+    let sum = 0;
+    let any = false;
+    for (const group of GROUP_KEYS) {
+      const v = win.groups[group]?.[i];
+      if (Number.isFinite(v)) {
+        sum += v;
+        any = true;
+      }
+    }
+    return any ? sum : null;
+  });
+}
+
+function totalChartData(win) {
+  const long = win.dates.length > 90;
+  const series = totalSeries(win);
+  const sign = v => (v == null || v >= 0 ? TOTAL_POS : TOTAL_NEG);
+  return {
+    labels: win.dates.map(long ? monthLabel : dayLabel),
+    datasets: [{
+      label: 'All tickers',
+      data: series,
+      backgroundColor: series.map(v => alpha(sign(v), 0.8)),
+      borderColor: series.map(sign),
+      borderWidth: 1,
+      borderRadius: 2,
+      maxBarThickness: 14,
+    }],
+  };
+}
+
+function totalChartOptions(win) {
+  const base = groupChartOptions(win, null, []);
+  return {
+    ...base,
+    plugins: {
+      ...base.plugins,
+      tooltip: {
+        ...base.plugins.tooltip,
+        callbacks: {
+          title: items => (items.length ? win.dates[items[0].dataIndex] : ''),
+          label: context => (context.raw == null ? null : ` All tickers: ${fmtYi(context.raw)}`),
+        },
+      },
+    },
+  };
+}
+
 function groupChartData(win, group, tickers) {
   const long = win.dates.length > 90;
-  const shades = tickerShades(GROUP_COLOR[group], tickers.length);
+  const colors = tickerColors(tickers.length);
   return {
     labels: win.dates.map(long ? monthLabel : dayLabel),
     datasets: tickers.map((ticker, i) => ({
       label: ticker,
       data: win.tickerSeries[ticker] ?? [],
-      backgroundColor: alpha(shades[i], 0.8),
-      borderColor: shades[i],
+      backgroundColor: alpha(colors[i], 0.85),
+      borderColor: colors[i],
       borderWidth: 1,
       borderRadius: 2,
-      maxBarThickness: 14,
+      maxBarThickness: 22,
+      stack: 'flow',
     })),
   };
 }
@@ -144,12 +198,14 @@ function groupChartOptions(win, group, tickers) {
     },
     scales: {
       x: {
+        stacked: true,
         grid: { display: false },
         ticks: {
           color: MUTED, maxTicksLimit: 12, autoSkip: true, maxRotation: 0, padding: 3, font: { size: 10 },
         },
       },
       y: {
+        stacked: true,
         grace: '8%',
         grid: { color: 'rgba(255,255,255,.07)' },
         ticks: { color: MUTED, callback: value => fmtYi(Number(value)), font: { size: 10 } },
@@ -189,6 +245,23 @@ const SRC_NOTE = 'Estimated, not reported directly: share_change (creations minu
   + 'no computable value for a ticker is left out of that group\'s total for the day rather than counted as '
   + 'zero flow.';
 
+function TotalPanel({ win }) {
+  return (
+    <ChartCard
+      chartId="china-national-team-flow-total"
+      title="China · Flow — All Tickers (Daily Total)"
+      src={<SourceLinks />}
+      freq="Daily"
+      lag="SSE same-evening; SZSE T+1 morning"
+      span2
+      height={300}
+      srcNote={SRC_NOTE}
+    >
+      <Bar data={totalChartData(win)} options={totalChartOptions(win)} />
+    </ChartCard>
+  );
+}
+
 function GroupPanel({ group, tickers, win }) {
   return (
     <ChartCard
@@ -199,7 +272,7 @@ function GroupPanel({ group, tickers, win }) {
       lag="SSE same-evening; SZSE T+1 morning"
       span2
       height={300}
-      legend={tickers.map((ticker, i) => [ticker, tickerShades(GROUP_COLOR[group], tickers.length)[i]])}
+      legend={tickers.map((ticker, i) => [ticker, tickerColors(tickers.length)[i]])}
       srcNote={SRC_NOTE}
     >
       <Bar data={groupChartData(win, group, tickers)} options={groupChartOptions(win, group, tickers)} />
@@ -282,6 +355,7 @@ export default function ChinaFlowNationalTeam() {
       </div>
 
       <div className="cgrid">
+        <TotalPanel win={win} />
         {GROUP_KEYS.map(group => (
           <GroupPanel key={group} group={group} tickers={tickerGroups[group] ?? []} win={win} />
         ))}

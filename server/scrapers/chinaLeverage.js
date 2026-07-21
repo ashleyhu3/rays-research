@@ -368,7 +368,11 @@ async function getChinaLeverage(days = 30) {
   const szseDelayMs = Number(process.env.CHINA_LEVERAGE_SZSE_DELAY_MS) || 150;
   const szseRestEvery = Number(process.env.CHINA_LEVERAGE_SZSE_REST_EVERY) || 0;
   const szseRestMs = Number(process.env.CHINA_LEVERAGE_SZSE_REST_MS) || 0;
-  const needSzse = tradingDays.filter(d => !history[d]?.szse);
+  // Newest-first: a deep backfill's request budget is capped by SZSE's own
+  // throttling well before it reaches every day, so prioritize the recent,
+  // chart-relevant days over ancient ones — order doesn't matter for the
+  // daily poll's handful of days either way.
+  const needSzse = tradingDays.filter(d => !history[d]?.szse).reverse();
   if (needSzse.length > 5) console.log(`[chinaLeverage] SZSE: fetching ${needSzse.length} days…`);
   const szseFresh = {};
   let szseOk = 0;

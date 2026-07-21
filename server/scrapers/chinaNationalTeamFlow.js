@@ -299,12 +299,35 @@ async function getChinaNationalTeamFlow(days = 30) {
     await sleep(400);
   }
 
-  // SSE trading days worth having in the window, per the SZSE tickers' own
-  // fresh fetch above — both exchanges share one trading calendar, so any
-  // SZ ticker's dates are a fine reference for which SH days are missing.
+  // Prices are needed to compute flow, but they also double as an independent
+  // A-share trading calendar: any A-share ETF's Yahoo close dates are exactly the
+  // days the market traded. Fetch them BEFORE the SSE per-day backfill so the
+  // missing-day reference below doesn't depend solely on SZSE — SZSE's ShowReport
+  // host is unreachable from outside China, and when it fails the SSE (.SH)
+  // tickers would otherwise never get backfilled (their calendar came only from
+  // the SZSE fetch).
+  const priceRange = days > 1460 ? '10y' : days > 700 ? '5y' : days > 300 ? '2y' : '1y';
+  await mapPool(ALL_TICKERS, 4, async ticker => {
+    try {
+      const closes = await yahooDailyClose(yahooSymbol(ticker), priceRange);
+      history.prices[ticker] = { ...(history.prices[ticker] ?? {}), ...closes };
+    } catch (e) {
+      console.warn(`[chinaNationalTeamFlow] Yahoo ${ticker}: ${e.message}`);
+    }
+  });
+
+  // SSE trading days worth having in the window. Both exchanges share one trading
+  // calendar, so the reference is the union of the SZSE tickers' freshly-fetched
+  // dates and the Yahoo price dates — either source alone is a valid calendar, and
+  // the union keeps the SSE backfill working even when one of them is unavailable.
   const knownTradingDays = new Set();
   for (const ticker of szTickers) {
     for (const day of Object.keys(history.shares[ticker] ?? {})) {
+      if (day >= from && day <= to) knownTradingDays.add(day);
+    }
+  }
+  for (const ticker of ALL_TICKERS) {
+    for (const day of Object.keys(history.prices[ticker] ?? {})) {
       if (day >= from && day <= to) knownTradingDays.add(day);
     }
   }
@@ -324,16 +347,6 @@ async function getChinaNationalTeamFlow(days = 30) {
     }
     history.shares[ticker] = have;
   }
-
-  const priceRange = days > 1460 ? '10y' : days > 700 ? '5y' : days > 300 ? '2y' : '1y';
-  await mapPool(ALL_TICKERS, 4, async ticker => {
-    try {
-      const closes = await yahooDailyClose(yahooSymbol(ticker), priceRange);
-      history.prices[ticker] = { ...(history.prices[ticker] ?? {}), ...closes };
-    } catch (e) {
-      console.warn(`[chinaNationalTeamFlow] Yahoo ${ticker}: ${e.message}`);
-    }
-  });
 
   saveHistory(history);
   return assemble(history);

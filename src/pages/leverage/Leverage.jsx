@@ -21,49 +21,151 @@ const MARKED_POINTS = {
     const { ctx, chartArea } = chart;
     const points = chart.getDatasetMeta(0).data;
     const color = options.color ?? chart.data.datasets[0].borderColor;
+    const marks = options.marks ?? [];
+    const drawdowns = options.drawdowns ?? [];
+
+    const VALUE_FONT = "700 11px 'Inter', sans-serif";
+    const DATE_FONT = "700 10px 'Inter', sans-serif";
+    const LINE_H = 13;
 
     ctx.save();
-    for (const mark of options.marks ?? []) {
+
+    // Guides + dots first, so every label paints on top of them.
+    for (const mark of marks) {
       const point = points[mark.index];
       if (!point || point.skip) continue;
-
-      ctx.save();
-      ctx.strokeStyle = color;
-      ctx.globalAlpha = 0.55;
-      ctx.lineWidth = 1;
-      ctx.setLineDash([3, 4]);
-      ctx.beginPath();
-      ctx.moveTo(point.x, chartArea.top);
-      ctx.lineTo(point.x, chartArea.bottom);
-      ctx.stroke();
-      ctx.restore();
-
+      // Bare marks (drawdown peak/trough) are just a dot — no guide/value/date.
+      if (!mark.bare) {
+        ctx.save();
+        ctx.strokeStyle = color;
+        ctx.globalAlpha = 0.55;
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 4]);
+        ctx.beginPath();
+        ctx.moveTo(point.x, chartArea.top);
+        ctx.lineTo(point.x, chartArea.bottom);
+        ctx.stroke();
+        ctx.restore();
+      }
       ctx.fillStyle = color;
       ctx.beginPath();
       ctx.arc(point.x, point.y, 3.5, 0, Math.PI * 2);
       ctx.fill();
+    }
 
+    // Dashed peak→trough connectors, drawn under the labels.
+    for (const drop of drawdowns) {
+      const peak = points[drop.peakIndex];
+      const trough = points[drop.troughIndex];
+      if (!peak || !trough || peak.skip || trough.skip) continue;
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.globalAlpha = 0.5;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([2, 3]);
+      ctx.beginPath();
+      ctx.moveTo(peak.x, peak.y);
+      ctx.lineTo(trough.x, trough.y);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Collision-aware label placement. Labels reserve rectangles as they are
+    // drawn; later ones nudge (values/percentages) or drop out (bottom dates)
+    // rather than overlap. Higher-priority labels (latest, then %, then marked
+    // dates) claim their spot first.
+    const placed = [];
+    const overlaps = (a, b) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
+    const rectFor = (text, cx, cy, align, baseline, font) => {
+      ctx.font = font;
+      const w = ctx.measureText(text).width;
+      let x0 = align === 'right' ? cx - w : align === 'center' ? cx - w / 2 : cx;
+      x0 = Math.max(chartArea.left + 2, Math.min(x0, chartArea.right - 2 - w));
+      const y1 = baseline === 'bottom' ? cy : baseline === 'top' ? cy + LINE_H : cy + LINE_H / 2;
+      return { x0: x0 - 1, x1: x0 + w + 3, y0: y1 - LINE_H - 1, y1: y1 + 1, drawX: x0 };
+    };
+    const paint = (text, rect, cy, baseline, font) => {
+      ctx.font = font;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = baseline;
       ctx.lineWidth = 3.5;
       ctx.lineJoin = 'round';
       ctx.strokeStyle = SURFACE;
-      ctx.textAlign = mark.anchor === 'right' ? 'right' : 'center';
-      const x = mark.anchor === 'right' ? point.x - 2 : point.x;
-
-      const valueAbove = point.y - chartArea.top > 25;
-      ctx.font = "700 11px 'Inter', sans-serif";
-      ctx.textBaseline = valueAbove ? 'bottom' : 'top';
-      const valueY = valueAbove ? point.y - 7 : point.y + 7;
-      ctx.strokeText(mark.value, x, valueY);
+      ctx.strokeText(text, rect.drawX, cy);
       ctx.fillStyle = color;
-      ctx.fillText(mark.value, x, valueY);
+      ctx.fillText(text, rect.drawX, cy);
+      placed.push(rect);
+    };
 
-      ctx.font = "700 10px 'Inter', sans-serif";
-      ctx.textBaseline = 'top';
-      const dateY = chartArea.bottom + 21;
-      ctx.strokeText(mark.date, x, dateY);
-      ctx.fillStyle = color;
-      ctx.fillText(mark.date, x, dateY);
+    // Split marks into their in-plot value labels and bottom-row date labels.
+    const valueJobs = [];
+    const dateJobs = [];
+    for (const mark of marks) {
+      const point = points[mark.index];
+      if (!point || point.skip || mark.bare) continue;
+      const isLatest = mark.anchor === 'right';
+      const cx = isLatest ? point.x - 2 : point.x;
+      const align = isLatest ? 'right' : 'center';
+      const priority = isLatest ? 0 : 2;
+      valueJobs.push({ priority, text: mark.value, cx, point, align });
+      dateJobs.push({ priority, text: mark.date, cx, align });
     }
+    const pctJobs = [];
+    for (const drop of drawdowns) {
+      const peak = points[drop.peakIndex];
+      const trough = points[drop.troughIndex];
+      if (!peak || !trough || peak.skip || trough.skip) continue;
+      pctJobs.push({
+        priority: 1,
+        kind: 'pct',
+        text: drop.label,
+        cx: (peak.x + trough.x) / 2,
+        cy: (peak.y + trough.y) / 2 - 12,
+      });
+    }
+
+    const placeValue = job => {
+      const above = job.point.y - chartArea.top > 25;
+      const sides = above ? ['bottom', 'top'] : ['top', 'bottom'];
+      for (const baseline of sides) {
+        for (let step = 0; step < 4; step += 1) {
+          const off = 7 + step * LINE_H;
+          const cy = baseline === 'bottom' ? job.point.y - off : job.point.y + off;
+          const rect = rectFor(job.text, job.cx, cy, job.align, baseline, VALUE_FONT);
+          if (rect.y0 < chartArea.top || rect.y1 > chartArea.bottom) continue;
+          if (placed.some(p => overlaps(p, rect))) continue;
+          paint(job.text, rect, cy, baseline, VALUE_FONT);
+          return;
+        }
+      }
+      const cy = job.point.y - 7;
+      paint(job.text, rectFor(job.text, job.cx, cy, job.align, 'bottom', VALUE_FONT), cy, 'bottom', VALUE_FONT);
+    };
+
+    const placePct = job => {
+      for (let step = 0; step < 5; step += 1) {
+        const cy = Math.max(chartArea.top + LINE_H, job.cy - step * LINE_H);
+        const rect = rectFor(job.text, job.cx, cy, 'center', 'bottom', VALUE_FONT);
+        if (placed.some(p => overlaps(p, rect))) continue;
+        paint(job.text, rect, cy, 'bottom', VALUE_FONT);
+        return;
+      }
+      const cy = Math.max(chartArea.top + LINE_H, job.cy);
+      paint(job.text, rectFor(job.text, job.cx, cy, 'center', 'bottom', VALUE_FONT), cy, 'bottom', VALUE_FONT);
+    };
+
+    const inPlot = [...valueJobs, ...pctJobs].sort((a, b) => a.priority - b.priority);
+    for (const job of inPlot) (job.kind === 'pct' ? placePct : placeValue)(job);
+
+    // Bottom-row dates: keep higher-priority (latest) and drop any that would
+    // collide, so compressed ranges never smear two dates together.
+    const dateY = chartArea.bottom + 21;
+    for (const job of dateJobs.sort((a, b) => a.priority - b.priority)) {
+      const rect = rectFor(job.text, job.cx, dateY, job.align, 'top', DATE_FONT);
+      if (placed.some(p => overlaps(p, rect))) continue;
+      paint(job.text, rect, dateY, 'top', DATE_FONT);
+    }
+
     ctx.restore();
   },
 };
@@ -163,6 +265,23 @@ const RANGES = [
 ];
 
 const MARKED_DATES = ['2025-04-07', '2026-03-30'];
+
+// Peak→trough deleveraging episodes marked on the margin-loan panels. Each is a
+// fixed historical peak/trough pair; a null trough tracks the latest datapoint
+// (the current, still-unfolding drawdown). The decline % is computed from live
+// series values at render time, so it self-updates as data is revised/extended.
+const MARGIN_DRAWDOWNS = {
+  korea: [
+    { peak: '2024-07-15', trough: '2024-08-08' },
+    { peak: '2025-03-05', trough: '2025-04-14' },
+    { peak: '2026-06-24', trough: null },
+  ],
+  taiwan: [
+    { peak: '2024-07-17', trough: '2024-08-06' },
+    { peak: '2025-03-06', trough: '2025-04-28' },
+    { peak: '2026-07-06', trough: null },
+  ],
+};
 
 function dayLabel(iso) {
   return new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-US', {
@@ -311,7 +430,40 @@ function layerMarks(win, layer, formatValue) {
   return marks;
 }
 
+/**
+ * Extra peak→trough annotations for the margin panel, layered on top of the
+ * standard marks. Returns bare `marks` (just a dot at each peak and trough)
+ * alongside `drawdowns` describing the % drop label between each pair.
+ */
+function marginDrawdownMarks(win, values, episodes) {
+  let latestIndex = values.length - 1;
+  while (latestIndex >= 0 && !Number.isFinite(values[latestIndex])) latestIndex -= 1;
+
+  const marks = [];
+  const drawdowns = [];
+  for (const episode of episodes ?? []) {
+    const peakIndex = sessionIndex(win.dates, episode.peak);
+    const troughIndex = episode.trough ? sessionIndex(win.dates, episode.trough) : latestIndex;
+    if (peakIndex < 0 || troughIndex <= peakIndex) continue;
+    if (!Number.isFinite(values[peakIndex]) || !Number.isFinite(values[troughIndex])) continue;
+
+    marks.push({ index: peakIndex, bare: true });
+    marks.push({ index: troughIndex, bare: true });
+    const decline = (values[peakIndex] - values[troughIndex]) / values[peakIndex] * 100;
+    drawdowns.push({ peakIndex, troughIndex, label: `−${decline.toFixed(1)}%` });
+  }
+  return { marks, drawdowns };
+}
+
 function layerChartOptions(win, market, layer, formatValue) {
+  // Every layer keeps its original marks (MARKED_DATES + latest value/date).
+  // The margin panel additionally overlays bare peak/trough dots and the % drop.
+  const baseMarks = layerMarks(win, layer, formatValue);
+  const drawdown = layer.key === 'margin'
+    ? marginDrawdownMarks(win, win.layers[layer.key] ?? [], MARGIN_DRAWDOWNS[market.id])
+    : { marks: [], drawdowns: [] };
+  const marks = [...baseMarks, ...drawdown.marks];
+  const { drawdowns } = drawdown;
   return {
     responsive: true,
     maintainAspectRatio: false,
@@ -321,7 +473,8 @@ function layerChartOptions(win, market, layer, formatValue) {
     plugins: {
       legend: { display: false },
       leverageMarkedPoints: {
-        marks: layerMarks(win, layer, formatValue),
+        marks,
+        drawdowns,
         color: layer.color,
       },
       tooltip: {
