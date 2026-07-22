@@ -18,6 +18,7 @@ const { readHkPerformance }          = require('./scrapers/hkPerformance');
 const { readChinaNationalTeamFlow }  = require('./scrapers/chinaNationalTeamFlow');
 const { readChinaLiquidity }         = require('./scrapers/chinaLiquidity');
 const { readCarryTrade }             = require('./scrapers/carryTrade');
+const { readKoreaLeverage }          = require('./scrapers/koreaLeverage');
 const { keywordRolling }             = require('./stocktwitsStore');
 
 const app   = express();
@@ -86,6 +87,7 @@ app.use('/api/metrics-history', requireStorageBlobs('metricsHistory'));
 app.use('/api/china-national-team-flow', requireStorageBlobs('chinaNationalTeamFlowHistory'));
 app.use('/api/china-liquidity', requireStorageBlobs('chinaLiquidityHistory'));
 app.use('/api/carry-trade', requireStorageBlobs('carryTradeHistory'));
+app.use('/api/korea-leverage', requireStorageBlobs('koreaLeverageHistory'));
 app.use('/api/us-performance', requireStorageBlobs('usPerformanceHistory'));
 app.use('/api/hk-china-performance', requireStorageBlobs('hkChinaPerformanceHistory'));
 app.use('/api/china-etf-premium', requireStorageBlobs('chinaEtfPremiumHistory'));
@@ -198,7 +200,10 @@ app.get('/api/epoch-revenue',     cachedRoute('epochRevenue',     s.epochRevenue
 app.get('/api/sentiment',         cachedRoute('sentiment',        s.sentiment));
 app.get('/api/web-traffic',       cachedRoute('webTraffic',       s.webTraffic));
 app.get('/api/customs-drones',    cachedRoute('customsDrones',    s.customsDrones));
-app.get('/api/korea-leverage',    cachedRoute('koreaLeverage',    s.koreaLeverage));
+// Korea has a canonical five-year history blob. Read it directly so a stale or
+// partial latestSnapshot can never truncate the chart to the scraper's normal
+// 30-day refresh window.
+app.get('/api/korea-leverage', (_req, res) => res.json(readKoreaLeverage()));
 app.get('/api/taiwan-leverage',   cachedRoute('taiwanLeverage',   s.taiwanLeverage));
 app.get('/api/china-leverage',    cachedRoute('chinaLeverage',    s.chinaLeverage, null, { preferPersisted: true }));
 app.get('/api/macro',             cachedRoute('macro',            s.macro, null, { preferPersisted: true }));
