@@ -30,3 +30,27 @@ test('a partial macro refresh retains previously stored US yield history', () =>
   assert.deepEqual(merged.series.us2yYield, previous.series.us2yYield);
   assert.deepEqual(merged.series.usCpiYoy, fresh.series.usCpiYoy);
 });
+
+test('a partial refresh does not retain the legacy core PPI price-index series', () => {
+  const previous = {
+    series: {
+      usCorePpiYoy: {
+        id: 'usCorePpiYoy',
+        data: [{ date: '2026-06-01', value: 147.2 }],
+      },
+      usPpiYoy: {
+        id: 'usPpiYoy',
+        data: [{ date: '2026-06-01', value: 2.6 }],
+      },
+    },
+  };
+  const fresh = {
+    fetchedAt: '2026-07-22T00:00:00.000Z',
+    series: {},
+    errors: { usCorePpiYoy: 'fetch failed' },
+  };
+
+  const merged = mergeMacroData(fresh, previous);
+  assert.equal(merged.series.usCorePpiYoy, undefined);
+  assert.equal(merged.series.usPpiYoy, previous.series.usPpiYoy);
+});

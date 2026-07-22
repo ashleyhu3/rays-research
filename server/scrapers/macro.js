@@ -206,11 +206,19 @@ async function getMacroData() {
 
 function mergeMacroData(fresh, previous) {
   if (!previous?.series) return fresh;
+  const previousSeries = { ...previous.series };
+  // The former core-PPI YoY slug returned the price-index level (roughly
+  // 100+) rather than a 12-month percentage change. Never carry that legacy
+  // series through a partial refresh: omitting it is preferable to flattening
+  // the valid headline YoY line on a shared axis.
+  if (previousSeries.usCorePpiYoy?.data?.some(point => Math.abs(point.value) > 50)) {
+    delete previousSeries.usCorePpiYoy;
+  }
   return {
     ...fresh,
     // A partial upstream refresh must never erase previously persisted series.
     // Fresh observations win; failed series retain their last-known history.
-    series: { ...previous.series, ...fresh.series },
+    series: { ...previousSeries, ...fresh.series },
   };
 }
 
