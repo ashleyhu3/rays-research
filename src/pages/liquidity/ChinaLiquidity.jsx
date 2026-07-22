@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Line } from 'react-chartjs-2';
 import ChartCard from '../../components/chart/ChartCard';
 import ChinaFlowNationalTeam from './ChinaFlowNationalTeam';
+import ChinaStockConnect from './ChinaStockConnect';
 
 const BLUE = '#4577b4';
 const GOLD = '#c9a227';
@@ -102,6 +103,7 @@ function LiquiditySeries({ kind }) {
 }
 
 export default function ChinaLiquidity({ section }) {
+  if (section === 'stock-connect') return <ChinaStockConnect />;
   if (section === 'turnover') return <LiquiditySeries kind="turnover" />;
   if (section === 'money-supply') return <LiquiditySeries kind="m2Yoy" />;
   return <ChinaFlowNationalTeam />;

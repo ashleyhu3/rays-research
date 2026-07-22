@@ -7,6 +7,13 @@ import { baseOpts } from '../../utils/chartHelpers';
 const COLORS = ['#e8c547', '#56b4e9', '#5dd39e', '#ef8354', '#b48ead'];
 
 const PAGE_CHARTS = {
+  'macro-yield': [
+    ['United States government bond yields', ['us2yYield', 'us10yYield', 'us30yYield', 'us2y10ySpread'], ['2Y', '10Y', '30Y', '2Y–10Y spread']],
+    ['China government bond yields', ['cn10yYield', 'cn30yYield'], ['10Y', '30Y']],
+    ['Japan government bond yields', ['jp10yYield', 'jp30yYield'], ['10Y', '30Y']],
+    ['United Kingdom government bond yields', ['uk10yYield', 'uk30yYield'], ['10Y', '30Y']],
+    ['Germany government bond yields', ['de10yYield', 'de30yYield'], ['10Y', '30Y']],
+  ],
   'macro-us-inflation': [
     ['CPI inflation — YoY', ['usCpiYoy', 'usCoreCpiYoy'], ['Headline CPI', 'Core CPI']],
     ['CPI inflation — MoM', ['usCpiMom', 'usCoreCpiMom'], ['Headline CPI', 'Core CPI']],
@@ -93,18 +100,19 @@ function MacroChart({ definition, macro, errors }) {
   const [title, keys, labels] = definition;
   const built = useMemo(() => buildData(macro, keys, labels), [macro, keys, labels]);
   const unit = built.available[0]?.unit || '';
+  const percentUnit = /percent|%/i.test(unit);
   const options = useMemo(() => {
-    const opts = baseOpts(value => `${compact(value)}${/percent/i.test(unit) ? '%' : ''}`);
+    const opts = baseOpts(value => `${compact(value)}${percentUnit ? '%' : ''}`);
     opts.plugins.legend = {
       display: built.datasets.length > 1,
       position: 'bottom',
       labels: { color: '#c8c8c0', boxWidth: 10, padding: 12, font: { size: 10 } },
     };
     opts.plugins.tooltip.callbacks.label = context =>
-      ` ${context.dataset.label}: ${compact(context.parsed.y)}${/percent/i.test(unit) ? '%' : ''}`;
+      ` ${context.dataset.label}: ${compact(context.parsed.y)}${percentUnit ? '%' : ''}`;
     opts.plugins.zeroLine = { display: true };
     return opts;
-  }, [built.datasets.length, unit]);
+  }, [built.datasets.length, percentUnit]);
   const source = built.available[0];
   const missing = keys.filter(key => !macro?.series?.[key]);
 

@@ -83,10 +83,10 @@ async function fetchJsonSafe(url, ms = 30000) {
 }
 
 // github-commits crawls many repos and can be slow on a cold start
-const SLOW_KEYS = new Set(['github-commits', 'macro']);
+const SLOW_KEYS = new Set(['github-commits', 'macro', 'commodities']);
 
 async function fetchBackendAll() {
-  const keys = ['pypi', 'gpu', 'github', 'openrouter', 'eia', 'mops', 'github-commits', 'docker', 'hn', 'openrouter-ranks', 'dram', 'nand', 'tft-lcd', 'aws', 'cpu', 'tpu', 'epoch-revenue', 'sentiment', 'mcp', 'sec', 'huggingface', 'metrics-history', 'web-traffic', 'customs-drones', 'macro'];
+  const keys = ['pypi', 'gpu', 'github', 'openrouter', 'eia', 'mops', 'github-commits', 'docker', 'hn', 'openrouter-ranks', 'dram', 'nand', 'tft-lcd', 'aws', 'cpu', 'tpu', 'epoch-revenue', 'sentiment', 'mcp', 'sec', 'huggingface', 'metrics-history', 'web-traffic', 'customs-drones', 'macro', 'commodities'];
   const results = await Promise.allSettled(keys.map(k => fetchJsonSafe(`/api/${k}`, SLOW_KEYS.has(k) ? 90000 : 30000)));
   return Object.fromEntries(keys.map((k, i) => [
     k, results[i].status === 'fulfilled' ? results[i].value : null,
@@ -136,5 +136,6 @@ export async function fetchAll() {
     webTraffic:       be['web-traffic']           ?? null,
     customsDrones:    be['customs-drones']        ?? null,
     macro:            be.macro                    ?? null,
+    commodities:      be.commodities              ?? null,
   };
 }

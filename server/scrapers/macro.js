@@ -7,6 +7,19 @@ const OBFUSCATION_KEY = 'tradingeconomics-charts-core-api-key';
 // Trading Economics page slugs are kept here (instead of opaque API symbols)
 // so every series remains traceable to the public source page shown in the UI.
 const SERIES = {
+  // Sovereign yields. The 10-year benchmarks use Trading Economics' standard
+  // government-bond page; the other maturities have dedicated pages.
+  us2yYield: ['united-states', '2-year-note-yield'],
+  us10yYield: ['united-states', 'government-bond-yield'],
+  us30yYield: ['united-states', '30-year-bond-yield'],
+  cn10yYield: ['china', 'government-bond-yield'],
+  cn30yYield: ['china', '30-year-bond-yield'],
+  jp10yYield: ['japan', 'government-bond-yield'],
+  jp30yYield: ['japan', '30-year-bond-yield'],
+  uk10yYield: ['united-kingdom', 'government-bond-yield'],
+  uk30yYield: ['united-kingdom', '30-year-bond-yield'],
+  de10yYield: ['germany', 'government-bond-yield'],
+  de30yYield: ['germany', '30-year-bond-yield'],
   usCpiYoy: ['united-states', 'inflation-cpi'],
   usCoreCpiYoy: ['united-states', 'core-inflation-rate'],
   usCpiMom: ['united-states', 'inflation-rate-mom'],
@@ -93,12 +106,18 @@ async function fetchSeries(id, [country, slug]) {
   const key = match(html, /var TEObfuscationkey = '([^']+)'/, OBFUSCATION_KEY);
   const dataSource = match(html, /var TEChartsDatasource = '([^']+)'/, DEFAULT_DATA_SOURCE);
   const lastUpdate = match(html, /TELastUpdate\s*=\s*'([^']+)'/);
+  const chartType = match(html, /TEChart\s*=\s*'([^']+)'/);
+  const marketTicker = match(html, /symbol\s*=\s*'([^']+:[^']+)'/);
   const params = new URLSearchParams({ span: '10y' });
   if (lastUpdate) params.set('v', `${lastUpdate}00`);
-  const chartUrl = `${dataSource}/economics/${encodeURIComponent(symbol.toLowerCase())}?${params}`;
+  const isMarketChart = chartType === 'MK';
+  if (isMarketChart) params.set('ohlc', '0');
+  const chartUrl = isMarketChart
+    ? `${dataSource}/markets/${encodeURIComponent((marketTicker || `${symbol}:ind`).toLowerCase())}?${params}`
+    : `${dataSource}/economics/${encodeURIComponent(symbol.toLowerCase())}?${params}`;
   const raw = await fetchText(chartUrl, { headers: token ? { 'x-api-key': token } : {} });
   const decoded = decodeChartPayload(JSON.parse(raw), key);
-  const serie = decoded?.[0]?.series?.[0]?.serie;
+  const serie = isMarketChart ? decoded?.series?.[0] : decoded?.[0]?.series?.[0]?.serie;
   if (!serie?.data?.length) throw new Error(`No historical data returned for ${symbol}`);
 
   return {
@@ -113,12 +132,17 @@ async function fetchSeries(id, [country, slug]) {
     // claims observations onto one x-axis label. Weekly series must use the
     // actual observation timestamp (row[1]); monthly series keep the cleaner
     // reference period supplied by TE.
-    data: serie.data.map(row => ({
-      date: String(serie.frequency).toLowerCase().includes('week')
-        ? new Date(row[1] * 1000).toISOString().slice(0, 10)
-        : row[3] || new Date(row[1] * 1000).toISOString().slice(0, 10),
-      value: row[0],
-    })),
+    data: serie.data.map(row => isMarketChart
+      ? {
+          date: new Date(row[0] * 1000).toISOString().slice(0, 10),
+          value: row[1],
+        }
+      : {
+          date: String(serie.frequency).toLowerCase().includes('week')
+            ? new Date(row[1] * 1000).toISOString().slice(0, 10)
+            : row[3] || new Date(row[1] * 1000).toISOString().slice(0, 10),
+          value: row[0],
+        }),
   };
 }
 
@@ -139,6 +163,27 @@ async function mapLimited(entries, limit, worker) {
   return results;
 }
 
+function calculateSpread(longSeries, shortSeries) {
+  if (!longSeries?.data?.length || !shortSeries?.data?.length) return null;
+  const shortByDate = new Map(shortSeries.data.map(point => [point.date, point.value]));
+  const data = longSeries.data.flatMap(point => {
+    const shortValue = shortByDate.get(point.date);
+    return Number.isFinite(point.value) && Number.isFinite(shortValue)
+      ? [{ date: point.date, value: point.value - shortValue }]
+      : [];
+  });
+  if (!data.length) return null;
+  return {
+    id: 'us2y10ySpread',
+    name: 'United States 2Y–10Y Treasury spread',
+    unit: 'percentage points',
+    frequency: longSeries.frequency || shortSeries.frequency || 'Daily',
+    source: 'Calculated from Trading Economics',
+    sourceUrl: longSeries.sourceUrl,
+    data,
+  };
+}
+
 async function getMacroData() {
   const entries = Object.entries(SERIES);
   // Trading Economics becomes unreliable when a cold worker opens a large
@@ -152,6 +197,9 @@ async function getMacroData() {
     if (result.status === 'fulfilled') series[id] = result.value;
     else errors[id] = result.reason?.message || 'Unknown error';
   });
+  const spread = calculateSpread(series.us10yYield, series.us2yYield);
+  if (spread) series.us2y10ySpread = spread;
+  else if (series.us10yYield || series.us2yYield) errors.us2y10ySpread = 'Unable to align 2Y and 10Y observations';
   if (!Object.keys(series).length) throw new Error('Trading Economics returned no macro series');
   return { fetchedAt: new Date().toISOString(), series, errors };
 }
@@ -166,4 +214,4 @@ function mergeMacroData(fresh, previous) {
   };
 }
 
-module.exports = { getMacroData, fetchSeries, SERIES, decodeChartPayload, mergeMacroData };
+module.exports = { getMacroData, fetchSeries, SERIES, decodeChartPayload, calculateSpread, mergeMacroData };

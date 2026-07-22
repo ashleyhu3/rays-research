@@ -15,8 +15,13 @@ async function main() {
   const data = await updateChinaLiquidity(DAYS);
   await storage.flush();
   await storage.close();
-  for (const key of ['turnover', 'm2Yoy']) {
-    const points = data[key].data;
+  const series = {
+    turnover: data.turnover.data,
+    m2Yoy: data.m2Yoy.data,
+    southboundNetFlow: data.stockConnect.southboundNetFlow.data,
+    northboundTurnover: data.stockConnect.northboundTurnover.data,
+  };
+  for (const [key, points] of Object.entries(series)) {
     console.log(`[china-liquidity] ${key}: ${points.length} points, ${points[0]?.date ?? '—'} → ${points.at(-1)?.date ?? '—'}`);
   }
   if (Object.keys(data.errors).length) console.warn('[china-liquidity] partial refresh:', data.errors);

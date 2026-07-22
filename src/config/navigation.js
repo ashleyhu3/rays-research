@@ -24,6 +24,15 @@ const CHINA_PERFORMANCE_SUBTABS = [
  * subtab, since this tab has no aggregate/overview chart. */
 const HK_PERFORMANCE_SUBTABS = HK_SECTIONS.map(section => ({ key: section.title, label: section.title }));
 
+const COMMODITY_SUBTABS = [
+  { key: 'precious-rare', label: 'Precious & Rare Metal' },
+  { key: 'industrial', label: 'Industrial Metal' },
+  { key: 'oil-gas', label: 'Oil & Gas' },
+  { key: 'ferrous', label: 'Ferrous Metal' },
+  { key: 'agriculture', label: 'Agriculture Product' },
+  { key: 'chemical', label: 'Chemical' },
+];
+
 /** Sidebar navigation structure */
 export const NAV_SECTIONS = [
   {
@@ -110,6 +119,20 @@ export const NAV_SECTIONS = [
     ],
   },
   {
+    label: 'Yield',
+    mode: 'macro',
+    items: [
+      { id: 'macro-yield', label: 'Yield' },
+    ],
+  },
+  {
+    label: 'Commodity',
+    mode: 'macro',
+    items: [
+      { id: 'macro-commodity', label: 'Commodity', subitems: COMMODITY_SUBTABS },
+    ],
+  },
+  {
     label: 'US',
     sectorId: 'macro-us',
     mode: 'macro',
@@ -151,9 +174,11 @@ export const NAV_SECTIONS = [
     items: [
       { id: 'liquidity-china-flow', label: 'China', subitems: [
         { key: 'flow', label: 'Flow' },
+        { key: 'stock-connect', label: 'Stock Connect' },
         { key: 'turnover', label: 'Turnover' },
         { key: 'money-supply', label: 'Money Supply' },
       ] },
+      { id: 'liquidity-carry-trade', label: 'Carry Trade' },
     ],
   },
   {
@@ -257,6 +282,8 @@ export const VIEW_META = {
   'hk-china-performance': { title: 'ROTATION — CHINA' },
   'hk-performance':       { title: 'ROTATION — HK' },
   'macro-us-inflation': { title: 'MACRO — US · INFLATION' },
+  'macro-yield':        { title: 'MACRO — YIELD' },
+  'macro-commodity':    { title: 'MACRO — COMMODITY' },
   'macro-us-labor':     { title: 'MACRO — US · LABOR' },
   'macro-us-pmi':       { title: 'MACRO — US · PMI' },
   'macro-us-household': { title: 'MACRO — US · HOUSEHOLD' },
@@ -271,6 +298,7 @@ export const VIEW_META = {
   'leverage-japan':   { title: 'LEVERAGE — JAPAN MARGIN TRADING' },
   'leverage-us':      { title: 'LEVERAGE — US MARGIN, FUTURES & OPTIONS' },
   'liquidity-china-flow': { title: 'LIQUIDITY — CHINA' },
+  'liquidity-carry-trade': { title: 'LIQUIDITY — CARRY TRADE' },
   transcripts:        { title: 'EARNINGS TRANSCRIPT AGENT' },
   sources:            { title: 'DATA VALIDITY TERMINAL' },
 };

@@ -33,6 +33,7 @@ const scrapers = {
   chinaLeverage:    () => require('./scrapers/chinaLeverage').getChinaLeverage(),
   chinaNationalTeamFlow: () => require('./scrapers/chinaNationalTeamFlow').getChinaNationalTeamFlow(),
   chinaLiquidity: () => require('./scrapers/chinaLiquidity').updateChinaLiquidity(),
+  carryTrade: () => require('./scrapers/carryTrade').updateCarryTrade(),
   japanLeverage:    () => require('./scrapers/japanLeverage').getJapanLeverage(),
   usLeverage:       () => require('./scrapers/usLeverage').getUsLeverage(),
   usPerformance:    () => require('./scrapers/usPerformance').updateUsPerformance(),
@@ -44,6 +45,11 @@ const scrapers = {
     const fresh = await getMacroData();
     const previous = (await snapshotStore.latest('macro'))?.data;
     return mergeMacroData(fresh, previous);
+  },
+  commodities:      async () => {
+    const { getCommodityData } = require('./scrapers/commodities');
+    const previous = (await snapshotStore.latest('commodities'))?.data;
+    return getCommodityData(previous);
   },
 };
 
@@ -82,6 +88,7 @@ const TTL = {
   chinaLeverage:  6 * 3600000,  // 6-hourly — SSE/SZSE post margin balances after the close; the HK 2× ETF ticks live
   chinaNationalTeamFlow: 6 * 3600000,  // 6-hourly — same SSE/SZSE post-close settlement cadence as chinaLeverage
   chinaLiquidity: 24 * 3600000,  // daily — A-share turnover plus monthly PBOC M2 YoY
+  carryTrade:     24 * 3600000,  // daily — weekly CFTC release, Friday after the close
   japanLeverage:  24 * 3600000,  // daily — JPX only republishes this workbook once a week; a daily poll picks up the new week
   usLeverage:      6 * 3600000,  // 6-hourly — ETF net assets move daily; CFTC is weekly and FINRA is monthly
   usPerformance:   6 * 3600000,  // 6-hourly — persisted Rotation history; catches the US close
@@ -89,6 +96,7 @@ const TTL = {
   hkPerformance:  6 * 3600000,  // 6-hourly — Hang Seng Composite sub-indices settle after the HKEX close
   chinaEtfPremium: 6 * 3600000,  // 6-hourly — official NAV plus live IOPV when available
   macro:          24 * 3600000,  // daily — monthly/weekly macro releases
+  commodities:     6 * 3600000,  // 6-hourly — futures candles and daily spot quotes
 };
 
 // These scrapers already write their canonical time series to dedicated Mongo
@@ -97,6 +105,7 @@ const ROTATION_KEYS = ['usPerformance', 'hkChinaPerformance', 'hkPerformance', '
 const PERSISTED_ONLY = new Set(ROTATION_KEYS);
 PERSISTED_ONLY.add('chinaNationalTeamFlow');
 PERSISTED_ONLY.add('chinaLiquidity');
+PERSISTED_ONLY.add('carryTrade');
 
 // Hard cap per scraper so one hung source can never wedge a refresh
 const SCRAPE_TIMEOUT = 5 * 60000;
@@ -175,7 +184,7 @@ function setup() {
   });
 
   // Daily at 03:00 UTC: aggregate stats whose sources only publish once per day
-  cron.schedule('0 3 * * *', () => refreshAll(['gpu', 'tftLcd', 'tpu', 'epochRevenue', 'sentiment', 'pypi', 'github', 'eia', 'mops', 'githubCommits', 'npm', 'huggingface', 'mcp', 'sec', 'webTraffic', 'customsDrones', 'japanLeverage', 'macro', 'chinaLiquidity']));
+  cron.schedule('0 3 * * *', () => refreshAll(['gpu', 'tftLcd', 'tpu', 'epochRevenue', 'sentiment', 'pypi', 'github', 'eia', 'mops', 'githubCommits', 'npm', 'huggingface', 'mcp', 'sec', 'webTraffic', 'customsDrones', 'japanLeverage', 'macro', 'commodities', 'chinaLiquidity', 'carryTrade']));
 
   // Options: warm every 6h, plus once shortly after boot so the RAG has data fast
   cron.schedule('30 */6 * * *', () => warmOptions());

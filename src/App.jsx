@@ -55,8 +55,10 @@ import ChinaLeverage from './pages/china-leverage/ChinaLeverage';
 import JapanLeverage from './pages/japan-leverage/JapanLeverage';
 import UsLeverage from './pages/us-leverage/UsLeverage';
 import ChinaLiquidity from './pages/liquidity/ChinaLiquidity';
+import CarryTrade from './pages/liquidity/CarryTrade';
 import Transcripts from './pages/transcripts/Transcripts';
 import Macro from './pages/macro/Macro';
+import Commodity from './pages/macro/Commodity';
 // Source-specific signal pages
 import PyPI          from './pages/sources/PyPI';
 import GitHub        from './pages/sources/GitHub';
@@ -70,7 +72,7 @@ import Docker         from './pages/sources/Docker';
 import Community      from './pages/sources/Community';
 
 /** Views with sidebar-driven subtabs (see NAV_SECTIONS 'Rotation' subitems) */
-const MARKET_PERF_VIEWS = new Set(['us-performance', 'hk-china-performance', 'hk-performance', 'liquidity-china-flow']);
+const MARKET_PERF_VIEWS = new Set(['us-performance', 'hk-china-performance', 'hk-performance', 'liquidity-china-flow', 'macro-commodity']);
 
 /** Views that use EditableGrid and support layout customisation */
 const LAYOUT_EDITABLE = new Set([
@@ -135,8 +137,11 @@ const VIEW_COMPONENTS = {
   'leverage-japan':   JapanLeverage,
   'leverage-us':      UsLeverage,
   'liquidity-china-flow': ChinaLiquidity,
+  'liquidity-carry-trade': CarryTrade,
   'transcripts':      Transcripts,
   'macro-us-inflation': Macro,
+  'macro-yield':        Macro,
+  'macro-commodity':    Commodity,
   'macro-us-labor':     Macro,
   'macro-us-pmi':       Macro,
   'macro-us-household': Macro,
@@ -171,7 +176,10 @@ export default function App() {
   // Navigating to a view resets its subtab back to "none selected" (aggregate-only default).
   const handleNavigate = (viewId) => {
     setCurrentView(viewId);
-    setPerfSection(s => ({ ...s, [viewId]: viewId === 'liquidity-china-flow' ? 'flow' : null }));
+    const defaultSection = viewId === 'liquidity-china-flow' ? 'flow'
+      : viewId === 'macro-commodity' ? 'precious-rare'
+      : null;
+    setPerfSection(s => ({ ...s, [viewId]: defaultSection }));
   };
 
   // Subtabs are shown for every market-performance item at all times, so picking one

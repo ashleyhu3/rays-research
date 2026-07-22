@@ -17,6 +17,7 @@ const { readChinaEtfPremium }        = require('./scrapers/chinaEtfPremium');
 const { readHkPerformance }          = require('./scrapers/hkPerformance');
 const { readChinaNationalTeamFlow }  = require('./scrapers/chinaNationalTeamFlow');
 const { readChinaLiquidity }         = require('./scrapers/chinaLiquidity');
+const { readCarryTrade }             = require('./scrapers/carryTrade');
 const { keywordRolling }             = require('./stocktwitsStore');
 
 const app   = express();
@@ -156,6 +157,7 @@ app.get('/api/korea-leverage',    cachedRoute('koreaLeverage',    s.koreaLeverag
 app.get('/api/taiwan-leverage',   cachedRoute('taiwanLeverage',   s.taiwanLeverage));
 app.get('/api/china-leverage',    cachedRoute('chinaLeverage',    s.chinaLeverage, null, { preferPersisted: true }));
 app.get('/api/macro',             cachedRoute('macro',            s.macro, null, { preferPersisted: true }));
+app.get('/api/commodities',       cachedRoute('commodities',      s.commodities, null, { preferPersisted: true }));
 
 // One-off deep backfill (~5y, ~1200 SZSE requests at a polite pace — a few
 // minutes) triggered manually from the China Leverage page, since SZSE only
@@ -195,6 +197,7 @@ app.get('/api/china-leverage/backfill', (req, res) => res.json(chinaLeverageBack
 // Liquidity page reads never scrape upstream; scheduled collectors own writes.
 app.get('/api/china-national-team-flow', (_req, res) => res.json(readChinaNationalTeamFlow()));
 app.get('/api/china-liquidity', (_req, res) => res.json(readChinaLiquidity()));
+app.get('/api/carry-trade', (_req, res) => res.json(readCarryTrade()));
 app.get('/api/japan-leverage',    cachedRoute('japanLeverage',    s.japanLeverage));
 app.get('/api/us-leverage',       cachedRoute('usLeverage',       s.usLeverage));
 
