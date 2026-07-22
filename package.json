@@ -4,7 +4,8 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "test": "npm run test:mailer && npm run test:transcripts && npm run test:options-report && npm run test:leverage && npm run test:national-team-flow && npm run test:carry-trade && npm run test:commodities && npm run test:china-etf-premium",
+    "test": "npm run test:storage && npm run test:mailer && npm run test:transcripts && npm run test:options-report && npm run test:leverage && npm run test:national-team-flow && npm run test:carry-trade && npm run test:commodities && npm run test:china-etf-premium",
+    "test:storage": "node --test server/snapshotStore.test.js",
     "test:carry-trade": "node --test server/scrapers/carryTrade.test.js",
     "test:commodities": "node --test server/scrapers/commodities.test.js",
     "test:china-etf-premium": "node --test server/scrapers/chinaEtfPremium.test.js server/scrapers/rotationPersistence.test.js",
@@ -48,6 +49,8 @@
     "db:ping": "node --env-file=.env server/scripts/dbPing.js",
     "db:prune": "node --env-file=.env server/scripts/pruneUnusedMongo.js",
     "db:seed": "node --env-file=.env server/scripts/seedMongo.js",
+    "db:migrate-snapshots": "node --env-file=.env server/scripts/migrateLatestSnapshots.js",
+    "db:migrate-options-report": "node --env-file=.env server/scripts/migrateOptionsReport.js",
     "db:seed:dc": "node --env-file=.env server/scripts/seedDcBuildouts.js",
     "collect": "node --env-file=.env server/scripts/collect.js",
     "options-report:generate": "node --env-file-if-exists=.env server/scripts/generateAndStoreDailyOptionsReport.js",

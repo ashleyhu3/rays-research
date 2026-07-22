@@ -16,6 +16,7 @@ const BLOB = {
   name: 'dailyOptionsReport',
   file: path.join(__dirname, 'data', 'dailyOptionsReport.json'),
 };
+const compressedId = field => `optionsReport:${field}`;
 const DEFAULT_TIME_ZONE = 'Asia/Hong_Kong';
 // Keep a rolling archive of past daily reports in Mongo so the daily job only
 // scrapes today and prior days are reused/served straight from storage. Mongo
@@ -55,11 +56,13 @@ function readLatestDailyOptionsReport() {
 
 function writeLatestDailyOptionsReport(report) {
   const current = storage.read(BLOB.name, BLOB.file);
-  storage.write(BLOB.name, BLOB.file, {
+  const next = {
     ...current,
     latest: report,
     updatedAt: report.generatedAt,
-  });
+  };
+  storage.write(BLOB.name, BLOB.file, next);
+  storage.writeCompressed(compressedId('latest'), next.latest);
 }
 
 function blobSize(obj) {
@@ -91,6 +94,14 @@ function writeDailyReport(payload) {
     delete next.byDate[dates[i]];
   }
   storage.write(BLOB.name, BLOB.file, next);
+  storage.writeCompressed(compressedId('latest'), next.latest);
+  for (const [date, report] of Object.entries(next.byDate)) {
+    storage.writeCompressed(compressedId(`date:${date}`), report);
+  }
+  storage.writeCompressed(
+    compressedId('availableDates'),
+    [next.latest?.date, ...Object.keys(next.byDate)].filter(Boolean).sort().reverse(),
+  );
 }
 
 // Read a specific date's archived report, or the latest when no date is given.
@@ -121,13 +132,51 @@ function readLatestDailyOptionsPdf() {
   return blob.latestPdf || null;
 }
 
+// Web routes use projected field reads so opening Alerts does not download the
+// structured report, its archive, and the base64 PDF in one 12 MB document.
+async function readDailyReportProjected(date, { refresh = false } = {}) {
+  const latest = await readProjectedField('latest', { refresh });
+  if (!date || latest?.date === date) return latest || null;
+  const archived = await storage.readCompressed(compressedId(`date:${date}`), { refresh });
+  if (archived != null) return archived;
+  const byDate = await storage.readField(BLOB.name, BLOB.file, 'byDate', { refresh });
+  return byDate?.[date] || null;
+}
+
+async function readAvailableReportDatesProjected({ refresh = false } = {}) {
+  const dates = await storage.readCompressed(compressedId('availableDates'), { refresh });
+  if (Array.isArray(dates)) return dates;
+  const latest = await readProjectedField('latest', { refresh });
+  return latest?.date ? [latest.date] : [];
+}
+
+async function readLatestDailyOptionsPdfProjected({ refresh = false } = {}) {
+  return readProjectedField('latestPdf', { refresh });
+}
+
+async function readLatestDailyOptionsPdfMetaProjected({ refresh = false } = {}) {
+  const stored = await storage.readCompressed(compressedId('latestPdfMeta'), { refresh });
+  if (stored != null) return stored;
+  const pdf = await readLatestDailyOptionsPdfProjected({ refresh });
+  return pdfMeta(pdf);
+}
+
+async function readProjectedField(field, { refresh = false } = {}) {
+  const compressed = await storage.readCompressed(compressedId(field), { refresh });
+  if (compressed != null) return compressed;
+  return storage.readField(BLOB.name, BLOB.file, field, { refresh });
+}
+
 function writeLatestDailyOptionsPdf(pdf) {
   const current = storage.read(BLOB.name, BLOB.file);
-  storage.write(BLOB.name, BLOB.file, {
+  const next = {
     ...current,
     latestPdf: pdf,
     updatedAt: pdf.generatedAt,
-  });
+  };
+  storage.write(BLOB.name, BLOB.file, next);
+  storage.writeCompressed(compressedId('latestPdf'), pdf);
+  storage.writeCompressed(compressedId('latestPdfMeta'), pdfMeta(pdf));
 }
 
 function buildReportPayload(markdown, markdownPath, report, { generatedAt = new Date().toISOString() } = {}) {
@@ -349,10 +398,14 @@ module.exports = {
   normalizeTickers,
   pdfMeta,
   readAvailableReportDates,
+  readAvailableReportDatesProjected,
   readDailyReport,
+  readDailyReportProjected,
   reloadDailyReport,
   readLatestDailyOptionsReport,
   readLatestDailyOptionsPdf,
+  readLatestDailyOptionsPdfMetaProjected,
+  readLatestDailyOptionsPdfProjected,
   renderHtmlToPdf,
   writeDailyReport,
 };

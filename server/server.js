@@ -27,17 +27,19 @@ const isProd = process.env.NODE_ENV === 'production';
 app.use(cors());
 app.use(express.json());
 
+// Health must stay independent of MongoDB. Deployment probes should be able to
+// distinguish a live function from a slow or unavailable data dependency.
+app.get('/api/health', (_, res) => res.json({ ok: true, ts: new Date().toISOString() }));
+
 let initializationPromise = null;
 
 async function initialize() {
   if (!initializationPromise) {
     initializationPromise = (async () => {
-      await storage.init(STORAGE_BLOBS);
-
-      const seeded = snapshotStore.seed(cache, scheduler.TTL);
-      if (seeded.length > 0) {
-        console.log(`[startup] seeded cache from MongoDB snapshots: ${seeded.join(', ')}`);
-      }
+      // Connect only. Individual routes load their own persisted data below;
+      // preloading every blob made cold starts download ~30 MB before health or
+      // any API route could respond.
+      await storage.init(STORAGE_BLOBS, { preload: false });
     })().catch((error) => {
       // A transient cold-start failure should not poison this warm instance.
       initializationPromise = null;
@@ -53,6 +55,49 @@ async function initialize() {
 app.use(async (_req, _res, next) => {
   try {
     await initialize();
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
+
+const STORAGE_BLOB_BY_NAME = new Map(STORAGE_BLOBS.map(blob => [blob.name, blob]));
+
+function requireStorageBlobs(...names) {
+  return async (_req, _res, next) => {
+    try {
+      await Promise.all(names.map(name => {
+        const blob = STORAGE_BLOB_BY_NAME.get(name);
+        if (!blob) throw new Error(`Unknown storage blob: ${name}`);
+        return storage.load(blob.name, blob.file);
+      }));
+      next();
+    } catch (error) {
+      next(error);
+    }
+  };
+}
+
+// Routes whose handlers use synchronous in-memory stores load only their own
+// backing documents. Most dashboard routes use projected latestSnapshots reads
+// in cachedRoute() and need no full blob at all.
+app.use('/api/sentiment/keyword', requireStorageBlobs('sentimentData'));
+app.use('/api/metrics-history', requireStorageBlobs('metricsHistory'));
+app.use('/api/china-national-team-flow', requireStorageBlobs('chinaNationalTeamFlowHistory'));
+app.use('/api/china-liquidity', requireStorageBlobs('chinaLiquidityHistory'));
+app.use('/api/carry-trade', requireStorageBlobs('carryTradeHistory'));
+app.use('/api/us-performance', requireStorageBlobs('usPerformanceHistory'));
+app.use('/api/hk-china-performance', requireStorageBlobs('hkChinaPerformanceHistory'));
+app.use('/api/china-etf-premium', requireStorageBlobs('chinaEtfPremiumHistory'));
+app.use('/api/hk-performance', requireStorageBlobs('hkPerformanceHistory'));
+app.use('/api/options', requireStorageBlobs('optionsOI'));
+app.use('/api/alerts/earnings-calendar', requireStorageBlobs('techEarningsCalendar'));
+
+// Chat consumes many cached sources at once. Hydrate those projected snapshot
+// fields only when Chat is used, rather than on every deployment cold start.
+app.use('/api/chat', async (_req, _res, next) => {
+  try {
+    await snapshotStore.seedKeys(cache, Object.keys(scheduler.scrapers), scheduler.TTL);
     next();
   } catch (error) {
     next(error);
@@ -92,7 +137,7 @@ function cachedRoute(key, scraper, isCurrent = null, options = {}) {
       // Mongo. Reload that snapshot on a cache miss so a warm web instance does
       // not scrape Trading Economics merely because it started before the
       // collector's first macro write.
-      if (options.preferPersisted) {
+      if (options.preferPersisted !== false) {
         const persisted = await snapshotStore.latest(key);
         if (persisted?.data != null && (!isCurrent || isCurrent(persisted.data))) {
           cache.set(key, persisted.data, scheduler.TTL[key] ?? 3600000, persisted.fetchedAt);
@@ -763,10 +808,17 @@ app.get('/api/taiwan-margin/:code', async (req, res) => {
 /* ── Daily options report (Alerts page) ──────────────────────────────── */
 const optionsReportStore = require('./optionsReportStore');
 
-app.get('/api/alerts/daily-options-report', (req, res) => {
+app.get('/api/alerts/daily-options-report', async (req, res, next) => {
   const date = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.date || '')) ? req.query.date : null;
-  const report = optionsReportStore.readDailyReport(date);
-  res.json({ report, availableDates: optionsReportStore.readAvailableReportDates() });
+  try {
+    const [report, availableDates] = await Promise.all([
+      optionsReportStore.readDailyReportProjected(date),
+      optionsReportStore.readAvailableReportDatesProjected(),
+    ]);
+    res.json({ report, availableDates });
+  } catch (error) {
+    next(error);
+  }
 });
 
 function storedToPdf(stored) {
@@ -812,8 +864,8 @@ function latestDailyOptionsFile() {
 // Resolve the PDF to serve. With no `date`, return the most recent report we
 // have — the stored blob first, then the newest committed daily-options file —
 // so the page always shows the latest report even before today's run lands.
-function dailyOptionsPdf(date) {
-  const stored = optionsReportStore.readLatestDailyOptionsPdf();
+async function dailyOptionsPdf(date, options = {}) {
+  const stored = await optionsReportStore.readLatestDailyOptionsPdfProjected(options);
 
   if (!date) {
     if (stored?.base64) return storedToPdf(stored);
@@ -826,19 +878,29 @@ function dailyOptionsPdf(date) {
   return fileToPdf(date, path.join(__dirname, '..', `daily-options-data-${date}.pdf`));
 }
 
-app.get('/api/alerts/daily-options-report/pdf-meta', (req, res) => {
-  const pdf = dailyOptionsPdf(req.query.date);
-  res.json({ pdf: pdf && {
-    date: pdf.date,
-    filename: pdf.filename,
-    size: pdf.size,
-    updatedAt: pdf.updatedAt,
-    url: pdf.url,
+app.get('/api/alerts/daily-options-report/pdf-meta', async (req, res) => {
+  const requestedDate = req.query.date;
+  const stored = await optionsReportStore.readLatestDailyOptionsPdfMetaProjected();
+  if ((!requestedDate || requestedDate === stored?.date) && stored) {
+    return res.json({ pdf: stored });
+  }
+  const file = requestedDate
+    ? fileToPdf(requestedDate, path.join(__dirname, '..', `daily-options-data-${requestedDate}.pdf`))
+    : (() => {
+        const latest = latestDailyOptionsFile();
+        return latest ? fileToPdf(latest.date, latest.file) : null;
+      })();
+  res.json({ pdf: file && {
+    date: file.date,
+    filename: file.filename,
+    size: file.size,
+    updatedAt: file.updatedAt,
+    url: file.url,
   } });
 });
 
-app.get('/api/alerts/daily-options-report/pdf', (req, res) => {
-  const pdf = dailyOptionsPdf(req.query.date);
+app.get('/api/alerts/daily-options-report/pdf', async (req, res) => {
+  const pdf = await dailyOptionsPdf(req.query.date);
   if (!pdf) return res.status(404).json({ error: `No PDF report found${req.query.date ? ` for ${req.query.date}` : ''}.` });
   if (pdf.source === 'storage') {
     res
@@ -863,15 +925,22 @@ app.get('/api/alerts/daily-options-report/pdf', (req, res) => {
 app.post('/api/alerts/daily-options-report/reload', async (req, res) => {
   try {
     const date = /^\d{4}-\d{2}-\d{2}$/.test(String(req.body?.date || '')) ? req.body.date : undefined;
-    const report = await optionsReportStore.reloadDailyReport(date);
-    res.json({ report, availableDates: optionsReportStore.readAvailableReportDates() });
+    const [report, availableDates] = await Promise.all([
+      optionsReportStore.readDailyReportProjected(date, { refresh: true }),
+      optionsReportStore.readAvailableReportDatesProjected({ refresh: true }),
+    ]);
+    res.json({ report, availableDates });
   } catch (e) {
     console.error('[options-report:reload]', e.message);
     res.status(500).json({ error: e.message });
   }
 });
 
-app.post('/api/alerts/daily-options-report/generate', requireAdminSecret, async (req, res) => {
+app.post(
+  '/api/alerts/daily-options-report/generate',
+  requireAdminSecret,
+  requireStorageBlobs('dailyOptionsReport', 'optionsPriorYearVolume', 'earningsDates'),
+  async (req, res) => {
   try {
     const meta = await optionsReportStore.generateAndStoreDailyOptions({
       date: req.body?.date,
@@ -882,7 +951,8 @@ app.post('/api/alerts/daily-options-report/generate', requireAdminSecret, async 
     console.error('[options-report:generate]', e.message);
     res.status(500).json({ error: e.message });
   }
-});
+  },
+);
 
 /* ── Earnings calendar (Alerts page) ─────────────────────────────────── */
 // Events are scraped ahead of time into Mongo (FMP once a month, Alpha Vantage
@@ -907,8 +977,6 @@ app.post('/api/chat', async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
-
-app.get('/api/health', (_, res) => res.json({ ok: true, ts: new Date().toISOString() }));
 
 // Keep Vercel function failures machine-readable and allow the platform to
 // recycle a bad invocation instead of Express returning its default HTML page.
@@ -969,11 +1037,17 @@ async function start() {
     // Refresh every source in the background so stale seeded snapshots get
     // replaced with fresh data. Fire-and-forget so startup isn't delayed; the
     // cache (seeded above) already serves last-known values in the meantime.
-    setImmediate(() => {
+    setImmediate(async () => {
       // Rotation pages read their dedicated Mongo histories immediately and
       // are refreshed by the scheduled collector; do not burst their market
       // APIs on every web-service restart.
       const allKeys = Object.keys(scheduler.scrapers).filter(key => !scheduler.PERSISTED_ONLY.has(key));
+      const schedulerBlobs = STORAGE_BLOBS.filter(blob => ![
+        'dailyOptionsReport', 'optionsPriorYearVolume', 'earningsDates',
+        'techEarningsCalendar', 'latestSnapshots',
+      ].includes(blob.name));
+      console.log('[warmup] loading scheduler history in background');
+      await storage.loadMany(schedulerBlobs);
       console.log('[warmup] refreshing in background:', allKeys.join(', '));
       scheduler.refreshAll(allKeys).catch(e => console.error('[warmup]', e.message));
     });

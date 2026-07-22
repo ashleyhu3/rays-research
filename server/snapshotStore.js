@@ -12,6 +12,7 @@ const storage = require('./storage');
 // One blob (Mongo doc in prod, JSON file in dev) via the storage layer.
 const FILE = path.join(__dirname, 'data', 'latestSnapshots.json');
 const BLOB = 'latestSnapshots';
+const compressedId = key => `latestSnapshot:${key}`;
 
 let store = null;
 
@@ -24,16 +25,37 @@ function load() {
 // is collected out-of-process. This matters on long-lived/serverless instances:
 // their in-memory copy may predate a GitHub Actions collector write to Mongo.
 async function latest(key) {
-  store = await storage.reload(BLOB, FILE);
-  return store?.[key] ?? null;
+  const compressed = await storage.readCompressed(compressedId(key), { refresh: true });
+  if (compressed != null) return compressed;
+  return storage.readField(BLOB, FILE, key, { refresh: true });
 }
 
 // Record the latest payload for a source. Called after every successful scrape.
 function put(key, data) {
   if (data == null) return;
-  const s = load();
-  s[key] = { data, fetchedAt: Date.now() };
-  storage.write(BLOB, FILE, s);
+  const entry = { data, fetchedAt: Date.now() };
+  if (!storage.writeCompressed(compressedId(key), entry)) {
+    storage.writeField(BLOB, FILE, key, entry);
+  }
+}
+
+async function seedKeys(cache, keys, ttlByKey = {}) {
+  const entries = new Array(keys.length);
+  let cursor = 0;
+  async function worker() {
+    while (cursor < keys.length) {
+      const index = cursor++;
+      entries[index] = [keys[index], await latest(keys[index])];
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(3, keys.length) }, worker));
+  const seeded = [];
+  for (const [key, entry] of entries) {
+    if (!entry || entry.data == null) continue;
+    cache.set(key, entry.data, ttlByKey[key] ?? 24 * 60 * 60 * 1000, entry.fetchedAt);
+    seeded.push(key);
+  }
+  return seeded;
 }
 
 // Seed the in-memory request cache from the persisted snapshots. Entries are
@@ -52,4 +74,4 @@ function seed(cache, ttlByKey = {}) {
   return seeded;
 }
 
-module.exports = { put, seed, latest };
+module.exports = { put, seed, seedKeys, latest };
