@@ -895,6 +895,13 @@ app.post('/api/chat', async (req, res) => {
 
 app.get('/api/health', (_, res) => res.json({ ok: true, ts: new Date().toISOString() }));
 
+// Keep Vercel function failures machine-readable and allow the platform to
+// recycle a bad invocation instead of Express returning its default HTML page.
+app.use((error, _req, res, _next) => {
+  console.error('[server]', error);
+  res.status(500).json({ error: 'Internal server error' });
+});
+
 /* ── Persistent storage (Mongo in prod, JSON files in dev) ──────────── */
 /* ── Frontend serving ──────────────────────────────────────────────── */
 async function start() {
