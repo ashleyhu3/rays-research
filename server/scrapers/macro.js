@@ -141,7 +141,10 @@ async function mapLimited(entries, limit, worker) {
 
 async function getMacroData() {
   const entries = Object.entries(SERIES);
-  const settled = await mapLimited(entries, 8, ([id, path]) => fetchSeries(id, path));
+  // Trading Economics becomes unreliable when a cold worker opens a large
+  // burst of chart requests. Keep concurrency conservative so the first group
+  // (CPI/PPI) is not the group that consistently hits the 20-second timeout.
+  const settled = await mapLimited(entries, 3, ([id, path]) => fetchSeries(id, path));
   const series = {};
   const errors = {};
   settled.forEach((result, index) => {
@@ -153,4 +156,14 @@ async function getMacroData() {
   return { fetchedAt: new Date().toISOString(), series, errors };
 }
 
-module.exports = { getMacroData, fetchSeries, SERIES, decodeChartPayload };
+function mergeMacroData(fresh, previous) {
+  if (!previous?.series) return fresh;
+  return {
+    ...fresh,
+    // A partial upstream refresh must never erase previously persisted series.
+    // Fresh observations win; failed series retain their last-known history.
+    series: { ...previous.series, ...fresh.series },
+  };
+}
+
+module.exports = { getMacroData, fetchSeries, SERIES, decodeChartPayload, mergeMacroData };

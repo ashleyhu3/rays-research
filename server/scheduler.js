@@ -39,7 +39,12 @@ const scrapers = {
   hkChinaPerformance: () => require('./scrapers/hkChinaPerformance').updateHkChinaPerformance(),
   hkPerformance:    () => require('./scrapers/hkPerformance').getHkPerformance(),
   chinaEtfPremium:  () => require('./scrapers/chinaEtfPremium').updateChinaEtfPremium(),
-  macro:            () => require('./scrapers/macro').getMacroData(),
+  macro:            async () => {
+    const { getMacroData, mergeMacroData } = require('./scrapers/macro');
+    const fresh = await getMacroData();
+    const previous = (await snapshotStore.latest('macro'))?.data;
+    return mergeMacroData(fresh, previous);
+  },
 };
 
 // TTLs match each source's natural update frequency.

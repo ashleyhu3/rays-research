@@ -6,11 +6,13 @@
 const storage = require('../storage');
 const snapshotStore = require('../snapshotStore');
 const BLOBS = require('../storageBlobs');
-const { getMacroData } = require('../scrapers/macro');
+const scheduler = require('../scheduler');
 
 async function main() {
   await storage.init(BLOBS);
-  const data = await getMacroData();
+  // Use the same merge path as scheduled/live refreshes so a transient partial
+  // response cannot remove previously stored CPI/PPI history.
+  const data = await scheduler.scrapers.macro();
   snapshotStore.put('macro', data);
   await storage.flush();
   console.log(`[macro] stored ${Object.keys(data.series).length} series (${Object.keys(data.errors).length} errors)`);
