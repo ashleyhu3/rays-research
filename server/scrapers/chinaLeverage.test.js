@@ -44,6 +44,23 @@ test('bySse/bySzse each carry forward through their own gap, independently of th
   assert.equal(data.bySzse.balance[1], 0.9);      // SZSE's own layer carries only its own last value forward
 });
 
+test('SZSE trillion-CNY series preserve daily moves smaller than CNY 10B', () => {
+  const data = _test.assemble({
+    '2026-01-02': {
+      sse: { balance: 1e12, lendBalance: 10e9, totalBalance: 1.01e12 },
+      szse: { balance: 1.326713e12, lendBalance: 6.951e9, totalBalance: 1.333664e12 },
+    },
+    '2026-01-05': {
+      sse: { balance: 1e12, lendBalance: 10e9, totalBalance: 1.01e12 },
+      szse: { balance: 1.325924e12, lendBalance: 7.2e9, totalBalance: 1.333124e12 },
+    },
+  });
+
+  assert.deepEqual(data.bySzse.balance, [1.326713, 1.325924]);
+  assert.deepEqual(data.bySzse.totalBalance, [1.333664, 1.333124]);
+  assert.notEqual(data.bySzse.balance[0], data.bySzse.balance[1]);
+});
+
 test('assemble carries a metric forward when one exchange is missing that day, and clears the carry once both report again', () => {
   const data = _test.assemble({
     '2026-01-02': {

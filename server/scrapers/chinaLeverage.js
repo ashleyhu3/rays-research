@@ -506,8 +506,25 @@ const METRIC_SCALE = {
   balance: YUAN_T, purchase: YUAN_B, repay: YUAN_B,
   lendVolume: SHARES_M, lendBalance: YUAN_B, totalBalance: YUAN_T,
 };
+const METRIC_DECIMALS = {
+  // Keep enough precision for daily moves. Rounding trillion-CNY balances to
+  // two decimals discarded every change smaller than CNY 10B and collapsed
+  // years of distinct SZSE observations into a few artificial plateaus.
+  balance: 6,
+  totalBalance: 6,
+  purchase: 2,
+  repay: 2,
+  lendVolume: 2,
+  lendBalance: 3,
+};
 // The three metrics the page charts as stacked SSE/SZSE layers.
 const STACK_KEYS = ['balance', 'lendBalance', 'totalBalance'];
+
+function scaleMetric(key, value) {
+  const decimals = METRIC_DECIMALS[key] ?? 2;
+  const factor = 10 ** decimals;
+  return Math.round((value / METRIC_SCALE[key]) * factor) / factor;
+}
 
 /**
  * One exchange's own series, carried forward through its own gaps
@@ -523,7 +540,7 @@ function assembleExchange(history, dates, exchange) {
     for (const key of STACK_KEYS) {
       const v = history[day]?.[exchange]?.[key];
       if (Number.isFinite(v)) last[key] = v;
-      out[key].push(Number.isFinite(last[key]) ? round2(last[key] / METRIC_SCALE[key]) : null);
+      out[key].push(Number.isFinite(last[key]) ? scaleMetric(key, last[key]) : null);
     }
   }
   return out;
@@ -610,7 +627,7 @@ function assemble(history) {
 
   const series = Object.fromEntries(METRIC_KEYS.map(key => [
     key,
-    raw[key].map(v => (Number.isFinite(v) ? round2(v / METRIC_SCALE[key]) : null)),
+    raw[key].map(v => (Number.isFinite(v) ? scaleMetric(key, v) : null)),
   ]));
 
   const i = dates.length - 1;

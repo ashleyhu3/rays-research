@@ -91,7 +91,7 @@ const MARKED_POINTS = {
 const METRICS = [
   {
     key: 'balance', label: 'Margin Financing Balance', cn: '融资余额',
-    color: BLUE, fmt: v => `${v.toFixed(2)}T`,
+    color: BLUE, fmt: v => `${v.toFixed(4)}T`,
   },
   {
     key: 'lendBalance', label: 'Securities Lending Balance', cn: '融券余额',
@@ -99,7 +99,7 @@ const METRICS = [
   },
   {
     key: 'totalBalance', label: 'Total Margin Balance', cn: '两融余额',
-    color: RED, fmt: v => `${v.toFixed(2)}T`,
+    color: RED, fmt: v => `${v.toFixed(4)}T`,
   },
 ];
 

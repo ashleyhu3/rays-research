@@ -154,7 +154,7 @@ app.get('/api/web-traffic',       cachedRoute('webTraffic',       s.webTraffic))
 app.get('/api/customs-drones',    cachedRoute('customsDrones',    s.customsDrones));
 app.get('/api/korea-leverage',    cachedRoute('koreaLeverage',    s.koreaLeverage));
 app.get('/api/taiwan-leverage',   cachedRoute('taiwanLeverage',   s.taiwanLeverage));
-app.get('/api/china-leverage',    cachedRoute('chinaLeverage',    s.chinaLeverage));
+app.get('/api/china-leverage',    cachedRoute('chinaLeverage',    s.chinaLeverage, null, { preferPersisted: true }));
 app.get('/api/macro',             cachedRoute('macro',            s.macro, null, { preferPersisted: true }));
 
 // One-off deep backfill (~5y, ~1200 SZSE requests at a polite pace — a few
