@@ -61,7 +61,8 @@ export default function Sidebar({ currentView, onNavigate, mode = 'demand', subt
             {visibleItems.map((item) => {
               const { dir, kind } = trendFor(item, ld);
               const label = dir ? TREND_LABEL[kind][dir] : null;
-              const isActiveItem = currentView === item.id;
+              const isActiveItem = currentView === item.id
+                || item.subitems?.some(sub => sub.id && sub.id === currentView);
               return (
                 <div key={item.id}>
                   <button
@@ -79,9 +80,11 @@ export default function Sidebar({ currentView, onNavigate, mode = 'demand', subt
                     <div className="nav-subitems">
                       {item.subitems.map(sub => (
                         <button
-                          key={sub.key}
-                          className={`nav-subitem${isActiveItem && subtabByView[item.id] === sub.key ? ' active' : ''}`}
-                          onClick={() => onNavigateSubtab?.(item.id, sub.key)}
+                          key={sub.id ?? sub.key}
+                          className={`nav-subitem${sub.id
+                            ? currentView === sub.id ? ' active' : ''
+                            : isActiveItem && subtabByView[item.id] === sub.key ? ' active' : ''}`}
+                          onClick={() => sub.id ? onNavigate(sub.id) : onNavigateSubtab?.(item.id, sub.key)}
                         >
                           {sub.label}
                         </button>

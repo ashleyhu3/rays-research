@@ -1,8 +1,9 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Line } from 'react-chartjs-2';
 import ChartCard from '../../components/chart/ChartCard';
 import { useData } from '../../context/DataContext';
 import { baseOpts } from '../../utils/chartHelpers';
+import MacroDateControls, { inDateRange, isoYearsAgo, todayIso } from './MacroDateControls';
 
 export const COMMODITY_SECTIONS = [
   { key: 'precious-rare', label: 'Precious & Rare Metal', commodities: ['Gold', 'Silver', 'Rare Earth (Neodymium)', 'Tungsten'] },
@@ -122,6 +123,8 @@ function CommodityCandle({ series }) {
 
 export default function Commodity({ section = 'precious-rare' }) {
   const { liveData, loading } = useData();
+  const [startDate, setStartDate] = useState(() => isoYearsAgo(1));
+  const [endDate, setEndDate] = useState(() => todayIso());
   const payload = liveData?.commodities;
   const definition = COMMODITY_SECTIONS.find(item => item.key === section) || COMMODITY_SECTIONS[0];
   const order = new Map(definition.commodities.map((commodity, index) => [commodity, index]));
@@ -129,10 +132,18 @@ export default function Commodity({ section = 'precious-rare' }) {
     .filter(item => item.section === definition.key)
     .sort((a, b) => (order.get(a.commodity) - order.get(b.commodity))
       || (a.market === 'Global' ? -1 : b.market === 'Global' ? 1 : 0)
-      || a.name.localeCompare(b.name));
+      || a.name.localeCompare(b.name))
+    .map(item => ({ ...item, data: item.data.filter(point => inDateRange(point.date, startDate, endDate)) }))
+    .filter(item => item.data.length);
 
   return (
     <div className="macro-page">
+      <MacroDateControls
+        startDate={startDate}
+        endDate={endDate}
+        onStartDate={setStartDate}
+        onEndDate={setEndDate}
+      />
       {payload?.fetchedAt && (
         <div className="macro-update">Commodity OHLC history · refreshed {new Date(payload.fetchedAt).toLocaleString()}</div>
       )}

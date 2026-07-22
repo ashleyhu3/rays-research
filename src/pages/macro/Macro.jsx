@@ -1,8 +1,9 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Line } from 'react-chartjs-2';
 import ChartCard from '../../components/chart/ChartCard';
 import { useData } from '../../context/DataContext';
 import { baseOpts } from '../../utils/chartHelpers';
+import MacroDateControls, { inDateRange, isoYearsAgo, todayIso } from './MacroDateControls';
 
 const COLORS = ['#e8c547', '#56b4e9', '#5dd39e', '#ef8354', '#b48ead'];
 
@@ -77,15 +78,20 @@ function fmtDate(iso) {
   });
 }
 
-function buildData(macro, keys, labels) {
+function buildData(macro, keys, labels, startDate, endDate) {
   const available = keys.map(key => macro?.series?.[key]).filter(Boolean);
-  const dates = [...new Set(available.flatMap(series => series.data.map(point => point.date)))].sort();
+  const dates = [...new Set(available.flatMap(series => series.data
+    .filter(point => inDateRange(point.date, startDate, endDate))
+    .map(point => point.date)))].sort();
   const dateIndex = new Map(dates.map((date, index) => [date, index]));
   const datasets = keys.flatMap((key, seriesIndex) => {
     const series = macro?.series?.[key];
     if (!series) return [];
     const values = Array(dates.length).fill(null);
-    series.data.forEach(point => { values[dateIndex.get(point.date)] = point.value; });
+    series.data.forEach(point => {
+      const index = dateIndex.get(point.date);
+      if (index != null) values[index] = point.value;
+    });
     return [{
       label: labels[seriesIndex], data: values,
       borderColor: COLORS[seriesIndex], backgroundColor: `${COLORS[seriesIndex]}55`,
@@ -96,9 +102,12 @@ function buildData(macro, keys, labels) {
   return { labels: dates.map(fmtDate), datasets, available };
 }
 
-function MacroChart({ definition, macro, errors }) {
+function MacroChart({ definition, macro, errors, startDate, endDate }) {
   const [title, keys, labels] = definition;
-  const built = useMemo(() => buildData(macro, keys, labels), [macro, keys, labels]);
+  const built = useMemo(
+    () => buildData(macro, keys, labels, startDate, endDate),
+    [macro, keys, labels, startDate, endDate],
+  );
   const unit = built.available[0]?.unit || '';
   const percentUnit = /percent|%/i.test(unit);
   const options = useMemo(() => {
@@ -136,17 +145,32 @@ function MacroChart({ definition, macro, errors }) {
 
 export default function Macro({ viewId }) {
   const { liveData, loading } = useData();
+  const [startDate, setStartDate] = useState(() => isoYearsAgo(1));
+  const [endDate, setEndDate] = useState(() => todayIso());
   const macro = liveData?.macro;
   const charts = PAGE_CHARTS[viewId] || PAGE_CHARTS['macro-us-inflation'];
   return (
     <div className="macro-page">
+      <MacroDateControls
+        startDate={startDate}
+        endDate={endDate}
+        onStartDate={setStartDate}
+        onEndDate={setEndDate}
+      />
       {macro?.fetchedAt && (
         <div className="macro-update">Trading Economics history · refreshed {new Date(macro.fetchedAt).toLocaleString()}</div>
       )}
       {!macro && !loading && <div className="macro-banner">Macro data is unavailable. Use Refresh Data to retry Trading Economics.</div>}
       <div className="cgrid">
         {charts.map(definition => (
-          <MacroChart key={definition[0]} definition={definition} macro={macro} errors={macro?.errors} />
+          <MacroChart
+            key={definition[0]}
+            definition={definition}
+            macro={macro}
+            errors={macro?.errors}
+            startDate={startDate}
+            endDate={endDate}
+          />
         ))}
       </div>
     </div>

@@ -119,39 +119,24 @@ export const NAV_SECTIONS = [
     ],
   },
   {
-    label: 'Yield',
+    label: 'Macro',
+    sectorId: 'macro',
     mode: 'macro',
     items: [
       { id: 'macro-yield', label: 'Yield' },
-    ],
-  },
-  {
-    label: 'Commodity',
-    mode: 'macro',
-    items: [
       { id: 'macro-commodity', label: 'Commodity', subitems: COMMODITY_SUBTABS },
-    ],
-  },
-  {
-    label: 'US',
-    sectorId: 'macro-us',
-    mode: 'macro',
-    items: [
-      { id: 'macro-us-inflation', label: 'Inflation' },
-      { id: 'macro-us-labor',     label: 'Labor' },
-      { id: 'macro-us-pmi',       label: 'PMI' },
-      { id: 'macro-us-household', label: 'Household' },
-    ],
-  },
-  {
-    label: 'China',
-    sectorId: 'macro-china',
-    mode: 'macro',
-    items: [
-      { id: 'macro-cn-inflation', label: 'Inflation' },
-      { id: 'macro-cn-pmi',       label: 'PMI' },
-      { id: 'macro-cn-trade',     label: 'Trade' },
-      { id: 'macro-cn-activity',  label: 'Activity' },
+      { id: 'macro-us-inflation', label: 'US', subitems: [
+        { id: 'macro-us-inflation', label: 'Inflation' },
+        { id: 'macro-us-labor', label: 'Labor' },
+        { id: 'macro-us-pmi', label: 'PMI' },
+        { id: 'macro-us-household', label: 'Household' },
+      ] },
+      { id: 'macro-cn-inflation', label: 'China', subitems: [
+        { id: 'macro-cn-inflation', label: 'Inflation' },
+        { id: 'macro-cn-pmi', label: 'PMI' },
+        { id: 'macro-cn-trade', label: 'Trade' },
+        { id: 'macro-cn-activity', label: 'Activity' },
+      ] },
     ],
   },
   {
@@ -212,7 +197,9 @@ export const NAV_SECTIONS = [
 /** Resolve a view to the top-level navigation mode that owns it. */
 export function getModeForView(viewId) {
   for (const section of NAV_SECTIONS) {
-    if (section.items.some(item => item.id === viewId)) return section.mode ?? 'demand';
+    if (section.items.some(item => item.id === viewId || item.subitems?.some(subitem => subitem.id === viewId))) {
+      return section.mode ?? 'demand';
+    }
   }
   return 'demand';
 }

@@ -2,11 +2,17 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { parseTeOhlc, parseEastmoneyKlines, parseMysteelRange } = require('./commodities');
+const { parseTeOhlc, parseEastmoneyKlines, parseMysteelRange, inferFrequency } = require('./commodities');
 
 test('parses Trading Economics market OHLC rows', () => {
   const candles = parseTeOhlc([[1753228800, 3387.82, null, null, 3380, 3440, 3370, 3390]]);
   assert.deepEqual(candles, [{ date: '2025-07-23', open: 3380, high: 3440, low: 3370, close: 3390 }]);
+});
+
+test('infers the source candle interval from observation spacing', () => {
+  assert.equal(inferFrequency([{ date: '2026-07-01' }, { date: '2026-07-02' }]), 'Daily OHLC');
+  assert.equal(inferFrequency([{ date: '2026-07-01' }, { date: '2026-07-08' }]), 'Weekly OHLC');
+  assert.equal(inferFrequency([{ date: '2026-06-01' }, { date: '2026-07-01' }]), 'Monthly OHLC');
 });
 
 test('parses Eastmoney daily K-line rows', () => {

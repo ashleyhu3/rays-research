@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Scatter } from 'react-chartjs-2';
 import { C, fa } from '../../config/colors';
-import { GRID, TICK, BORD } from '../../utils/chartHelpers';
+import { GRID, TICK, BORD, autoFitValueAxes } from '../../utils/chartHelpers';
 import { buildArrModel } from '../../utils/arrModel';
 import { useDashboard } from '../../context/DashboardContext';
 
@@ -97,8 +97,14 @@ export default function ArrTrajectoryCard({ chartId, series, color = C.accent, n
         legend: { display: false },
         nowLine: { now: model.now },
         zoom: {
-          zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' },
-          pan: { enabled: true, mode: 'x' },
+          zoom: {
+            wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x',
+            onZoom: ({ chart }) => autoFitValueAxes(chart, 'x', ['y']),
+          },
+          pan: {
+            enabled: true, mode: 'x',
+            onPan: ({ chart }) => autoFitValueAxes(chart, 'x', ['y']),
+          },
         },
         tooltip: {
           filter: item => item.dataset.label === 'Disclosed' || item.dataset.label === 'Projected',

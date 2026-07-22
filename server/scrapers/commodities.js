@@ -118,6 +118,16 @@ function parseTeOhlc(rows = []) {
   });
 }
 
+function inferFrequency(data) {
+  if (data.length < 2) return 'Daily';
+  const gaps = data.slice(1).map((point, index) =>
+    (new Date(point.date).getTime() - new Date(data[index].date).getTime()) / 86400000)
+    .filter(Number.isFinite)
+    .sort((a, b) => a - b);
+  const medianGap = gaps[Math.floor(gaps.length / 2)] || 1;
+  return medianGap >= 20 ? 'Monthly OHLC' : medianGap >= 4 ? 'Weekly OHLC' : 'Daily OHLC';
+}
+
 async function fetchGlobal(meta) {
   const sourceUrl = `${TE_BASE}/commodity/${meta.slug}`;
   const html = await fetchText(sourceUrl);
@@ -127,7 +137,7 @@ async function fetchGlobal(meta) {
   const token = match(html, /var TEChartsToken = '([^']+)'/);
   const key = match(html, /var TEObfuscationkey = '([^']+)'/, TE_KEY);
   const dataSource = match(html, /var TEChartsDatasource = '([^']+)'/, TE_DATA);
-  const chartUrl = `${dataSource}/markets/${encodeURIComponent(ticker.toLowerCase())}?span=1y&ohlc=1`;
+  const chartUrl = `${dataSource}/markets/${encodeURIComponent(ticker.toLowerCase())}?span=5y&ohlc=1`;
   const raw = await fetchTextWithHeaders(chartUrl, token ? { 'x-api-key': token } : {});
   const decoded = decodeChartPayload(JSON.parse(raw), key);
   const serie = decoded?.series?.[0];
@@ -135,7 +145,7 @@ async function fetchGlobal(meta) {
   if (!data.length) throw new Error(`No OHLC history returned for ${meta.name}`);
   return {
     ...meta, market: 'Global', name: meta.name, unit: serie.unit || 'source units',
-    frequency: 'Daily', source: 'Trading Economics', sourceUrl, data,
+    frequency: inferFrequency(data), source: 'Trading Economics', sourceUrl, data,
   };
 }
 
@@ -162,7 +172,7 @@ function parseEastmoneyKlines(lines = []) {
 
 async function fetchChina(meta) {
   const params = new URLSearchParams({
-    secid: meta.secid, klt: '101', fqt: '1', lmt: '370', end: '20500000', iscca: '1',
+    secid: meta.secid, klt: '101', fqt: '1', lmt: '1500', end: '20500000', iscca: '1',
     fields1: 'f1,f2,f3,f4,f5,f6,f7,f8',
     fields2: 'f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61,f62,f63,f64',
     ut: '7eea3edcaed734bea9cbfc24409ed989', forcect: '1',
@@ -229,7 +239,7 @@ function mergeSeries(fresh, previous) {
   if (!previous?.data?.length) return fresh;
   const byDate = new Map(previous.data.map(point => [point.date, point]));
   fresh.data.forEach(point => byDate.set(point.date, point));
-  return { ...fresh, data: [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date)).slice(-370) };
+  return { ...fresh, data: [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date)).slice(-1500) };
 }
 
 async function getCommodityData(previous = null) {
@@ -254,6 +264,6 @@ async function getCommodityData(previous = null) {
 }
 
 module.exports = {
-  getCommodityData, parseTeOhlc, parseEastmoneyKlines, parseMysteelRange,
+  getCommodityData, parseTeOhlc, parseEastmoneyKlines, parseMysteelRange, inferFrequency,
   GLOBAL, CHINA, MYSTEEL,
 };

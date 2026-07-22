@@ -17,6 +17,87 @@ export const fmtK = v => (v >= 1e3 ? `${(v / 1e3).toFixed(1)}k` : String(v));
 export const fmtN = v => v.toLocaleString();
 export const fmtP = v => `${v.toFixed(1)}`;
 
+/* ─── Auto-rescale the value axis to the visible range after zoom/pan ──
+   chartjs-plugin-zoom only changes the index (category/time) axis; left
+   alone, the value axis keeps its full-series scale, so a zoomed-in chart
+   shows a tiny squashed line. Wired in as zoom/pan onZoom/onPan callbacks
+   below, this recomputes min/max from whatever data is currently in view
+   (summing stacked datasets rather than reading them individually) and
+   applies it to the given value axis/axes before the chart repaints. */
+function pointIndexValue(point, idx, indexAxisId) {
+  if (point && typeof point === 'object' && !Array.isArray(point)) {
+    return indexAxisId === 'x' ? { pos: point.x, val: point.y } : { pos: point.y, val: point.x };
+  }
+  return { pos: idx, val: point };
+}
+
+function visibleRange(chart, valueAxisId, indexAxisId) {
+  const idxScale = chart.scales[indexAxisId];
+  if (!idxScale) return null;
+  const otherAxisKey = indexAxisId === 'x' ? 'yAxisID' : 'xAxisID';
+  const defaultAxis  = indexAxisId === 'x' ? 'y' : 'x';
+  const stacked = !!chart.options.scales?.[valueAxisId]?.stacked;
+
+  if (stacked) {
+    const totals = new Map(); // idx -> { pos, neg }
+    chart.data.datasets.forEach((ds, i) => {
+      if ((ds[otherAxisKey] ?? defaultAxis) !== valueAxisId) return;
+      if (chart.getDatasetMeta(i).hidden) return;
+      ds.data.forEach((point, idx) => {
+        const { pos, val } = pointIndexValue(point, idx, indexAxisId);
+        if (val == null || Number.isNaN(val) || pos < idxScale.min || pos > idxScale.max) return;
+        const entry = totals.get(idx) ?? { pos: 0, neg: 0 };
+        if (val >= 0) entry.pos += val; else entry.neg += val;
+        totals.set(idx, entry);
+      });
+    });
+    let min = 0, max = 0;
+    totals.forEach(({ pos, neg }) => { if (pos > max) max = pos; if (neg < min) min = neg; });
+    return { min, max };
+  }
+
+  let min = Infinity, max = -Infinity;
+  chart.data.datasets.forEach((ds, i) => {
+    if ((ds[otherAxisKey] ?? defaultAxis) !== valueAxisId) return;
+    if (chart.getDatasetMeta(i).hidden) return;
+    ds.data.forEach((point, idx) => {
+      const { pos, val } = pointIndexValue(point, idx, indexAxisId);
+      if (val == null || Number.isNaN(val) || pos < idxScale.min || pos > idxScale.max) return;
+      if (val < min) min = val;
+      if (val > max) max = val;
+    });
+  });
+  return Number.isFinite(min) && Number.isFinite(max) ? { min, max } : null;
+}
+
+export function autoFitValueAxes(chart, indexAxisId, valueAxisIds) {
+  let changed = false;
+  valueAxisIds.forEach(axisId => {
+    const range = visibleRange(chart, axisId, indexAxisId);
+    if (!range) return;
+    const { min: rawMin, max } = range;
+    const scaleOpts = chart.options.scales[axisId];
+    if (chart.scales[axisId]?.type === 'logarithmic') {
+      const min = Math.max(rawMin, 1e-6);
+      scaleOpts.min = min / 1.08;
+      scaleOpts.max = max * 1.08;
+    } else {
+      // Stacked axes (and anything with beginAtZero) treat 0 as a real
+      // floor, not a data point — when nothing in view goes negative,
+      // padding below it would manufacture a deep, meaningless negative
+      // axis instead of resting the bars on the true zero line.
+      const zeroFloor = !!(scaleOpts?.beginAtZero || scaleOpts?.stacked);
+      const min = zeroFloor ? Math.min(0, rawMin) : rawMin;
+      const span = max - min || Math.abs(max) || 1;
+      const pad = span * 0.08;
+      scaleOpts.min = (zeroFloor && min === 0) ? 0 : min - pad;
+      scaleOpts.max = max + pad;
+    }
+    changed = true;
+  });
+  if (changed) chart.update('none');
+}
+
 /* ─── Base chart options (line / bar) ───────────────────────────────── */
 export const baseOpts = (yFmt) => ({
   responsive: true,
@@ -37,8 +118,14 @@ export const baseOpts = (yFmt) => ({
       },
     },
     zoom: {
-      zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' },
-      pan: { enabled: true, mode: 'x' },
+      zoom: {
+        wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x',
+        onZoom: ({ chart }) => autoFitValueAxes(chart, 'x', ['y']),
+      },
+      pan: {
+        enabled: true, mode: 'x',
+        onPan: ({ chart }) => autoFitValueAxes(chart, 'x', ['y']),
+      },
     },
   },
   scales: {
@@ -63,10 +150,17 @@ export const hBarOpts = (xFmt) => {
           label: c => `${c.dataset.label ? ` ${c.dataset.label}: ` : ' '}${xFmt(c.parsed.x)}`,
         },
       },
-      // Category axis is y for horizontal bars, so zoom/pan along y (not x).
+      // Category axis is y for horizontal bars, so zoom/pan (and the
+      // autofit value axis) run along y instead of x.
       zoom: {
-        zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'y' },
-        pan: { enabled: true, mode: 'y' },
+        zoom: {
+          wheel: { enabled: true }, pinch: { enabled: true }, mode: 'y',
+          onZoom: ({ chart }) => autoFitValueAxes(chart, 'y', ['x']),
+        },
+        pan: {
+          enabled: true, mode: 'y',
+          onPan: ({ chart }) => autoFitValueAxes(chart, 'y', ['x']),
+        },
       },
     },
     scales: {
@@ -125,6 +219,17 @@ export const dualAxisOpts = (yFmt, y1Fmt) => {
         ...base.plugins.tooltip,
         callbacks: {
           label: c => ` ${c.dataset.label}: ${(c.dataset.yAxisID === 'y1' ? y1Fmt : yFmt)(c.parsed.y)}`,
+        },
+      },
+      // Two value axes here (left + right) — autofit both on zoom/pan.
+      zoom: {
+        zoom: {
+          wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x',
+          onZoom: ({ chart }) => autoFitValueAxes(chart, 'x', ['y', 'y1']),
+        },
+        pan: {
+          enabled: true, mode: 'x',
+          onPan: ({ chart }) => autoFitValueAxes(chart, 'x', ['y', 'y1']),
         },
       },
     },
