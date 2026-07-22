@@ -17,9 +17,9 @@ name: Collect dashboard data
 
 on:
   schedule:
-    # Twice daily (02:00 & 14:00 UTC) — two attempts mean a transient failure
-    # doesn't lose a day; same-day snapshots overwrite, so duplicates are fine.
-    - cron: '0 2,14 * * *'
+    # Every six hours, offset from the top of the hour to reduce congestion.
+    # Same-day snapshots overwrite, so duplicate collection is safe.
+    - cron: '17 */6 * * *'
   workflow_dispatch: {}   # allow manual runs from the Actions tab
 
 concurrency:

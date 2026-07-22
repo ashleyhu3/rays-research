@@ -26,6 +26,49 @@ const isProd = process.env.NODE_ENV === 'production';
 app.use(cors());
 app.use(express.json());
 
+let initializationPromise = null;
+
+async function initialize() {
+  if (!initializationPromise) {
+    initializationPromise = (async () => {
+      await storage.init(STORAGE_BLOBS);
+
+      const seeded = snapshotStore.seed(cache, scheduler.TTL);
+      if (seeded.length > 0) {
+        console.log(`[startup] seeded cache from MongoDB snapshots: ${seeded.join(', ')}`);
+      }
+    })().catch((error) => {
+      // A transient cold-start failure should not poison this warm instance.
+      initializationPromise = null;
+      throw error;
+    });
+  }
+
+  return initializationPromise;
+}
+
+// Vercel may reuse a function instance, so initialize persistent state once
+// per warm instance and make every request wait for it to be ready.
+app.use(async (_req, _res, next) => {
+  try {
+    await initialize();
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
+
+function requireAdminSecret(req, res, next) {
+  const secret = process.env.ADMIN_SECRET;
+  const authorization = req.get('authorization');
+
+  if (!secret || authorization !== `Bearer ${secret}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  next();
+}
+
 /* ── Helper: lazy-cached route ─────────────────────────────────────── */
 // Coalesce concurrent cache misses into one scrape — without this, several
 // browser requests (or a request racing the startup warmup) each fire their
@@ -111,7 +154,13 @@ app.get('/api/macro',             cachedRoute('macro',            s.macro));
 // the regular 6-hourly poll (which only fetches the last 30 days) so this
 // doesn't slow down or re-hammer SZSE on every normal refresh.
 let chinaLeverageBackfillState = { running: false, error: null, finishedAt: null, dates: null };
-app.post('/api/china-leverage/backfill', (req, res) => {
+app.post('/api/china-leverage/backfill', requireAdminSecret, (req, res) => {
+  if (process.env.VERCEL) {
+    return res.status(409).json({
+      ok: false,
+      error: 'Long backfills are disabled on Vercel. Run npm run backfill:china-leverage from GitHub Actions or a local worker.',
+    });
+  }
   if (chinaLeverageBackfillState.running) {
     return res.status(409).json({ ok: false, error: 'Backfill already in progress' });
   }
@@ -191,7 +240,7 @@ app.get('/api/transcripts/library', async (_req, res) => {
   }
 });
 
-app.post('/api/transcripts/collect', async (req, res) => {
+app.post('/api/transcripts/collect', requireAdminSecret, async (req, res) => {
   const body = req.body ?? {};
   try {
     const provider = String(body.provider || 'alphavantage').toLowerCase();
@@ -358,7 +407,7 @@ app.get('/api/transcripts/analysis/:ticker', async (req, res) => {
 });
 
 // Four-quarter cross-analysis (SNDK): AV newest quarter + EDGAR for the older three.
-app.post('/api/transcript/series', async (req, res) => {
+app.post('/api/transcript/series', requireAdminSecret, async (req, res) => {
   try {
     res.json(await analyzeSeries(req.body?.symbol ?? 'SNDK'));
   } catch (e) {
@@ -470,10 +519,11 @@ app.get('/api/transcripts/stored/:ticker', async (req, res) => {
   }
 });
 
-app.post('/api/refresh', async (req, res) => {
+app.post('/api/refresh', requireAdminSecret, async (req, res) => {
   const keys = req.body?.keys ?? Object.keys(scheduler.scrapers);
   try {
     await scheduler.refreshAll(keys);
+    await storage.flush();
     res.json({ ok: true, refreshed: keys, ts: new Date().toISOString() });
   } catch (e) {
     console.error('[refresh]', e.message);
@@ -806,7 +856,7 @@ app.post('/api/alerts/daily-options-report/reload', async (req, res) => {
   }
 });
 
-app.post('/api/alerts/daily-options-report/generate', async (req, res) => {
+app.post('/api/alerts/daily-options-report/generate', requireAdminSecret, async (req, res) => {
   try {
     const meta = await optionsReportStore.generateAndStoreDailyOptions({
       date: req.body?.date,
@@ -850,13 +900,7 @@ app.get('/api/health', (_, res) => res.json({ ok: true, ts: new Date().toISOStri
 async function start() {
   // Connect storage (and seed Mongo from the committed JSON baseline) before
   // serving requests or running the warmup scrape, so reads/writes are routed.
-  await storage.init(STORAGE_BLOBS);
-
-  // Seed the request cache from the last persisted scrape so the first visitor
-  // after a restart is served instantly; the background warmup below then
-  // refreshes every source to replace the stale snapshots.
-  const seeded = snapshotStore.seed(cache, scheduler.TTL);
-  if (seeded.length > 0) console.log(`[warmup] seeded cache from snapshots: ${seeded.join(', ')}`);
+  await initialize();
 
   if (isProd) {
     // Production: serve Vite build output; read manifest for hashed filenames
@@ -914,4 +958,12 @@ async function start() {
   });
 }
 
-start().catch(err => { console.error(err); process.exit(1); });
+if (require.main === module) {
+  start().catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
+}
+
+module.exports = app;
+module.exports.initialize = initialize;

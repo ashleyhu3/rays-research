@@ -59,7 +59,12 @@ async function init(blobs) {
   }
   try {
     const { MongoClient } = require('mongodb');
-    client = new MongoClient(uri, { serverSelectionTimeoutMS: 10000 });
+    client = new MongoClient(uri, {
+      serverSelectionTimeoutMS: 10000,
+      maxPoolSize: 5,
+      minPoolSize: 0,
+      maxIdleTimeMS: 60000,
+    });
     await client.connect();
     const db = client.db(process.env.MONGODB_DB || undefined); // db from URI path if omitted
     collection = db.collection(COLLECTION);

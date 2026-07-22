@@ -8,6 +8,10 @@ const { saveTranscript } = require('../../server/transcripts/store');
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  const secret = process.env.ADMIN_SECRET;
+  if (!secret || req.headers.authorization !== `Bearer ${secret}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
   const body = req.body ?? {};
   try {
     const provider = String(body.provider || 'alphavantage').toLowerCase();
