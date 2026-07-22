@@ -4,10 +4,11 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "test": "npm run test:storage && npm run test:mailer && npm run test:transcripts && npm run test:options-report && npm run test:leverage && npm run test:national-team-flow && npm run test:carry-trade && npm run test:commodities && npm run test:china-etf-premium",
+    "test": "npm run test:storage && npm run test:mailer && npm run test:transcripts && npm run test:options-report && npm run test:leverage && npm run test:national-team-flow && npm run test:carry-trade && npm run test:macro && npm run test:commodities && npm run test:china-etf-premium",
     "test:storage": "node --test server/snapshotStore.test.js",
     "test:carry-trade": "node --test server/scrapers/carryTrade.test.js",
     "test:commodities": "node --test server/scrapers/commodities.test.js",
+    "test:macro": "node --test server/scrapers/macro.test.js",
     "test:china-etf-premium": "node --test server/scrapers/chinaEtfPremium.test.js server/scrapers/rotationPersistence.test.js",
     "test:national-team-flow": "node --test server/scrapers/chinaNationalTeamFlow.test.js server/scrapers/chinaLiquidity.test.js",
     "dev": "node --env-file=.env server/server.js",

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Line } from 'react-chartjs-2';
+import { Bar, Line } from 'react-chartjs-2';
 import ChartCard from '../../components/chart/ChartCard';
 import { useData } from '../../context/DataContext';
 import { baseOpts } from '../../utils/chartHelpers';
@@ -9,11 +9,12 @@ const COLORS = ['#e8c547', '#56b4e9', '#5dd39e', '#ef8354', '#b48ead'];
 
 const PAGE_CHARTS = {
   'macro-yield': [
-    ['United States government bond yields', ['us2yYield', 'us10yYield', 'us30yYield', 'us2y10ySpread'], ['2Y', '10Y', '30Y', '2Y–10Y spread']],
-    ['China government bond yields', ['cn10yYield', 'cn30yYield'], ['10Y', '30Y']],
-    ['Japan government bond yields', ['jp10yYield', 'jp30yYield'], ['10Y', '30Y']],
-    ['United Kingdom government bond yields', ['uk10yYield', 'uk30yYield'], ['10Y', '30Y']],
-    ['Germany government bond yields', ['de10yYield', 'de30yYield'], ['10Y', '30Y']],
+    ['United States', ['us2yYield', 'us10yYield', 'us30yYield'], ['2Y', '10Y', '30Y']],
+    ['10Y–2Y yield spread', ['us2y10ySpread'], ['10Y–2Y spread'], 'bar'],
+    ['China', ['cn10yYield', 'cn30yYield'], ['10Y', '30Y']],
+    ['Japan', ['jp10yYield', 'jp30yYield'], ['10Y', '30Y']],
+    ['United Kingdom', ['uk10yYield', 'uk30yYield'], ['10Y', '30Y']],
+    ['Germany', ['de10yYield', 'de30yYield'], ['10Y', '30Y']],
   ],
   'macro-us-inflation': [
     ['CPI inflation — YoY', ['usCpiYoy', 'usCoreCpiYoy'], ['Headline CPI', 'Core CPI']],
@@ -103,11 +104,23 @@ function buildData(macro, keys, labels, startDate, endDate) {
 }
 
 function MacroChart({ definition, macro, errors, startDate, endDate }) {
-  const [title, keys, labels] = definition;
+  const [title, keys, labels, chartType = 'line'] = definition;
   const built = useMemo(
     () => buildData(macro, keys, labels, startDate, endDate),
     [macro, keys, labels, startDate, endDate],
   );
+  const chartData = useMemo(() => {
+    if (chartType !== 'bar') return { labels: built.labels, datasets: built.datasets };
+    return {
+      labels: built.labels,
+      datasets: built.datasets.map(dataset => ({
+        ...dataset,
+        borderWidth: 0,
+        borderColor: dataset.data.map(value => value != null && value < 0 ? '#ef8354' : '#5dd39e'),
+        backgroundColor: dataset.data.map(value => value != null && value < 0 ? '#ef8354bb' : '#5dd39ebb'),
+      })),
+    };
+  }, [built.datasets, built.labels, chartType]);
   const unit = built.available[0]?.unit || '';
   const percentUnit = /percent|%/i.test(unit);
   const options = useMemo(() => {
@@ -137,7 +150,9 @@ function MacroChart({ definition, macro, errors, startDate, endDate }) {
       srcNote={missing.length ? `${missing.length} series temporarily unavailable` : undefined}
     >
       {built.datasets.length
-        ? <Line data={{ labels: built.labels, datasets: built.datasets }} options={options} />
+        ? chartType === 'bar'
+          ? <Bar data={chartData} options={options} />
+          : <Line data={chartData} options={options} />
         : <div className="macro-empty">{errors ? 'Series temporarily unavailable from Trading Economics.' : 'Loading macro history…'}</div>}
     </ChartCard>
   );
