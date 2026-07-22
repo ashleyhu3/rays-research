@@ -1,7 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Line } from 'react-chartjs-2';
 import ChartCard from '../../components/chart/ChartCard';
-import { CSI300_META, HK_CHINA_INDEX_TICKERS, HK_CHINA_SECTIONS } from '../../config/hkChinaPerformance';
+import {
+  CSI300_META,
+  HK_CHINA_EXTRA_INDEX_PAIRS,
+  HK_CHINA_INDEX_TICKERS,
+  HK_CHINA_SECTIONS,
+} from '../../config/hkChinaPerformance';
 import { GRID, TICK, BORD } from '../../utils/chartHelpers';
 
 const PRESETS = [
@@ -383,7 +388,21 @@ export default function HkChinaPerformance({ section = null }) {
   const indexRatioCharts = useMemo(() => {
     if (!payload) return [];
     return HK_CHINA_INDEX_TICKERS
+      .filter(meta => meta.ticker !== '800000' && meta.ticker !== '800700')
       .map(meta => ({ meta, data: buildPairChartData(payload, meta, CSI300_META, startDate, endDate) }))
+      .filter(chart => chart.data);
+  }, [payload, startDate, endDate]);
+  const extraIndexRatioCharts = useMemo(() => {
+    if (!payload) return [];
+    return HK_CHINA_EXTRA_INDEX_PAIRS
+      .map(([numerator, denominator]) => ({
+        id: `${numerator.ticker}-${denominator.ticker}`,
+        title: `${numerator.label}/${denominator.label}`,
+        data: buildPairChartData(payload, numerator, denominator, startDate, endDate),
+        src: EASTMONEY_TICKERS.has(numerator.ticker) || EASTMONEY_TICKERS.has(denominator.ticker)
+          ? 'Yahoo Finance, East Money'
+          : undefined,
+      }))
       .filter(chart => chart.data);
   }, [payload, startDate, endDate]);
   const sectionCharts = useMemo(() => {
@@ -480,12 +499,15 @@ export default function HkChinaPerformance({ section = null }) {
       {section != null && <div className="usp-section-label">{section === 'all' ? 'Index' : section === 'sentiment' ? 'Sentiment' : section}</div>}
 
       {section === 'all' && !error && indexRatioCharts.length > 0 &&
-        ratioGrid(indexRatioCharts.map(({ meta, data }) => ({
-          id: meta.ticker,
-          title: meta.name,
-          data,
-          src: EASTMONEY_TICKERS.has(meta.ticker) ? 'Yahoo Finance, East Money' : undefined,
-        })))}
+        ratioGrid([
+          ...indexRatioCharts.map(({ meta, data }) => ({
+            id: meta.ticker,
+            title: meta.name,
+            data,
+            src: EASTMONEY_TICKERS.has(meta.ticker) ? 'Yahoo Finance, East Money' : undefined,
+          })),
+          ...extraIndexRatioCharts,
+        ])}
 
       {section !== 'all' && !error && activeSectionCharts && ratioGrid(activeSectionCharts.charts)}
 

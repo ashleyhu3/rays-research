@@ -25,7 +25,7 @@ const SERIES = {
   usCpiMom: ['united-states', 'inflation-rate-mom'],
   usCoreCpiMom: ['united-states', 'core-inflation-rate-mom'],
   usPpiYoy: ['united-states', 'producer-prices-change'],
-  usCorePpiYoy: ['united-states', 'core-producer-prices'],
+  usCorePpiYoy: ['united-states', 'core-producer-prices-yoy'],
   usPpiMom: ['united-states', 'producer-price-inflation-mom'],
   usCorePpiMom: ['united-states', 'core-producer-prices-mom'],
   usPceYoy: ['united-states', 'pce-price-index-annual-change'],

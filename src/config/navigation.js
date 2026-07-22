@@ -19,9 +19,8 @@ const CHINA_PERFORMANCE_SUBTABS = [
   { key: 'sentiment', label: 'Sentiment' },
 ];
 
-/** Subtabs shown under the "HK" rotation nav item — one per
- * HK_SECTIONS entry, kept in sync with the page's data. No aggregate
- * subtab, since this tab has no aggregate/overview chart. */
+/** Subtabs shown under the "HK" rotation nav item. The parent view is the
+ * aggregate sector chart; these entries open the relative-performance grids. */
 const HK_PERFORMANCE_SUBTABS = HK_SECTIONS.map(section => ({ key: section.title, label: section.title }));
 
 const COMMODITY_SUBTABS = [

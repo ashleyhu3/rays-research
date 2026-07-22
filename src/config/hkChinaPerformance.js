@@ -5,14 +5,37 @@ export const CSI300_META = {
   color: '#eaeae0',
 };
 
+export const HSI_META = {
+  ticker: '800000',
+  label: 'HSI',
+  name: 'HSI',
+  color: '#ef8354',
+};
+
+export const HSTECH_META = {
+  ticker: '800700',
+  label: 'HSTECH',
+  name: 'HSTECH',
+  color: '#b48ead',
+};
+
 // Section 1 — broad indices, rebased together in an aggregate chart plus
 // individual ratio-vs-CSI300 cards (mirrors the US page's Sector section).
 // ChiNext and STAR50 are fetched server-side from East Money (not Yahoo,
 // which has no daily history for those two raw index instruments).
 export const HK_CHINA_INDEX_TICKERS = [
+  HSI_META,
+  HSTECH_META,
   { ticker: '000001.SS', label: '000001', name: 'SSE Composite',   color: '#3c8cdd' },
   { ticker: '399006.SZ', label: '399006', name: 'ChiNext',         color: '#da5a2f' },
   { ticker: '000688.SS', label: '000688', name: 'STAR50 (科创50)', color: '#198f5e' },
+];
+
+export const HK_CHINA_EXTRA_INDEX_PAIRS = [
+  [HSI_META, CSI300_META],
+  [HSTECH_META, HK_CHINA_INDEX_TICKERS.find(meta => meta.ticker === '399006.SZ')],
+  [HSTECH_META, HK_CHINA_INDEX_TICKERS.find(meta => meta.ticker === '000688.SS')],
+  [HSI_META, HSTECH_META],
 ];
 
 // Sections 2-8 — each a plain ratio-vs-CSI300 grid (mirrors the US page's

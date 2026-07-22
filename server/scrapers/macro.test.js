@@ -2,7 +2,11 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { mergeMacroData } = require('./macro');
+const { mergeMacroData, SERIES } = require('./macro');
+
+test('US core PPI YoY uses the percent-change series rather than the price index', () => {
+  assert.deepEqual(SERIES.usCorePpiYoy, ['united-states', 'core-producer-prices-yoy']);
+});
 
 test('a partial macro refresh retains previously stored US yield history', () => {
   const previousYield = {

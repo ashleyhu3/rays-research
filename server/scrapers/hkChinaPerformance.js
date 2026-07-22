@@ -72,6 +72,8 @@ const EASTMONEY_FALLBACK_TICKER = {
 
 const TICKERS = [
   // Broad indices (overview chart + per-index ratio vs CSI300)
+  { ticker: '800000', yahooTicker: '^HSI', label: 'HSI', name: 'HSI' },
+  { ticker: '800700', yahooTicker: '^HSTECH', label: 'HSTECH', name: 'HSTECH' },
   { ticker: '000001.SS', label: '000001', name: 'SSE Composite' },
   { ticker: '399006.SZ', label: '399006', name: 'ChiNext' },
   { ticker: '000688.SS', label: '000688', name: 'STAR50 (科创50)' },
@@ -258,7 +260,7 @@ async function getHkChinaPerformance(startDate, endDate = new Date()) {
       }
     }
     try {
-      return { ...meta, points: await fetchSeries(yf, meta.ticker, start, end), error: null };
+      return { ...meta, points: await fetchSeries(yf, meta.yahooTicker ?? meta.ticker, start, end), error: null };
     } catch (e) {
       return { ...meta, points: [], error: e.message };
     }

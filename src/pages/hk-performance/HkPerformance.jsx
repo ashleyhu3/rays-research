@@ -14,6 +14,10 @@ const PRESETS = [
 const ROLLING_AVG_DAYS = 50;
 // A 50-session moving average needs extra calendar days to cover weekends and holidays.
 const ROLLING_FETCH_LOOKBACK_DAYS = 80;
+const SECTOR_TICKERS = new Set([
+  HSCI_META.ticker,
+  ...HK_SECTIONS.find(section => section.title === 'Sector').tickers.map(meta => meta.ticker),
+]);
 
 function isoYearsAgo(n) {
   const d = new Date();
@@ -35,6 +39,13 @@ function isoDaysBefore(iso, n) {
 function fmtDate(iso) {
   const [y, m, d] = iso.split('-').map(Number);
   return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: '2-digit' });
+}
+
+function rebase(closes) {
+  const baseIdx = closes.findIndex(v => v != null);
+  if (baseIdx === -1) return closes.map(() => null);
+  const base = closes[baseIdx];
+  return closes.map((v, i) => (i < baseIdx || v == null ? null : (v / base) * 100));
 }
 
 function rebaseAgainstIndex(values, baseIdx) {
@@ -105,6 +116,37 @@ const BASELINE_100 = {
 
 function findSeries(payload, ticker) {
   return payload.series.find(s => s.ticker === ticker);
+}
+
+function buildOverviewChartData(payload, startDate, endDate) {
+  const bounds = visibleBounds(payload.dates, startDate, endDate);
+  if (!bounds) return null;
+
+  const sectorMeta = new Map(
+    HK_SECTIONS.find(section => section.title === 'Sector').tickers.map(meta => [meta.ticker, meta])
+  );
+  const datasets = payload.series
+    .filter(series => SECTOR_TICKERS.has(series.ticker))
+    .map(series => {
+      const isBaseline = series.ticker === HSCI_META.ticker;
+      const meta = isBaseline ? HSCI_META : sectorMeta.get(series.ticker);
+      return {
+        label: meta.name,
+        fullName: meta.name,
+        data: rebase(sliceBounds(series.closes, bounds)),
+        borderColor: meta.color,
+        backgroundColor: 'transparent',
+        borderWidth: isBaseline ? 3 : 1.75,
+        borderDash: isBaseline ? [6, 3] : undefined,
+        pointRadius: 0,
+        pointHoverRadius: 3,
+        pointHitRadius: 6,
+        tension: 0.15,
+        spanGaps: true,
+      };
+    });
+
+  return { labels: sliceBounds(payload.dates, bounds).map(fmtDate), datasets };
 }
 
 // Ratio chart for a single ticker vs the HSCI baseline.
@@ -234,6 +276,11 @@ export default function HkPerformance({ section = null }) {
     return () => { live = false; };
   }, [fetchStartDate, endDate]);
 
+  const overviewChartData = useMemo(
+    () => (payload ? buildOverviewChartData(payload, startDate, endDate) : null),
+    [payload, startDate, endDate]
+  );
+
   const sectionCharts = useMemo(() => {
     if (!payload) return [];
     return HK_SECTIONS.map(section => ({
@@ -305,19 +352,36 @@ export default function HkPerformance({ section = null }) {
   return (
     <>
       {controls}
+      {section == null && (
+        <div className="cgrid">
+          <ChartCard
+            title="Aggregate Performance"
+            src="Hang Seng Indexes"
+            freq="Daily"
+            span2
+            height={480}
+          >
+            {error ? (
+              <div className="empty">Could not load HK performance data: {error}</div>
+            ) : !overviewChartData ? (
+              <div className="empty">{loading ? 'Loading HK performance data…' : 'No data'}</div>
+            ) : (
+              <Line data={overviewChartData} options={chartOptions()} plugins={[BASELINE_100]} />
+            )}
+          </ChartCard>
+        </div>
+      )}
       {section != null && <div className="usp-section-label">{section}</div>}
 
-      {error ? (
+      {section != null && error ? (
         <div className="empty">Could not load HK performance data: {error}</div>
-      ) : section == null ? (
-        <div className="empty">Select a section from the sidebar.</div>
-      ) : !payload ? (
+      ) : section != null && !payload ? (
         <div className="empty">{loading ? 'Loading HK performance data…' : 'No data'}</div>
-      ) : activeSectionCharts ? (
+      ) : section != null && activeSectionCharts ? (
         ratioGrid(activeSectionCharts.charts)
-      ) : (
+      ) : section != null ? (
         <div className="empty">No data</div>
-      )}
+      ) : null}
     </>
   );
 }

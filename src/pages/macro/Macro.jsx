@@ -17,12 +17,9 @@ const PAGE_CHARTS = {
     ['Germany', ['de10yYield', 'de30yYield'], ['10Y', '30Y']],
   ],
   'macro-us-inflation': [
-    ['CPI inflation — YoY', ['usCpiYoy', 'usCoreCpiYoy'], ['Headline CPI', 'Core CPI']],
-    ['CPI inflation — MoM', ['usCpiMom', 'usCoreCpiMom'], ['Headline CPI', 'Core CPI']],
-    ['Producer prices — YoY', ['usPpiYoy', 'usCorePpiYoy'], ['Headline PPI', 'Core PPI']],
-    ['Producer prices — MoM', ['usPpiMom', 'usCorePpiMom'], ['Headline PPI', 'Core PPI']],
-    ['PCE prices — YoY', ['usPceYoy', 'usCorePceYoy'], ['Headline PCE', 'Core PCE']],
-    ['PCE prices — MoM', ['usPceMom', 'usCorePceMom'], ['Headline PCE', 'Core PCE']],
+    ['CPI', ['usCpiYoy', 'usCoreCpiYoy', 'usCpiMom', 'usCoreCpiMom'], ['Headline YoY', 'Core YoY', 'Headline MoM', 'Core MoM']],
+    ['PPI', ['usPpiYoy', 'usCorePpiYoy', 'usPpiMom', 'usCorePpiMom'], ['Headline YoY', 'Core YoY', 'Headline MoM', 'Core MoM']],
+    ['PCE', ['usPceYoy', 'usCorePceYoy', 'usPceMom', 'usCorePceMom'], ['Headline YoY', 'Core YoY', 'Headline MoM', 'Core MoM']],
   ],
   'macro-us-labor': [
     ['Non-farm payrolls', ['usNfp'], ['Monthly change']],
