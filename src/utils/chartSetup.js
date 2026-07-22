@@ -13,6 +13,7 @@ import {
   Legend,
   Filler,
 } from 'chart.js';
+import zoomPlugin from 'chartjs-plugin-zoom';
 
 const PointValueLabels = {
   id: 'pointValueLabels',
@@ -224,4 +225,5 @@ ChartJS.register(
   Filler,
   PointValueLabels,
   ZeroLine,
+  zoomPlugin,
 );

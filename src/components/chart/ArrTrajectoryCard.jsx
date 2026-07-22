@@ -96,6 +96,10 @@ export default function ArrTrajectoryCard({ chartId, series, color = C.accent, n
       plugins: {
         legend: { display: false },
         nowLine: { now: model.now },
+        zoom: {
+          zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' },
+          pan: { enabled: true, mode: 'x' },
+        },
         tooltip: {
           filter: item => item.dataset.label === 'Disclosed' || item.dataset.label === 'Projected',
           callbacks: {

@@ -36,6 +36,10 @@ export const baseOpts = (yFmt) => ({
         label: c => ` ${c.dataset.label}: ${yFmt(c.parsed.y)}`,
       },
     },
+    zoom: {
+      zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' },
+      pan: { enabled: true, mode: 'x' },
+    },
   },
   scales: {
     x: { grid: GRID, ticks: { ...TICK, maxTicksLimit: 8, autoSkip: true }, border: BORD },
@@ -58,6 +62,11 @@ export const hBarOpts = (xFmt) => {
           // "label:" prefix when a dataset has no label.
           label: c => `${c.dataset.label ? ` ${c.dataset.label}: ` : ' '}${xFmt(c.parsed.x)}`,
         },
+      },
+      // Category axis is y for horizontal bars, so zoom/pan along y (not x).
+      zoom: {
+        zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'y' },
+        pan: { enabled: true, mode: 'y' },
       },
     },
     scales: {
