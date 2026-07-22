@@ -17,9 +17,12 @@ const PAGE_CHARTS = {
     ['Germany', ['de10yYield', 'de30yYield'], ['10Y', '30Y']],
   ],
   'macro-us-inflation': [
-    ['CPI', ['usCpiYoy', 'usCoreCpiYoy', 'usCpiMom', 'usCoreCpiMom'], ['Headline YoY', 'Core YoY', 'Headline MoM', 'Core MoM']],
-    ['PPI', ['usPpiYoy', 'usCorePpiYoy', 'usPpiMom', 'usCorePpiMom'], ['Headline YoY', 'Core YoY', 'Headline MoM', 'Core MoM']],
-    ['PCE', ['usPceYoy', 'usCorePceYoy', 'usPceMom', 'usCorePceMom'], ['Headline YoY', 'Core YoY', 'Headline MoM', 'Core MoM']],
+    ['CPI', ['usCpiYoy', 'usCoreCpiYoy'], ['Headline CPI', 'Core CPI']],
+    ['CPI', ['usCpiMom', 'usCoreCpiMom'], ['Headline CPI', 'Core CPI']],
+    ['PPI', ['usPpiYoy', 'usCorePpiYoy'], ['Headline PPI', 'Core PPI']],
+    ['PPI', ['usPpiMom', 'usCorePpiMom'], ['Headline PPI', 'Core PPI']],
+    ['PCE', ['usPceYoy', 'usCorePceYoy'], ['Headline PCE', 'Core PCE']],
+    ['PCE', ['usPceMom', 'usCorePceMom'], ['Headline PCE', 'Core PCE']],
   ],
   'macro-us-labor': [
     ['Non-farm payrolls', ['usNfp'], ['Monthly change']],
@@ -176,7 +179,7 @@ export default function Macro({ viewId }) {
       <div className="cgrid">
         {charts.map(definition => (
           <MacroChart
-            key={definition[0]}
+            key={definition[1].join('-')}
             definition={definition}
             macro={macro}
             errors={macro?.errors}

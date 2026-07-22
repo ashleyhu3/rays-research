@@ -6,6 +6,7 @@ import {
   SOX_CORRELATION_PAIRS, KWEB_CORRELATION_PAIRS,
 } from '../../config/usPerformance';
 import { GRID, TICK, BORD } from '../../utils/chartHelpers';
+import { rankChartsByLatestStrength, rankDatasetsByLatestStrength } from '../../utils/chartRanking';
 
 const PRESETS = [
   { id: 'ytd', label: 'YTD', getStart: () => `${new Date().getFullYear()}-01-01` },
@@ -287,7 +288,7 @@ function buildCorrelationChartData(payload, pairs, startDate, endDate) {
   const labelDates = sliceBounds(payload.dates, bounds);
   const labels = labelDates.map(fmtDate);
 
-  const datasets = pairs.map(([aLabel, bLabel]) => {
+  const datasets = rankDatasetsByLatestStrength(pairs.map(([aLabel, bLabel]) => {
     const aMeta = metaForLabel(aLabel);
     const bMeta = metaForLabel(bLabel);
     if (!aMeta || !bMeta) return null;
@@ -314,7 +315,7 @@ function buildCorrelationChartData(payload, pairs, startDate, endDate) {
       tension: 0.15,
       spanGaps: true,
     };
-  }).filter(Boolean);
+  }).filter(Boolean));
 
   return datasets.length > 0 ? { labels, datasets } : null;
 }
@@ -554,7 +555,7 @@ export default function UsPerformance({ section = null }) {
 
   const ratioGrid = (charts) => (
     <div className="usp-etf-grid">
-      {charts.map(({ id, title, data }) => (
+      {rankChartsByLatestStrength(charts).map(({ id, title, data }) => (
         <ChartCard
           key={id}
           title={title}
@@ -605,32 +606,21 @@ export default function UsPerformance({ section = null }) {
 
       {section === 'correlation' && !error && (soxCorrelationData || kwebCorrelationData) && (
         <div className="cgrid">
-          <ChartCard
-            title="SOX Correlations"
-            src="Yahoo Finance"
-            srcUrl="https://finance.yahoo.com"
-            freq="Daily"
-            height={320}
-          >
-            {soxCorrelationData ? (
-              <Line data={soxCorrelationData} options={correlationChartOptions()} plugins={[ZERO_LINE]} />
-            ) : (
-              <div className="empty">No data</div>
-            )}
-          </ChartCard>
-          <ChartCard
-            title="KWEB Correlations"
-            src="Yahoo Finance"
-            srcUrl="https://finance.yahoo.com"
-            freq="Daily"
-            height={320}
-          >
-            {kwebCorrelationData ? (
-              <Line data={kwebCorrelationData} options={correlationChartOptions()} plugins={[ZERO_LINE]} />
-            ) : (
-              <div className="empty">No data</div>
-            )}
-          </ChartCard>
+          {rankChartsByLatestStrength([
+            { id: 'sox-correlations', title: 'SOX Correlations', data: soxCorrelationData },
+            { id: 'kweb-correlations', title: 'KWEB Correlations', data: kwebCorrelationData },
+          ].filter(chart => chart.data)).map(chart => (
+            <ChartCard
+              key={chart.id}
+              title={chart.title}
+              src="Yahoo Finance"
+              srcUrl="https://finance.yahoo.com"
+              freq="Daily"
+              height={320}
+            >
+              <Line data={chart.data} options={correlationChartOptions()} plugins={[ZERO_LINE]} />
+            </ChartCard>
+          ))}
         </div>
       )}
     </>

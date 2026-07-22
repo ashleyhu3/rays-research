@@ -3,6 +3,7 @@ import { Line } from 'react-chartjs-2';
 import ChartCard from '../../components/chart/ChartCard';
 import { HSCI_META, HK_SECTIONS } from '../../config/hkPerformance';
 import { GRID, TICK, BORD } from '../../utils/chartHelpers';
+import { rankChartsByLatestStrength } from '../../utils/chartRanking';
 
 const PRESETS = [
   { id: 'ytd', label: 'YTD', getStart: () => `${new Date().getFullYear()}-01-01` },
@@ -333,7 +334,7 @@ export default function HkPerformance({ section = null }) {
 
   const ratioGrid = (charts) => (
     <div className="usp-etf-grid">
-      {charts.map(({ id, title, data }) => (
+      {rankChartsByLatestStrength(charts).map(({ id, title, data }) => (
         <ChartCard
           key={id}
           title={title}

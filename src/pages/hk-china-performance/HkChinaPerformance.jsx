@@ -8,6 +8,7 @@ import {
   HK_CHINA_SECTIONS,
 } from '../../config/hkChinaPerformance';
 import { GRID, TICK, BORD } from '../../utils/chartHelpers';
+import { rankChartsByLatestStrength } from '../../utils/chartRanking';
 
 const PRESETS = [
   { id: 'ytd', label: 'YTD', getStart: () => `${new Date().getFullYear()}-01-01` },
@@ -457,7 +458,7 @@ export default function HkChinaPerformance({ section = null }) {
 
   const ratioGrid = (charts) => (
     <div className="usp-etf-grid">
-      {charts.map(({ id, title, data, src }) => (
+      {rankChartsByLatestStrength(charts).map(({ id, title, data, src }) => (
         <ChartCard
           key={id}
           title={title}
@@ -518,28 +519,31 @@ export default function HkChinaPerformance({ section = null }) {
           <div className="empty">{premiumLoading ? 'Loading ETF premium data…' : 'No data'}</div>
         ) : (
           <div className="usp-etf-grid">
-            {premiumPayload.series.map(series => {
-              const latest = series.latest;
-              const latestLabel = latest
-                ? ` · ${latest.premium >= 0 ? '+' : ''}${latest.premium.toFixed(2)}%`
-                : '';
-              return (
-                <ChartCard
-                  key={series.ticker}
-                  title={`${series.ticker} · ${series.name}${latestLabel}`}
-                  src="Yahoo Finance / East Money / Tiantian Fund"
-                  srcUrl="https://fund.eastmoney.com"
-                  freq="Daily + live IOPV"
-                  height={300}
-                >
-                  <Line
-                    data={buildPremiumChartData(series)}
-                    options={premiumChartOptions()}
-                    plugins={[PREMIUM_ZERO_LINE]}
-                  />
-                </ChartCard>
-              );
-            })}
+            {[...premiumPayload.series]
+              .sort((a, b) => (b.latest?.premium ?? Number.NEGATIVE_INFINITY)
+                - (a.latest?.premium ?? Number.NEGATIVE_INFINITY))
+              .map(series => {
+                const latest = series.latest;
+                const latestLabel = latest
+                  ? ` · ${latest.premium >= 0 ? '+' : ''}${latest.premium.toFixed(2)}%`
+                  : '';
+                return (
+                  <ChartCard
+                    key={series.ticker}
+                    title={`${series.ticker} · ${series.name}${latestLabel}`}
+                    src="Yahoo Finance / East Money / Tiantian Fund"
+                    srcUrl="https://fund.eastmoney.com"
+                    freq="Daily + live IOPV"
+                    height={300}
+                  >
+                    <Line
+                      data={buildPremiumChartData(series)}
+                      options={premiumChartOptions()}
+                      plugins={[PREMIUM_ZERO_LINE]}
+                    />
+                  </ChartCard>
+                );
+              })}
           </div>
         )
       )}
