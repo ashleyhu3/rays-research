@@ -20,6 +20,14 @@ function load() {
   return store;
 }
 
+// Pull the latest snapshot from the backing store before serving a source that
+// is collected out-of-process. This matters on long-lived/serverless instances:
+// their in-memory copy may predate a GitHub Actions collector write to Mongo.
+async function latest(key) {
+  store = await storage.reload(BLOB, FILE);
+  return store?.[key] ?? null;
+}
+
 // Record the latest payload for a source. Called after every successful scrape.
 function put(key, data) {
   if (data == null) return;
@@ -44,4 +52,4 @@ function seed(cache, ttlByKey = {}) {
   return seeded;
 }
 
-module.exports = { put, seed };
+module.exports = { put, seed, latest };

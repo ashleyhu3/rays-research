@@ -24,6 +24,7 @@
     "backfill:china-liquidity": "node --env-file=.env server/scripts/backfillChinaLiquidity.js",
     "backfill:japan-leverage": "node --env-file=.env server/scripts/backfillJapanLeverage.js",
     "backfill:us-leverage": "node --env-file=.env server/scripts/backfillUsLeverage.js",
+    "backfill:macro": "node --env-file-if-exists=.env server/scripts/backfillMacro.js",
     "backfill:hk-performance": "node --env-file=.env server/scripts/backfillHkPerformance.js",
     "backfill:rotation": "node --env-file-if-exists=.env server/scripts/backfillRotation.js",
     "backfill:aws-spot": "node --env-file=.env server/scripts/backfillAwsSpot.js",

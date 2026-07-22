@@ -75,7 +75,7 @@ function requireAdminSecret(req, res, next) {
 // own scrape, which slow rate-limited sources punish badly.
 const inflight = new Map();
 
-function cachedRoute(key, scraper, isCurrent = null) {
+function cachedRoute(key, scraper, isCurrent = null, options = {}) {
   return async (req, res) => {
     let data = cache.get(key);
     const staleShape = data !== null && isCurrent && !isCurrent(data) ? data : null;
@@ -87,6 +87,18 @@ function cachedRoute(key, scraper, isCurrent = null) {
       data = null;
     }
     try {
+      // Macro history is collected by the scheduled worker and persisted in
+      // Mongo. Reload that snapshot on a cache miss so a warm web instance does
+      // not scrape Trading Economics merely because it started before the
+      // collector's first macro write.
+      if (options.preferPersisted) {
+        const persisted = await snapshotStore.latest(key);
+        if (persisted?.data != null && (!isCurrent || isCurrent(persisted.data))) {
+          cache.set(key, persisted.data, scheduler.TTL[key] ?? 3600000, persisted.fetchedAt);
+          return res.json(persisted.data);
+        }
+      }
+
       let pending = inflight.get(key);
       if (!pending) {
         pending = scraper();
@@ -143,7 +155,7 @@ app.get('/api/customs-drones',    cachedRoute('customsDrones',    s.customsDrone
 app.get('/api/korea-leverage',    cachedRoute('koreaLeverage',    s.koreaLeverage));
 app.get('/api/taiwan-leverage',   cachedRoute('taiwanLeverage',   s.taiwanLeverage));
 app.get('/api/china-leverage',    cachedRoute('chinaLeverage',    s.chinaLeverage));
-app.get('/api/macro',             cachedRoute('macro',            s.macro));
+app.get('/api/macro',             cachedRoute('macro',            s.macro, null, { preferPersisted: true }));
 
 // One-off deep backfill (~5y, ~1200 SZSE requests at a polite pace — a few
 // minutes) triggered manually from the China Leverage page, since SZSE only
