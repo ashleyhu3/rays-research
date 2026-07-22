@@ -32,6 +32,7 @@ function getYahooFinance() {
 }
 
 function finiteNumber(value) {
+  if (value == null || value === '' || value === '-') return null;
   const number = Number(value);
   return Number.isFinite(number) ? number : null;
 }
@@ -92,18 +93,53 @@ async function fetchMarketCloses(ticker, start, end) {
         period2: inclusiveEnd,
         interval: '1d',
       });
-      return (chart?.quotes ?? [])
+      const quotes = chart?.quotes ?? [];
+      const points = quotes
         .map(quote => ({
           date: quote.date ? new Date(quote.date).toISOString().slice(0, 10) : null,
           marketPrice: finiteNumber(quote.close),
         }))
         .filter(point => point.date && point.marketPrice != null);
+      const missingDates = new Set(quotes
+        .filter(quote => quote.date && finiteNumber(quote.close) == null)
+        .map(quote => new Date(quote.date).toISOString().slice(0, 10)));
+
+      // Yahoo occasionally emits a dated all-null placeholder for a real SSE
+      // session (513310 on 2025-10-24 is one example). Fill only those explicit
+      // holes from East Money instead of converting null to a zero-price tick.
+      if (missingDates.size) {
+        try {
+          const fallback = await fetchEastmoneyMarketCloses(ticker, start, end);
+          const byDate = new Map(points.map(point => [point.date, point]));
+          for (const point of fallback) if (missingDates.has(point.date)) byDate.set(point.date, point);
+          return [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
+        } catch { /* retain the valid Yahoo points; never synthesize zero */ }
+      }
+      return points;
     } catch (error) {
       lastError = error;
       if (attempt < 3) await sleep(750 * attempt);
     }
   }
   throw lastError;
+}
+
+async function fetchEastmoneyMarketCloses(ticker, start, end) {
+  const params = new URLSearchParams({
+    secid: `1.${ticker}`,
+    ut: '7eea3edcaed734bea9cbfc24409ed989',
+    fields1: 'f1,f2,f3,f4,f5,f6',
+    fields2: 'f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61',
+    klt: '101',
+    fqt: '0',
+    beg: start.replace(/-/g, ''),
+    end: end.replace(/-/g, ''),
+  });
+  const json = await fetchJson(`https://push2his.eastmoney.com/api/qt/stock/kline/get?${params}`);
+  return (json?.data?.klines ?? []).map(line => {
+    const [date, , close] = line.split(',');
+    return { date, marketPrice: finiteNumber(close) };
+  }).filter(point => point.marketPrice != null);
 }
 
 async function fetchOfficialNav(ticker, start, end) {
@@ -201,6 +237,14 @@ async function getChinaEtfPremium(startDate, endDate = new Date().toISOString().
 
 function mergePremiumPayload(payload) {
   const history = loadHistory();
+  // Remove artifacts written by older versions that coerced missing quotes to
+  // zero. A listed ETF cannot have a valid zero market price.
+  for (const [date, row] of Object.entries(history)) {
+    for (const [ticker, point] of Object.entries(row ?? {})) {
+      if (!Number.isFinite(point?.marketPrice) || point.marketPrice <= 0) delete history[date][ticker];
+    }
+    if (Object.keys(history[date] ?? {}).length === 0) delete history[date];
+  }
   for (const series of payload.series ?? []) {
     for (const point of series.points ?? []) {
       if (!point.date || point.premium == null) continue;
@@ -249,4 +293,5 @@ module.exports = {
   mergePremiumPayload,
   mergePremiumHistory,
   premiumPct,
+  finiteNumber,
 };

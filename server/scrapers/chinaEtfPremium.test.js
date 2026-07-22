@@ -2,7 +2,15 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { mergePremiumHistory, premiumPct } = require('./chinaEtfPremium');
+const { finiteNumber, mergePremiumHistory, premiumPct } = require('./chinaEtfPremium');
+
+test('finiteNumber rejects missing market values instead of coercing them to zero', () => {
+  assert.equal(finiteNumber(null), null);
+  assert.equal(finiteNumber(undefined), null);
+  assert.equal(finiteNumber(''), null);
+  assert.equal(finiteNumber('-'), null);
+  assert.equal(finiteNumber('2.490'), 2.49);
+});
 
 test('premiumPct calculates market price premium to NAV', () => {
   assert.equal(premiumPct(1.08, 1), 8.000000000000007);
