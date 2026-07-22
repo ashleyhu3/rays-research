@@ -18,9 +18,9 @@ function mondayOf(iso) {
 }
 
 /**
- * RevPerTokenCard — one company's blended realised price (estimated weekly
- * revenue ÷ that company's weekly OpenRouter tokens, in $/M) with its share
- * price on the right axis.
+ * RevPerTokenCard — one company's blended realised price from its native daily
+ * OpenRouter model mix, aggregated into complete weeks, with its share price on
+ * the right axis.
  *
  * `ticker` is optional: OpenAI and Anthropic are private, so their card shows
  * the revenue-per-token line alone rather than a proxy equity that would imply
@@ -77,7 +77,7 @@ export default function RevPerTokenCard({
       srcUrl="https://openrouter.ai/rankings"
       freq="weekly"
       subtitle={
-        `${provider}'s estimated weekly revenue divided by its total weekly OpenRouter tokens — the blended $/M it realises across its own model mix (left axis). `
+        `${provider}'s daily OpenRouter tokens are priced using the same daily model mix as the token-volume chart, then aggregated into complete weeks. The resulting blended $/M is on the left axis. `
         + (ticker
           ? `The line on the right axis is the weekly close of ${ticker}.`
           : `${provider} is private, so there is no share price to plot against it.`)

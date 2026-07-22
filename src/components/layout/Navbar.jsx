@@ -1,5 +1,6 @@
 import { useUI } from '../../context/UIContext';
 import { useData } from '../../context/DataContext';
+import { getModeForView } from '../../config/navigation';
 
 function RefreshIcon({ spin }) {
   return (
@@ -37,47 +38,25 @@ function TableIcon() {
   );
 }
 
-const SUPPLY_VIEWS  = new Set([
-  'ai-supply-optics', 'ai-supply-fiber', 'ai-supply-ccl', 'ai-supply-pcb', 'ai-supply-abf', 'ai-supply-mlcc',
-  'ai-supply-cooling', 'ai-supply-power', 'ai-supply-equipment', 'ai-supply-memory', 'ai-supply-foundry',
-  'ai-supply-trainium', 'ai-supply-cpu', 'ai-supply-odm',
-]);
-const INFRA_VIEWS   = new Set([
-  'dc-capacity', 'dc-timelines',
-  'dc-co-aws', 'dc-co-google', 'dc-co-microsoft', 'dc-co-oracle', 'dc-co-openai', 'dc-co-nebius', 'dc-co-meta',
-]);
-const TOOL_VIEWS    = new Set(['options']);
-const ALERTS_VIEWS  = new Set(['alerts']);
-const US_PERF_VIEWS = new Set(['us-performance', 'hk-china-performance', 'hk-performance']);
-const PRICING_VIEWS = new Set(['pricing-memory', 'pricing-gpu', 'pricing-cpu', 'pricing-tpu']);
-const SENTIMENT_VIEWS = new Set(['sentiment']);
-const SOURCES_VIEWS   = new Set(['sources']);
-const TRANSCRIPT_VIEWS = new Set(['transcripts']);
-const LEVERAGE_VIEWS   = new Set(['leverage-korea', 'leverage-taiwan']);
-const LIQUIDITY_VIEWS  = new Set(['liquidity-china-flow']);
-const MACRO_VIEWS      = new Set([
-  'macro-us-inflation', 'macro-us-labor', 'macro-us-pmi', 'macro-us-household',
-  'macro-cn-inflation', 'macro-cn-pmi', 'macro-cn-trade', 'macro-cn-activity',
-]);
-
 export default function Navbar({ onNavigate, currentView }) {
   const { tableMode, setTableMode } = useUI();
   const { loading, lastUpdated, error, forceRefresh } = useData();
 
+  const mode        = getModeForView(currentView);
   const isChat      = currentView === 'chat';
-  const isSupply    = SUPPLY_VIEWS.has(currentView);
-  const isInfra     = INFRA_VIEWS.has(currentView);
-  const isOptions   = TOOL_VIEWS.has(currentView);
-  const isAlerts    = ALERTS_VIEWS.has(currentView);
-  const isPricing   = PRICING_VIEWS.has(currentView);
-  const isSentiment = SENTIMENT_VIEWS.has(currentView);
-  const isSources   = SOURCES_VIEWS.has(currentView);
-  const isTranscripts = TRANSCRIPT_VIEWS.has(currentView);
-  const isLeverage  = LEVERAGE_VIEWS.has(currentView);
-  const isLiquidity = LIQUIDITY_VIEWS.has(currentView);
-  const isUsPerf    = US_PERF_VIEWS.has(currentView);
-  const isMacro     = MACRO_VIEWS.has(currentView);
-  const isDemand    = !isChat && !isSupply && !isInfra && !isOptions && !isAlerts && !isPricing && !isSentiment && !isSources && !isTranscripts && !isLeverage && !isLiquidity && !isUsPerf && !isMacro;
+  const isOptions   = currentView === 'options';
+  const isAlerts    = currentView === 'alerts';
+  const isSentiment = currentView === 'sentiment';
+  const isSources   = currentView === 'sources';
+  const isTranscripts = currentView === 'transcripts';
+  const isSupply    = mode === 'supply';
+  const isInfra     = mode === 'aisupplychain';
+  const isPricing   = mode === 'pricing';
+  const isLeverage  = mode === 'leverage';
+  const isLiquidity = mode === 'liquidity';
+  const isUsPerf    = mode === 'us-performance';
+  const isMacro     = mode === 'macro';
+  const isDemand    = mode === 'demand' && !isChat && !isAlerts;
 
   const title = loading
     ? 'Updating live data…'
@@ -104,24 +83,6 @@ export default function Navbar({ onNavigate, currentView }) {
           AI Supply
         </button>
         <button
-          className={`nlink${isInfra ? ' active' : ''}`}
-          onClick={() => onNavigate('dc-capacity')}
-        >
-          AI Supply Chain
-        </button>
-        <button
-          className={`nlink${isPricing ? ' active' : ''}`}
-          onClick={() => onNavigate('pricing-memory')}
-        >
-          Pricing
-        </button>
-        <button
-          className={`nlink${isSentiment || isOptions ? ' active' : ''}`}
-          onClick={() => onNavigate('sentiment')}
-        >
-          Markets
-        </button>
-        <button
           className={`nlink${isAlerts ? ' active' : ''}`}
           onClick={() => onNavigate('alerts')}
         >
@@ -134,12 +95,6 @@ export default function Navbar({ onNavigate, currentView }) {
           Rotation
         </button>
         <button
-          className={`nlink${isMacro ? ' active' : ''}`}
-          onClick={() => onNavigate('macro-us-inflation')}
-        >
-          Macro
-        </button>
-        <button
           className={`nlink${isLeverage ? ' active' : ''}`}
           onClick={() => onNavigate('leverage-korea')}
         >
@@ -150,6 +105,30 @@ export default function Navbar({ onNavigate, currentView }) {
           onClick={() => onNavigate('liquidity-china-flow')}
         >
           Liquidity
+        </button>
+        <button
+          className={`nlink${isMacro ? ' active' : ''}`}
+          onClick={() => onNavigate('macro-us-inflation')}
+        >
+          Macro
+        </button>
+        <button
+          className={`nlink${isSentiment || isOptions ? ' active' : ''}`}
+          onClick={() => onNavigate('sentiment')}
+        >
+          Markets
+        </button>
+        <button
+          className={`nlink${isPricing ? ' active' : ''}`}
+          onClick={() => onNavigate('pricing-memory')}
+        >
+          Pricing
+        </button>
+        <button
+          className={`nlink${isInfra ? ' active' : ''}`}
+          onClick={() => onNavigate('dc-capacity')}
+        >
+          AI Supply Chain
         </button>
         <button
           className={`nlink${isTranscripts ? ' active' : ''}`}

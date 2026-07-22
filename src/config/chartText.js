@@ -435,11 +435,11 @@ export const CHART_TEXT = {
   },
   'or-revenue-total': {
     title: 'Est. Weekly Revenue',
-    subtitle: 'The per-company weekly revenue estimates aggregated into a single platform-wide total.',
+    subtitle: 'Daily company token volumes and model-mix prices are converted to revenue, aggregated into complete weeks, then summed.',
   },
   'or-combo-price': {
     title: 'Weekly Token Volume vs Token Price',
-    subtitle: 'Bars show total platform tokens (left axis); the line shows estimated total weekly revenue divided by that week’s tokens — the blended $/M realised across the model mix (right axis).',
+    subtitle: 'Bars and the blended $/M line are aggregated from the same native daily provider model-mix data used by the company charts.',
   },
   'or-growth': {
     title: 'Week-over-Week Token Growth — Top Models (%)',

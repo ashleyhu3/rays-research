@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { orModelDailySeries, orProviderDailyModels } from './openrouterProvider.js';
-import { buildDailyModelMix } from './companyRevenue.js';
+import { buildDailyModelMix, buildRevPerToken, buildTotalRevenue } from './companyRevenue.js';
 
 const ranks = {
   dailyLabels: ['2026-07-18', '2026-07-19', '2026-07-20'],
@@ -38,6 +38,29 @@ test('daily blended token price moves with the observed model mix', () => {
 test('missing live prices create gaps instead of a fabricated flat line', () => {
   const result = buildDailyModelMix(ranks, {}, 'Anthropic', 1);
   assert.deepEqual(result.price, [null, null, null]);
+});
+
+test('company revenue uses the daily tokens and blended prices from the combo chart', () => {
+  const result = buildRevPerToken(ranks, liveData, 'Anthropic', 12);
+  // Jul 18–19 complete the week; Jul 20 is intentionally excluded as partial.
+  assert.deepEqual(result.tokens, [200]);
+  assert.deepEqual(result.price, [2.4]);
+  assert.ok(Math.abs(result.revenue[0] - 0.00048) < 1e-12);
+});
+
+test('overview revenue sums the same daily-derived company revenue', () => {
+  const scaledRanks = {
+    ...ranks,
+    providerDaily: { Anthropic: ranks.providerDaily.Anthropic.map(value => value * 1e6) },
+    providerModelDaily: {
+      Anthropic: ranks.providerModelDaily.Anthropic.map(model => ({
+        ...model,
+        tokens: model.tokens.map(value => value * 1e6),
+      })),
+    },
+  };
+  const result = buildTotalRevenue(scaledRanks, liveData, 12);
+  assert.deepEqual(result.datasets[0].data, [480]);
 });
 
 test('model history starts at first usage and preserves discontinuities as gaps', () => {

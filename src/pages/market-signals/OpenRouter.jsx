@@ -182,7 +182,7 @@ export default function DemandOpenRouter({ weeks: W = 52 }) {
 
       <ChartCard
         chartId="or-revenue-total"
-        subtitle={`Weekly, past 6 months${asOf ? ` · as of ${asOf}` : ''}. The per-company estimates summed into one platform-wide series.`}
+        subtitle={`Weekly, past 6 months${asOf ? ` · as of ${asOf}` : ''}. Daily company token volumes and model-mix prices are converted to revenue, aggregated into complete weeks, then summed.`}
         height={260} span2
       >
         {revenueTotalData ? <Line data={revenueTotalData} options={baseOpts(fmtUsd)} /> : <NoKey />}

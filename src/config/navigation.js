@@ -184,6 +184,14 @@ export const NAV_SECTIONS = [
   },
 ];
 
+/** Resolve a view to the top-level navigation mode that owns it. */
+export function getModeForView(viewId) {
+  for (const section of NAV_SECTIONS) {
+    if (section.items.some(item => item.id === viewId)) return section.mode ?? 'demand';
+  }
+  return 'demand';
+}
+
 /** Page title shown in the top bar, keyed by view id. */
 export const VIEW_META = {
   overview:           { title: 'OVERVIEW DASHBOARD' },

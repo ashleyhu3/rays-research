@@ -78,7 +78,7 @@ export function livePriceForSlug(slug, models) {
  * Line-chart data ({ labels, datasets }) of estimated weekly revenue per company
  * over the past ~6 months, one line per company. Returns null without data.
  */
-export function buildCompanyRevenue(ranks, liveData, W = WEEKS_6MO) {
+function buildLegacyCompanyRevenue(ranks, liveData, W = WEEKS_6MO) {
   const models         = liveData?.openrouter?.models ?? liveData?.openrouter?.data?.models ?? [];
   const topModels      = ranks?.topModels ?? [];
   const providerWeekly = ranks?.providerWeekly ?? {};
@@ -136,12 +136,137 @@ export function buildCompanyRevenue(ranks, liveData, W = WEEKS_6MO) {
   };
 }
 
+function isoWeekKey(dateStr) {
+  const d = new Date(`${dateStr}T00:00:00Z`);
+  const day = d.getUTCDay();
+  d.setUTCDate(d.getUTCDate() + (day === 0 ? -6 : 1 - day));
+  return d.toISOString().slice(0, 10);
+}
+
+/**
+ * Weekly provider economics aggregated from the exact daily token totals and
+ * blended prices shown in the daily model-mix chart. Revenue for each day is:
+ *
+ *   daily provider tokens × displayed daily average token price / 1e6
+ *
+ * A week with positive token volume but no daily price is left as a gap rather
+ * than filled with a fabricated fallback price.
+ */
+function providerDailyRevenueSeries(ranks, liveData, provider, W = WEEKS_6MO) {
+  const daily = buildDailyModelMix(ranks, liveData, provider, Infinity);
+  if (!daily?.isoDates?.length) return null;
+
+  const byWeek = new Map();
+  daily.isoDates.forEach((date, i) => {
+    const week = isoWeekKey(date);
+    if (!byWeek.has(week)) {
+      byWeek.set(week, { tokens: 0, revenue: 0, missingPrice: false });
+    }
+    const bucket = byWeek.get(week);
+    const tokens = daily.tokens[i] ?? 0;
+    const price = daily.price[i];
+    bucket.tokens += tokens;
+    if (tokens > 0 && price == null) bucket.missingPrice = true;
+    else if (tokens > 0) bucket.revenue += (tokens * price) / 1e6;
+  });
+
+  // Match the previous revenue charts' complete-week behavior. The source is
+  // normally current through `asOf`; fall back to its last daily observation.
+  const asOf = ranks?.asOf ?? daily.isoDates.at(-1);
+  const complete = [...byWeek.entries()].filter(([week]) => {
+    const end = new Date(`${week}T00:00:00Z`);
+    end.setUTCDate(end.getUTCDate() + 6);
+    return !asOf || end <= new Date(`${asOf}T00:00:00Z`);
+  });
+  const take = Number.isFinite(W) ? complete.slice(-Math.max(0, W)) : complete;
+  if (!take.length) return null;
+
+  const isoWeeks = take.map(([week]) => week);
+  const tokens = take.map(([, bucket]) => bucket.tokens);
+  const revenue = take.map(([, bucket]) => bucket.missingPrice ? null : bucket.revenue);
+  return {
+    isoWeeks,
+    labels: isoWeeks.map(orWeekLabel),
+    tokens,
+    revenue,
+    price: tokens.map((total, i) =>
+      total > 0 && revenue[i] != null ? +((revenue[i] * 1e6) / total).toFixed(3) : null),
+  };
+}
+
+function totalDailyRevenueSeries(ranks, liveData, W = WEEKS_6MO) {
+  const providers = REV_COMPANIES
+    .map(company => providerDailyRevenueSeries(ranks, liveData, company.name, W))
+    .filter(Boolean);
+  if (!providers.length) return null;
+
+  const base = providers[0];
+  const tokens = base.isoWeeks.map((week, i) => {
+    let total = 0;
+    for (const provider of providers) {
+      const j = provider.isoWeeks[i] === week ? i : provider.isoWeeks.indexOf(week);
+      if (j >= 0 && provider.revenue[j] != null) total += provider.tokens[j] ?? 0;
+    }
+    return total;
+  });
+  const revenue = base.isoWeeks.map((week, i) => {
+    let total = 0;
+    let hasValue = false;
+    for (const provider of providers) {
+      const j = provider.isoWeeks[i] === week ? i : provider.isoWeeks.indexOf(week);
+      if (j >= 0 && provider.revenue[j] != null) {
+        total += provider.revenue[j];
+        hasValue = true;
+      }
+    }
+    return hasValue ? total : null;
+  });
+
+  return {
+    isoWeeks: base.isoWeeks,
+    labels: base.labels,
+    tokens,
+    revenue,
+    price: tokens.map((total, i) =>
+      total > 0 && revenue[i] != null ? +((revenue[i] * 1e6) / total).toFixed(3) : null),
+  };
+}
+
+/**
+ * Line-chart data of estimated weekly revenue per company. Native daily model
+ * mix is preferred so these values agree with the daily token/price chart;
+ * the legacy weekly calculation only supports older cached rankings payloads.
+ */
+export function buildCompanyRevenue(ranks, liveData, W = WEEKS_6MO) {
+  const daily = REV_COMPANIES.map(company => ({
+    company,
+    series: providerDailyRevenueSeries(ranks, liveData, company.name, W),
+  })).filter(item => item.series?.revenue.some(value => value > 0));
+
+  if (!daily.length) return buildLegacyCompanyRevenue(ranks, liveData, W);
+  return {
+    labels: daily[0].series.labels,
+    datasets: daily.map(({ company, series }) =>
+      mkDs(company.name, company.color, series.revenue.map(value =>
+        value == null ? null : Math.round(value))),
+    ),
+  };
+}
+
 /**
  * Estimated total weekly revenue across all companies over the last W weeks —
  * the per-company series summed week by week, so every revenue chart agrees.
  * Returns null without data.
  */
 export function totalRevenueSeries(ranks, liveData, W = WEEKS_6MO) {
+  const daily = totalDailyRevenueSeries(ranks, liveData, W);
+  if (daily) {
+    return {
+      labels: daily.labels,
+      data: daily.revenue.map(value => value == null ? null : Math.round(value)),
+    };
+  }
+
   const perCompany = buildCompanyRevenue(ranks, liveData, W);
   if (!perCompany) return null;
 
@@ -169,6 +294,14 @@ export function buildTotalRevenue(ranks, liveData, W = WEEKS_6MO) {
  * the company has no live revenue.
  */
 export function companyRevenueSeries(ranks, liveData, company, W = WEEKS_6MO) {
+  const daily = providerDailyRevenueSeries(ranks, liveData, company, W);
+  if (daily) {
+    return {
+      labels: daily.labels,
+      data: daily.revenue.map(value => value == null ? null : Math.round(value)),
+    };
+  }
+
   const perCompany = buildCompanyRevenue(ranks, liveData, W);
   const ds = perCompany?.datasets.find(d => d.label === company);
   return ds ? { labels: perCompany.labels, data: ds.data } : null;
@@ -186,6 +319,11 @@ export function companyRevenueSeries(ranks, liveData, company, W = WEEKS_6MO) {
  * Returns null without data.
  */
 export function buildRevPerToken(ranks, liveData, provider, W = WEEKS_6MO) {
+  const daily = provider
+    ? providerDailyRevenueSeries(ranks, liveData, provider, W)
+    : totalDailyRevenueSeries(ranks, liveData, W);
+  if (daily) return daily;
+
   const s   = orTokensWithGrowth(ranks, provider, W, 52);
   const rev = provider
     ? companyRevenueSeries(ranks, liveData, provider, Infinity)

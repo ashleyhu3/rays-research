@@ -9,6 +9,7 @@ const MODEL_COLORS = [
   '#0ea5e9', '#14b8a6', '#f59e0b', '#f97316', '#84cc16', '#ec4899',
   '#22c55e', '#f87171', '#8b5cf6', '#06b6d4', '#eab308', '#a78bfa',
 ];
+const TOKEN_PRICE_COLOR = '#f8fafc';
 const PROVIDER_SLUGS = {
   OpenAI: 'openai', Anthropic: 'anthropic', Google: 'google', DeepSeek: 'deepseek',
   'Alibaba (Qwen)': 'qwen', xAI: 'x-ai', MiniMax: 'minimax', 'Zhipu AI': 'z-ai',
@@ -56,7 +57,7 @@ export function orComboCard(ranks, provider, weeks, color, idPrefix, liveData) {
       categoryPercentage: 0.96,
     }));
     datasets.unshift({
-      ...mkDs('Average token price', C.orange, daily.price),
+      ...mkDs('Average token price', TOKEN_PRICE_COLOR, daily.price),
       type: 'line', yAxisID: 'y1', order: 0, pointRadius: 0, pointHoverRadius: 4,
     });
     const slug = PROVIDER_SLUGS[provider] ?? provider.toLowerCase().replace(/[^a-z0-9]+/g, '-');
@@ -86,7 +87,7 @@ export function orComboCard(ranks, provider, weeks, color, idPrefix, liveData) {
     labels: s.labels,
     datasets: [
       // Lowest order draws last → line renders on top of the bars
-      { ...mkDs('Average token price', C.orange, price), type: 'line', yAxisID: 'y1', order: 0 },
+      { ...mkDs('Average token price', TOKEN_PRICE_COLOR, price), type: 'line', yAxisID: 'y1', order: 0 },
       { ...mkBar('Weekly tokens', color, s.tokens), yAxisID: 'y', order: 1 },
     ],
   };

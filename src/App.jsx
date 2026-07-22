@@ -1,12 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { VIEW_META, SECTOR_OVERVIEW_IDS, NAV_SECTIONS } from './config/navigation';
-
-function getModeForView(viewId) {
-  for (const s of NAV_SECTIONS) {
-    if (s.items.some(item => item.id === viewId)) return s.mode ?? 'demand';
-  }
-  return 'demand';
-}
+import { VIEW_META, SECTOR_OVERVIEW_IDS, getModeForView } from './config/navigation';
 import Sidebar from './components/layout/Sidebar';
 import Topbar from './components/layout/Topbar';
 import Navbar from './components/layout/Navbar';
