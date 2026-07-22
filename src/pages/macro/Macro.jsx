@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Line, Bar } from 'react-chartjs-2';
+import { Line } from 'react-chartjs-2';
 import ChartCard from '../../components/chart/ChartCard';
 import { useData } from '../../context/DataContext';
 import { baseOpts } from '../../utils/chartHelpers';
@@ -16,9 +16,9 @@ const PAGE_CHARTS = {
     ['PCE prices — MoM', ['usPceMom', 'usCorePceMom'], ['Headline PCE', 'Core PCE']],
   ],
   'macro-us-labor': [
-    ['Non-farm payrolls', ['usNfp'], ['Monthly change'], 'bar'],
-    ['ADP employment change — monthly', ['usAdpMonthly'], ['Monthly change'], 'bar'],
-    ['ADP employment change — weekly', ['usAdpWeekly'], ['Weekly change'], 'bar'],
+    ['Non-farm payrolls', ['usNfp'], ['Monthly change']],
+    ['ADP employment change — monthly', ['usAdpMonthly'], ['Monthly change']],
+    ['ADP employment change — weekly', ['usAdpWeekly'], ['Weekly change']],
     ['Initial jobless claims', ['usJoblessClaims'], ['Claims']],
     ['Unemployment rate', ['usUnemployment'], ['Unemployment rate']],
     ['Average hourly earnings', ['usEarningsYoy', 'usEarningsMom'], ['YoY', 'MoM']],
@@ -30,15 +30,15 @@ const PAGE_CHARTS = {
   ],
   'macro-us-household': [
     ['University of Michigan consumer sentiment', ['usMichigan'], ['Sentiment']],
-    ['Retail sales', ['usRetailSales'], ['MoM'], 'bar'],
-    ['Personal spending', ['usPersonalSpending'], ['MoM'], 'bar'],
+    ['Retail sales', ['usRetailSales'], ['MoM']],
+    ['Personal spending', ['usPersonalSpending'], ['MoM']],
     ['Existing home sales', ['usExistingHomes'], ['Annualized rate']],
   ],
   'macro-cn-inflation': [
     ['Consumer prices — YoY', ['cnCpiYoy'], ['CPI YoY']],
-    ['Consumer prices — MoM', ['cnCpiMom'], ['CPI MoM'], 'bar'],
+    ['Consumer prices — MoM', ['cnCpiMom'], ['CPI MoM']],
     ['Producer prices — YoY', ['cnPpiYoy'], ['PPI YoY']],
-    ['Producer prices — MoM', ['cnPpiMom'], ['PPI MoM'], 'bar'],
+    ['Producer prices — MoM', ['cnPpiMom'], ['PPI MoM']],
   ],
   'macro-cn-pmi': [
     ['NBS purchasing managers indices', ['cnNbsMfg', 'cnNbsNonMfg'], ['Manufacturing', 'Non-manufacturing']],
@@ -51,7 +51,7 @@ const PAGE_CHARTS = {
     ['Retail sales', ['cnRetailSales'], ['YoY']],
     ['Industrial production', ['cnIndustrialProduction'], ['YoY']],
     ['Fixed asset investment', ['cnFixedAssetInvestment'], ['YTD YoY']],
-    ['New yuan loans', ['cnNewLoans'], ['CNY'], 'bar'],
+    ['New yuan loans', ['cnNewLoans'], ['CNY']],
   ],
 };
 
@@ -90,7 +90,7 @@ function buildData(macro, keys, labels) {
 }
 
 function MacroChart({ definition, macro, errors }) {
-  const [title, keys, labels, type = 'line'] = definition;
+  const [title, keys, labels] = definition;
   const built = useMemo(() => buildData(macro, keys, labels), [macro, keys, labels]);
   const unit = built.available[0]?.unit || '';
   const options = useMemo(() => {
@@ -102,11 +102,11 @@ function MacroChart({ definition, macro, errors }) {
     };
     opts.plugins.tooltip.callbacks.label = context =>
       ` ${context.dataset.label}: ${compact(context.parsed.y)}${/percent/i.test(unit) ? '%' : ''}`;
+    opts.plugins.zeroLine = { display: true };
     return opts;
   }, [built.datasets.length, unit]);
   const source = built.available[0];
   const missing = keys.filter(key => !macro?.series?.[key]);
-  const Chart = type === 'bar' ? Bar : Line;
 
   return (
     <ChartCard
@@ -120,7 +120,7 @@ function MacroChart({ definition, macro, errors }) {
       srcNote={missing.length ? `${missing.length} series temporarily unavailable` : undefined}
     >
       {built.datasets.length
-        ? <Chart data={{ labels: built.labels, datasets: built.datasets }} options={options} />
+        ? <Line data={{ labels: built.labels, datasets: built.datasets }} options={options} />
         : <div className="macro-empty">{errors ? 'Series temporarily unavailable from Trading Economics.' : 'Loading macro history…'}</div>}
     </ChartCard>
   );

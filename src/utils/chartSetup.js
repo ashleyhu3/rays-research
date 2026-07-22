@@ -157,6 +157,30 @@ const PointValueLabels = {
   },
 };
 
+const ZeroLine = {
+  id: 'zeroLine',
+  afterDraw(chart) {
+    const opts = chart.options?.plugins?.zeroLine;
+    if (!opts || opts.display === false) return;
+
+    const yScale = chart.scales?.y;
+    if (!yScale || yScale.min > 0 || yScale.max < 0) return;
+
+    const { ctx, chartArea } = chart;
+    const y = yScale.getPixelForValue(0);
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.setLineDash(opts.dash ?? [4, 4]);
+    ctx.lineWidth = opts.width ?? 1;
+    ctx.strokeStyle = opts.color ?? 'rgba(160,160,160,.5)';
+    ctx.moveTo(chartArea.left, y);
+    ctx.lineTo(chartArea.right, y);
+    ctx.stroke();
+    ctx.restore();
+  },
+};
+
 function clamp(value, min, max) {
   if (max < min) return (min + max) / 2;
   return Math.max(min, Math.min(value, max));
@@ -199,4 +223,5 @@ ChartJS.register(
   Legend,
   Filler,
   PointValueLabels,
+  ZeroLine,
 );
