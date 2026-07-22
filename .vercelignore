@@ -5,7 +5,6 @@ analysis
 node_modules
 server/.venv-transcripts
 server/retrieval
-server/scripts
 stocktwits
 *.pdf
 *.png

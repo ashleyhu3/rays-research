@@ -6,7 +6,7 @@
   "functions": {
     "api/index.js": {
       "maxDuration": 300,
-      "excludeFiles": "{analysis,stocktwits,server/.venv-transcripts,server/retrieval,server/scripts}/**"
+      "excludeFiles": "{analysis,stocktwits,server/.venv-transcripts,server/retrieval}/**"
     }
   },
   "rewrites": [
