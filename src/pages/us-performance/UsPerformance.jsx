@@ -429,7 +429,7 @@ const EQUAL_WEIGHT_PANELS = {
     if (!chartArea || !scales.y || !scales.yDod) return;
 
     const gap = 12;
-    const split = chartArea.top + chartArea.height * 0.68;
+    const split = chartArea.top + chartArea.height * 0.64;
     const setVerticalBounds = (scale, top, bottom) => {
       scale.top = top;
       scale.bottom = bottom;
@@ -684,7 +684,7 @@ export default function UsPerformance({ section = null }) {
           src="Yahoo Finance"
           srcUrl="https://finance.yahoo.com"
           freq="Daily"
-          height={equalWeight ? 330 : 255}
+          height={equalWeight ? 370 : 255}
         >
           <Line
             data={data}
