@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Bar } from 'react-chartjs-2';
 import ChartCard from '../../components/chart/ChartCard';
+import { useData } from '../../context/DataContext';
 
 const BLUE = '#4577b4';
 const GREEN = '#5a9f6b';
@@ -89,19 +90,23 @@ function Tile({ label, value, color }) {
 }
 
 export default function ChinaStockConnect() {
+  const { liveData } = useData();
   const [rangeId, setRangeId] = useState('3m');
-  const [payload, setPayload] = useState(null);
+  const [payload, setPayload] = useState(() => liveData?.chinaLiquidity?.stockConnect ?? null);
   const [error, setError] = useState(null);
   const range = RANGES.find(item => item.id === rangeId) ?? RANGES[1];
 
+  // Preloaded by DataContext on app visit — only fetch here if that hasn't
+  // landed yet (e.g. this key failed server-side while others succeeded).
   useEffect(() => {
+    if (liveData?.chinaLiquidity) { setPayload(liveData.chinaLiquidity.stockConnect); return undefined; }
     let live = true;
     fetch('/api/china-liquidity')
       .then(response => response.ok ? response.json() : Promise.reject(new Error(`HTTP ${response.status}`)))
       .then(data => { if (live) setPayload(data.stockConnect); })
       .catch(fetchError => { if (live) setError(fetchError.message); });
     return () => { live = false; };
-  }, []);
+  }, [liveData?.chinaLiquidity]);
 
   const southbound = useMemo(
     () => windowed(payload?.southboundNetFlow?.data, range),

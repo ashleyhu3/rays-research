@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useData } from '../../context/DataContext';
 
 const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -43,11 +44,19 @@ function addMonths(date, offset) {
 // The earnings-call events scheduled during the display window, shown as
 // month grids — one entry per tracked ticker on the day of its next call.
 export default function EarningsCalendar() {
-  const [events, setEvents] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { liveData } = useData();
+  const [events, setEvents] = useState(() => liveData?.earningsCalendar?.events ?? []);
+  const [loading, setLoading] = useState(!liveData?.earningsCalendar);
   const [error, setError] = useState(null);
 
+  // Preloaded by DataContext on app visit — only fetch here if that hasn't
+  // landed yet (e.g. this key failed server-side while others succeeded).
   useEffect(() => {
+    if (liveData?.earningsCalendar) {
+      setEvents(liveData.earningsCalendar.events ?? []);
+      setLoading(false);
+      return undefined;
+    }
     let cancelled = false;
     (async () => {
       try {
@@ -62,7 +71,7 @@ export default function EarningsCalendar() {
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [liveData?.earningsCalendar]);
 
   const now = new Date();
   const today = isoDate(now);

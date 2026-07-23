@@ -129,7 +129,6 @@ const EXTRA_ENDPOINTS = [
   ['dcBuildouts',           '/api/dc-buildouts'],
   ['earningsCalendar',      '/api/alerts/earnings-calendar'],
   ['dailyOptionsReport',    '/api/alerts/daily-options-report'],
-  ['validityStatus',        '/api/validity/status'],
   ['usPerformance',         `/api/us-performance?${perfWindowParams(100)}`],
   ['hkPerformance',         `/api/hk-performance?${perfWindowParams(80)}`],
   ['hkChinaPerformance',    `/api/hk-china-performance?${perfWindowParams(80)}`],
@@ -200,7 +199,6 @@ export async function fetchAll() {
     dcBuildouts:           ex.dcBuildouts           ?? null,
     earningsCalendar:      ex.earningsCalendar      ?? null,
     dailyOptionsReport:    ex.dailyOptionsReport    ?? null,
-    validityStatus:        ex.validityStatus        ?? null,
     // Default (1-year) window only — pages refetch themselves when the user
     // picks a different date range.
     usPerformanceDefault:      ex.usPerformance      ?? null,

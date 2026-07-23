@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
+import { useData } from './DataContext';
 
 // Shared state for the daily options report so the page body and the Topbar
 // controls (Refresh / Download / the report date beside the title) stay in
@@ -29,12 +30,26 @@ function normalizeReport(report) {
 }
 
 export function OptionsReportProvider({ children }) {
+  const { liveData } = useData();
   const [report, setReport]   = useState(null);
   const [loading, setLoading] = useState(false);
   const [busy, setBusy]       = useState(false);
   const [msg, setMsg]         = useState(null);   // { kind: 'ok'|'err', text }
+  // Tracks whether report data has landed (from the eager preload or a
+  // direct load()), so revisiting the Alerts page doesn't refetch every time.
+  const seeded = useRef(false);
+
+  // Preloaded by DataContext on app visit — seed once it lands, unless a
+  // direct load() already beat it to the punch (e.g. slow preload).
+  useEffect(() => {
+    if (seeded.current || !liveData?.dailyOptionsReport) return;
+    seeded.current = true;
+    setReport(normalizeReport(liveData.dailyOptionsReport.report || null));
+  }, [liveData?.dailyOptionsReport]);
 
   const load = useCallback(async () => {
+    if (seeded.current) return;
+    seeded.current = true;
     setLoading(true);
     try {
       const res = await fetch('/api/alerts/daily-options-report');

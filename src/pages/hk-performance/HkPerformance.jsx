@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Line } from 'react-chartjs-2';
 import ChartCard from '../../components/chart/ChartCard';
+import { useData } from '../../context/DataContext';
 import { HSCI_META, HK_SECTIONS } from '../../config/hkPerformance';
 import { GRID, TICK, BORD } from '../../utils/chartHelpers';
 import { rankChartsByLatestStrength } from '../../utils/chartRanking';
@@ -253,17 +254,28 @@ function chartOptions({ relative = false, compact = false } = {}) {
 }
 
 export default function HkPerformance({ section = null }) {
+  const { liveData } = useData();
   const [startDate, setStartDate] = useState(() => isoYearsAgo(1));
   const [endDate, setEndDate] = useState(() => todayIso());
-  const [payload, setPayload] = useState(null);
+  const [payload, setPayload] = useState(() => liveData?.hkPerformanceDefault ?? null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const fetchStartDate = useMemo(
     () => isoDaysBefore(startDate, ROLLING_FETCH_LOOKBACK_DAYS),
     [startDate]
   );
+  // The default 1-year-to-today window DataContext preloads on app visit —
+  // captured once so later comparisons aren't thrown off by "today" ticking over.
+  const defaults = useRef({ start: isoYearsAgo(1), end: todayIso() }).current;
+  const isDefaultWindow = startDate === defaults.start && endDate === defaults.end;
 
   useEffect(() => {
+    if (isDefaultWindow && liveData?.hkPerformanceDefault) {
+      setPayload(liveData.hkPerformanceDefault);
+      setLoading(false);
+      setError(null);
+      return undefined;
+    }
     let live = true;
     setLoading(true);
     setError(null);
@@ -275,7 +287,7 @@ export default function HkPerformance({ section = null }) {
       .then(data => { if (live) { setPayload(data); setLoading(false); } })
       .catch(fetchError => { if (live) { setError(fetchError.message); setLoading(false); } });
     return () => { live = false; };
-  }, [fetchStartDate, endDate]);
+  }, [fetchStartDate, endDate, isDefaultWindow, liveData?.hkPerformanceDefault]);
 
   const overviewChartData = useMemo(
     () => (payload ? buildOverviewChartData(payload, startDate, endDate) : null),

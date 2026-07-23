@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Line } from 'react-chartjs-2';
 import ChartCard from '../../components/chart/ChartCard';
+import { useData } from '../../context/DataContext';
 import {
   CSI300_META,
   HK_CHINA_EXTRA_INDEX_PAIRS,
@@ -340,9 +341,10 @@ function premiumChartOptions() {
 }
 
 export default function HkChinaPerformance({ section = null }) {
+  const { liveData } = useData();
   const [startDate, setStartDate] = useState(() => isoYearsAgo(1));
   const [endDate, setEndDate] = useState(() => todayIso());
-  const [payload, setPayload] = useState(null);
+  const [payload, setPayload] = useState(() => liveData?.hkChinaPerformanceDefault ?? null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [premiumPayload, setPremiumPayload] = useState(null);
@@ -352,8 +354,18 @@ export default function HkChinaPerformance({ section = null }) {
     () => isoDaysBefore(startDate, ROLLING_FETCH_LOOKBACK_DAYS),
     [startDate]
   );
+  // The default 1-year-to-today window DataContext preloads on app visit —
+  // captured once so later comparisons aren't thrown off by "today" ticking over.
+  const defaults = useRef({ start: isoYearsAgo(1), end: todayIso() }).current;
+  const isDefaultWindow = startDate === defaults.start && endDate === defaults.end;
 
   useEffect(() => {
+    if (isDefaultWindow && liveData?.hkChinaPerformanceDefault) {
+      setPayload(liveData.hkChinaPerformanceDefault);
+      setLoading(false);
+      setError(null);
+      return undefined;
+    }
     let live = true;
     setLoading(true);
     setError(null);
@@ -365,7 +377,7 @@ export default function HkChinaPerformance({ section = null }) {
       .then(data => { if (live) { setPayload(data); setLoading(false); } })
       .catch(fetchError => { if (live) { setError(fetchError.message); setLoading(false); } });
     return () => { live = false; };
-  }, [fetchStartDate, endDate]);
+  }, [fetchStartDate, endDate, isDefaultWindow, liveData?.hkChinaPerformanceDefault]);
 
   useEffect(() => {
     if (section !== 'sentiment') return undefined;
