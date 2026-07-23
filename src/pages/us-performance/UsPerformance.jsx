@@ -218,6 +218,54 @@ function buildPairChartData(payload, numMeta, denMeta, startDate, endDate) {
   };
 }
 
+function buildEqualWeightChartData(payload, startDate, endDate) {
+  const rspMeta = metaForLabel('RSP');
+  if (!rspMeta) return null;
+
+  const chartData = buildPairChartData(payload, rspMeta, SPX_META, startDate, endDate);
+  const rspSeries = findSeries(payload, rspMeta.ticker);
+  const spxSeries = findSeries(payload, SPX_META.ticker);
+  const bounds = visibleBounds(payload.dates, startDate, endDate);
+  if (!chartData || !rspSeries || !spxSeries || !bounds) return null;
+
+  // Daily change in RSP's relative performance versus SPX. Calculate against
+  // the prior trading session before slicing so the first visible bar still
+  // has a valid DoD comparison when data exists immediately before the range.
+  const ratios = rspSeries.closes.map((close, i) => {
+    const spxClose = spxSeries.closes[i];
+    return close != null && spxClose != null && spxClose !== 0 ? close / spxClose : null;
+  });
+  const dodChanges = ratios.map((ratio, i) => {
+    const prior = ratios[i - 1];
+    return ratio != null && prior != null && prior !== 0 ? ((ratio / prior) - 1) * 100 : null;
+  });
+  const visibleDod = sliceBounds(dodChanges, bounds);
+
+  return {
+    ...chartData,
+    datasets: [
+      ...chartData.datasets,
+      {
+        type: 'bar',
+        label: 'DoD change',
+        fullName: 'Day-over-day change in RSP relative performance versus SPX',
+        data: visibleDod,
+        yAxisID: 'yDod',
+        backgroundColor: visibleDod.map(value => (
+          value == null ? 'transparent' : value >= 0 ? 'rgba(74,222,128,.72)' : 'rgba(248,113,113,.72)'
+        )),
+        borderColor: visibleDod.map(value => (
+          value == null ? 'transparent' : value >= 0 ? '#4ade80' : '#f87171'
+        )),
+        borderWidth: 1,
+        borderRadius: 1,
+        barPercentage: 0.88,
+        categoryPercentage: 0.92,
+      },
+    ],
+  };
+}
+
 function pearsonCorrelation(xs, ys) {
   const n = xs.length;
   let sumX = 0;
@@ -371,6 +419,64 @@ function chartOptions({ relative = false, compact = false } = {}) {
   };
 }
 
+// One canvas, two plotting regions: the existing relative-performance lines
+// occupy the upper region and the DoD bars occupy the lower region. Keeping a
+// shared chart area preserves one date axis, tooltip, legend, and hover index.
+const EQUAL_WEIGHT_PANELS = {
+  id: 'usPerfEqualWeightPanels',
+  afterLayout(chart) {
+    const { chartArea, scales } = chart;
+    if (!chartArea || !scales.y || !scales.yDod) return;
+
+    const gap = 12;
+    const split = chartArea.top + chartArea.height * 0.68;
+    const setVerticalBounds = (scale, top, bottom) => {
+      scale.top = top;
+      scale.bottom = bottom;
+      scale.height = Math.max(0, bottom - top);
+      scale.configure();
+    };
+
+    setVerticalBounds(scales.y, chartArea.top, split - gap / 2);
+    setVerticalBounds(scales.yDod, split + gap / 2, chartArea.bottom);
+  },
+};
+
+function equalWeightChartOptions() {
+  const options = chartOptions({ relative: true, compact: true });
+  options.plugins.tooltip.callbacks.label = c => {
+    const value = c.parsed.y;
+    if (value == null) return ` ${c.dataset.label}: —`;
+    if (c.dataset.yAxisID === 'yDod') {
+      return ` ${c.dataset.label}: ${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
+    }
+    const pct = value - 100;
+    const ratio = c.dataset.ratios?.[c.dataIndex];
+    const ratioText = Number.isFinite(ratio) ? `, ratio ${ratio.toFixed(5)}` : '';
+    return ` ${c.dataset.label}: ${value.toFixed(1)} (${pct >= 0 ? '+' : ''}${pct.toFixed(1)}% rel)${ratioText}`;
+  };
+  options.scales.y.ticks.maxTicksLimit = 4;
+  options.scales.yDod = {
+    position: 'right',
+    grid: {
+      color: context => (context.tick.value === 0 ? 'rgba(234,234,224,.25)' : 'rgba(255,255,255,.04)'),
+      lineWidth: context => (context.tick.value === 0 ? 1 : 0.75),
+    },
+    ticks: {
+      ...TICK,
+      maxTicksLimit: 3,
+      callback: value => `${Number(value).toFixed(1)}%`,
+    },
+    border: BORD,
+    afterDataLimits: scale => {
+      const extent = Math.max(Math.abs(scale.min), Math.abs(scale.max), 0.01) * 1.08;
+      scale.min = -extent;
+      scale.max = extent;
+    },
+  };
+  return options;
+}
+
 // Dashed reference line at y=0, drawn behind the correlation series.
 const ZERO_LINE = {
   id: 'usPerfZeroLine',
@@ -487,8 +593,7 @@ export default function UsPerformance({ section = null }) {
   }, [payload, startDate, endDate]);
   const equalWeightChart = useMemo(() => {
     if (!payload) return null;
-    const rspMeta = metaForLabel('RSP');
-    return rspMeta ? buildPairChartData(payload, rspMeta, SPX_META, startDate, endDate) : null;
+    return buildEqualWeightChartData(payload, startDate, endDate);
   }, [payload, startDate, endDate]);
   const techCharts = useMemo(() => {
     if (!payload) return [];
@@ -572,16 +677,20 @@ export default function UsPerformance({ section = null }) {
 
   const ratioGrid = (charts, pinned = []) => (
     <div className="usp-etf-grid">
-      {[...pinned, ...rankChartsByLatestStrength(charts)].map(({ id, title, data }) => (
+      {[...pinned, ...rankChartsByLatestStrength(charts)].map(({ id, title, data, equalWeight = false }) => (
         <ChartCard
           key={id}
           title={title}
           src="Yahoo Finance"
           srcUrl="https://finance.yahoo.com"
           freq="Daily"
-          height={255}
+          height={equalWeight ? 330 : 255}
         >
-          <Line data={data} options={chartOptions({ relative: true, compact: true })} plugins={[BASELINE_100]} />
+          <Line
+            data={data}
+            options={equalWeight ? equalWeightChartOptions() : chartOptions({ relative: true, compact: true })}
+            plugins={equalWeight ? [BASELINE_100, EQUAL_WEIGHT_PANELS] : [BASELINE_100]}
+          />
         </ChartCard>
       ))}
     </div>
@@ -615,7 +724,7 @@ export default function UsPerformance({ section = null }) {
       {section === 'all' && !error && (relativeCharts.length > 0 || equalWeightChart) &&
         ratioGrid(
           relativeCharts.map(({ etf, data }) => ({ id: etf.ticker, title: etf.name, data })),
-          equalWeightChart ? [{ id: 'rsp-spx', title: 'Equal Weight', data: equalWeightChart }] : []
+          equalWeightChart ? [{ id: 'rsp-spx', title: 'Equal Weight', data: equalWeightChart, equalWeight: true }] : []
         )}
 
       {section === 'tech' && !error && techCharts.length > 0 && ratioGrid(techCharts)}
