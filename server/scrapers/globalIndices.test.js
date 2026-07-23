@@ -17,3 +17,37 @@ test('parseSinaKlines extracts and date-filters the JSONP index history', () => 
     }],
   );
 });
+
+test('sanitizeTurnoverPayload removes invalid and incomplete current-session observations', () => {
+  const payload = {
+    dates: ['2026-07-20', '2026-07-21', '2026-07-22', '2026-07-23'],
+    series: [{
+      ticker: 'hsi',
+      turnover: [100, 0, -5, 1],
+      closes: [1, 2, 3, 4],
+    }],
+  };
+  assert.deepEqual(
+    _test.sanitizeTurnoverPayload(payload, '2026-07-23'),
+    {
+      dates: payload.dates,
+      series: [{
+        ticker: 'hsi',
+        turnover: [100, null, null, null],
+        closes: [1, 2, 3, 4],
+      }],
+    },
+  );
+});
+
+test('sanitizeTurnoverPayload rejects a stale tiny placeholder on a prior date', () => {
+  const normal = [100, 105, 95, 110, 90, 100];
+  const payload = {
+    dates: ['2026-07-16', '2026-07-17', '2026-07-18', '2026-07-19', '2026-07-20', '2026-07-21', '2026-07-22'],
+    series: [{ ticker: 'csi300', turnover: [...normal, 2] }],
+  };
+  assert.equal(
+    _test.sanitizeTurnoverPayload(payload, '2026-07-24').series[0].turnover.at(-1),
+    null,
+  );
+});

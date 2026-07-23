@@ -1,6 +1,6 @@
 /**
  * Rotation → Global tab: daily price history for all 10 indices (feeds the
- * Technical/RSI chart, client-side) plus turnover where a direct source
+ * Technical/RSI chart, client-side) plus a turnover proxy where a consistent source
  * exists (feeds the Turnover chart directly; SOX/Nikkei225 get their
  * turnover from indexBreadth.js instead — see mergeTurnover below).
  *
@@ -9,14 +9,12 @@
  *     Hang Seng (^HSI), TAIEX (^TWII), KOSPI200 (^KS200), Nikkei225 (^N225)
  *     directly, and TOPIX via the 1306.T ETF proxy (^TPX itself returns 0
  *     quotes on Yahoo — no chart history at all).
- *   - CSI300 and ChiNext have no Yahoo chart history either (confirmed —
- *     same failure mode as ^VIXEQ, handled the same way as that ticker:
- *     sourced from East Money's generic kline API instead, which this
- *     codebase already uses in chinaLiquidity.js/hkChinaPerformance.js).
- *   - Turnover uses direct East Money `amount` where available, constituent
- *     close×volume for SOX/Nikkei225, and Yahoo volume×close as the resilient
- *     fallback for the remaining Yahoo-priced indices (including the TOPIX
- *     1306.T ETF proxy).
+ *   - CSI300 and ChiNext have no Yahoo chart history either, so Sina supplies
+ *     their price and volume history.
+ *   - The chart is a consistent activity proxy: volume×close for index feeds,
+ *     constituent close×volume for SOX/Nikkei225, and the 1306.T ETF's
+ *     close×volume for TOPIX. East Money cash `amount` is not mixed with
+ *     volume×index-level history because the units differ materially.
  */
 'use strict';
 
@@ -56,8 +54,6 @@ function isoDate(d) {
   const dt = d instanceof Date ? d : new Date(typeof d === 'number' && d < 1e12 ? d * 1000 : d);
   return isNaN(dt.getTime()) ? null : dt.toISOString().slice(0, 10);
 }
-
-function yyyymmdd(date) { return date.toISOString().slice(0, 10).replace(/-/g, ''); }
 
 async function mapLimit(items, limit, fn) {
   const out = new Array(items.length);
@@ -99,13 +95,8 @@ const YAHOO_SYMBOL = {
 // in-progress observations remain null so they cannot overwrite settled data.
 const YAHOO_VOLUME_TURNOVER_KEYS = new Set(Object.keys(YAHOO_SYMBOL));
 
-// CSI300/ChiNext have no Yahoo chart history at all, so this is both their
-// price AND turnover source. Hang Seng/TAIEX price fine on Yahoo, but Yahoo's
-// volume for them is 0 — so their turnover is fetched from East Money
-// separately (below) and merged onto the Yahoo-sourced price series.
-const EASTMONEY_SECID = { csi300: '1.000300', chinext: '0.399006' };
-const EASTMONEY_TURNOVER_ONLY_SECID = { hsi: '100.HSI', taiex: '100.TWII' };
-const EASTMONEY_URL = 'https://push2his.eastmoney.com/api/qt/stock/kline/get';
+// CSI300/ChiNext have no Yahoo chart history at all, so Sina is both their
+// price and activity-proxy source.
 const SINA_SYMBOL = { csi300: 'sh000300', chinext: 'sz399006' };
 const SINA_URL = 'https://quotes.sina.cn/cn/api/jsonp_v2.php/var%20_data=/CN_MarketDataService.getKLineData';
 
@@ -131,29 +122,6 @@ async function fetchYahooIndex(yf, key, start, end) {
     adjClose: q.adjclose ?? q.close,
     turnover: YAHOO_VOLUME_TURNOVER_KEYS.has(key) && q.volume > 0 ? q.volume * q.close : null,
   }));
-}
-
-async function fetchEastMoneyIndex(key, start, end, secidOverride = null) {
-  const params = new URLSearchParams({
-    secid: secidOverride ?? EASTMONEY_SECID[key], ut: '7eea3edcaed734bea9cbfc24409ed989',
-    fields1: 'f1,f2,f3,f4,f5,f6', fields2: 'f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61',
-    klt: '101', fqt: '0', beg: yyyymmdd(start), end: yyyymmdd(end),
-  });
-  const res = await fetch(`${EASTMONEY_URL}?${params}`, {
-    headers: { 'user-agent': BROWSER_UA },
-    signal: AbortSignal.timeout(20000),
-  });
-  if (!res.ok) throw new Error(`East Money ${key} HTTP ${res.status}`);
-  const json = await res.json();
-  const points = [];
-  for (const line of json?.data?.klines ?? []) {
-    // date,open,close,high,low,volume,amount,amplitude,pctChange,change,turnoverRate
-    const [date, , close, , , , amount] = String(line).split(',');
-    const closeNum = Number(close);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(closeNum)) continue;
-    points.push({ date, close: closeNum, adjClose: closeNum, turnover: Number(amount) || null });
-  }
-  return points;
 }
 
 function parseSinaKlines(text, start, end) {
@@ -191,12 +159,7 @@ async function fetchSinaIndex(key, start, end) {
 }
 
 async function fetchChinaIndex(key, start, end) {
-  try {
-    return await fetchEastMoneyIndex(key, start, end);
-  } catch (error) {
-    console.warn(`[globalIndices] East Money ${key}: ${error.message}; using Sina fallback`);
-    return fetchSinaIndex(key, start, end);
-  }
+  return fetchSinaIndex(key, start, end);
 }
 
 async function getGlobalIndices(startDate, endDate = new Date()) {
@@ -215,31 +178,14 @@ async function getGlobalIndices(startDate, endDate = new Date()) {
     }
   });
 
-  // Separate turnover-only fetch for indices priced on Yahoo but whose Yahoo
-  // volume is 0 (Hang Seng, TAIEX) — real turnover comes from East Money.
-  const turnoverOnlyEntries = await mapLimit(Object.keys(EASTMONEY_TURNOVER_ONLY_SECID), 4, async ticker => {
-    try {
-      const points = await fetchEastMoneyIndex(ticker, start, end, EASTMONEY_TURNOVER_ONLY_SECID[ticker]);
-      return [ticker, new Map(points.map(p => [p.date, p.turnover]))];
-    } catch (e) {
-      console.warn(`[globalIndices] East Money turnover for ${ticker}: ${e.message}`);
-      return [ticker, new Map()];
-    }
-  });
-  const turnoverOnlyByTicker = new Map(turnoverOnlyEntries);
-
   const dateSet = new Set();
   for (const r of results) for (const p of r.points) dateSet.add(p.date);
-  for (const byDate of turnoverOnlyByTicker.values()) for (const d of byDate.keys()) dateSet.add(d);
   const dates = [...dateSet].sort();
 
   const series = results.map(r => {
     const byClose = new Map(r.points.map(p => [p.date, p.close]));
     const byAdj = new Map(r.points.map(p => [p.date, p.adjClose]));
-    const directTurnover = turnoverOnlyByTicker.get(r.ticker);
-    const byTurnover = directTurnover?.size
-      ? directTurnover
-      : new Map(r.points.map(p => [p.date, p.turnover]));
+    const byTurnover = new Map(r.points.map(p => [p.date, p.turnover]));
     return {
       ticker: r.ticker,
       label: r.label,
@@ -257,11 +203,39 @@ async function getGlobalIndices(startDate, endDate = new Date()) {
 async function updateGlobalIndices(days = 45) {
   const end = new Date().toISOString().slice(0, 10);
   HISTORY.merge(await getGlobalIndices(isoDaysAgo(days), end));
-  return HISTORY.assemble();
+  return sanitizeTurnoverPayload(HISTORY.assemble());
 }
 
 function readGlobalIndices(startDate, endDate) {
-  return HISTORY.assemble(startDate, endDate);
+  return sanitizeTurnoverPayload(HISTORY.assemble(startDate, endDate));
+}
+
+function sanitizeTurnoverPayload(payload, currentDate = new Date().toISOString().slice(0, 10)) {
+  if (!payload?.dates || !Array.isArray(payload.series)) return payload;
+  return {
+    ...payload,
+    series: payload.series.map(series => {
+      if (!Array.isArray(series.turnover)) return series;
+      const turnover = series.turnover.map((value, index) => (
+        payload.dates[index] >= currentDate || !Number.isFinite(value) || value <= 0 ? null : value
+      ));
+
+      // Some feeds publish a tiny placeholder volume for their latest bar and
+      // never revise it. Reject values below 10% of the preceding 20-session
+      // median; that threshold is well outside normal holiday/session variance.
+      for (let index = 0; index < turnover.length; index += 1) {
+        if (turnover[index] == null) continue;
+        const prior = turnover.slice(Math.max(0, index - 20), index)
+          .filter(value => value != null)
+          .sort((a, b) => a - b);
+        if (prior.length < 5) continue;
+        const middle = Math.floor(prior.length / 2);
+        const median = prior.length % 2 ? prior[middle] : (prior[middle - 1] + prior[middle]) / 2;
+        if (turnover[index] < median * 0.1) turnover[index] = null;
+      }
+      return { ...series, turnover };
+    }),
+  };
 }
 
 // indexBreadth.js computes SOX/Nikkei225 turnover as a byproduct of its own
@@ -280,5 +254,5 @@ module.exports = {
   readGlobalIndices,
   mergeTurnover,
   TICKERS,
-  _test: { parseSinaKlines },
+  _test: { parseSinaKlines, sanitizeTurnoverPayload },
 };

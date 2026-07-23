@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Line } from 'react-chartjs-2';
 import '../../utils/chartSetup';
 import { C, fa } from '../../config/colors';
@@ -33,16 +33,7 @@ const FOCUS_COLORS = [C.orange, C.mistral, C.teal, C.google, C.openai, C.perplex
 
 const DIR_ARROW = { up: '▲', down: '▼', flat: '→' };
 
-// Ordered stages of the one-click full pipeline (POST /api/transcripts/analyze),
-// used to render live progress from the endpoint's NDJSON stream.
-const ANALYZE_STAGES = [
-  ['collect', 'Collect transcript'],
-  ['finbert', 'FinBERT tone'],
-  ['tone-llm', 'LLM tone'],
-  ['facts', 'Facts & guidance'],
-  ['figures', 'Key figures'],
-  ['publish', 'Publish'],
-];
+const prettyPeriod = period => (period ? String(period).replace(/(\d{4})(Q\d)/, '$1 $2') : '');
 
 function sentClass(investorConfidence) {
   if (investorConfidence == null) return 'tx-fig-tone';
@@ -141,24 +132,34 @@ function Icon({ name, size = 16 }) {
 }
 
 // ── Sidebar: collect by ticker/quarter, paste a transcript, recent library ──
-function AnalyzeProgress({ progress }) {
-  if (!progress) return null;
+// Status of a dispatched GitHub Actions analysis run. The run is asynchronous
+// (FinBERT + LLM on a runner, a few minutes), so we show a queued/running state
+// and poll for the result rather than streaming live stages.
+function DispatchStatus({ dispatch }) {
+  if (!dispatch) return null;
+  const { phase, ticker, period, runsUrl, elapsedSec } = dispatch;
+  const label = prettyPeriod(period);
+  const busy = phase === 'dispatching' || phase === 'running';
   return (
-    <div className="tx-progress">
-      <ul>
-        {ANALYZE_STAGES.map(([key, label]) => {
-          const state = progress.statuses[key] || 'pending';
-          return (
-            <li key={key} className={`tx-progress-step is-${state}`}>
-              <span className="tx-progress-mark">
-                {state === 'done' ? '✓' : state === 'active' ? <span className="tx-spinner" /> : '○'}
-              </span>
-              <span>{label}</span>
-            </li>
-          );
-        })}
-      </ul>
-      {progress.log && <div className="tx-progress-log">{progress.log}</div>}
+    <div className={`tx-dispatch is-${phase}`}>
+      <div className="tx-dispatch-head">
+        {busy ? <span className="tx-spinner" /> : <span className="tx-dispatch-mark">{phase === 'done' ? '✓' : '!'}</span>}
+        <strong>
+          {phase === 'dispatching' && 'Starting GitHub Action…'}
+          {phase === 'running' && `Analyzing ${ticker} ${label} on a runner…`}
+          {phase === 'done' && `${ticker} ${label} analyzed`}
+          {phase === 'timeout' && 'Still running…'}
+          {phase === 'error' && 'Could not start analysis'}
+        </strong>
+      </div>
+      <p className="tx-dispatch-copy">
+        {phase === 'running' && `FinBERT + LLM tone, facts and figures run on a GitHub Actions runner, then publish to the database. This usually takes a few minutes.${elapsedSec ? ` Elapsed ${elapsedSec}s.` : ''}`}
+        {phase === 'done' && 'Results are live — the charts below have updated.'}
+        {phase === 'timeout' && 'The runner is taking longer than usual. Results will appear here automatically once it finishes.'}
+      </p>
+      {runsUrl && phase !== 'done' && (
+        <a className="tx-dispatch-link" href={runsUrl} target="_blank" rel="noreferrer">View the run on GitHub ↗</a>
+      )}
     </div>
   );
 }
@@ -166,7 +167,7 @@ function AnalyzeProgress({ progress }) {
 function Collector({
   ticker, setTicker, quarter, setQuarter, year, setYear,
   onCollect, onParse,
-  loading, error, progress, library, onSelectLibrary,
+  loading, error, dispatch, library, onSelectLibrary,
 }) {
   const [manualOpen, setManualOpen] = useState(false);
   const [manualText, setManualText] = useState('');
@@ -203,10 +204,10 @@ function Collector({
           {loading && loading.startsWith('Analyzing') ? <span className="tx-spinner" /> : <Icon name="database" />}
           {loading && loading.startsWith('Analyzing') ? loading : 'Collect & analyze'}
         </button>
-        <small className="tx-form-note">Runs the full pipeline — collect, FinBERT + LLM tone, facts, key figures — then publishes. Takes a few minutes.</small>
+        <small className="tx-form-note">Fires a GitHub Action that runs the full pipeline — collect, FinBERT + LLM tone, facts, key figures — on a runner, then publishes. Takes a few minutes; results appear below when done.</small>
       </form>
 
-      <AnalyzeProgress progress={progress} />
+      <DispatchStatus dispatch={dispatch} />
 
       {error && <div className="tx-error">{error}</div>}
 
@@ -273,8 +274,10 @@ export default function Transcripts() {
 
   const [loading, setLoading] = useState('');
   const [error, setError] = useState('');
-  const [progress, setProgress] = useState(null);
+  const [dispatch, setDispatch] = useState(null);
   const [reloadNonce, setReloadNonce] = useState(0);
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
   const [analysis, setAnalysis] = useState(null);
   const [analysisLoading, setAnalysisLoading] = useState(true);
   const [analysisError, setAnalysisError] = useState('');
@@ -351,22 +354,17 @@ export default function Transcripts() {
     }
   }
 
-  // Full one-click pipeline: streams NDJSON progress from /api/transcripts/analyze
-  // (collect → FinBERT → LLM tone → facts → figures → publish) and renders each
-  // stage live, then reloads the analysis so the charts fill in.
-  async function runAnalyze(payload, label) {
+  // Fire the GitHub Action that runs the full FinBERT pipeline on a runner, then
+  // poll for the enriched result to land in Mongo and refresh the charts. The run
+  // is async (a few minutes), so this shows a queued/running status rather than
+  // live per-stage progress. Works on the deployed site, where FinBERT can't run.
+  async function dispatchAnalyze(payload, label) {
     if (loading) return;
     setLoading(label);
     setError('');
-    const statuses = {};
-    ANALYZE_STAGES.forEach(([key]) => { statuses[key] = 'pending'; });
-    setProgress({ statuses, log: '' });
-
-    let finalTicker = payload.ticker.toUpperCase();
-    let finalPeriod = null;
-    let streamError = null;
+    setDispatch({ phase: 'dispatching', ticker: payload.ticker.toUpperCase(), period: null, runsUrl: null, elapsedSec: 0 });
     try {
-      const response = await fetch('/api/transcripts/analyze', {
+      const response = await fetch('/api/transcripts/dispatch-analysis', {
         method: 'POST',
         headers: adminHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(payload),
@@ -375,56 +373,54 @@ export default function Transcripts() {
         clearAdminSecret();
         throw new Error('Admin secret rejected — check the value and try again.');
       }
-      if (!response.ok || !response.body) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(data.error || `HTTP ${response.status}`);
-      }
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.ok) throw new Error(data.error || `HTTP ${response.status}`);
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
+      const { ticker: runTicker, period, runsUrl } = data;
+      const startedAt = Date.now();
+      const POLL_MS = 20000;
+      const MAX_MS = 15 * 60 * 1000;
+      setDispatch({ phase: 'running', ticker: runTicker, period, runsUrl, elapsedSec: 0 });
+
+      // Poll the enrichment endpoint until the runner has published tone.
       for (;;) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        let newline;
-        while ((newline = buffer.indexOf('\n')) >= 0) {
-          const line = buffer.slice(0, newline).trim();
-          buffer = buffer.slice(newline + 1);
-          if (!line) continue;
-          let event;
-          try { event = JSON.parse(line); } catch { continue; }
-          if (event.ticker) finalTicker = event.ticker;
-          if (event.period) finalPeriod = event.period;
-          if (event.stage === 'error') { streamError = event.message || 'Analysis failed'; }
-          else if (event.stage !== 'done') {
-            setProgress(prev => {
-              const next = { ...prev.statuses };
-              if (event.status === 'start') next[event.stage] = 'active';
-              if (event.status === 'done') next[event.stage] = 'done';
-              return { statuses: next, log: event.message || prev.log };
-            });
-          }
+        await new Promise(resolve => setTimeout(resolve, POLL_MS));
+        if (!mountedRef.current) return;
+        const elapsedSec = Math.round((Date.now() - startedAt) / 1000);
+        setDispatch(current => (current ? { ...current, elapsedSec } : current));
+
+        let ready = false;
+        try {
+          const enrichmentDoc = await fetch(`/api/transcripts/enrichment/${runTicker}/${period}`)
+            .then(res => (res.ok ? res.json() : null));
+          ready = (enrichmentDoc?.toneSummary?.chunks || 0) > 0;
+        } catch { /* transient — keep polling */ }
+
+        if (ready) {
+          setActiveTicker(runTicker);
+          setPeriod(period);
+          refreshLibrary();
+          setReloadNonce(nonce => nonce + 1);
+          setDispatch(current => (current ? { ...current, phase: 'done' } : current));
+          break;
+        }
+        if (Date.now() - startedAt > MAX_MS) {
+          setDispatch(current => (current ? { ...current, phase: 'timeout' } : current));
+          break;
         }
       }
-      if (streamError) throw new Error(streamError);
-
-      setActiveTicker(finalTicker);
-      if (finalPeriod) setPeriod(finalPeriod);
-      refreshLibrary();
-      setReloadNonce(nonce => nonce + 1); // force the analysis to reload even if the ticker is unchanged
-      setProgress(null);
     } catch (requestError) {
+      if (!mountedRef.current) return;
       setError(requestError.message);
-      setProgress(null);
+      setDispatch(current => (current && current.phase === 'done' ? current : null));
     } finally {
-      setLoading('');
+      if (mountedRef.current) setLoading('');
     }
   }
 
   const onCollect = event => {
     event.preventDefault();
-    runAnalyze({ ticker, quarter, year: Number(year) }, `Analyzing ${ticker.toUpperCase()} ${year}${quarter}…`);
+    dispatchAnalyze({ ticker, quarter, year: Number(year) }, `Analyzing ${ticker.toUpperCase()} ${year}${quarter}…`);
   };
   const onParse = text => submit('/api/transcripts/parse', { ticker, quarter, year: Number(year), text }, 'Parsing transcript locally…');
   const onSelectLibrary = item => {
@@ -621,7 +617,7 @@ export default function Transcripts() {
           quarter={quarter} setQuarter={setQuarter}
           year={year} setYear={setYear}
           onCollect={onCollect} onParse={onParse}
-          loading={loading} error={error} progress={progress}
+          loading={loading} error={error} dispatch={dispatch}
           library={library} onSelectLibrary={onSelectLibrary}
         />
 

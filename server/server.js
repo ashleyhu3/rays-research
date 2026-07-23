@@ -307,8 +307,9 @@ app.get('/api/validity/status', (_req, res) => res.json(buildValidityState()));
 // analysis.
 const { collectFromAlphaVantage } = require('./transcripts/alphavantage');
 const { semanticChunkDocument } = require('./transcripts/chunker');
-const { listLocalEnrichments, readEnrichment, readEnrichmentLocal, saveEnrichment } = require('./transcripts/enrichmentStore');
+const { listLocalEnrichments, readEnrichment, saveEnrichment } = require('./transcripts/enrichmentStore');
 const { parseTranscriptDocument } = require('./transcripts/parser');
+const { runFullPipeline } = require('./transcripts/pipeline');
 const { listTranscripts, saveTranscript } = require('./transcripts/store');
 const { runTranscriptAgent, parseTranscript, fetchTranscript, analyzeSeries } = require('./transcriptAgent');
 
@@ -346,45 +347,11 @@ app.post('/api/transcripts/collect', requireAdminSecret, async (req, res) => {
   }
 });
 
-// One-click full pipeline: collect → FinBERT tone → LLM tone → facts → figures
-// → publish, scoped to the single transcript, streaming NDJSON progress. Runs
-// the existing analysis scripts as child processes (they carry the proven
-// logic); scoping each to --ticker/--period keeps other transcripts' Mongo data
-// untouched and sidesteps the local-vs-Mongo source mismatch. Needs the local
-// FinBERT venv + a long-lived process, so this only runs on the Node server
-// (not serverless).
-const REPO_ROOT = path.join(__dirname, '..');
-const PYTHON_BIN = path.join(__dirname, '.venv-transcripts', 'bin', 'python');
-const TONE_PY = path.join(__dirname, 'retrieval', 'tone_pipeline.py');
-const analysisScript = name => path.join(__dirname, 'scripts', name);
-
-// Spawn a step, forwarding each stdout line to onLine; reject on non-zero exit.
-function runAnalysisStep(command, args, onLine) {
-  return new Promise((resolve, reject) => {
-    const { spawn } = require('child_process');
-    const child = spawn(command, args, { cwd: REPO_ROOT, env: process.env });
-    let stderrTail = '';
-    let buffer = '';
-    child.stdout.on('data', chunk => {
-      buffer += chunk.toString();
-      let newline;
-      while ((newline = buffer.indexOf('\n')) >= 0) {
-        const line = buffer.slice(0, newline).trim();
-        buffer = buffer.slice(newline + 1);
-        if (line) onLine(line);
-      }
-    });
-    child.stdout.on('end', () => { const line = buffer.trim(); if (line) onLine(line); });
-    child.stderr.on('data', data => { stderrTail = (stderrTail + data.toString()).slice(-2000); });
-    child.on('error', reject);
-    child.on('close', code => {
-      if (code === 0) return resolve();
-      const detail = stderrTail.trim().split('\n').filter(Boolean).pop() || `exit ${code}`;
-      reject(new Error(detail));
-    });
-  });
-}
-
+// Streaming full-pipeline endpoint (collect → FinBERT → LLM tone → facts →
+// figures → publish). Needs the FinBERT Python stack + a long-lived process, so
+// it only works where that exists (local dev). On the deployed/serverless side
+// use POST /api/transcripts/dispatch-analysis, which fires a GitHub Action that
+// runs this same pipeline on a runner. Shared logic: transcripts/pipeline.js.
 app.post('/api/transcripts/analyze', requireAdminSecret, async (req, res) => {
   const body = req.body ?? {};
   // NDJSON stream so the browser (which sends the admin Bearer header via fetch)
@@ -395,43 +362,60 @@ app.post('/api/transcripts/analyze', requireAdminSecret, async (req, res) => {
   res.flushHeaders?.();
   const send = payload => { try { res.write(`${JSON.stringify(payload)}\n`); } catch { /* client gone */ } };
 
-  let ticker;
-  let period;
   try {
-    // 1. Collect + chunk (Alpha Vantage).
-    send({ stage: 'collect', status: 'start', message: 'Fetching transcript from Alpha Vantage…' });
-    const transcript = await collectFromAlphaVantage({ ticker: body.ticker, quarter: body.quarter, year: body.year });
-    await saveTranscript(transcript);
-    await saveEnrichment(semanticChunkDocument(transcript));
-    ticker = transcript.ticker;
-    period = transcript.fiscal_period;
-    send({ stage: 'collect', status: 'done', ticker, period, message: `${transcript.stats.totalBlocks} blocks · ${transcript.stats.wordCount.toLocaleString('en-US')} words` });
-
-    const scope = ['--ticker', ticker, '--period', period];
-    const steps = [
-      { stage: 'finbert', message: 'Scoring tone with local FinBERT…', command: PYTHON_BIN, args: [TONE_PY, ...scope] },
-      { stage: 'tone-llm', message: 'Interpreting management tone (LLM)…', command: process.execPath, args: [analysisScript('interpretTranscriptTone.js'), ...scope] },
-      { stage: 'facts', message: 'Extracting facts & guidance…', command: process.execPath, args: [analysisScript('extractTranscriptFacts.js'), ...scope] },
-      { stage: 'figures', message: 'Extracting key figures (LLM)…', command: process.execPath, args: [analysisScript('extractKeyFigures.js'), ...scope] },
-    ];
-    for (const step of steps) {
-      send({ stage: step.stage, status: 'start', message: step.message });
-      await runAnalysisStep(step.command, step.args, line => send({ stage: step.stage, status: 'log', message: line }));
-      send({ stage: step.stage, status: 'done' });
-    }
-
-    // Publish the fully-enriched local copy to Mongo so the UI reads it.
-    send({ stage: 'publish', status: 'start', message: 'Publishing to database…' });
-    const finalEnrichment = readEnrichmentLocal(ticker, period);
-    if (finalEnrichment) await saveEnrichment(finalEnrichment);
-    send({ stage: 'publish', status: 'done' });
-
-    send({ stage: 'done', status: 'done', ticker, period });
+    await runFullPipeline({ ticker: body.ticker, quarter: body.quarter, year: body.year }, send);
   } catch (e) {
     console.error('[transcripts:analyze]', e.message);
-    send({ stage: 'error', status: 'error', ticker, period, message: e.message });
+    send({ stage: 'error', status: 'error', message: e.message });
   } finally {
     res.end();
+  }
+});
+
+// Fire the GitHub Actions workflow that runs the FinBERT pipeline on a runner,
+// then publishes to Mongo. This is the deployed/serverless path: quick to return
+// (workflow_dispatch is async), and works on Vercel where FinBERT itself cannot.
+// Requires a token with actions:write in GH_ANALYZE_DISPATCH_TOKEN (or GITHUB_TOKEN).
+const ANALYZE_REPO = process.env.GITHUB_REPO || 'ashleyhu3/rays-research';
+const ANALYZE_WORKFLOW = process.env.ANALYZE_WORKFLOW_FILE || 'analyze-transcript.yml';
+const ANALYZE_REF = process.env.ANALYZE_WORKFLOW_REF || 'main';
+
+app.post('/api/transcripts/dispatch-analysis', requireAdminSecret, async (req, res) => {
+  const body = req.body ?? {};
+  const ticker = String(body.ticker || '').toUpperCase().replace(/[^A-Z0-9.-]/g, '');
+  const quarter = String(body.quarter || '').toUpperCase().replace(/[^0-9Q]/g, '');
+  const year = String(body.year || '').replace(/[^0-9]/g, '');
+  if (!ticker || !/^Q[1-4]$/.test(quarter) || !/^\d{4}$/.test(year)) {
+    return res.status(400).json({ error: 'ticker, quarter (Q1–Q4) and a four-digit year are required.' });
+  }
+  const token = process.env.GH_ANALYZE_DISPATCH_TOKEN || process.env.GITHUB_TOKEN;
+  if (!token) {
+    return res.status(500).json({ error: 'GH_ANALYZE_DISPATCH_TOKEN is not set — add a token with actions:write.' });
+  }
+  try {
+    const url = `https://api.github.com/repos/${ANALYZE_REPO}/actions/workflows/${ANALYZE_WORKFLOW}/dispatches`;
+    const ghResp = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+        'User-Agent': 'rays-research-dashboard',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ ref: ANALYZE_REF, inputs: { ticker, quarter, year } }),
+    });
+    if (ghResp.status === 204) {
+      const runsUrl = `https://github.com/${ANALYZE_REPO}/actions/workflows/${ANALYZE_WORKFLOW}`;
+      return res.json({ ok: true, ticker, period: `${year}${quarter}`, runsUrl });
+    }
+    const detail = (await ghResp.text()).slice(0, 300);
+    console.error('[transcripts:dispatch]', ghResp.status, detail);
+    const status = ghResp.status === 401 || ghResp.status === 403 ? 502 : ghResp.status === 404 ? 502 : 502;
+    return res.status(status).json({ error: `GitHub dispatch failed (${ghResp.status}): ${detail}` });
+  } catch (e) {
+    console.error('[transcripts:dispatch]', e.message);
+    return res.status(502).json({ error: e.message });
   }
 });
 

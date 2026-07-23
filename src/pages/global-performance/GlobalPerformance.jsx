@@ -327,7 +327,7 @@ export default function GlobalPerformance({ section = null }) {
         data: {
           labels: sliceBounds(indicesPayload.dates, bounds).map(fmtDate),
           datasets: [
-            { label: 'Turnover', data: turnover, borderColor: meta.color, backgroundColor: 'transparent', borderWidth: 1.5, pointRadius: 0, pointHoverRadius: 3, pointHitRadius: 6, tension: 0.1, spanGaps: true },
+            { label: 'Turnover proxy', data: turnover, borderColor: meta.color, backgroundColor: 'transparent', borderWidth: 1.5, pointRadius: 0, pointHoverRadius: 3, pointHitRadius: 6, tension: 0.1, spanGaps: true },
             { label: '20D avg', data: avg20Sliced, borderColor: 'rgba(234,234,224,.78)', backgroundColor: 'transparent', borderWidth: 1.5, borderDash: [5, 4], pointRadius: 0, pointHoverRadius: 2, pointHitRadius: 6, tension: 0.15, spanGaps: true },
           ],
         },
@@ -427,7 +427,7 @@ export default function GlobalPerformance({ section = null }) {
           {indicesError && <div className="empty">Could not load turnover data: {indicesError}</div>}
           {!indicesPayload && !indicesError && <div className="empty">Loading turnover data…</div>}
           <div className="src-note" style={{ marginTop: 12 }}>
-            Turnover uses direct exchange/index feeds where available and volume × close proxies otherwise; TOPIX uses the 1306.T ETF proxy.
+            Turnover proxy uses volume × index level consistently within each index; SOX and Nikkei 225 aggregate constituent close × volume, and TOPIX uses the 1306.T ETF. Incomplete current-session observations are excluded.
           </div>
         </>
       )}
