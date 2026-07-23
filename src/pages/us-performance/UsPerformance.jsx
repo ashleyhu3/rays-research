@@ -399,7 +399,41 @@ function buildVolIndexChartData(payload, labels, startDate, endDate) {
     : null;
 }
 
-function volIndexChartOptions() {
+function buildVolSpreadChartData(payload, startDate, endDate) {
+  const bounds = visibleBounds(payload.dates, startDate, endDate);
+  const vixMeta = metaForLabel('VIX');
+  const vixSeries = vixMeta && findSeries(payload, vixMeta.ticker);
+  if (!bounds || !vixSeries) return null;
+
+  const vix = sliceBounds(vixSeries.closes, bounds);
+  const datasets = ['VIXEQ', 'VXN'].map(label => {
+    const meta = metaForLabel(label);
+    const series = meta && findSeries(payload, meta.ticker);
+    if (!meta || !series) return null;
+    const values = sliceBounds(series.closes, bounds);
+    return {
+      label: `${label} − VIX`,
+      fullName: `${meta.name} minus ${vixMeta.name}`,
+      data: values.map((value, index) => (
+        Number.isFinite(value) && Number.isFinite(vix[index]) ? value - vix[index] : null
+      )),
+      borderColor: meta.color,
+      backgroundColor: 'transparent',
+      borderWidth: 2,
+      pointRadius: 0,
+      pointHoverRadius: 3,
+      pointHitRadius: 6,
+      tension: 0.15,
+      spanGaps: true,
+    };
+  }).filter(Boolean);
+
+  return datasets.length
+    ? { labels: sliceBounds(payload.dates, bounds).map(fmtDate), datasets }
+    : null;
+}
+
+function volIndexChartOptions({ include30 = false } = {}) {
   return {
     responsive: true,
     maintainAspectRatio: false,
@@ -425,10 +459,33 @@ function volIndexChartOptions() {
     },
     scales: {
       x: { grid: GRID, ticks: { ...TICK, maxTicksLimit: 10, autoSkip: true }, border: BORD },
-      y: { grid: GRID, ticks: { ...TICK, callback: v => v.toFixed(0) }, border: BORD },
+      y: {
+        grid: GRID,
+        ticks: { ...TICK, callback: v => v.toFixed(0) },
+        border: BORD,
+        ...(include30 ? { suggestedMax: 32 } : {}),
+      },
     },
   };
 }
+
+const VIX_30_LINE = {
+  id: 'usPerfVix30Line',
+  beforeDatasetsDraw(chart) {
+    const { ctx, chartArea, scales } = chart;
+    if (!chartArea || !scales.y) return;
+    const y = scales.y.getPixelForValue(30);
+    ctx.save();
+    ctx.strokeStyle = 'rgba(234,234,224,.45)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 4]);
+    ctx.beginPath();
+    ctx.moveTo(chartArea.left, y);
+    ctx.lineTo(chartArea.right, y);
+    ctx.stroke();
+    ctx.restore();
+  },
+};
 
 // AAII weekly Bullish/Neutral/Bearish % — a plain percentage line chart, not
 // a price/level series, so it gets its own simple options rather than reusing
@@ -766,6 +823,10 @@ export default function UsPerformance({ section = null }) {
     () => (payload ? buildVolIndexChartData(payload, VOL_INDEX_TICKERS, startDate, endDate) : null),
     [payload, startDate, endDate]
   );
+  const volSpreadData = useMemo(
+    () => (payload ? buildVolSpreadChartData(payload, startDate, endDate) : null),
+    [payload, startDate, endDate]
+  );
   const gldVixData = useMemo(() => {
     if (!payload) return null;
     const [numLabel, denLabel] = GLD_VIX_PAIR;
@@ -954,8 +1015,14 @@ export default function UsPerformance({ section = null }) {
       {section === 'sentiment' && !error && (
         <div className="cgrid">
           {volIndexData && (
-            <ChartCard title="VIX" src="Yahoo Finance" srcUrl="https://finance.yahoo.com" freq="Daily" span2 height={340}>
-              <Line data={volIndexData} options={volIndexChartOptions()} />
+            <ChartCard title="VIX" src="Yahoo Finance" srcUrl="https://finance.yahoo.com" freq="Daily" height={340}>
+              <Line data={volIndexData} options={volIndexChartOptions({ include30: true })} plugins={[VIX_30_LINE]} />
+            </ChartCard>
+          )}
+
+          {volSpreadData && (
+            <ChartCard title="Volatility Index Spreads" src="Yahoo Finance" srcUrl="https://finance.yahoo.com" freq="Daily" height={340}>
+              <Line data={volSpreadData} options={volIndexChartOptions()} plugins={[ZERO_LINE]} />
             </ChartCard>
           )}
 
@@ -980,7 +1047,7 @@ export default function UsPerformance({ section = null }) {
           </ChartCard>
 
           {gldVixData && (
-            <ChartCard title="GLD/VIX" src="Yahoo Finance" srcUrl="https://finance.yahoo.com" freq="Daily" height={300}>
+            <ChartCard title="GLD/VIX" src="Yahoo Finance" srcUrl="https://finance.yahoo.com" freq="Daily" span2 height={300}>
               <Line data={gldVixData} options={chartOptions({ relative: true, compact: true })} plugins={[BASELINE_100]} />
             </ChartCard>
           )}
