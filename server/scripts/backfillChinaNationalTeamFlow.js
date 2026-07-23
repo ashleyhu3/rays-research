@@ -8,7 +8,17 @@
  * is 365 days (~1.5–2 min); pass a larger value for deeper history at
  * proportionally greater cost.
  *
- * Usage: npm run backfill:china-national-team-flow -- [days]   (default 365)
+ * SZSE IP-blocks after a modest number of requests in one continuous session
+ * (see chinaNationalTeamFlow.js's SZSE comments). A deep backfill across all
+ * 7 .SZ tickers can trip that block partway through — the scraper now saves
+ * progress after every ticker and stops early once a run looks blocked, so
+ * re-running this same command later resumes rather than starting over. Pass
+ * a ticker filter to run just the .SZ tickers (skipping the already-complete
+ * .SH ones) or to retry a specific subset after a block clears (~25-30 min).
+ *
+ * Usage: npm run backfill:china-national-team-flow -- [days] [tickers]
+ *   days     default 365
+ *   tickers  optional comma-separated subset, e.g. 159915.SZ,159952.SZ
  */
 const path = require('path');
 const storage = require('../storage');
@@ -16,6 +26,7 @@ const snapshotStore = require('../snapshotStore');
 const { getChinaNationalTeamFlow } = require('../scrapers/chinaNationalTeamFlow');
 
 const DAYS = Number(process.argv[2]) || 365;
+const TICKERS = process.argv[3] ? process.argv[3].split(',').map(s => s.trim()).filter(Boolean) : null;
 const BLOBS = [
   { name: 'chinaNationalTeamFlowHistory', file: path.join(__dirname, '..', 'data', 'chinaNationalTeamFlowHistory.json') },
   // The server seeds its request cache from latestSnapshots on boot, so a backfill
@@ -26,9 +37,9 @@ const BLOBS = [
 
 async function main() {
   await storage.init(BLOBS);
-  console.log(`[china-national-team-flow] storage mode: ${storage.status().mode} — backfilling ${DAYS} days…`);
+  console.log(`[china-national-team-flow] storage mode: ${storage.status().mode} — backfilling ${DAYS} days${TICKERS ? ` for ${TICKERS.join(', ')}` : ''}…`);
 
-  const data = await getChinaNationalTeamFlow(DAYS);
+  const data = await getChinaNationalTeamFlow(DAYS, TICKERS);
   snapshotStore.put('chinaNationalTeamFlow', data);
 
   await storage.flush();

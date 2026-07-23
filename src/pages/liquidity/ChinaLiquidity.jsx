@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Line } from 'react-chartjs-2';
 import ChartCard from '../../components/chart/ChartCard';
+import { useData } from '../../context/DataContext';
 import ChinaFlowNationalTeam from './ChinaFlowNationalTeam';
 import ChinaStockConnect from './ChinaStockConnect';
 
@@ -22,16 +23,20 @@ function dateLabel(date, monthly) {
 }
 
 function LiquiditySeries({ kind }) {
-  const [payload, setPayload] = useState(null);
+  const { liveData } = useData();
+  const [payload, setPayload] = useState(() => liveData?.chinaLiquidity ?? null);
   const [error, setError] = useState(null);
+  // Preloaded by DataContext on app visit — only fetch here if that hasn't
+  // landed yet (e.g. this key failed server-side while others succeeded).
   useEffect(() => {
+    if (liveData?.chinaLiquidity) { setPayload(liveData.chinaLiquidity); return undefined; }
     let live = true;
     fetch('/api/china-liquidity')
       .then(response => response.ok ? response.json() : Promise.reject(new Error(`HTTP ${response.status}`)))
       .then(data => { if (live) setPayload(data); })
       .catch(fetchError => { if (live) setError(fetchError.message); });
     return () => { live = false; };
-  }, []);
+  }, [liveData?.chinaLiquidity]);
 
   const series = payload?.[kind];
   const monthly = kind === 'm2Yoy';

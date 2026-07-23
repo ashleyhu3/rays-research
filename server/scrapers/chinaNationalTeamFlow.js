@@ -159,29 +159,45 @@ const SZSE_REFERER = 'https://fund.szse.cn/marketdata/etf/index.html';
 // 半年") — verified empirically. Stay comfortably under that per chunk.
 const SZSE_MAX_SPAN_DAYS = 150;
 
+// SZSE's bot detection IP-blocks after a modest number of requests (observed
+// as low as ~50-60 in a continuous session, per the ShowReport mechanism this
+// shares with chinaLeverage.js). Pages/chunks/tickers are paced well apart so
+// a deep backfill doesn't burn through that budget in a burst, and every
+// throw carries whatever rows were already gathered (`error.partial`) so a
+// mid-fetch block still leaves the caller something to persist instead of
+// losing the whole chunk/range.
+const SZSE_PAGE_SLEEP_MS = 350;
+const SZSE_CHUNK_SLEEP_MS = 900;
+
 async function szseFundSizeChunk(code, from, to) {
   const out = {};
   for (let page = 1; page <= 200; page++) {
-    const json = await withRetry(async () => {
-      const q = new URLSearchParams({
-        SHOWTYPE: 'JSON',
-        CATALOGID: 'fund_jjgm',
-        TABKEY: 'tab1',
-        txtDm: code,
-        txtStart: from,
-        txtEnd: to,
-        PAGENO: String(page),
-        random: String(Math.random()),
+    let json;
+    try {
+      json = await withRetry(async () => {
+        const q = new URLSearchParams({
+          SHOWTYPE: 'JSON',
+          CATALOGID: 'fund_jjgm',
+          TABKEY: 'tab1',
+          txtDm: code,
+          txtStart: from,
+          txtEnd: to,
+          PAGENO: String(page),
+          random: String(Math.random()),
+        });
+        const res = await fetch(`${SZSE_URL}?${q}`, {
+          headers: { 'User-Agent': UA, Referer: SZSE_REFERER },
+          signal: AbortSignal.timeout(20000),
+        });
+        if (!res.ok) throw new Error(`SZSE fund size HTTP ${res.status}`);
+        const body = await res.json();
+        if (body?.[0]?.error) throw new Error(`SZSE fund size: ${body[0].error}`);
+        return body;
       });
-      const res = await fetch(`${SZSE_URL}?${q}`, {
-        headers: { 'User-Agent': UA, Referer: SZSE_REFERER },
-        signal: AbortSignal.timeout(20000),
-      });
-      if (!res.ok) throw new Error(`SZSE fund size HTTP ${res.status}`);
-      const body = await res.json();
-      if (body?.[0]?.error) throw new Error(`SZSE fund size: ${body[0].error}`);
-      return body;
-    });
+    } catch (e) {
+      e.partial = out;
+      throw e;
+    }
     const report = json?.[0];
     const rows = report?.data ?? [];
     for (const row of rows) {
@@ -192,23 +208,30 @@ async function szseFundSizeChunk(code, from, to) {
     }
     const pagecount = report?.metadata?.pagecount ?? 1;
     if (page >= pagecount || rows.length === 0) break;
-    await sleep(120);
+    await sleep(SZSE_PAGE_SLEEP_MS);
   }
   return out;
 }
 
 // Walks the full from..to span backwards in ≤6-month chunks (the report's own
-// limit), merging each chunk's rows together.
+// limit), merging each chunk's rows together. On failure, whatever chunks
+// already succeeded (plus the failing chunk's own partial pages) travel with
+// the thrown error as `error.partial` so the caller can still save that much.
 async function szseFundSizeRange(code, from, to) {
   const out = {};
   let chunkEnd = to;
   while (chunkEnd >= from) {
     const cappedStart = addDays(chunkEnd, -SZSE_MAX_SPAN_DAYS);
     const chunkStart = cappedStart > from ? cappedStart : from;
-    Object.assign(out, await szseFundSizeChunk(code, chunkStart, chunkEnd));
+    try {
+      Object.assign(out, await szseFundSizeChunk(code, chunkStart, chunkEnd));
+    } catch (e) {
+      e.partial = { ...out, ...(e.partial ?? {}) };
+      throw e;
+    }
     if (chunkStart <= from) break;
     chunkEnd = addDays(chunkStart, -1);
-    await sleep(150);
+    await sleep(SZSE_CHUNK_SLEEP_MS);
   }
   return out;
 }
@@ -255,8 +278,12 @@ function saveHistory(h) { storage.write(BLOB, HISTORY_FILE, h); }
  * request, how many SSE trading days count as "in window" for the missing-day
  * backfill check, and which Yahoo price range to pull. Defaults to a light
  * daily-poll window; the backfill script passes a much larger value.
+ *
+ * tickerFilter optionally restricts the run to a subset of ALL_TICKERS (e.g.
+ * just the .SZ tickers for a targeted backfill) — useful for keeping a single
+ * run's SZSE request budget small enough to stay under the block threshold.
  */
-async function getChinaNationalTeamFlow(days = 30) {
+async function getChinaNationalTeamFlow(days = 30, tickerFilter = null) {
   const today = new Date();
   const from = iso(new Date(today.getTime() - days * 86400000));
   const to = iso(today);
@@ -265,8 +292,9 @@ async function getChinaNationalTeamFlow(days = 30) {
   history.shares = history.shares ?? {};
   history.prices = history.prices ?? {};
 
-  const shTickers = ALL_TICKERS.filter(isSh);
-  const szTickers = ALL_TICKERS.filter(t => !isSh(t));
+  const universe = tickerFilter?.length ? ALL_TICKERS.filter(t => tickerFilter.includes(t)) : ALL_TICKERS;
+  const shTickers = universe.filter(isSh);
+  const szTickers = universe.filter(t => !isSh(t));
 
   await mapPool(shTickers, 3, async ticker => {
     try {
@@ -285,18 +313,42 @@ async function getChinaNationalTeamFlow(days = 30) {
   // a whole ticker occasionally comes back "fetch failed" (network-level,
   // not a bad request), and losing its entire history for the run is worse
   // than the extra wait.
+  //
+  // Progress is saved after every ticker (not just once at the end of this
+  // whole function) and any partial rows a failed fetch still gathered are
+  // merged in too — a run that gets IP-blocked partway keeps whatever it
+  // already earned instead of losing it all. Once a failure looks like an
+  // actual block (network-level, not a bad request/date), the loop stops
+  // early rather than spending the rest of its retries hammering a host
+  // that's already refusing this IP — a later run picks up the remaining
+  // tickers once the block clears (typically ~25-30 min).
+  let szseBlocked = false;
   for (const ticker of szTickers) {
+    if (szseBlocked) break;
     let rows = null;
+    let lastError = null;
     for (let attempt = 1; attempt <= 3 && rows == null; attempt += 1) {
       try {
         rows = await szseFundSizeRange(secCode(ticker), from, to);
       } catch (e) {
-        if (attempt === 3) console.warn(`[chinaNationalTeamFlow] SZSE ${ticker}: ${e.message}`);
-        else await sleep(3000 * attempt);
+        lastError = e;
+        if (e.partial && Object.keys(e.partial).length) {
+          history.shares[ticker] = { ...(history.shares[ticker] ?? {}), ...e.partial };
+        }
+        if (attempt < 3) await sleep(4000 * attempt);
       }
     }
     if (rows) history.shares[ticker] = { ...(history.shares[ticker] ?? {}), ...rows };
-    await sleep(400);
+    saveHistory(history);
+    await storage.flush();
+    if (!rows && lastError) {
+      console.warn(`[chinaNationalTeamFlow] SZSE ${ticker}: ${lastError.message}`);
+      if (/fetch failed|ECONNRESET|EAI_AGAIN|network|timeout/i.test(lastError.message ?? '')) {
+        szseBlocked = true;
+        console.warn('[chinaNationalTeamFlow] SZSE looks blocked — stopping remaining SZ tickers for this run; already-fetched data is saved, re-run later to pick up the rest.');
+      }
+    }
+    if (!szseBlocked) await sleep(3000);
   }
 
   // Prices are needed to compute flow, but they also double as an independent
@@ -307,7 +359,7 @@ async function getChinaNationalTeamFlow(days = 30) {
   // tickers would otherwise never get backfilled (their calendar came only from
   // the SZSE fetch).
   const priceRange = days > 1460 ? '10y' : days > 700 ? '5y' : days > 300 ? '2y' : '1y';
-  await mapPool(ALL_TICKERS, 4, async ticker => {
+  await mapPool(universe, 4, async ticker => {
     try {
       const closes = await yahooDailyClose(yahooSymbol(ticker), priceRange);
       history.prices[ticker] = { ...(history.prices[ticker] ?? {}), ...closes };
@@ -326,7 +378,7 @@ async function getChinaNationalTeamFlow(days = 30) {
       if (day >= from && day <= to) knownTradingDays.add(day);
     }
   }
-  for (const ticker of ALL_TICKERS) {
+  for (const ticker of universe) {
     for (const day of Object.keys(history.prices[ticker] ?? {})) {
       if (day >= from && day <= to) knownTradingDays.add(day);
     }

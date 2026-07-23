@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Line } from 'react-chartjs-2';
 import ChartCard from '../../components/chart/ChartCard';
+import { useData } from '../../context/DataContext';
 
 const SURFACE = '#111419';
 const MUTED = '#8a8a84';
@@ -486,17 +487,19 @@ function Tile({ label, value, color }) {
 }
 
 export default function JapanLeverage() {
+  const { liveData } = useData();
   const [startDate, setStartDate] = useState(() => isoMonthsAgo(60));
   const [endDate, setEndDate] = useState(() => todayIso());
-  const [data, setData] = useState(null);
+  const [data, setData] = useState(() => liveData?.japanLeverage ?? null);
   const [error, setError] = useState(null);
 
   const maxDate = todayIso();
 
+  // Preloaded by DataContext on app visit — only fetch here if that hasn't
+  // landed yet (e.g. this key failed server-side while others succeeded).
   useEffect(() => {
+    if (liveData?.japanLeverage) { setData(liveData.japanLeverage); return undefined; }
     let live = true;
-    setData(null);
-    setError(null);
     fetch('/api/japan-leverage')
       .then(response => (response.ok
         ? response.json()
@@ -504,7 +507,7 @@ export default function JapanLeverage() {
       .then(payload => { if (live) setData(payload); })
       .catch(fetchError => { if (live) setError(fetchError.message); });
     return () => { live = false; };
-  }, []);
+  }, [liveData?.japanLeverage]);
 
   const win = useMemo(() => (data
     ? windowed(data.dates, { purchases: data.purchases, sales: data.sales, ratio: data.ratio }, startDate, endDate)
