@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { Line } from 'react-chartjs-2';
 import ChartCard from '../../components/chart/ChartCard';
 import { useData } from '../../context/DataContext';
@@ -259,15 +259,16 @@ function exchangeChartOptions(win, metric, color) {
   };
 }
 
+// `exchange` omitted (the two combined ratio panels) shows both links.
 function MarginSourceLinks({ exchange }) {
   return (
     <span className="lev-srcs">
-      {exchange === 'SSE' && (
+      {exchange !== 'SZSE' && (
         <a className="ch-src" href="https://www.sse.com.cn/market/othersdata/margin/sum/" target="_blank" rel="noopener noreferrer">
           <span className="lev-dot" style={{ background: BLUE }} />SSE margin data
         </a>
       )}
-      {exchange === 'SZSE' && (
+      {exchange !== 'SSE' && (
         <a className="ch-src" href="https://www.szse.cn/disclosure/margin/margin/index.html" target="_blank" rel="noopener noreferrer">
           <span className="lev-dot" style={{ background: ORANGE }} />SZSE margin data
         </a>
@@ -293,6 +294,171 @@ function ExchangePanel({ metric, exchange, win, color }) {
       lag={exchange === 'SSE' ? 'Same-evening' : 'T+1 morning'}
       height={300}
       legend={[[exchange, color]]}
+    >
+      {chart}
+    </ChartCard>
+  );
+}
+
+/* ── Ratio panels: SSE + SZSE combined into one stacked layer chart, each
+   exchange's own balance divided by the *combined* SSE+SZSE stock market cap
+   — so the two layers stack additively into the market-wide ratio, the same
+   way the two exchanges' raw balances stack into the combined totals used
+   elsewhere on this page. Only margin financing and securities lending get a
+   ratio chart (not total margin balance, which is just their sum). */
+
+const RATIO_LAYERS = [
+  { key: 'sse', label: 'SSE', color: SSE_COLOR },
+  { key: 'szse', label: 'SZSE', color: SZSE_COLOR },
+];
+
+const RATIO_METRICS = [
+  {
+    key: 'balance', label: 'Margin Financing Balance', cn: '融资余额',
+    color: RED, fmt: v => `${v.toFixed(2)}%`,
+  },
+  {
+    key: 'lendBalance', label: 'Securities Lending Balance', cn: '融券余额',
+    color: GOLD, fmt: v => `${v.toFixed(3)}%`,
+  },
+];
+
+const RATIO_NOTE = "Each exchange's own margin-financing / securities-lending balance divided by the "
+  + 'combined SSE+SZSE stock market cap (main-board A/B and STAR shares on SSE; main-board A/B and '
+  + 'ChiNext A shares on SZSE — bonds, funds, and options are excluded from the denominator on both '
+  + 'sides), so the SSE and SZSE layers stack additively into the market-wide ratio shown at the top '
+  + 'of each band.';
+
+/** Adapts the two per-exchange windows into one `{ dates, series: { sse, szse } }` shape for a given ratio metric. */
+function ratioWindow(sseWin, szseWin, metric) {
+  return {
+    dates: sseWin.dates,
+    series: {
+      sse: sseWin.series[`${metric.key}Ratio`] ?? [],
+      szse: szseWin.series[`${metric.key}Ratio`] ?? [],
+    },
+  };
+}
+
+/** Cumulative sum of RATIO_LAYERS[0..layerIndex] at each date; null (a gap) once any of those layers is missing. */
+function ratioLayerBoundarySeries(win, layerIndex) {
+  return win.dates.map((_, index) => {
+    let sum = 0;
+    for (let i = 0; i <= layerIndex; i += 1) {
+      const v = win.series[RATIO_LAYERS[i].key]?.[index];
+      if (!Number.isFinite(v)) return null;
+      sum += v;
+    }
+    return sum;
+  });
+}
+
+function ratioMarks(win, metric) {
+  const values = ratioLayerBoundarySeries(win, RATIO_LAYERS.length - 1);
+  const marks = MARKED_DATES.map(target => {
+    const index = sessionIndex(win.dates, target);
+    if (index < 0 || !Number.isFinite(values[index])) return null;
+    return { index, date: markedDate(win.dates[index]), value: metric.fmt(values[index]), anchor: 'center' };
+  }).filter(Boolean);
+
+  let latestIndex = values.length - 1;
+  while (latestIndex >= 0 && !Number.isFinite(values[latestIndex])) latestIndex -= 1;
+  if (latestIndex >= 0) {
+    marks.push({
+      index: latestIndex,
+      date: markedDate(win.dates[latestIndex]),
+      value: metric.fmt(values[latestIndex]),
+      anchor: 'right',
+    });
+  }
+  return marks;
+}
+
+function ratioChartData(win) {
+  const long = win.dates.length > 200;
+  return {
+    labels: win.dates.map(long ? monthLabel : dayLabel),
+    datasets: RATIO_LAYERS.map((layer, index) => ({
+      label: layer.label,
+      sourceKey: layer.key,
+      data: ratioLayerBoundarySeries(win, index),
+      backgroundColor: alpha(layer.color, 0.38),
+      borderColor: layer.color,
+      borderWidth: 2,
+      pointRadius: 0,
+      pointHoverRadius: 4,
+      pointHoverBackgroundColor: layer.color,
+      pointHoverBorderColor: SURFACE,
+      pointHoverBorderWidth: 2,
+      tension: 0.25,
+      fill: index === 0 ? 'origin' : '-1',
+    })),
+  };
+}
+
+function ratioChartOptions(win, metric) {
+  const total = ratioLayerBoundarySeries(win, RATIO_LAYERS.length - 1);
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: { duration: 300 },
+    interaction: { mode: 'index', intersect: false },
+    layout: { padding: { top: 16, right: 8, bottom: 18 } },
+    plugins: {
+      legend: { display: false },
+      chinaLeverageMarkedPoints: { marks: ratioMarks(win, metric), color: metric.color, datasetIndex: RATIO_LAYERS.length - 1 },
+      tooltip: {
+        backgroundColor: '#1a1f2a',
+        borderColor: 'rgba(255,255,255,.12)',
+        borderWidth: 1,
+        padding: 10,
+        titleFont: { family: "'Inter',sans-serif", size: 11 },
+        bodyFont: { family: "'Inter',sans-serif", size: 11 },
+        callbacks: {
+          title: items => (items.length ? win.dates[items[0].dataIndex] : ''),
+          label: context => {
+            const value = win.series[context.dataset.sourceKey]?.[context.dataIndex];
+            return ` ${context.dataset.label}: ${metric.fmt(value)}`;
+          },
+          afterBody: items => {
+            if (!items.length) return [];
+            const value = total[items[0].dataIndex];
+            return Number.isFinite(value) ? [` Combined: ${metric.fmt(value)}`] : [];
+          },
+        },
+      },
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: { color: MUTED, maxTicksLimit: 12, autoSkip: true, maxRotation: 0, padding: 3, font: { size: 10 } },
+      },
+      y: {
+        beginAtZero: true,
+        grace: '5%',
+        grid: { color: 'rgba(255,255,255,.07)' },
+        ticks: { color: MUTED, callback: value => metric.fmt(Number(value)), font: { size: 10 } },
+      },
+    },
+  };
+}
+
+function RatioLayerPanel({ metric, sseWin, szseWin }) {
+  const win = ratioWindow(sseWin, szseWin, metric);
+  const chart = (
+    <Line data={ratioChartData(win)} options={ratioChartOptions(win, metric)} plugins={[MARKED_POINTS]} />
+  );
+  return (
+    <ChartCard
+      chartId={`china-leverage-${metric.key}-ratio`}
+      title={`China A-Shares · ${metric.label} (${metric.cn}) ÷ Market Cap`}
+      src={<MarginSourceLinks />}
+      freq="Daily"
+      lag="Same-evening (SSE) / T+1 morning (SZSE)"
+      span2
+      height={320}
+      legend={RATIO_LAYERS.map(layer => [layer.label, layer.color])}
+      srcNote={RATIO_NOTE}
     >
       {chart}
     </ChartCard>
@@ -651,12 +817,18 @@ export default function ChinaLeverage() {
       </div>
       {backfillNote}
 
-      {METRICS.map(metric => (
-        <div className="cgrid" key={metric.key}>
-          <ExchangePanel metric={metric} exchange="SSE" win={sseWin} color={SSE_COLOR} />
-          <ExchangePanel metric={metric} exchange="SZSE" win={szseWin} color={SZSE_COLOR} />
-        </div>
-      ))}
+      {METRICS.map(metric => {
+        const ratioMetric = RATIO_METRICS.find(r => r.key === metric.key);
+        return (
+          <Fragment key={metric.key}>
+            {ratioMetric && <RatioLayerPanel metric={ratioMetric} sseWin={sseWin} szseWin={szseWin} />}
+            <div className="cgrid">
+              <ExchangePanel metric={metric} exchange="SSE" win={sseWin} color={SSE_COLOR} />
+              <ExchangePanel metric={metric} exchange="SZSE" win={szseWin} color={SZSE_COLOR} />
+            </div>
+          </Fragment>
+        );
+      })}
       <EtfPanel
         win={etfWin}
         funds={data.etf?.funds}

@@ -10,6 +10,13 @@
  *   lendVolume    融券卖出量      combined securities-lending sell volume, in shares
  *   totalBalance  两融余额        combined margin + securities-lending balance
  *
+ * Each exchange's own balance/lendBalance is also charted as a %-of-market-cap
+ * layer (`bySse.balanceRatio`, `bySzse.lendBalanceRatio`, etc. — see
+ * assembleExchange), dividing that exchange's own balance by the *combined*
+ * SSE+SZSE stock market cap (sseMarketCapDay/szseMarketCapDay below) so the
+ * two exchanges' ratio layers stack additively into one market-wide ratio,
+ * same as their raw balances stack into the combined totals above.
+ *
  * Neither exchange's official summary table publishes 融资偿还额 as a market
  * total — only SSE does, and only in a field its own website leaves off the
  * public column list (see sseMargin below). SZSE's is derived from the
@@ -163,6 +170,60 @@ async function szseMarginDay(day) {
     totalBalance: num(row.jrrzrjye),
     // repay filled in by the caller, which has the trading-day sequence
   };
+}
+
+/* ── Market cap: denominator for the margin/lending-balance ratio charts ─
+   Neither exchange's own overview report takes a date range — like SZSE's
+   margin report above, both are one-date-per-request, so a deep backfill
+   costs as many requests as the margin backfill does and reuses its pacing.
+*/
+
+const SSE_CAP_URL = 'https://query.sse.com.cn/commonQuery.do';
+
+// PRODUCT_CODE 01/02/03 = main-board A shares, main-board B shares, STAR
+// (科创板) shares — the stock-only categories, excluding this same endpoint's
+// fund/bond rows. Values come back in 亿元 (hundred million), same as SZSE's.
+async function sseMarketCapDay(day) {
+  const q = new URLSearchParams({
+    sqlId: 'COMMON_SSE_SJ_GPSJ_CJGK_MRGK_C',
+    PRODUCT_CODE: '01,02,03',
+    type: 'inParams',
+    SEARCH_DATE: day,
+  });
+  const res = await fetch(`${SSE_CAP_URL}?${q}`, {
+    headers: { 'User-Agent': UA, Referer: 'https://www.sse.com.cn/market/stockdata/overview/day/' },
+    signal: AbortSignal.timeout(30000),
+  });
+  if (!res.ok) throw new Error(`SSE market cap HTTP ${res.status}`);
+  const json = await res.json();
+  const rows = json.result ?? [];
+  if (!rows.length) return null; // market closed that day
+  const total = rows.reduce((sum, row) => sum + (Number(row.TOTAL_VALUE) || 0), 0);
+  return Number.isFinite(total) && total > 0 ? total * YI : null;
+}
+
+// Same CATALOGID SZSE's own market-overview page uses; the '股票' row is the
+// aggregate across main-board A, main-board B, and ChiNext A shares — SZSE's
+// analogue of summing SSE's 01/02/03 above.
+async function szseMarketCapDay(day) {
+  const q = new URLSearchParams({
+    SHOWTYPE: 'JSON',
+    CATALOGID: '1803_sczm',
+    TABKEY: 'tab1',
+    txtQueryDate: day,
+    random: String(Math.random()),
+  });
+  const res = await fetch(`${SZSE_URL}?${q}`, {
+    headers: { 'User-Agent': UA, Referer: 'https://www.szse.cn/market/overview/index.html' },
+    signal: AbortSignal.timeout(30000),
+  });
+  if (!res.ok) throw new Error(`SZSE market cap HTTP ${res.status}`);
+  const json = await res.json();
+  const rows = json?.[0]?.data ?? [];
+  const row = rows.find(r => String(r.lbmc ?? '').trim() === '股票');
+  if (!row) return null; // market closed that day
+  const cap = Number(String(row.sjzz ?? '').replace(/,/g, '')) * YI;
+  return Number.isFinite(cap) && cap > 0 ? cap : null;
 }
 
 /* ── 2× products: net assets (AUM), one point per trading day ───────── */
@@ -393,6 +454,42 @@ async function getChinaLeverage(days = 30) {
   }
   if (needSzse.length > 5) console.log(`[chinaLeverage] SZSE: got ${szseOk}/${needSzse.length}`);
 
+  // Market cap: same one-request-per-exchange-per-day shape as the SZSE
+  // margin loop above, so it reuses that loop's pacing knobs rather than
+  // adding its own — a deep backfill already budgets for this request count.
+  // Both exchanges are fetched together per day (one sleep per day, not per
+  // request) since neither call depends on the other.
+  const needCap = tradingDays.filter(d => !history[d]?.sseCap || !history[d]?.szseCap).reverse();
+  if (needCap.length > 5) console.log(`[chinaLeverage] market cap: fetching ${needCap.length} days…`);
+  const capFresh = {};
+  let capOk = 0;
+  for (let i = 0; i < needCap.length; i++) {
+    const day = needCap[i];
+    const [sseCap, szseCap] = await Promise.all([
+      history[day]?.sseCap
+        ? Promise.resolve(history[day].sseCap)
+        : sseMarketCapDay(day).catch(e => {
+          console.warn(`[chinaLeverage] SSE cap ${day}: ${e.message}`); return null;
+        }),
+      history[day]?.szseCap
+        ? Promise.resolve(history[day].szseCap)
+        : szseMarketCapDay(day).catch(e => {
+          console.warn(`[chinaLeverage] SZSE cap ${day}: ${e.message}`); return null;
+        }),
+    ]);
+    if (Number.isFinite(sseCap) || Number.isFinite(szseCap)) {
+      capFresh[day] = { sseCap, szseCap };
+      capOk++;
+    }
+    if (szseRestEvery && (i + 1) % szseRestEvery === 0) {
+      console.log(`[chinaLeverage] market cap: resting ${szseRestMs}ms after ${i + 1}/${needCap.length}…`);
+      await sleep(szseRestMs);
+    } else {
+      await sleep(szseDelayMs); // be a good citizen
+    }
+  }
+  if (needCap.length > 5) console.log(`[chinaLeverage] market cap: got ${capOk}/${needCap.length}`);
+
   const etfRange = days > 1460 ? '10y' : days > 700 ? '5y' : days > 300 ? '2y' : '1y';
   const [hkexCsi300, hkexChinext, tigerHistory, chauCloses, hkdCny, krwCny, usdCny, chauAum] = await Promise.all([
     hkexProductHistory(HKEX_PRODUCTS.csi300.stockId, compact(from), compact(to)).catch(e => {
@@ -423,6 +520,14 @@ async function getChinaLeverage(days = 30) {
 
   for (const day of tradingDays) {
     history[day] = { ...(history[day] ?? {}), sse: sse[day] };
+  }
+
+  for (const [day, cap] of Object.entries(capFresh)) {
+    history[day] = {
+      ...(history[day] ?? {}),
+      sseCap: Number.isFinite(cap.sseCap) ? cap.sseCap : history[day]?.sseCap,
+      szseCap: Number.isFinite(cap.szseCap) ? cap.szseCap : history[day]?.szseCap,
+    };
   }
 
   // Derive SZSE's repayment amount from the roll-forward identity, walking
@@ -519,11 +624,33 @@ const METRIC_DECIMALS = {
 };
 // The three metrics the page charts as stacked SSE/SZSE layers.
 const STACK_KEYS = ['balance', 'lendBalance', 'totalBalance'];
+// Of those, the two the page also charts as a %-of-market-cap layered chart.
+const RATIO_KEYS = ['balance', 'lendBalance'];
 
 function scaleMetric(key, value) {
   const decimals = METRIC_DECIMALS[key] ?? 2;
   const factor = 10 ** decimals;
   return Math.round((value / METRIC_SCALE[key]) * factor) / factor;
+}
+
+function round4(v) { return Math.round(v * 10000) / 10000; }
+
+/**
+ * Combined SSE + SZSE market cap, carried forward through either side's own
+ * reporting gap independently — same shape as assembleExchange below, kept
+ * separate since it's a single combined denominator rather than a per-metric
+ * per-exchange series.
+ */
+function assembleCap(history, dates) {
+  let lastSse = null;
+  let lastSzse = null;
+  return dates.map(day => {
+    const sseCap = history[day]?.sseCap;
+    const szseCap = history[day]?.szseCap;
+    if (Number.isFinite(sseCap)) lastSse = sseCap;
+    if (Number.isFinite(szseCap)) lastSzse = szseCap;
+    return (Number.isFinite(lastSse) && Number.isFinite(lastSzse)) ? lastSse + lastSzse : null;
+  });
 }
 
 /**
@@ -532,15 +659,30 @@ function scaleMetric(key, value) {
  * (which require both sides before counting a day at all), a stacked layer
  * should keep showing its own last-known height through a reporting gap
  * rather than vanishing just because the other exchange hasn't posted yet.
+ *
+ * Alongside each raw stacked layer, also derives a %-of-combined-market-cap
+ * layer for `RATIO_KEYS` (`balanceRatio`, `lendBalanceRatio`): each exchange's
+ * *own* balance divided by the *combined* SSE+SZSE cap, so the two exchanges'
+ * ratio layers still stack additively into the market-wide ratio, the same
+ * way their raw balances stack into the combined total above.
  */
-function assembleExchange(history, dates, exchange) {
+function assembleExchange(history, dates, exchange, capByDate) {
   const last = {};
   const out = Object.fromEntries(STACK_KEYS.map(k => [k, []]));
-  for (const day of dates) {
+  for (const key of RATIO_KEYS) out[`${key}Ratio`] = [];
+  for (let i = 0; i < dates.length; i += 1) {
+    const day = dates[i];
     for (const key of STACK_KEYS) {
       const v = history[day]?.[exchange]?.[key];
       if (Number.isFinite(v)) last[key] = v;
       out[key].push(Number.isFinite(last[key]) ? scaleMetric(key, last[key]) : null);
+    }
+    const cap = capByDate[i];
+    for (const key of RATIO_KEYS) {
+      const raw = last[key];
+      out[`${key}Ratio`].push(
+        Number.isFinite(raw) && Number.isFinite(cap) && cap > 0 ? round4((raw / cap) * 100) : null,
+      );
     }
   }
   return out;
@@ -637,8 +779,9 @@ function assemble(history) {
   };
 
   const etf = assembleEtf(history);
-  const bySse = assembleExchange(history, dates, 'sse');
-  const bySzse = assembleExchange(history, dates, 'szse');
+  const capByDate = assembleCap(history, dates);
+  const bySse = assembleExchange(history, dates, 'sse', capByDate);
+  const bySzse = assembleExchange(history, dates, 'szse', capByDate);
 
   return {
     dates,

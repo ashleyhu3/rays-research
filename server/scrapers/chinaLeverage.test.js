@@ -27,6 +27,35 @@ test('assemble combines SSE + SZSE per metric and scales into display units', ()
   assert.equal(data.bySzse.lendBalance[0], 5);
 });
 
+test('bySse/bySzse balanceRatio and lendBalanceRatio divide each exchange\'s own balance by the combined market cap', () => {
+  const data = _test.assemble({
+    '2026-01-02': {
+      sse: { balance: 1e12, lendBalance: 10e9 },
+      szse: { balance: 0.9e12, lendBalance: 5e9 },
+      sseCap: 30e12,
+      szseCap: 20e12, // combined cap 50e12
+    },
+  });
+
+  assert.equal(data.bySse.balanceRatio[0], 2);        // 1e12 / 50e12 * 100
+  assert.equal(data.bySzse.balanceRatio[0], 1.8);      // 0.9e12 / 50e12 * 100
+  assert.equal(data.bySse.lendBalanceRatio[0], 0.02);  // 10e9 / 50e12 * 100
+  assert.equal(data.bySzse.lendBalanceRatio[0], 0.01); // 5e9 / 50e12 * 100
+});
+
+test('ratio layers are null until both exchanges\' market cap is known', () => {
+  const data = _test.assemble({
+    '2026-01-02': {
+      sse: { balance: 1e12 },
+      szse: { balance: 0.9e12 },
+      sseCap: 30e12, // szseCap missing
+    },
+  });
+
+  assert.equal(data.bySse.balanceRatio[0], null);
+  assert.equal(data.bySzse.balanceRatio[0], null);
+});
+
 test('bySse/bySzse each carry forward through their own gap, independently of the combined total', () => {
   const data = _test.assemble({
     '2026-01-02': {

@@ -1,10 +1,12 @@
 /**
  * Seed the China A-share margin-leverage history.
  *
- * SSE serves any date range in one request; SZSE has no range query, so its
- * five years cost one request per trading day (~1,300, at a polite pace) —
- * budget a few minutes for this to run. The four 2× ETFs (HKEX, KRX, NYSE
- * Arca) come from Yahoo Finance in one request each.
+ * SSE's margin history serves any date range in one request; SZSE's margin
+ * history and both exchanges' market cap (the ratio charts' denominator) have
+ * no range query, so five years of those costs one request per trading day
+ * each (~1,300 × 3 ≈ 3,900, at a polite pace) — budget several minutes for
+ * this to run. The four 2× ETFs (HKEX, KRX, NYSE Arca) come from Yahoo
+ * Finance in one request each.
  *
  * Usage: npm run backfill:china-leverage -- [days]     (default 1830 ≈ 5y)
  */

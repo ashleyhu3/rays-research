@@ -214,10 +214,11 @@ app.get('/api/china-leverage',    cachedRoute('chinaLeverage',    s.chinaLeverag
 app.get('/api/macro',             cachedRoute('macro',            s.macro, null, { preferPersisted: true }));
 app.get('/api/commodities',       cachedRoute('commodities',      s.commodities, null, { preferPersisted: true }));
 
-// One-off deep backfill (~5y, ~1200 SZSE requests at a polite pace — a few
-// minutes) triggered manually from the China Leverage page, since SZSE only
-// answers requests from wherever this server is actually deployed and can't
-// be run from a local dev machine. Runs in the background rather than held
+// One-off deep backfill (~5y, ~3600 SZSE requests + ~1200 SSE market-cap
+// requests at a polite pace — several minutes) triggered manually from the
+// China Leverage page, since SZSE only answers requests from wherever this
+// server is actually deployed and can't be run from a local dev machine.
+// Runs in the background rather than held
 // open on the request, since a several-minute response would trip Render's
 // proxy timeout; the frontend polls the status route below. Separate from
 // the regular 6-hourly poll (which only fetches the last 30 days) so this
