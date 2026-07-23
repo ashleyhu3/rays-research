@@ -21,6 +21,10 @@ module.exports = [
   blob('aaiiSentimentHistory'), blob('spxPutCallRatioHistory'),
   blob('usPerformanceHistory'), blob('hkChinaPerformanceHistory'),
   blob('hkPerformanceHistory'), blob('chinaEtfPremiumHistory'),
+  blob('globalIndicesHistory'), blob('indexBreadthHistory'),
+  blob('breadthRawSp500History'), blob('breadthRawNdxHistory'),
+  blob('breadthRawHsiHistory'), blob('breadthRawCsi300History'),
+  blob('breadthRawSoxHistory'), blob('breadthRawNikkei225History'),
   blob('dailyOptionsReport'), blob('optionsPriorYearVolume'),
   blob('earningsDates'), blob('techEarningsCalendar'), blob('latestSnapshots'),
 ];

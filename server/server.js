@@ -15,6 +15,8 @@ const { readUsPerformance }          = require('./scrapers/usPerformance');
 const { readHkChinaPerformance }     = require('./scrapers/hkChinaPerformance');
 const { readChinaEtfPremium }        = require('./scrapers/chinaEtfPremium');
 const { readHkPerformance }          = require('./scrapers/hkPerformance');
+const { readGlobalIndices }          = require('./scrapers/globalIndices');
+const { readIndexBreadth }           = require('./scrapers/indexBreadth');
 const { readChinaNationalTeamFlow }  = require('./scrapers/chinaNationalTeamFlow');
 const { readChinaLiquidity }         = require('./scrapers/chinaLiquidity');
 const { readCarryTrade }             = require('./scrapers/carryTrade');
@@ -92,6 +94,7 @@ app.use('/api/us-performance', requireStorageBlobs('usPerformanceHistory'));
 app.use('/api/hk-china-performance', requireStorageBlobs('hkChinaPerformanceHistory'));
 app.use('/api/china-etf-premium', requireStorageBlobs('chinaEtfPremiumHistory'));
 app.use('/api/hk-performance', requireStorageBlobs('hkPerformanceHistory'));
+app.use('/api/global-indices', requireStorageBlobs('globalIndicesHistory'));
 app.use('/api/options', requireStorageBlobs('optionsOI'));
 app.use('/api/alerts/earnings-calendar', requireStorageBlobs('techEarningsCalendar'));
 
@@ -665,6 +668,49 @@ app.get('/api/us-performance', async (req, res) => {
     res.status(500).json({ error: `Could not load US performance data: ${e.message}` });
   }
 });
+
+/* ── Global Rotation — index price/turnover history, Mongo-persisted ──── */
+app.get('/api/global-indices', async (req, res) => {
+  const rawStart = (req.query.start ?? '').trim();
+  const rawEnd = (req.query.end ?? '').trim();
+  const oneYearAgo = new Date();
+  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+
+  let start = oneYearAgo.toISOString().slice(0, 10);
+  if (rawStart) {
+    const parsed = new Date(rawStart);
+    if (isNaN(parsed.getTime()) || !/^\d{4}-\d{2}-\d{2}$/.test(rawStart))
+      return res.status(400).json({ error: 'Invalid start date' });
+    if (parsed.getTime() > Date.now())
+      return res.status(400).json({ error: 'Start date cannot be in the future' });
+    start = rawStart;
+  }
+
+  let end = new Date().toISOString().slice(0, 10);
+  if (rawEnd) {
+    const parsed = new Date(rawEnd);
+    if (isNaN(parsed.getTime()) || !/^\d{4}-\d{2}-\d{2}$/.test(rawEnd))
+      return res.status(400).json({ error: 'Invalid end date' });
+    if (parsed.getTime() > Date.now())
+      return res.status(400).json({ error: 'End date cannot be in the future' });
+    end = rawEnd;
+  }
+
+  if (new Date(start).getTime() > new Date(end).getTime())
+    return res.status(400).json({ error: 'Start date cannot be after end date' });
+
+  try {
+    res.json(readGlobalIndices(start, end));
+  } catch (e) {
+    console.error('[global-indices]', start, end, e.message);
+    res.status(500).json({ error: `Could not load global index data: ${e.message}` });
+  }
+});
+
+// Breadth history is small (a few numbers/day × 10 indices) and always
+// returned in full — no date-range query needed, same as
+// china-national-team-flow below.
+app.get('/api/index-breadth', (_req, res) => res.json(readIndexBreadth()));
 
 /* ── China Rotation — Mongo-persisted daily history, no request-time scrape */
 app.get('/api/hk-china-performance', async (req, res) => {

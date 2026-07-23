@@ -42,6 +42,8 @@ const scrapers = {
   hkChinaPerformance: () => require('./scrapers/hkChinaPerformance').updateHkChinaPerformance(),
   hkPerformance:    () => require('./scrapers/hkPerformance').getHkPerformance(),
   chinaEtfPremium:  () => require('./scrapers/chinaEtfPremium').updateChinaEtfPremium(),
+  globalIndices:    () => require('./scrapers/globalIndices').updateGlobalIndices(),
+  indexBreadth:     () => require('./scrapers/indexBreadth').updateAllIndexBreadth(),
   macro:            async () => {
     const { getMacroData, mergeMacroData } = require('./scrapers/macro');
     const fresh = await getMacroData();
@@ -99,13 +101,15 @@ const TTL = {
   hkChinaPerformance: 6 * 3600000, // 6-hourly — persisted China Rotation history
   hkPerformance:  6 * 3600000,  // 6-hourly — Hang Seng Composite sub-indices settle after the HKEX close
   chinaEtfPremium: 6 * 3600000,  // 6-hourly — official NAV plus live IOPV when available
+  globalIndices:   6 * 3600000,  // 6-hourly — persisted Global Rotation index/price history, same cadence as usPerformance
+  indexBreadth:   24 * 3600000,  // daily — full constituent re-fetch per index is heavy; breadth doesn't need intraday freshness
   macro:          24 * 3600000,  // daily — monthly/weekly macro releases
   commodities:     6 * 3600000,  // 6-hourly — futures candles and daily spot quotes
 };
 
 // These scrapers already write their canonical time series to dedicated Mongo
 // blobs. Avoid duplicating their multi-year payloads in latestSnapshots/history.
-const ROTATION_KEYS = ['usPerformance', 'hkChinaPerformance', 'hkPerformance', 'chinaEtfPremium'];
+const ROTATION_KEYS = ['usPerformance', 'hkChinaPerformance', 'hkPerformance', 'chinaEtfPremium', 'globalIndices', 'indexBreadth'];
 const PERSISTED_ONLY = new Set(ROTATION_KEYS);
 PERSISTED_ONLY.add('chinaNationalTeamFlow');
 PERSISTED_ONLY.add('chinaLiquidity');

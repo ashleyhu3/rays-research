@@ -24,6 +24,14 @@ const CHINA_PERFORMANCE_SUBTABS = [
  * aggregate sector chart; these entries open the relative-performance grids. */
 const HK_PERFORMANCE_SUBTABS = HK_SECTIONS.map(section => ({ key: section.title, label: section.title }));
 
+/** Subtabs shown under the "Global" rotation nav item — mirrors the page
+ * sections in src/pages/global-performance/GlobalPerformance.jsx. */
+const GLOBAL_PERFORMANCE_SUBTABS = [
+  { key: 'breadth',   label: 'Breadth' },
+  { key: 'technical', label: 'Technical' },
+  { key: 'turnover',  label: 'Turnover' },
+];
+
 const COMMODITY_SUBTABS = [
   { key: 'precious-rare', label: 'Precious & Rare Metal' },
   { key: 'industrial', label: 'Industrial Metal' },
@@ -113,9 +121,10 @@ export const NAV_SECTIONS = [
     sectorId: 'market-performance',
     mode: 'us-performance',
     items: [
-      { id: 'us-performance',       label: 'US',    subitems: US_PERFORMANCE_SUBTABS },
-      { id: 'hk-china-performance', label: 'China', subitems: CHINA_PERFORMANCE_SUBTABS },
-      { id: 'hk-performance',       label: 'HK',    subitems: HK_PERFORMANCE_SUBTABS },
+      { id: 'us-performance',       label: 'US',     subitems: US_PERFORMANCE_SUBTABS },
+      { id: 'hk-china-performance', label: 'China',  subitems: CHINA_PERFORMANCE_SUBTABS },
+      { id: 'hk-performance',       label: 'HK',     subitems: HK_PERFORMANCE_SUBTABS },
+      { id: 'global-performance',  label: 'Global', subitems: GLOBAL_PERFORMANCE_SUBTABS },
     ],
   },
   {
@@ -268,6 +277,7 @@ export const VIEW_META = {
   'us-performance':   { title: 'ROTATION — US' },
   'hk-china-performance': { title: 'ROTATION — CHINA' },
   'hk-performance':       { title: 'ROTATION — HK' },
+  'global-performance':   { title: 'ROTATION — GLOBAL' },
   'macro-us-inflation': { title: 'US · INFLATION' },
   'macro-yield':        { title: 'GOVERNMENT BOND YIELDS' },
   'macro-commodity':    { title: 'COMMODITY' },

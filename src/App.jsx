@@ -47,6 +47,7 @@ import Alerts, { OptionsReportTitle, OptionsReportControls } from './pages/alert
 import UsPerformance from './pages/us-performance/UsPerformance';
 import HkChinaPerformance from './pages/hk-china-performance/HkChinaPerformance';
 import HkPerformance from './pages/hk-performance/HkPerformance';
+import GlobalPerformance from './pages/global-performance/GlobalPerformance';
 import { OptionsReportProvider } from './context/OptionsReportContext';
 import DataValidity from './pages/data-validity/DataValidity';
 import { LeverageKorea, LeverageTaiwan } from './pages/leverage/Leverage';
@@ -72,7 +73,7 @@ import Docker         from './pages/sources/Docker';
 import Community      from './pages/sources/Community';
 
 /** Views with sidebar-driven subtabs (see NAV_SECTIONS 'Rotation' subitems) */
-const MARKET_PERF_VIEWS = new Set(['us-performance', 'hk-china-performance', 'hk-performance', 'liquidity-china-flow', 'macro-commodity']);
+const MARKET_PERF_VIEWS = new Set(['us-performance', 'hk-china-performance', 'hk-performance', 'global-performance', 'liquidity-china-flow', 'macro-commodity']);
 
 /** Views that use EditableGrid and support layout customisation */
 const LAYOUT_EDITABLE = new Set([
@@ -128,6 +129,7 @@ const VIEW_COMPONENTS = {
   'us-performance':   UsPerformance,
   'hk-china-performance': HkChinaPerformance,
   'hk-performance':   HkPerformance,
+  'global-performance': GlobalPerformance,
   'sentiment':        Sentiment,
   'sources':          DataValidity,
   'leverage-korea':   LeverageKorea,
