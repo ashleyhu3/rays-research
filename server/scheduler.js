@@ -96,7 +96,7 @@ const TTL = {
   japanLeverage:  24 * 3600000,  // daily — JPX only republishes this workbook once a week; a daily poll picks up the new week
   usLeverage:      6 * 3600000,  // 6-hourly — ETF net assets move daily; CFTC is weekly and FINRA is monthly
   aaiiSentiment:  24 * 3600000,  // daily — AAII publishes once a week (Thursdays)
-  spxPutCallRatio: 6 * 3600000,  // 6-hourly — Barchart shows a live intraday value; a few reads/day is enough since only one point per calendar date is kept
+  spxPutCallRatio: 6 * 3600000,  // 6-hourly — refresh Barchart's rolling 200-session put/call chart history
   usPerformance:   6 * 3600000,  // 6-hourly — persisted Rotation history; catches the US close
   hkChinaPerformance: 6 * 3600000, // 6-hourly — persisted China Rotation history
   hkPerformance:  6 * 3600000,  // 6-hourly — Hang Seng Composite sub-indices settle after the HKEX close

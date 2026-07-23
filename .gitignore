@@ -8,6 +8,7 @@ emailai/
 # (exception: chinaLeverageHistory.json is kept in git as the A-shares leverage baseline)
 server/data/*
 !server/data/chinaLeverageHistory.json
+!server/data/spxPutCallRatioHistory.json
 stocktwits/Stocktwits-Scraper-main/data/
 server/.venv-transcripts/
 Rays_Intern/

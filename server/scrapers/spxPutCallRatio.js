@@ -1,28 +1,25 @@
 /**
  * S&P 500 (SPX) Put/Call Ratio — Volume and Open Interest, from Barchart's
- * live quote page (https://www.barchart.com/stocks/quotes/$SPX/put-call-ratios).
+ * quote page and the same options-historical request that powers its chart.
  *
- * This is a current-day snapshot only — Barchart shows no historical time
- * series, and CBOE stopped publishing free historical put/call data in Oct
- * 2019 (confirmed directly: their CSV archives are frozen there). There is
- * no full-history backfill available for this metric from any free source.
- * So, same shape as usLeverage/aaiiSentiment's rendered-page fallback: this
- * scrapes today's totals via the Apify content crawler (the page's real
- * numbers are populated client-side after render, not present in the raw
- * HTML — confirmed directly, so there is no plain-fetch path worth
- * attempting first) and persists one point per calendar date, accumulating
- * real history from here forward rather than backfilling.
+ * Barchart's lower chart requests the latest 200 daily observations from its
+ * first-party JSON proxy. The proxy requires the anonymous session cookies
+ * and anti-forgery tokens established by loading the quote page first, so the
+ * scraper performs that handshake before requesting the chart data.
  */
 'use strict';
+const axios = require('axios');
 const cheerio = require('cheerio');
 const path = require('path');
 const storage = require('../storage');
-const { crawlPages } = require('./apifyCrawler');
 
 const HISTORY_FILE = path.join(__dirname, '..', 'data', 'spxPutCallRatioHistory.json');
 const BLOB = 'spxPutCallRatioHistory';
 
 const PAGE_URL = 'https://www.barchart.com/stocks/quotes/$SPX/put-call-ratios';
+const HISTORY_URL = 'https://www.barchart.com/proxies/core-api/v1/options-historical/get';
+const USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) '
+  + 'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36';
 
 function round2(v) { return Math.round(v * 100) / 100; }
 
@@ -58,21 +55,69 @@ function parseBarchartSpxPutCall(html) {
   return { ...out, volumeRatio, oiRatio };
 }
 
-async function scrapeSpxPutCallRatio(history) {
-  history.daily = history.daily ?? {};
+function parseBarchartHistory(payload) {
+  if (!Array.isArray(payload?.data)) return [];
+  return payload.data
+    .map(item => ({
+      date: typeof item?.date === 'string' ? item.date : '',
+      volumeRatio: Number(item?.putCallVolumeRatio),
+      oiRatio: Number(item?.putCallOpenInterestRatio),
+    }))
+    .filter(item => /^\d{4}-\d{2}-\d{2}$/.test(item.date)
+      && (Number.isFinite(item.volumeRatio) || Number.isFinite(item.oiRatio)));
+}
 
-  const [page] = await crawlPages([PAGE_URL]);
-  if (!page?.html) throw new Error('Barchart SPX put/call page crawl returned no content');
-
-  const row = parseBarchartSpxPutCall(page.html);
-  if (!Number.isFinite(row.volumeRatio) && !Number.isFinite(row.oiRatio)) {
-    throw new Error('Barchart SPX put/call page: no ratio values parsed');
+function sessionHeaders(response, html) {
+  const setCookies = response.headers?.['set-cookie'] ?? [];
+  const cookies = setCookies.map(value => value.split(';', 1)[0]);
+  const xsrf = cookies.find(value => value.startsWith('XSRF-TOKEN='))?.slice('XSRF-TOKEN='.length);
+  const csrf = cheerio.load(html)('meta[name="csrf-token"]').attr('content');
+  if (!cookies.length || !xsrf || !csrf) {
+    throw new Error('Barchart session did not include the cookies and anti-forgery tokens required by its chart feed');
   }
+  return {
+    Accept: 'application/json',
+    Cookie: cookies.join('; '),
+    Referer: PAGE_URL.replace('$', '%24'),
+    'User-Agent': USER_AGENT,
+    'X-CSRF-TOKEN': csrf,
+    'X-XSRF-TOKEN': xsrf,
+  };
+}
 
-  // One point per calendar date — a same-day re-scrape (this only runs a few
-  // times a day) just overwrites today's entry with the latest intraday read.
-  const today = new Date().toISOString().slice(0, 10);
-  history.daily[today] = row;
+function mergeHistoricalRows(history, rows) {
+  history.daily = history.daily ?? {};
+  for (const row of rows) {
+    history.daily[row.date] = {
+      ...history.daily[row.date],
+      ...(Number.isFinite(row.volumeRatio) ? { volumeRatio: row.volumeRatio } : {}),
+      ...(Number.isFinite(row.oiRatio) ? { oiRatio: row.oiRatio } : {}),
+    };
+  }
+}
+
+async function scrapeSpxPutCallRatio(history) {
+  const page = await axios.get(PAGE_URL, {
+    timeout: 30_000,
+    headers: { Accept: 'text/html', 'User-Agent': USER_AGENT },
+  });
+  const html = String(page.data ?? '');
+  const response = await axios.get(HISTORY_URL, {
+    timeout: 30_000,
+    headers: sessionHeaders(page, html),
+    params: {
+      symbol: '$SPX',
+      fields: 'putCallVolumeRatio,putCallOpenInterestRatio,date',
+      limit: 200,
+      orderBy: 'date',
+      orderDir: 'desc',
+    },
+  });
+  const rows = parseBarchartHistory(response.data);
+  if (!rows.length) {
+    throw new Error('Barchart SPX put/call chart feed returned no historical ratio values');
+  }
+  mergeHistoricalRows(history, rows);
 }
 
 function assemble(history) {
@@ -107,5 +152,11 @@ function readSpxPutCallRatio() { return assemble(loadHistory()); }
 module.exports = {
   getSpxPutCallRatio,
   readSpxPutCallRatio,
-  _test: { assemble, parseBarchartSpxPutCall },
+  _test: {
+    assemble,
+    mergeHistoricalRows,
+    parseBarchartHistory,
+    parseBarchartSpxPutCall,
+    sessionHeaders,
+  },
 };

@@ -806,9 +806,8 @@ export default function UsPerformance({ section = null }) {
     };
   }, [aaiiData, startDate, endDate]);
 
-  // SPX put/call ratio has no historical backfill available (Barchart shows
-  // only a live snapshot, CBOE's free archives stop in 2019) — same lazy
-  // fetch-on-tab-open as AAII, accumulating real points day by day.
+  // SPX put/call ratios are backfilled from the same 200-session historical
+  // feed that powers Barchart's lower chart, then refreshed on the server.
   const [putCallData, setPutCallData] = useState(null);
   const [putCallError, setPutCallError] = useState(null);
   useEffect(() => {
