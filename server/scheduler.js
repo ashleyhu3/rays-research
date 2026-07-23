@@ -36,6 +36,8 @@ const scrapers = {
   carryTrade: () => require('./scrapers/carryTrade').updateCarryTrade(),
   japanLeverage:    () => require('./scrapers/japanLeverage').getJapanLeverage(),
   usLeverage:       () => require('./scrapers/usLeverage').getUsLeverage(),
+  aaiiSentiment:    () => require('./scrapers/aaiiSentiment').getAaiiSentiment(),
+  spxPutCallRatio:  () => require('./scrapers/spxPutCallRatio').getSpxPutCallRatio(),
   usPerformance:    () => require('./scrapers/usPerformance').updateUsPerformance(),
   hkChinaPerformance: () => require('./scrapers/hkChinaPerformance').updateHkChinaPerformance(),
   hkPerformance:    () => require('./scrapers/hkPerformance').getHkPerformance(),
@@ -91,6 +93,8 @@ const TTL = {
   carryTrade:     24 * 3600000,  // daily — weekly CFTC release, Friday after the close
   japanLeverage:  24 * 3600000,  // daily — JPX only republishes this workbook once a week; a daily poll picks up the new week
   usLeverage:      6 * 3600000,  // 6-hourly — ETF net assets move daily; CFTC is weekly and FINRA is monthly
+  aaiiSentiment:  24 * 3600000,  // daily — AAII publishes once a week (Thursdays)
+  spxPutCallRatio: 6 * 3600000,  // 6-hourly — Barchart shows a live intraday value; a few reads/day is enough since only one point per calendar date is kept
   usPerformance:   6 * 3600000,  // 6-hourly — persisted Rotation history; catches the US close
   hkChinaPerformance: 6 * 3600000, // 6-hourly — persisted China Rotation history
   hkPerformance:  6 * 3600000,  // 6-hourly — Hang Seng Composite sub-indices settle after the HKEX close

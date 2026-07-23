@@ -9,6 +9,7 @@ const US_PERFORMANCE_SUBTABS = [
   { key: 'theme',       label: 'Theme' },
   { key: 'factor',      label: 'Factor' },
   { key: 'correlation', label: 'Correlation' },
+  { key: 'sentiment',   label: 'Sentiment' },
 ];
 
 /** Subtabs shown under the "China" rotation nav item — "Index"

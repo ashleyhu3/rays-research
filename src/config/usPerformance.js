@@ -47,7 +47,20 @@ export const EXTRA_TICKERS = {
   VLUE: { ticker: 'VLUE', label: 'VLUE', name: 'Value Factor', color: '#da5a2f' },
   QUAL: { ticker: 'QUAL', label: 'QUAL', name: 'Quality Factor', color: '#198f5e' },
   USMV: { ticker: 'USMV', label: 'USMV', name: 'Min Volatility Factor', color: '#9c7c1c' },
+
+  VIX:   { ticker: '^VIX',   label: 'VIX',   name: 'CBOE Volatility Index', color: '#eaeae0' },
+  VIXEQ: { ticker: '^VIXEQ', label: 'VIXEQ', name: 'CBOE S&P 500 Constituent Volatility', color: '#f2b134' },
+  VXN:   { ticker: '^VXN',   label: 'VXN',   name: 'CBOE Nasdaq-100 Volatility Index', color: '#3c8cdd' },
+  GLD:   { ticker: 'GLD',    label: 'GLD',   name: 'SPDR Gold Shares', color: '#eab308' },
 };
+
+// Chart 1 of the Sentiment section: raw index levels (not rebased — VIX,
+// VIXEQ and VXN are already directly comparable).
+export const VOL_INDEX_TICKERS = ['VIX', 'VIXEQ', 'VXN'];
+
+// Chart 4 of the Sentiment section: GLD/VIX cross-asset ratio (gold vs the
+// fear gauge) — see https://x.com/Zac_Markovich/status/2030370942892048797
+export const GLD_VIX_PAIR = ['GLD', 'VIX'];
 
 // [numerator, denominator] label pairs for the Tech section's ratio charts.
 export const TECH_PAIRS = [

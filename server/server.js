@@ -256,6 +256,8 @@ app.get('/api/china-liquidity', (_req, res) => res.json(readChinaLiquidity()));
 app.get('/api/carry-trade', (_req, res) => res.json(readCarryTrade()));
 app.get('/api/japan-leverage',    cachedRoute('japanLeverage',    s.japanLeverage));
 app.get('/api/us-leverage',       cachedRoute('usLeverage',       s.usLeverage));
+app.get('/api/aaii-sentiment',    cachedRoute('aaiiSentiment',    s.aaiiSentiment));
+app.get('/api/spx-put-call-ratio', cachedRoute('spxPutCallRatio', s.spxPutCallRatio));
 
 // Keyword frequency search — whole-word matches across the StockTwits messages
 // in Mongo (committed-CSV fallback for keyless dev), as trailing-30-day counts

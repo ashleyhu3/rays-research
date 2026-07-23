@@ -4,7 +4,7 @@ import ChartCard from '../../components/chart/ChartCard';
 import { useData } from '../../context/DataContext';
 import {
   SPX_META, US_PERFORMANCE_ETFS, EXTRA_TICKERS, TECH_PAIRS, THEME_TICKERS, FACTOR_TICKERS,
-  SOX_CORRELATION_PAIRS, KWEB_CORRELATION_PAIRS,
+  SOX_CORRELATION_PAIRS, KWEB_CORRELATION_PAIRS, VOL_INDEX_TICKERS, GLD_VIX_PAIR,
 } from '../../config/usPerformance';
 import { GRID, TICK, BORD } from '../../utils/chartHelpers';
 import { rankChartsByLatestStrength, rankDatasetsByLatestStrength } from '../../utils/chartRanking';
@@ -369,6 +369,135 @@ function buildCorrelationChartData(payload, pairs, startDate, endDate) {
   return datasets.length > 0 ? { labels, datasets } : null;
 }
 
+// Raw index levels (VIX/VIXEQ/VXN are directly comparable already — no
+// rebase-to-100 the way sector ETFs need for a relative-performance chart).
+function buildVolIndexChartData(payload, labels, startDate, endDate) {
+  const bounds = visibleBounds(payload.dates, startDate, endDate);
+  if (!bounds) return null;
+
+  const datasets = labels.map(label => {
+    const meta = metaForLabel(label);
+    const series = meta && findSeries(payload, meta.ticker);
+    if (!meta || !series) return null;
+    return {
+      label: meta.label,
+      fullName: meta.name,
+      data: sliceBounds(series.closes, bounds),
+      borderColor: meta.color,
+      backgroundColor: 'transparent',
+      borderWidth: 2,
+      pointRadius: 0,
+      pointHoverRadius: 3,
+      pointHitRadius: 6,
+      tension: 0.15,
+      spanGaps: true,
+    };
+  }).filter(Boolean);
+
+  return datasets.length > 0
+    ? { labels: sliceBounds(payload.dates, bounds).map(fmtDate), datasets }
+    : null;
+}
+
+function volIndexChartOptions() {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: { duration: 300 },
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: {
+        display: true,
+        position: 'bottom',
+        labels: { color: '#c8c8c0', font: { size: 10, family: "'Inter',sans-serif" }, padding: 8, boxWidth: 10 },
+      },
+      tooltip: {
+        backgroundColor: '#1a1f2a',
+        borderColor: 'rgba(255,255,255,.12)',
+        borderWidth: 1,
+        titleFont: { family: "'Inter',sans-serif", size: 11 },
+        bodyFont: { family: "'Inter',sans-serif", size: 11 },
+        padding: 10,
+        callbacks: {
+          label: c => (c.parsed.y == null ? ` ${c.dataset.label}: —` : ` ${c.dataset.label}: ${c.parsed.y.toFixed(2)}`),
+        },
+      },
+    },
+    scales: {
+      x: { grid: GRID, ticks: { ...TICK, maxTicksLimit: 10, autoSkip: true }, border: BORD },
+      y: { grid: GRID, ticks: { ...TICK, callback: v => v.toFixed(0) }, border: BORD },
+    },
+  };
+}
+
+// AAII weekly Bullish/Neutral/Bearish % — a plain percentage line chart, not
+// a price/level series, so it gets its own simple options rather than reusing
+// chartOptions()'s rebased-to-100 tooltip math.
+function aaiiChartOptions() {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: { duration: 300 },
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: {
+        display: true,
+        position: 'bottom',
+        labels: { color: '#c8c8c0', font: { size: 10, family: "'Inter',sans-serif" }, padding: 8, boxWidth: 10 },
+      },
+      tooltip: {
+        backgroundColor: '#1a1f2a',
+        borderColor: 'rgba(255,255,255,.12)',
+        borderWidth: 1,
+        titleFont: { family: "'Inter',sans-serif", size: 11 },
+        bodyFont: { family: "'Inter',sans-serif", size: 11 },
+        padding: 10,
+        callbacks: {
+          label: c => (c.parsed.y == null ? ` ${c.dataset.label}: —` : ` ${c.dataset.label}: ${c.parsed.y.toFixed(1)}%`),
+        },
+      },
+    },
+    scales: {
+      x: { grid: GRID, ticks: { ...TICK, maxTicksLimit: 10, autoSkip: true }, border: BORD },
+      y: { min: 0, max: 70, grid: GRID, ticks: { ...TICK, stepSize: 10, callback: v => `${v}%` }, border: BORD },
+    },
+  };
+}
+
+// SPX Put/Call Ratio — Volume and Open Interest. Only ever one point per
+// calendar date (see spxPutCallRatio.js), so this accumulates real history
+// day by day rather than showing a deep backfill.
+function putCallChartOptions() {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: { duration: 300 },
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: {
+        display: true,
+        position: 'bottom',
+        labels: { color: '#c8c8c0', font: { size: 10, family: "'Inter',sans-serif" }, padding: 8, boxWidth: 10 },
+      },
+      tooltip: {
+        backgroundColor: '#1a1f2a',
+        borderColor: 'rgba(255,255,255,.12)',
+        borderWidth: 1,
+        titleFont: { family: "'Inter',sans-serif", size: 11 },
+        bodyFont: { family: "'Inter',sans-serif", size: 11 },
+        padding: 10,
+        callbacks: {
+          label: c => (c.parsed.y == null ? ` ${c.dataset.label}: —` : ` ${c.dataset.label}: ${c.parsed.y.toFixed(2)}`),
+        },
+      },
+    },
+    scales: {
+      x: { grid: GRID, ticks: { ...TICK, maxTicksLimit: 10, autoSkip: true }, border: BORD },
+      y: { grid: GRID, ticks: { ...TICK, callback: v => v.toFixed(1) }, border: BORD, beginAtZero: true },
+    },
+  };
+}
+
 function chartOptions({ relative = false, compact = false } = {}) {
   return {
     responsive: true,
@@ -542,7 +671,7 @@ function correlationChartOptions() {
 }
 
 const SECTION_LABELS = {
-  all: 'Sector', tech: 'Tech', theme: 'Theme', factor: 'Factor', correlation: 'Correlation',
+  all: 'Sector', tech: 'Tech', theme: 'Theme', factor: 'Factor', correlation: 'Correlation', sentiment: 'Sentiment',
 };
 
 export default function UsPerformance({ section = null }) {
@@ -634,6 +763,77 @@ export default function UsPerformance({ section = null }) {
     () => (payload ? buildCorrelationChartData(payload, KWEB_CORRELATION_PAIRS, startDate, endDate) : null),
     [payload, startDate, endDate]
   );
+  const volIndexData = useMemo(
+    () => (payload ? buildVolIndexChartData(payload, VOL_INDEX_TICKERS, startDate, endDate) : null),
+    [payload, startDate, endDate]
+  );
+  const gldVixData = useMemo(() => {
+    if (!payload) return null;
+    const [numLabel, denLabel] = GLD_VIX_PAIR;
+    const numMeta = metaForLabel(numLabel);
+    const denMeta = metaForLabel(denLabel);
+    return numMeta && denMeta ? buildPairChartData(payload, numMeta, denMeta, startDate, endDate) : null;
+  }, [payload, startDate, endDate]);
+
+  // AAII weekly sentiment isn't part of the price-series payload above — it's
+  // fetched lazily, only once the Sentiment subtab is actually opened.
+  const [aaiiData, setAaiiData] = useState(null);
+  const [aaiiError, setAaiiError] = useState(null);
+  useEffect(() => {
+    if (section !== 'sentiment' || aaiiData || aaiiError) return undefined;
+    let live = true;
+    fetch('/api/aaii-sentiment')
+      .then(response => (response.ok
+        ? response.json()
+        : response.json().then(body => Promise.reject(new Error(body.error ?? `HTTP ${response.status}`)))))
+      .then(data => { if (live) setAaiiData(data); })
+      .catch(fetchError => { if (live) setAaiiError(fetchError.message); });
+    return () => { live = false; };
+  }, [section, aaiiData, aaiiError]);
+  const aaiiChartData = useMemo(() => {
+    if (!aaiiData?.dates?.length) return null;
+    // Respect the page's shared date-range picker, same as every other chart here.
+    const bounds = visibleBounds(aaiiData.dates, startDate, endDate);
+    if (!bounds) return null;
+    const labels = sliceBounds(aaiiData.dates, bounds).map(fmtDate);
+    return {
+      labels,
+      datasets: [
+        { label: 'Bullish %', data: sliceBounds(aaiiData.bullish, bounds), borderColor: '#4ade80', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, pointHoverRadius: 3, pointHitRadius: 6, tension: 0.15, spanGaps: true },
+        { label: 'Neutral %', data: sliceBounds(aaiiData.neutral, bounds), borderColor: '#94a3b8', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, pointHoverRadius: 3, pointHitRadius: 6, tension: 0.15, spanGaps: true },
+        { label: 'Bearish %', data: sliceBounds(aaiiData.bearish, bounds), borderColor: '#f87171', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, pointHoverRadius: 3, pointHitRadius: 6, tension: 0.15, spanGaps: true },
+      ],
+    };
+  }, [aaiiData, startDate, endDate]);
+
+  // SPX put/call ratio has no historical backfill available (Barchart shows
+  // only a live snapshot, CBOE's free archives stop in 2019) — same lazy
+  // fetch-on-tab-open as AAII, accumulating real points day by day.
+  const [putCallData, setPutCallData] = useState(null);
+  const [putCallError, setPutCallError] = useState(null);
+  useEffect(() => {
+    if (section !== 'sentiment' || putCallData || putCallError) return undefined;
+    let live = true;
+    fetch('/api/spx-put-call-ratio')
+      .then(response => (response.ok
+        ? response.json()
+        : response.json().then(body => Promise.reject(new Error(body.error ?? `HTTP ${response.status}`)))))
+      .then(data => { if (live) setPutCallData(data); })
+      .catch(fetchError => { if (live) setPutCallError(fetchError.message); });
+    return () => { live = false; };
+  }, [section, putCallData, putCallError]);
+  const putCallChartData = useMemo(() => {
+    if (!putCallData?.dates?.length) return null;
+    const bounds = visibleBounds(putCallData.dates, startDate, endDate);
+    if (!bounds) return null;
+    return {
+      labels: sliceBounds(putCallData.dates, bounds).map(fmtDate),
+      datasets: [
+        { label: 'Volume Ratio', data: sliceBounds(putCallData.volumeRatio, bounds), borderColor: '#4fc3f7', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 2, pointHoverRadius: 4, pointHitRadius: 6, tension: 0.15, spanGaps: true },
+        { label: 'Open Interest Ratio', data: sliceBounds(putCallData.oiRatio, bounds), borderColor: '#f2b134', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 2, pointHoverRadius: 4, pointHitRadius: 6, tension: 0.15, spanGaps: true },
+      ],
+    };
+  }, [putCallData, startDate, endDate]);
   const maxDate = todayIso();
 
   const controls = (
@@ -750,6 +950,42 @@ export default function UsPerformance({ section = null }) {
               <Line data={chart.data} options={correlationChartOptions()} plugins={[ZERO_LINE]} />
             </ChartCard>
           ))}
+        </div>
+      )}
+
+      {section === 'sentiment' && !error && (
+        <div className="cgrid">
+          {volIndexData && (
+            <ChartCard title="VIX" src="Yahoo Finance" srcUrl="https://finance.yahoo.com" freq="Daily" span2 height={340}>
+              <Line data={volIndexData} options={volIndexChartOptions()} />
+            </ChartCard>
+          )}
+
+          <ChartCard title="S&P500 Put Call Ratio" src="Barchart" srcUrl="https://www.barchart.com/stocks/quotes/$SPX/put-call-ratios" freq="Daily" span2 height={340}>
+            {putCallChartData ? (
+              <Line data={putCallChartData} options={putCallChartOptions()} />
+            ) : putCallError ? (
+              <div className="empty">Could not load SPX put/call ratio data: {putCallError}</div>
+            ) : (
+              <div className="empty">Loading SPX put/call ratio data…</div>
+            )}
+          </ChartCard>
+
+          <ChartCard title="AAII Investor Sentiment" src="AAII" srcUrl="https://www.aaii.com/sentimentsurvey" freq="Weekly" span2 height={340}>
+            {aaiiChartData ? (
+              <Line data={aaiiChartData} options={aaiiChartOptions()} />
+            ) : aaiiError ? (
+              <div className="empty">Could not load AAII sentiment data: {aaiiError}</div>
+            ) : (
+              <div className="empty">Loading AAII sentiment data…</div>
+            )}
+          </ChartCard>
+
+          {gldVixData && (
+            <ChartCard title="GLD/VIX" src="Yahoo Finance" srcUrl="https://finance.yahoo.com" freq="Daily" height={300}>
+              <Line data={gldVixData} options={chartOptions({ relative: true, compact: true })} plugins={[BASELINE_100]} />
+            </ChartCard>
+          )}
         </div>
       )}
     </>

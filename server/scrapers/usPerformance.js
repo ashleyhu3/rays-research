@@ -101,6 +101,13 @@ const TICKERS = [
   { ticker: 'VLUE', label: 'VLUE', name: 'Value Factor' },
   { ticker: 'QUAL', label: 'QUAL', name: 'Quality Factor' },
   { ticker: 'USMV', label: 'USMV', name: 'Min Volatility Factor' },
+
+  // Sentiment section: raw volatility-index levels (VIX/VIXEQ/VXN) and the
+  // GLD/VIX cross-asset ratio
+  { ticker: '^VIX',   label: 'VIX',   name: 'CBOE Volatility Index' },
+  { ticker: '^VIXEQ', label: 'VIXEQ', name: 'CBOE S&P 500 Constituent Volatility' },
+  { ticker: '^VXN',   label: 'VXN',   name: 'CBOE Nasdaq-100 Volatility Index' },
+  { ticker: 'GLD',    label: 'GLD',   name: 'SPDR Gold Shares' },
 ];
 
 const HISTORY = createPersistedSeries({
@@ -117,6 +124,40 @@ async function fetchSeries(yf, ticker, start, end) {
   return quotes.map(q => ({ date: isoDate(q.date), close: q.close, adjClose: q.adjclose ?? q.close }));
 }
 
+// Yahoo Finance carries only a single live snapshot for ^VIXEQ (no chart
+// history at all — verified directly), so it's fetched from CBOE's own daily
+// index-history CSV instead, which covers 2014+. This same URL shape serves
+// every CBOE-calculated index (VIX_History.csv, VVIX_History.csv, ...), so
+// it'd cover any other CBOE index added here later too.
+const CBOE_INDEX_HISTORY_URL = symbol => `https://cdn.cboe.com/api/global/us_indices/daily_prices/${symbol}_History.csv`;
+
+function parseCboeIndexCsv(text, ticker) {
+  const dates = [];
+  const closes = [];
+  for (const line of text.trim().split(/\r?\n/).slice(1)) {
+    const [dateStr, valueStr] = line.split(',');
+    const m = dateStr?.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    const value = Number(valueStr);
+    if (!m || !Number.isFinite(value)) continue;
+    dates.push(`${m[3]}-${m[1]}-${m[2]}`);
+    closes.push(value);
+  }
+  return { dates, series: [{ ticker, closes, adjCloses: closes }] };
+}
+
+async function fetchCboeIndexHistory(symbol, ticker) {
+  const res = await fetch(CBOE_INDEX_HISTORY_URL(symbol), {
+    headers: { 'User-Agent': BROWSER_UA },
+    signal: AbortSignal.timeout(30000),
+  });
+  if (!res.ok) throw new Error(`CBOE ${symbol} history HTTP ${res.status}`);
+  const payload = parseCboeIndexCsv(await res.text(), ticker);
+  if (!payload.dates.length) throw new Error(`CBOE ${symbol} history returned no rows`);
+  return payload;
+}
+
+const VIXEQ_TICKER = '^VIXEQ';
+
 function inclusiveEndDate(endDate) {
   const end = new Date(endDate);
   end.setUTCDate(end.getUTCDate() + 1);
@@ -128,7 +169,11 @@ async function getUsPerformance(startDate, endDate = new Date()) {
   const end = inclusiveEndDate(endDate);
   const start = new Date(startDate);
 
-  const results = await mapLimit(TICKERS, 4, async meta => {
+  // ^VIXEQ has no Yahoo chart history (see fetchCboeIndexHistory above) —
+  // skip the pointless Yahoo call; updateUsPerformance merges its CBOE CSV
+  // history separately.
+  const yahooTickers = TICKERS.filter(meta => meta.ticker !== VIXEQ_TICKER);
+  const results = await mapLimit(yahooTickers, 4, async meta => {
     try {
       const points = await fetchSeries(yf, meta.ticker, start, end);
       return { ...meta, points, error: null };
@@ -165,6 +210,11 @@ async function getUsPerformance(startDate, endDate = new Date()) {
 async function updateUsPerformance(days = 45) {
   const end = new Date().toISOString().slice(0, 10);
   HISTORY.merge(await getUsPerformance(isoDaysAgo(days), end));
+  try {
+    HISTORY.merge(await fetchCboeIndexHistory('VIXEQ', VIXEQ_TICKER));
+  } catch (e) {
+    console.warn(`[usPerformance] CBOE VIXEQ: ${e.message}`);
+  }
   return HISTORY.assemble();
 }
 
