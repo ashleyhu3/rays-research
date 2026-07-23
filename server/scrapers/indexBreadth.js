@@ -141,10 +141,14 @@ const TURNOVER_BYPRODUCT_KEYS = new Set(['sox', 'nikkei225']);
 
 /* ── Rolling raw-price cache (per index, pruned every run) ───────────── */
 
-const ROLLING_WINDOW_DAYS = 300;   // steady-state trailing window kept after every run
-const BOOTSTRAP_WINDOW_DAYS = 450; // wider one-time fetch so a brand-new index doesn't start with almost no valid SMA200 days
 const SMA_SHORT = 50;
 const SMA_LONG = 200;
+// The old cache pruned at 300 *calendar* days, leaving only ~196–205 market
+// sessions. That produced zero to six valid SMA200 observations for several
+// indices. Bootstrap two calendar years, then retain a fixed number of actual
+// market observations so every refresh has enough input for the long average.
+const BOOTSTRAP_WINDOW_DAYS = 730;
+const ROLLING_WINDOW_OBSERVATIONS = SMA_LONG + 60;
 
 const RAW_BLOB = {
   sp500: 'breadthRawSp500History',
@@ -168,11 +172,14 @@ function mergeRawPoints(history, ticker, points) {
   }
 }
 
-function pruneRaw(history, windowDays = ROLLING_WINDOW_DAYS) {
-  const cutoff = isoDaysAgo(windowDays);
-  for (const date of Object.keys(history)) {
-    if (date < cutoff) delete history[date];
-  }
+function pruneRaw(history, maxObservations = ROLLING_WINDOW_OBSERVATIONS) {
+  const dates = Object.keys(history).filter(date => /^\d{4}-\d{2}-\d{2}$/.test(date)).sort();
+  for (const date of dates.slice(0, Math.max(0, dates.length - maxObservations))) delete history[date];
+}
+
+function needsBootstrap(history) {
+  return Object.keys(history).filter(date => /^\d{4}-\d{2}-\d{2}$/.test(date)).length
+    < ROLLING_WINDOW_OBSERVATIONS;
 }
 
 async function fetchConstituentOhlc(yf, ticker, start, end) {
@@ -279,8 +286,10 @@ async function updateIndexBreadth(indexKey) {
 
   const tickers = await config.fetchConstituents();
   const rawHistory = loadRaw(indexKey);
-  const isBootstrap = Object.keys(rawHistory).length === 0;
-  const windowDays = isBootstrap ? BOOTSTRAP_WINDOW_DAYS : ROLLING_WINDOW_DAYS;
+  const isBootstrap = needsBootstrap(rawHistory);
+  // Steady-state updates only need to overlap the retained observations. A
+  // calendar year safely covers 260 sessions across all supported markets.
+  const windowDays = isBootstrap ? BOOTSTRAP_WINDOW_DAYS : 365;
   const end = new Date();
   const start = new Date(isoDaysAgo(windowDays));
 
@@ -327,7 +336,7 @@ async function updateIndexBreadth(indexKey) {
 
   // Only now shrink the raw cache down to the steady-state rolling window —
   // this run's aggregate has already been computed and saved above.
-  pruneRaw(rawHistory, ROLLING_WINDOW_DAYS);
+  pruneRaw(rawHistory);
   saveRaw(indexKey, rawHistory);
 
   return assembleBreadth(breadthHistory, indexKey);
@@ -353,6 +362,7 @@ module.exports = {
   INDEX_CONFIGS,
   _test: {
     computeAggregates, rollingAverage, mergeRawPoints, pruneRaw,
+    needsBootstrap,
     fetchGithubCsvConstituents, fetchSoxConstituents, fetchNikkei225Constituents,
     assembleBreadth, mergeBreadthDaily,
   },

@@ -106,6 +106,8 @@ const YAHOO_VOLUME_TURNOVER_KEYS = new Set(['sp500', 'ndx']);
 const EASTMONEY_SECID = { csi300: '1.000300', chinext: '0.399006' };
 const EASTMONEY_TURNOVER_ONLY_SECID = { hsi: '100.HSI', taiex: '100.TWII' };
 const EASTMONEY_URL = 'https://push2his.eastmoney.com/api/qt/stock/kline/get';
+const SINA_SYMBOL = { csi300: 'sh000300', chinext: 'sz399006' };
+const SINA_URL = 'https://quotes.sina.cn/cn/api/jsonp_v2.php/var%20_data=/CN_MarketDataService.getKLineData';
 
 const HISTORY = createPersistedSeries({
   blob: 'globalIndicesHistory',
@@ -154,6 +156,49 @@ async function fetchEastMoneyIndex(key, start, end, secidOverride = null) {
   return points;
 }
 
+function parseSinaKlines(text, start, end) {
+  const match = String(text).match(/var\s+_data=\((\[[\s\S]*\])\)\s*;?/);
+  if (!match) throw new Error('Sina kline response contained no data array');
+  const startIso = isoDate(start);
+  const endIso = isoDate(end);
+  return JSON.parse(match[1]).map(row => {
+    const close = Number(row.close);
+    const volume = Number(row.volume);
+    return {
+      date: row.day,
+      close,
+      adjClose: close,
+      // Sina exposes volume but not amount for this endpoint. Match the
+      // volume×close proxy already used for the US index turnover series.
+      turnover: Number.isFinite(volume) ? volume * close : null,
+    };
+  }).filter(point => /^\d{4}-\d{2}-\d{2}$/.test(point.date)
+    && Number.isFinite(point.close)
+    && (!startIso || point.date >= startIso)
+    && (!endIso || point.date <= endIso));
+}
+
+async function fetchSinaIndex(key, start, end) {
+  const symbol = SINA_SYMBOL[key];
+  if (!symbol) throw new Error(`No Sina fallback symbol for ${key}`);
+  const params = new URLSearchParams({ symbol, scale: '240', ma: 'no', datalen: '1023' });
+  const res = await fetch(`${SINA_URL}?${params}`, {
+    headers: { 'user-agent': BROWSER_UA, Referer: 'https://finance.sina.com.cn/' },
+    signal: AbortSignal.timeout(20000),
+  });
+  if (!res.ok) throw new Error(`Sina ${key} HTTP ${res.status}`);
+  return parseSinaKlines(await res.text(), start, end);
+}
+
+async function fetchChinaIndex(key, start, end) {
+  try {
+    return await fetchEastMoneyIndex(key, start, end);
+  } catch (error) {
+    console.warn(`[globalIndices] East Money ${key}: ${error.message}; using Sina fallback`);
+    return fetchSinaIndex(key, start, end);
+  }
+}
+
 async function getGlobalIndices(startDate, endDate = new Date()) {
   const yf = getYF();
   const end = inclusiveEndDate(endDate);
@@ -163,7 +208,7 @@ async function getGlobalIndices(startDate, endDate = new Date()) {
     try {
       const points = YAHOO_SYMBOL[meta.ticker]
         ? await fetchYahooIndex(yf, meta.ticker, start, end)
-        : await fetchEastMoneyIndex(meta.ticker, start, end);
+        : await fetchChinaIndex(meta.ticker, start, end);
       return { ...meta, points, error: null };
     } catch (e) {
       return { ...meta, points: [], error: e.message };
@@ -232,4 +277,5 @@ module.exports = {
   readGlobalIndices,
   mergeTurnover,
   TICKERS,
+  _test: { parseSinaKlines },
 };

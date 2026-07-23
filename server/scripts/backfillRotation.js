@@ -2,7 +2,7 @@
  * Backfill Mongo/local history for every Rotation page dataset.
  *
  * Usage:
- *   npm run backfill:rotation -- [all|us|china|hk|premium] [days]
+ *   npm run backfill:rotation -- [all|us|china|hk|premium|global] [days]
  *   npm run backfill:rotation -- hk 2555
  */
 'use strict';
@@ -28,6 +28,10 @@ const targets = {
   premium: {
     blob: 'chinaEtfPremiumHistory',
     run: () => require('../scrapers/chinaEtfPremium').updateChinaEtfPremium(days),
+  },
+  global: {
+    blob: 'globalIndicesHistory',
+    run: () => require('../scrapers/globalIndices').updateGlobalIndices(days),
   },
 };
 

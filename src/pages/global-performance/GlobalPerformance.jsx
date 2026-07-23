@@ -61,41 +61,35 @@ function rollingAverage(values, windowSize) {
   });
 }
 
-// Standard 14-period Wilder's-smoothing RSI. `rsi[i]` needs `period`
-// consecutive valid day-over-day changes ending at i to seed; a gap forces
-// re-seeding rather than fabricating a value across the gap.
+// Standard 14-period Wilder's-smoothing RSI over each market's trading
+// sessions. The shared Global calendar contains holidays from every market,
+// so nulls belonging to another market must not reset an index's RSI.
 function computeRsi(closes, period = 14) {
-  const n = closes.length;
-  const changes = new Array(n).fill(null);
-  for (let i = 1; i < n; i += 1) {
-    changes[i] = closes[i] != null && closes[i - 1] != null ? closes[i] - closes[i - 1] : null;
+  const rsi = new Array(closes.length).fill(null);
+  const observations = closes
+    .map((value, index) => ({ value, index }))
+    .filter(item => item.value != null && Number.isFinite(item.value));
+  if (observations.length <= period) return rsi;
+
+  let sumGain = 0;
+  let sumLoss = 0;
+  for (let i = 1; i <= period; i += 1) {
+    const change = observations[i].value - observations[i - 1].value;
+    sumGain += Math.max(change, 0);
+    sumLoss += Math.max(-change, 0);
   }
+  let avgGain = sumGain / period;
+  let avgLoss = sumLoss / period;
 
-  const rsi = new Array(n).fill(null);
-  let avgGain = null;
-  let avgLoss = null;
-  for (let i = 1; i < n; i += 1) {
-    const change = changes[i];
-    if (change == null) { avgGain = null; avgLoss = null; continue; }
-    const gain = Math.max(change, 0);
-    const loss = Math.max(-change, 0);
-
-    if (avgGain == null) {
-      if (i < period) continue;
-      let sumGain = 0, sumLoss = 0, ok = true;
-      for (let k = i - period + 1; k <= i; k += 1) {
-        if (changes[k] == null) { ok = false; break; }
-        sumGain += Math.max(changes[k], 0);
-        sumLoss += Math.max(-changes[k], 0);
-      }
-      if (!ok) continue;
-      avgGain = sumGain / period;
-      avgLoss = sumLoss / period;
-    } else {
-      avgGain = (avgGain * (period - 1) + gain) / period;
-      avgLoss = (avgLoss * (period - 1) + loss) / period;
+  for (let i = period; i < observations.length; i += 1) {
+    if (i > period) {
+      const change = observations[i].value - observations[i - 1].value;
+      avgGain = (avgGain * (period - 1) + Math.max(change, 0)) / period;
+      avgLoss = (avgLoss * (period - 1) + Math.max(-change, 0)) / period;
     }
-    rsi[i] = avgGain === 0 && avgLoss === 0 ? 50 : avgLoss === 0 ? 100 : 100 - 100 / (1 + avgGain / avgLoss);
+    rsi[observations[i].index] = avgGain === 0 && avgLoss === 0
+      ? 50
+      : avgLoss === 0 ? 100 : 100 - 100 / (1 + avgGain / avgLoss);
   }
   return rsi;
 }

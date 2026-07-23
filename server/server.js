@@ -17,6 +17,7 @@ const { readChinaEtfPremium }        = require('./scrapers/chinaEtfPremium');
 const { readHkPerformance }          = require('./scrapers/hkPerformance');
 const { readGlobalIndices }          = require('./scrapers/globalIndices');
 const { readIndexBreadth }           = require('./scrapers/indexBreadth');
+const { readSpxPutCallRatio }        = require('./scrapers/spxPutCallRatio');
 const { readChinaNationalTeamFlow }  = require('./scrapers/chinaNationalTeamFlow');
 const { readChinaLiquidity }         = require('./scrapers/chinaLiquidity');
 const { readCarryTrade }             = require('./scrapers/carryTrade');
@@ -95,6 +96,8 @@ app.use('/api/hk-china-performance', requireStorageBlobs('hkChinaPerformanceHist
 app.use('/api/china-etf-premium', requireStorageBlobs('chinaEtfPremiumHistory'));
 app.use('/api/hk-performance', requireStorageBlobs('hkPerformanceHistory'));
 app.use('/api/global-indices', requireStorageBlobs('globalIndicesHistory'));
+app.use('/api/index-breadth', requireStorageBlobs('indexBreadthHistory'));
+app.use('/api/spx-put-call-ratio', requireStorageBlobs('spxPutCallRatioHistory'));
 app.use('/api/options', requireStorageBlobs('optionsOI'));
 app.use('/api/alerts/earnings-calendar', requireStorageBlobs('techEarningsCalendar'));
 
@@ -260,7 +263,10 @@ app.get('/api/carry-trade', (_req, res) => res.json(readCarryTrade()));
 app.get('/api/japan-leverage',    cachedRoute('japanLeverage',    s.japanLeverage));
 app.get('/api/us-leverage',       cachedRoute('usLeverage',       s.usLeverage));
 app.get('/api/aaii-sentiment',    cachedRoute('aaiiSentiment',    s.aaiiSentiment));
-app.get('/api/spx-put-call-ratio', cachedRoute('spxPutCallRatio', s.spxPutCallRatio));
+// This scraper owns a dedicated history blob. Serve that canonical series
+// directly: the generic latestSnapshots cache may still contain an older
+// one-point payload from before Barchart history was backfilled.
+app.get('/api/spx-put-call-ratio', (_req, res) => res.json(readSpxPutCallRatio()));
 
 // Keyword frequency search — whole-word matches across the StockTwits messages
 // in Mongo (committed-CSV fallback for keyless dev), as trailing-30-day counts
@@ -300,7 +306,6 @@ app.get('/api/validity/status', (_req, res) => res.json(buildValidityState()));
 // fallback) then normalize the source into deterministic prepared/Q&A speaker
 // blocks before topic tagging, tone scoring, and cross-quarter analysis.
 const { collectFromAlphaVantage } = require('./transcripts/alphavantage');
-const { collectFromOctagon } = require('./transcripts/octagon');
 const { semanticChunkDocument } = require('./transcripts/chunker');
 const { listLocalEnrichments, readEnrichment, saveEnrichment } = require('./transcripts/enrichmentStore');
 const { parseTranscriptDocument } = require('./transcripts/parser');
@@ -319,9 +324,7 @@ app.get('/api/transcripts/library', async (_req, res) => {
 app.post('/api/transcripts/collect', requireAdminSecret, async (req, res) => {
   const body = req.body ?? {};
   try {
-    const provider = String(body.provider || 'alphavantage').toLowerCase();
-    const collector = provider === 'octagon' ? collectFromOctagon : collectFromAlphaVantage;
-    const transcript = await collector({
+    const transcript = await collectFromAlphaVantage({
       ticker: body.ticker,
       quarter: body.quarter,
       year: body.year,

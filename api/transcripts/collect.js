@@ -1,7 +1,6 @@
 'use strict';
 
 const { collectFromAlphaVantage } = require('../../server/transcripts/alphavantage');
-const { collectFromOctagon } = require('../../server/transcripts/octagon');
 const { semanticChunkDocument } = require('../../server/transcripts/chunker');
 const { saveEnrichment } = require('../../server/transcripts/enrichmentStore');
 const { saveTranscript } = require('../../server/transcripts/store');
@@ -14,9 +13,7 @@ module.exports = async function handler(req, res) {
   }
   const body = req.body ?? {};
   try {
-    const provider = String(body.provider || 'alphavantage').toLowerCase();
-    const collector = provider === 'octagon' ? collectFromOctagon : collectFromAlphaVantage;
-    const transcript = await collector({
+    const transcript = await collectFromAlphaVantage({
       ticker: body.ticker,
       quarter: body.quarter,
       year: body.year,

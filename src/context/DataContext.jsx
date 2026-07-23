@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { fetchAll } from '../services/fetchers';
 import { getCached, setCached } from '../services/cache';
+import { adminHeaders, clearAdminSecret } from '../utils/adminAuth';
 
 export const DataContext = createContext(null);
 
@@ -48,11 +49,16 @@ export function DataProvider({ children }) {
       const tid = setTimeout(() => ac.abort(new Error('refresh timed out after 90s')), 90000);
       const res = await fetch('/api/refresh', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: adminHeaders({ 'Content-Type': 'application/json' }),
         body: '{}',
         signal: ac.signal,
       }).finally(() => clearTimeout(tid));
       if (!res.ok) {
+        // Wrong/stale admin secret — drop it so the next attempt re-prompts.
+        if (res.status === 401) {
+          clearAdminSecret();
+          throw new Error('Admin secret rejected — check the value and try again.');
+        }
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error ?? `Server error ${res.status}`);
       }

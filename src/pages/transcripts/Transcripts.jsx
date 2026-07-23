@@ -3,6 +3,7 @@ import { Line } from 'react-chartjs-2';
 import '../../utils/chartSetup';
 import { C, fa } from '../../config/colors';
 import { baseOpts } from '../../utils/chartHelpers';
+import { adminHeaders, clearAdminSecret } from '../../utils/adminAuth';
 import './Transcripts.css';
 
 const CURRENT_YEAR = new Date().getFullYear();
@@ -131,7 +132,7 @@ function Icon({ name, size = 16 }) {
 // ── Sidebar: collect by ticker/quarter, paste a transcript, recent library ──
 function Collector({
   ticker, setTicker, quarter, setQuarter, year, setYear,
-  provider, setProvider, onCollect, onParse,
+  onCollect, onParse,
   loading, error, library, onSelectLibrary,
 }) {
   const [manualOpen, setManualOpen] = useState(false);
@@ -146,16 +147,9 @@ function Collector({
         </div>
         <span className="tx-live-dot">Free tier</span>
       </div>
-      <p className="tx-card-copy">Pull a full earnings call by ticker and fiscal quarter, or paste your own. Collection normalizes speakers and tags the focus keywords locally.</p>
+      <p className="tx-card-copy">Pull a full earnings call by ticker and fiscal quarter from Alpha Vantage, or paste your own. Collection normalizes speakers and tags the focus keywords locally.</p>
 
       <form onSubmit={onCollect} className="tx-form">
-        <label>
-          Provider
-          <select value={provider} onChange={event => setProvider(event.target.value)}>
-            <option value="octagon">Octagon (full transcript)</option>
-            <option value="alphavantage">Alpha Vantage</option>
-          </select>
-        </label>
         <label>
           Ticker
           <input value={ticker} onChange={event => setTicker(event.target.value.toUpperCase())} placeholder="GOOGL" maxLength={10} spellCheck={false} />
@@ -232,7 +226,6 @@ export default function Transcripts() {
   const [ticker, setTicker] = useState('GOOGL');
   const [quarter, setQuarter] = useState('Q1');
   const [year, setYear] = useState(CURRENT_YEAR);
-  const [provider, setProvider] = useState('octagon');
 
   const [activeTicker, setActiveTicker] = useState('GOOGL');
   const [period, setPeriod] = useState(null);
@@ -285,18 +278,30 @@ export default function Transcripts() {
       .catch(() => setEnrichment(null));
   }, [activeTicker, period]);
 
-  async function submit(endpoint, payload, label) {
+  async function submit(endpoint, payload, label, { admin = false } = {}) {
     if (loading) return;
     setLoading(label);
     setError('');
     try {
+      // Collection is a write endpoint gated by ADMIN_SECRET — attach the
+      // operator's Bearer header (prompts once, cached in localStorage).
+      const headers = admin
+        ? adminHeaders({ 'Content-Type': 'application/json' })
+        : { 'Content-Type': 'application/json' };
       const response = await fetch(endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(payload),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+      if (!response.ok) {
+        // Wrong/stale secret — drop it so the next attempt re-prompts.
+        if (response.status === 401 && admin) {
+          clearAdminSecret();
+          throw new Error('Admin secret rejected — check the value and try again.');
+        }
+        throw new Error(data.error || `HTTP ${response.status}`);
+      }
       const collected = data.transcript || {};
       setActiveTicker(collected.ticker || payload.ticker.toUpperCase());
       setPeriod(collected.fiscal_period || null);
@@ -310,7 +315,7 @@ export default function Transcripts() {
 
   const onCollect = event => {
     event.preventDefault();
-    submit('/api/transcripts/collect', { ticker, quarter, year: Number(year), provider }, `Collecting ${ticker.toUpperCase()} ${year}${quarter}…`);
+    submit('/api/transcripts/collect', { ticker, quarter, year: Number(year) }, `Collecting ${ticker.toUpperCase()} ${year}${quarter}…`, { admin: true });
   };
   const onParse = text => submit('/api/transcripts/parse', { ticker, quarter, year: Number(year), text }, 'Parsing transcript locally…');
   const onSelectLibrary = item => {
@@ -506,7 +511,6 @@ export default function Transcripts() {
           ticker={ticker} setTicker={setTicker}
           quarter={quarter} setQuarter={setQuarter}
           year={year} setYear={setYear}
-          provider={provider} setProvider={setProvider}
           onCollect={onCollect} onParse={onParse}
           loading={loading} error={error}
           library={library} onSelectLibrary={onSelectLibrary}

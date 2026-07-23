@@ -464,9 +464,8 @@ function aaiiChartOptions() {
   };
 }
 
-// SPX Put/Call Ratio — Volume and Open Interest. Only ever one point per
-// calendar date (see spxPutCallRatio.js), so this accumulates real history
-// day by day rather than showing a deep backfill.
+// SPX Put/Call Ratio — Volume and Open Interest, backed by Barchart's rolling
+// 200-session historical chart feed.
 function putCallChartOptions() {
   return {
     responsive: true,
