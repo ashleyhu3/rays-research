@@ -22,6 +22,8 @@ export const SPX_META = {
 // Tickers used only by the Tech / Theme / Factor ratio sections (not part of
 // the sector-rotation overview chart), keyed by display label.
 export const EXTRA_TICKERS = {
+  RSP:  { ticker: 'RSP',  label: 'RSP',  name: 'Equal Weight', color: '#f2b134' },
+
   SOX:  { ticker: '^SOX', label: 'SOX',  name: 'Semiconductors', color: '#3c8cdd' },
   IGV:  { ticker: 'IGV',  label: 'IGV',  name: 'Software', color: '#da5a2f' },
   MAGS: { ticker: 'MAGS', label: 'MAGS', name: 'Magnificent Seven', color: '#198f5e' },

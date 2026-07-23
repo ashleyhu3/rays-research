@@ -473,6 +473,11 @@ export default function UsPerformance({ section = null }) {
       .map(etf => ({ etf, data: buildPairChartData(payload, etf, SPX_META, startDate, endDate) }))
       .filter(chart => chart.data);
   }, [payload, startDate, endDate]);
+  const equalWeightChart = useMemo(() => {
+    if (!payload) return null;
+    const rspMeta = metaForLabel('RSP');
+    return rspMeta ? buildPairChartData(payload, rspMeta, SPX_META, startDate, endDate) : null;
+  }, [payload, startDate, endDate]);
   const techCharts = useMemo(() => {
     if (!payload) return [];
     return TECH_PAIRS
@@ -553,9 +558,9 @@ export default function UsPerformance({ section = null }) {
     </div>
   );
 
-  const ratioGrid = (charts) => (
+  const ratioGrid = (charts, pinned = []) => (
     <div className="usp-etf-grid">
-      {rankChartsByLatestStrength(charts).map(({ id, title, data }) => (
+      {[...pinned, ...rankChartsByLatestStrength(charts)].map(({ id, title, data }) => (
         <ChartCard
           key={id}
           title={title}
@@ -595,8 +600,11 @@ export default function UsPerformance({ section = null }) {
       )}
       {section != null && <div className="usp-section-label">{SECTION_LABELS[section] ?? section}</div>}
 
-      {section === 'all' && !error && relativeCharts.length > 0 &&
-        ratioGrid(relativeCharts.map(({ etf, data }) => ({ id: etf.ticker, title: etf.name, data })))}
+      {section === 'all' && !error && (relativeCharts.length > 0 || equalWeightChart) &&
+        ratioGrid(
+          relativeCharts.map(({ etf, data }) => ({ id: etf.ticker, title: etf.name, data })),
+          equalWeightChart ? [{ id: 'rsp-spx', title: 'Equal Weight', data: equalWeightChart }] : []
+        )}
 
       {section === 'tech' && !error && techCharts.length > 0 && ratioGrid(techCharts)}
 

@@ -110,6 +110,11 @@ function requireAdminSecret(req, res, next) {
   const secret = process.env.ADMIN_SECRET;
   const authorization = req.get('authorization');
 
+  // Local development has no admin secret by default. Allow the dashboard's
+  // same-origin controls there, but keep production admin routes closed unless
+  // a secret is explicitly configured and supplied.
+  if (!secret && process.env.NODE_ENV !== 'production') return next();
+
   if (!secret || authorization !== `Bearer ${secret}`) {
     return res.status(401).json({ error: 'Unauthorized' });
   }

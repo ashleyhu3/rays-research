@@ -70,6 +70,9 @@ const TICKERS = [
   { ticker: 'XLU',   label: 'XLU',  name: 'Utilities' },
   { ticker: '^GSPC', label: 'SPX',  name: 'S&P 500' },
 
+  // Equal-weight pinned chart (RSP/SPX)
+  { ticker: 'RSP',   label: 'RSP',  name: 'Equal Weight' },
+
   // Tech ratio pairs (SOX/SPX, SOX/IGV, SOX/MAGS, MAGS/SPX, IGV/SPX, CIBR/IGV)
   { ticker: '^SOX', label: 'SOX',  name: 'Semiconductors' },
   { ticker: 'IGV',  label: 'IGV',  name: 'Software' },
