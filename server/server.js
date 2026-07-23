@@ -302,12 +302,12 @@ const { buildValidityState } = require('./validity');
 app.get('/api/validity/status', (_req, res) => res.json(buildValidityState()));
 
 // Earnings transcript pipeline.
-// Stages 1-2 collect full transcripts (Octagon by default, Alpha Vantage as a
-// fallback) then normalize the source into deterministic prepared/Q&A speaker
-// blocks before topic tagging, tone scoring, and cross-quarter analysis.
+// Collect full transcripts from Alpha Vantage, normalize into deterministic
+// prepared/Q&A speaker blocks, then topic-tag, tone-score, and run cross-quarter
+// analysis.
 const { collectFromAlphaVantage } = require('./transcripts/alphavantage');
 const { semanticChunkDocument } = require('./transcripts/chunker');
-const { listLocalEnrichments, readEnrichment, saveEnrichment } = require('./transcripts/enrichmentStore');
+const { listLocalEnrichments, readEnrichment, readEnrichmentLocal, saveEnrichment } = require('./transcripts/enrichmentStore');
 const { parseTranscriptDocument } = require('./transcripts/parser');
 const { listTranscripts, saveTranscript } = require('./transcripts/store');
 const { runTranscriptAgent, parseTranscript, fetchTranscript, analyzeSeries } = require('./transcriptAgent');
@@ -343,6 +343,95 @@ app.post('/api/transcripts/collect', requireAdminSecret, async (req, res) => {
       : 502;
     console.error('[transcripts:collect]', e.message);
     res.status(status).json({ error: e.message });
+  }
+});
+
+// One-click full pipeline: collect → FinBERT tone → LLM tone → facts → figures
+// → publish, scoped to the single transcript, streaming NDJSON progress. Runs
+// the existing analysis scripts as child processes (they carry the proven
+// logic); scoping each to --ticker/--period keeps other transcripts' Mongo data
+// untouched and sidesteps the local-vs-Mongo source mismatch. Needs the local
+// FinBERT venv + a long-lived process, so this only runs on the Node server
+// (not serverless).
+const REPO_ROOT = path.join(__dirname, '..');
+const PYTHON_BIN = path.join(__dirname, '.venv-transcripts', 'bin', 'python');
+const TONE_PY = path.join(__dirname, 'retrieval', 'tone_pipeline.py');
+const analysisScript = name => path.join(__dirname, 'scripts', name);
+
+// Spawn a step, forwarding each stdout line to onLine; reject on non-zero exit.
+function runAnalysisStep(command, args, onLine) {
+  return new Promise((resolve, reject) => {
+    const { spawn } = require('child_process');
+    const child = spawn(command, args, { cwd: REPO_ROOT, env: process.env });
+    let stderrTail = '';
+    let buffer = '';
+    child.stdout.on('data', chunk => {
+      buffer += chunk.toString();
+      let newline;
+      while ((newline = buffer.indexOf('\n')) >= 0) {
+        const line = buffer.slice(0, newline).trim();
+        buffer = buffer.slice(newline + 1);
+        if (line) onLine(line);
+      }
+    });
+    child.stdout.on('end', () => { const line = buffer.trim(); if (line) onLine(line); });
+    child.stderr.on('data', data => { stderrTail = (stderrTail + data.toString()).slice(-2000); });
+    child.on('error', reject);
+    child.on('close', code => {
+      if (code === 0) return resolve();
+      const detail = stderrTail.trim().split('\n').filter(Boolean).pop() || `exit ${code}`;
+      reject(new Error(detail));
+    });
+  });
+}
+
+app.post('/api/transcripts/analyze', requireAdminSecret, async (req, res) => {
+  const body = req.body ?? {};
+  // NDJSON stream so the browser (which sends the admin Bearer header via fetch)
+  // can render live per-stage progress. EventSource can't set auth headers.
+  res.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.flushHeaders?.();
+  const send = payload => { try { res.write(`${JSON.stringify(payload)}\n`); } catch { /* client gone */ } };
+
+  let ticker;
+  let period;
+  try {
+    // 1. Collect + chunk (Alpha Vantage).
+    send({ stage: 'collect', status: 'start', message: 'Fetching transcript from Alpha Vantage…' });
+    const transcript = await collectFromAlphaVantage({ ticker: body.ticker, quarter: body.quarter, year: body.year });
+    await saveTranscript(transcript);
+    await saveEnrichment(semanticChunkDocument(transcript));
+    ticker = transcript.ticker;
+    period = transcript.fiscal_period;
+    send({ stage: 'collect', status: 'done', ticker, period, message: `${transcript.stats.totalBlocks} blocks · ${transcript.stats.wordCount.toLocaleString('en-US')} words` });
+
+    const scope = ['--ticker', ticker, '--period', period];
+    const steps = [
+      { stage: 'finbert', message: 'Scoring tone with local FinBERT…', command: PYTHON_BIN, args: [TONE_PY, ...scope] },
+      { stage: 'tone-llm', message: 'Interpreting management tone (LLM)…', command: process.execPath, args: [analysisScript('interpretTranscriptTone.js'), ...scope] },
+      { stage: 'facts', message: 'Extracting facts & guidance…', command: process.execPath, args: [analysisScript('extractTranscriptFacts.js'), ...scope] },
+      { stage: 'figures', message: 'Extracting key figures (LLM)…', command: process.execPath, args: [analysisScript('extractKeyFigures.js'), ...scope] },
+    ];
+    for (const step of steps) {
+      send({ stage: step.stage, status: 'start', message: step.message });
+      await runAnalysisStep(step.command, step.args, line => send({ stage: step.stage, status: 'log', message: line }));
+      send({ stage: step.stage, status: 'done' });
+    }
+
+    // Publish the fully-enriched local copy to Mongo so the UI reads it.
+    send({ stage: 'publish', status: 'start', message: 'Publishing to database…' });
+    const finalEnrichment = readEnrichmentLocal(ticker, period);
+    if (finalEnrichment) await saveEnrichment(finalEnrichment);
+    send({ stage: 'publish', status: 'done' });
+
+    send({ stage: 'done', status: 'done', ticker, period });
+  } catch (e) {
+    console.error('[transcripts:analyze]', e.message);
+    send({ stage: 'error', status: 'error', ticker, period, message: e.message });
+  } finally {
+    res.end();
   }
 });
 

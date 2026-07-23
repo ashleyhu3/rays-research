@@ -1,11 +1,19 @@
 'use strict';
 
-const { saveEnrichment, listLocalEnrichments } = require('../transcripts/enrichmentStore');
+const { saveEnrichment, loadEnrichmentsForRun } = require('../transcripts/enrichmentStore');
 const { extractFacts } = require('../transcripts/facts');
 const { attachCompositeTone } = require('../transcripts/tone');
 
+// Optional --ticker/--period scope one run to a single transcript (read locally).
+const argValue = name => {
+  const index = process.argv.indexOf(name);
+  return index !== -1 ? (process.argv[index + 1] || '') : null;
+};
+const RUN_TICKER = (argValue('--ticker') || '').toUpperCase() || null;
+const RUN_PERIOD = (argValue('--period') || '').toUpperCase() || null;
+
 async function main() {
-  const enrichments = (await listLocalEnrichments())
+  const enrichments = (await loadEnrichmentsForRun({ ticker: RUN_TICKER, period: RUN_PERIOD }))
     .sort((a, b) => `${a.ticker}:${a.fiscal_period}`.localeCompare(`${b.ticker}:${b.fiscal_period}`));
   let total = 0;
 

@@ -245,7 +245,7 @@ export default function GlobalPerformance({ section = null }) {
     return () => { live = false; };
   }, []);
 
-  const breadthCharts = useMemo(() => {
+  const breadthChartPairs = useMemo(() => {
     if (!breadthPayload) return [];
     return BREADTH_PHASE1_KEYS.map(key => {
       const series = breadthPayload[key];
@@ -253,47 +253,34 @@ export default function GlobalPerformance({ section = null }) {
       if (!series?.dates?.length) return null;
       const bounds = visibleBounds(series.dates, startDate, endDate);
       if (!bounds) return null;
+      const labels = sliceBounds(series.dates, bounds).map(fmtDate);
       return {
         key,
         title: meta.label,
-        data: {
-          labels: sliceBounds(series.dates, bounds).map(fmtDate),
+        breadthData: {
+          labels,
           datasets: [
             { label: '% above 50d & 200d MA', data: sliceBounds(series.pctAboveBoth, bounds), borderColor: '#4ade80', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, pointHoverRadius: 3, pointHitRadius: 6, tension: 0.15, spanGaps: true },
             { label: '% below 50d & 200d MA', data: sliceBounds(series.pctBelowBoth, bounds), borderColor: '#f87171', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, pointHoverRadius: 3, pointHitRadius: 6, tension: 0.15, spanGaps: true },
           ],
         },
+        pctUpData: {
+          labels,
+          datasets: [{
+            label: '% of Stocks Up',
+            data: sliceBounds(series.pctUp, bounds),
+            borderColor: meta.color,
+            backgroundColor: 'transparent',
+            borderWidth: 2,
+            pointRadius: 0,
+            pointHoverRadius: 3,
+            pointHitRadius: 6,
+            tension: 0.15,
+            spanGaps: true,
+          }],
+        },
       };
     }).filter(Boolean);
-  }, [breadthPayload, startDate, endDate]);
-
-  const pctUpChart = useMemo(() => {
-    if (!breadthPayload) return null;
-    const dateSet = new Set();
-    for (const key of BREADTH_PHASE1_KEYS) for (const d of breadthPayload[key]?.dates ?? []) dateSet.add(d);
-    const allDates = [...dateSet].sort();
-    const bounds = visibleBounds(allDates, startDate, endDate);
-    if (!bounds) return null;
-    const labels = sliceBounds(allDates, bounds).map(fmtDate);
-    const datasets = BREADTH_PHASE1_KEYS.map(key => {
-      const series = breadthPayload[key];
-      const meta = INDEX_BY_KEY.get(key);
-      if (!series?.dates?.length) return null;
-      const byDate = new Map(series.dates.map((d, i) => [d, series.pctUp[i]]));
-      return {
-        label: meta.label,
-        data: sliceBounds(allDates, bounds).map(d => byDate.get(d) ?? null),
-        borderColor: meta.color,
-        backgroundColor: 'transparent',
-        borderWidth: 1.75,
-        pointRadius: 0,
-        pointHoverRadius: 3,
-        pointHitRadius: 6,
-        tension: 0.15,
-        spanGaps: true,
-      };
-    }).filter(Boolean);
-    return datasets.length ? { labels, datasets } : null;
   }, [breadthPayload, startDate, endDate]);
 
   const rsiChart = useMemo(() => {
@@ -394,22 +381,20 @@ export default function GlobalPerformance({ section = null }) {
 
       {section === 'breadth' && (
         <>
-          <div className="usp-etf-grid">
-            {breadthCharts.map(chart => (
-              <ChartCard key={chart.key} title={chart.title} src="Yahoo Finance" srcUrl="https://finance.yahoo.com" freq="Daily" height={255}>
-                <Line data={chart.data} options={breadthChartOptions()} />
-              </ChartCard>
+          <div className="global-breadth-pairs">
+            {breadthChartPairs.map(chart => (
+              <div className="global-breadth-row" key={chart.key}>
+                <ChartCard title={`${chart.title} — Market Breadth`} src="Yahoo Finance" srcUrl="https://finance.yahoo.com" freq="Daily" height={275}>
+                  <Line data={chart.breadthData} options={breadthChartOptions()} />
+                </ChartCard>
+                <ChartCard title={`${chart.title} — % of Stocks Up`} src="Yahoo Finance" srcUrl="https://finance.yahoo.com" freq="Daily" height={275}>
+                  <Line data={chart.pctUpData} options={pctUpChartOptions()} />
+                </ChartCard>
+              </div>
             ))}
           </div>
           {breadthError && <div className="empty">Could not load breadth data: {breadthError}</div>}
           {!breadthPayload && !breadthError && <div className="empty">Loading breadth data…</div>}
-          {pctUpChart && (
-            <div className="cgrid" style={{ marginTop: 16 }}>
-              <ChartCard title="% of Stocks Up" src="Yahoo Finance" srcUrl="https://finance.yahoo.com" freq="Daily" span2 height={340}>
-                <Line data={pctUpChart} options={pctUpChartOptions()} />
-              </ChartCard>
-            </div>
-          )}
           <div className="src-note" style={{ marginTop: 12 }}>
             Breadth currently covers S&amp;P 500, Nasdaq 100, SOX, Hang Seng, CSI 300, and Nikkei 225 — ChiNext, TAIEX, KOSPI 200 and TOPIX are not yet available (no confirmed constituent-level data source).
           </div>
@@ -442,7 +427,7 @@ export default function GlobalPerformance({ section = null }) {
           {indicesError && <div className="empty">Could not load turnover data: {indicesError}</div>}
           {!indicesPayload && !indicesError && <div className="empty">Loading turnover data…</div>}
           <div className="src-note" style={{ marginTop: 12 }}>
-            KOSPI 200 and TOPIX turnover are not yet available (Yahoo has no reliable volume for these, and they're not part of Phase-1 Breadth yet, which is the other route to a turnover figure).
+            Turnover uses direct exchange/index feeds where available and volume × close proxies otherwise; TOPIX uses the 1306.T ETF proxy.
           </div>
         </>
       )}

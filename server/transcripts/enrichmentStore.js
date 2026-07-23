@@ -119,6 +119,19 @@ async function listLocalEnrichments() {
     });
 }
 
+// Which enrichments a batch script should process. A run scoped to a single
+// transcript (the UI's one-click analyze) must read the LOCAL file directly:
+// the FinBERT step writes tone into the local file, so mid-run the Mongo copy
+// is stale — reading Mongo-first would drop that tone and the composite/facts
+// built on top of it. Unscoped runs keep the original Mongo-first behavior.
+async function loadEnrichmentsForRun({ ticker, period } = {}) {
+  if (ticker && period) {
+    const local = readEnrichmentLocal(ticker, period);
+    return local ? [local] : [];
+  }
+  return listLocalEnrichments();
+}
+
 async function saveEnrichment(enrichment) {
   const file = enrichmentPath(enrichment.ticker, enrichment.fiscal_period);
   try {
@@ -190,6 +203,8 @@ async function saveEnrichment(enrichment) {
 module.exports = {
   enrichmentPath,
   listLocalEnrichments,
+  loadEnrichmentsForRun,
   readEnrichment,
+  readEnrichmentLocal,
   saveEnrichment,
 };

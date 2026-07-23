@@ -33,6 +33,17 @@ const FOCUS_COLORS = [C.orange, C.mistral, C.teal, C.google, C.openai, C.perplex
 
 const DIR_ARROW = { up: '▲', down: '▼', flat: '→' };
 
+// Ordered stages of the one-click full pipeline (POST /api/transcripts/analyze),
+// used to render live progress from the endpoint's NDJSON stream.
+const ANALYZE_STAGES = [
+  ['collect', 'Collect transcript'],
+  ['finbert', 'FinBERT tone'],
+  ['tone-llm', 'LLM tone'],
+  ['facts', 'Facts & guidance'],
+  ['figures', 'Key figures'],
+  ['publish', 'Publish'],
+];
+
 function sentClass(investorConfidence) {
   if (investorConfidence == null) return 'tx-fig-tone';
   if (investorConfidence >= 58) return 'tx-fig-tone is-pos';
@@ -130,10 +141,32 @@ function Icon({ name, size = 16 }) {
 }
 
 // ── Sidebar: collect by ticker/quarter, paste a transcript, recent library ──
+function AnalyzeProgress({ progress }) {
+  if (!progress) return null;
+  return (
+    <div className="tx-progress">
+      <ul>
+        {ANALYZE_STAGES.map(([key, label]) => {
+          const state = progress.statuses[key] || 'pending';
+          return (
+            <li key={key} className={`tx-progress-step is-${state}`}>
+              <span className="tx-progress-mark">
+                {state === 'done' ? '✓' : state === 'active' ? <span className="tx-spinner" /> : '○'}
+              </span>
+              <span>{label}</span>
+            </li>
+          );
+        })}
+      </ul>
+      {progress.log && <div className="tx-progress-log">{progress.log}</div>}
+    </div>
+  );
+}
+
 function Collector({
   ticker, setTicker, quarter, setQuarter, year, setYear,
   onCollect, onParse,
-  loading, error, library, onSelectLibrary,
+  loading, error, progress, library, onSelectLibrary,
 }) {
   const [manualOpen, setManualOpen] = useState(false);
   const [manualText, setManualText] = useState('');
@@ -167,10 +200,13 @@ function Collector({
           </label>
         </div>
         <button className="tx-primary" disabled={!!loading || !ticker.trim()}>
-          {loading && loading.startsWith('Collecting') ? <span className="tx-spinner" /> : <Icon name="database" />}
-          {loading && loading.startsWith('Collecting') ? loading : 'Collect & analyze'}
+          {loading && loading.startsWith('Analyzing') ? <span className="tx-spinner" /> : <Icon name="database" />}
+          {loading && loading.startsWith('Analyzing') ? loading : 'Collect & analyze'}
         </button>
+        <small className="tx-form-note">Runs the full pipeline — collect, FinBERT + LLM tone, facts, key figures — then publishes. Takes a few minutes.</small>
       </form>
+
+      <AnalyzeProgress progress={progress} />
 
       {error && <div className="tx-error">{error}</div>}
 
@@ -237,6 +273,8 @@ export default function Transcripts() {
 
   const [loading, setLoading] = useState('');
   const [error, setError] = useState('');
+  const [progress, setProgress] = useState(null);
+  const [reloadNonce, setReloadNonce] = useState(0);
   const [analysis, setAnalysis] = useState(null);
   const [analysisLoading, setAnalysisLoading] = useState(true);
   const [analysisError, setAnalysisError] = useState('');
@@ -267,7 +305,7 @@ export default function Transcripts() {
       })
       .catch(requestError => { setAnalysis(null); setAnalysisError(requestError.message); })
       .finally(() => setAnalysisLoading(false));
-  }, [activeTicker]);
+  }, [activeTicker, reloadNonce]);
 
   // Load the enrichment (keyword counts, facts, tone) for the selected period.
   useEffect(() => {
@@ -313,9 +351,80 @@ export default function Transcripts() {
     }
   }
 
+  // Full one-click pipeline: streams NDJSON progress from /api/transcripts/analyze
+  // (collect → FinBERT → LLM tone → facts → figures → publish) and renders each
+  // stage live, then reloads the analysis so the charts fill in.
+  async function runAnalyze(payload, label) {
+    if (loading) return;
+    setLoading(label);
+    setError('');
+    const statuses = {};
+    ANALYZE_STAGES.forEach(([key]) => { statuses[key] = 'pending'; });
+    setProgress({ statuses, log: '' });
+
+    let finalTicker = payload.ticker.toUpperCase();
+    let finalPeriod = null;
+    let streamError = null;
+    try {
+      const response = await fetch('/api/transcripts/analyze', {
+        method: 'POST',
+        headers: adminHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify(payload),
+      });
+      if (response.status === 401) {
+        clearAdminSecret();
+        throw new Error('Admin secret rejected — check the value and try again.');
+      }
+      if (!response.ok || !response.body) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || `HTTP ${response.status}`);
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        let newline;
+        while ((newline = buffer.indexOf('\n')) >= 0) {
+          const line = buffer.slice(0, newline).trim();
+          buffer = buffer.slice(newline + 1);
+          if (!line) continue;
+          let event;
+          try { event = JSON.parse(line); } catch { continue; }
+          if (event.ticker) finalTicker = event.ticker;
+          if (event.period) finalPeriod = event.period;
+          if (event.stage === 'error') { streamError = event.message || 'Analysis failed'; }
+          else if (event.stage !== 'done') {
+            setProgress(prev => {
+              const next = { ...prev.statuses };
+              if (event.status === 'start') next[event.stage] = 'active';
+              if (event.status === 'done') next[event.stage] = 'done';
+              return { statuses: next, log: event.message || prev.log };
+            });
+          }
+        }
+      }
+      if (streamError) throw new Error(streamError);
+
+      setActiveTicker(finalTicker);
+      if (finalPeriod) setPeriod(finalPeriod);
+      refreshLibrary();
+      setReloadNonce(nonce => nonce + 1); // force the analysis to reload even if the ticker is unchanged
+      setProgress(null);
+    } catch (requestError) {
+      setError(requestError.message);
+      setProgress(null);
+    } finally {
+      setLoading('');
+    }
+  }
+
   const onCollect = event => {
     event.preventDefault();
-    submit('/api/transcripts/collect', { ticker, quarter, year: Number(year) }, `Collecting ${ticker.toUpperCase()} ${year}${quarter}…`, { admin: true });
+    runAnalyze({ ticker, quarter, year: Number(year) }, `Analyzing ${ticker.toUpperCase()} ${year}${quarter}…`);
   };
   const onParse = text => submit('/api/transcripts/parse', { ticker, quarter, year: Number(year), text }, 'Parsing transcript locally…');
   const onSelectLibrary = item => {
@@ -512,7 +621,7 @@ export default function Transcripts() {
           quarter={quarter} setQuarter={setQuarter}
           year={year} setYear={setYear}
           onCollect={onCollect} onParse={onParse}
-          loading={loading} error={error}
+          loading={loading} error={error} progress={progress}
           library={library} onSelectLibrary={onSelectLibrary}
         />
 

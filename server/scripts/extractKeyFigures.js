@@ -18,16 +18,19 @@
 
 const fs = require('fs');
 const axios = require('axios');
-const { enrichmentPath, listLocalEnrichments } = require('../transcripts/enrichmentStore');
+const { enrichmentPath, loadEnrichmentsForRun } = require('../transcripts/enrichmentStore');
 
 const GEMINI_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '';
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 const GROQ_MODEL = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
 const FORCE = process.argv.includes('--force');
-const TICKER = (() => {
-  const index = process.argv.indexOf('--ticker');
-  return index !== -1 ? (process.argv[index + 1] || '').toUpperCase() : null;
-})();
+const argValue = name => {
+  const index = process.argv.indexOf(name);
+  return index !== -1 ? (process.argv[index + 1] || '') : null;
+};
+const TICKER = (argValue('--ticker') || '').toUpperCase() || null;
+// --period scopes the run to a single transcript (read from the local file).
+const PERIOD = (argValue('--period') || '').toUpperCase() || null;
 const BATCH_SIZE = 10;
 const PACING_MS = GEMINI_KEY ? 4500 : 1800;
 
@@ -198,7 +201,7 @@ async function main() {
     throw new Error('Set GEMINI_API_KEY or GROQ_API_KEY.');
   }
 
-  const enrichments = (await listLocalEnrichments())
+  const enrichments = (await loadEnrichmentsForRun({ ticker: TICKER, period: PERIOD }))
     .filter(item => !TICKER || String(item.ticker || '').toUpperCase() === TICKER)
     .sort((a, b) => `${a.ticker}:${a.fiscal_period}`.localeCompare(`${b.ticker}:${b.fiscal_period}`));
 

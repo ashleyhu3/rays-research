@@ -1484,11 +1484,23 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
 .usp-etf-grid .cbox { padding: 14px; }
 .usp-etf-grid .ch-title { font-size: 12px; }
 .usp-etf-grid .ch-head { gap: 8px; }
+.global-breadth-pairs {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.global-breadth-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
 @media (max-width: 1180px) {
   .usp-etf-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 760px) {
   .usp-etf-grid { grid-template-columns: 1fr; }
+  .global-breadth-row { grid-template-columns: 1fr; }
 }
 
 /* ── Leverage page (Korean retail firepower) ───────────────────────── */

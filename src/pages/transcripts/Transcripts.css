@@ -332,6 +332,18 @@
 .tx-spinner { width: 13px; height: 13px; border: 2px solid rgba(9,17,27,.25); border-top-color: #09111b; border-radius: 50%; animation: tx-spin .75s linear infinite; }
 @keyframes tx-spin { to { transform: rotate(360deg); } }
 
+.tx-form-note { display: block; margin-top: 8px; color: #626b79; font-size: 9.5px; line-height: 1.45; }
+
+/* One-click pipeline progress checklist. */
+.tx-progress { margin-top: 12px; padding: 11px 12px; border: 1px solid var(--tx-line); border-radius: 8px; background: rgba(125,183,255,.04); }
+.tx-progress ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
+.tx-progress-step { display: flex; align-items: center; gap: 9px; font-size: 11px; color: #626b79; }
+.tx-progress-step.is-active { color: var(--tx-blue); font-weight: 600; }
+.tx-progress-step.is-done { color: #86efac; }
+.tx-progress-mark { display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; font-size: 11px; }
+.tx-progress-step.is-active .tx-spinner { border-color: rgba(125,183,255,.25); border-top-color: var(--tx-blue); }
+.tx-progress-log { margin-top: 9px; padding-top: 8px; border-top: 1px solid var(--tx-line); color: #8a93a1; font-size: 9.5px; line-height: 1.4; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; overflow-wrap: anywhere; }
+
 .tx-error { margin-top: 11px; padding: 9px 10px; border: 1px solid rgba(248,113,113,.23); border-radius: 7px; background: rgba(248,113,113,.07); color: #fca5a5; font-size: 10.5px; line-height: 1.45; overflow-wrap: anywhere; }
 .tx-divider { display: flex; align-items: center; gap: 9px; margin: 17px 0 10px; color: #626b79; font-size: 9px; text-transform: uppercase; letter-spacing: .07em; }
 .tx-divider::before, .tx-divider::after { content: ''; height: 1px; flex: 1; background: var(--tx-line); }

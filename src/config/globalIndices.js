@@ -11,9 +11,9 @@ export const GLOBAL_INDICES = [
   { key: 'csi300',    label: 'CSI 300',    name: 'CSI 300',            color: '#8749df', breadthPhase: 1, turnoverSource: 'eastmoney' },
   { key: 'chinext',   label: 'ChiNext',    name: 'ChiNext Index',      color: '#dc386e', breadthPhase: 2, turnoverSource: 'eastmoney' },
   { key: 'taiex',     label: 'TAIEX',      name: 'Taiwan Weighted Index', color: '#44981b', breadthPhase: 2, turnoverSource: 'eastmoney' },
-  { key: 'kospi200',  label: 'KOSPI 200',  name: 'KOSPI 200',          color: '#1f96ad', breadthPhase: 2, turnoverSource: null },
+  { key: 'kospi200',  label: 'KOSPI 200',  name: 'KOSPI 200',          color: '#1f96ad', breadthPhase: 2, turnoverSource: 'yahoo-volume' },
   { key: 'nikkei225', label: 'Nikkei 225', name: 'Nikkei 225',         color: '#dd40dd', breadthPhase: 1, turnoverSource: 'constituents' },
-  { key: 'topix',     label: 'TOPIX',      name: 'TOPIX',              color: '#89931a', breadthPhase: 2, turnoverSource: null },
+  { key: 'topix',     label: 'TOPIX',      name: 'TOPIX',              color: '#89931a', breadthPhase: 2, turnoverSource: 'yahoo-volume-proxy' },
 ];
 
 export const GLOBAL_INDEX_KEYS = GLOBAL_INDICES.map(idx => idx.key);

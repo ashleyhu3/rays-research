@@ -22,11 +22,21 @@ EMOTION_MODEL = os.environ.get(
 )
 
 
-def load_payloads() -> tuple[list[dict[str, Any]], list[Path]]:
-    files = sorted(PROCESSED_ROOT.glob("*/*.json"))
+def load_payloads(
+    ticker: str | None = None,
+    period: str | None = None,
+) -> tuple[list[dict[str, Any]], list[Path]]:
+    # --ticker/--period scope one run to a single transcript (processed/<T>/<P>.json).
+    if ticker and period:
+        pattern = f"{ticker.upper()}/{period.upper()}.json"
+    elif ticker:
+        pattern = f"{ticker.upper()}/*.json"
+    else:
+        pattern = "*/*.json"
+    files = sorted(PROCESSED_ROOT.glob(pattern))
     payloads = [json.loads(file.read_text()) for file in files]
     if not payloads:
-        raise RuntimeError(f"No processed transcript chunks found under {PROCESSED_ROOT}")
+        raise RuntimeError(f"No processed transcript chunks found under {PROCESSED_ROOT}/{pattern}")
     return payloads, files
 
 
@@ -160,9 +170,11 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--batch-size", type=int, default=8)
     parser.add_argument("--force", action="store_true")
+    parser.add_argument("--ticker", default=None)
+    parser.add_argument("--period", default=None)
     args = parser.parse_args()
 
-    payloads, files = load_payloads()
+    payloads, files = load_payloads(args.ticker, args.period)
     chunks = [chunk for payload in payloads for chunk in payload.get("chunks", [])]
     if not args.force and chunks and all(
         chunk.get("tone", {}).get("finbert", {}).get("model") == FINBERT_MODEL

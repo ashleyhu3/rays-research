@@ -2,7 +2,15 @@
 
 const fs = require('fs');
 const axios = require('axios');
-const { enrichmentPath, listLocalEnrichments } = require('../transcripts/enrichmentStore');
+const { enrichmentPath, loadEnrichmentsForRun } = require('../transcripts/enrichmentStore');
+
+// Optional --ticker/--period scope one run to a single transcript (read locally).
+const argValue = name => {
+  const index = process.argv.indexOf(name);
+  return index !== -1 ? (process.argv[index + 1] || '') : null;
+};
+const RUN_TICKER = (argValue('--ticker') || '').toUpperCase() || null;
+const RUN_PERIOD = (argValue('--period') || '').toUpperCase() || null;
 const { STANCE_SCORES, attachCompositeTone } = require('../transcripts/tone');
 
 const GEMINI_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '';
@@ -138,7 +146,7 @@ async function main() {
     throw new Error('Set GEMINI_API_KEY or GROQ_API_KEY.');
   }
 
-  const enrichments = (await listLocalEnrichments())
+  const enrichments = (await loadEnrichmentsForRun({ ticker: RUN_TICKER, period: RUN_PERIOD }))
     .sort((a, b) => `${a.ticker}:${a.fiscal_period}`.localeCompare(`${b.ticker}:${b.fiscal_period}`));
   let interpreted = 0;
   let batches = 0;

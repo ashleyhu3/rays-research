@@ -13,11 +13,10 @@
  *     same failure mode as ^VIXEQ, handled the same way as that ticker:
  *     sourced from East Money's generic kline API instead, which this
  *     codebase already uses in chinaLiquidity.js/hkChinaPerformance.js).
- *   - Yahoo's "volume" field is real composite volume for S&P500/Nasdaq100
- *     (turnover = volume × close), but 0 for SOX/KOSPI200/Nikkei225/TOPIX,
- *     and East Money's `amount` field is real official turnover for
- *     Hang Seng/CSI300/ChiNext/TAIEX (secid market-code 100.HSI / 1.000300 /
- *     0.399006 / 100.TWII all confirmed to return nonzero amount).
+ *   - Turnover uses direct East Money `amount` where available, constituent
+ *     close×volume for SOX/Nikkei225, and Yahoo volume×close as the resilient
+ *     fallback for the remaining Yahoo-priced indices (including the TOPIX
+ *     1306.T ETF proxy).
  */
 'use strict';
 
@@ -96,8 +95,9 @@ const YAHOO_SYMBOL = {
   sp500: '^GSPC', ndx: '^NDX', sox: '^SOX', hsi: '^HSI',
   taiex: '^TWII', kospi200: '^KS200', nikkei225: '^N225', topix: '1306.T',
 };
-// Real composite volume on Yahoo (turnover = volume × close is meaningful).
-const YAHOO_VOLUME_TURNOVER_KEYS = new Set(['sp500', 'ndx']);
+// Yahoo now supplies volume for these index/proxy symbols. Zero-volume
+// in-progress observations remain null so they cannot overwrite settled data.
+const YAHOO_VOLUME_TURNOVER_KEYS = new Set(Object.keys(YAHOO_SYMBOL));
 
 // CSI300/ChiNext have no Yahoo chart history at all, so this is both their
 // price AND turnover source. Hang Seng/TAIEX price fine on Yahoo, but Yahoo's
@@ -129,7 +129,7 @@ async function fetchYahooIndex(yf, key, start, end) {
     date: isoDate(q.date),
     close: q.close,
     adjClose: q.adjclose ?? q.close,
-    turnover: YAHOO_VOLUME_TURNOVER_KEYS.has(key) && q.volume != null ? q.volume * q.close : null,
+    turnover: YAHOO_VOLUME_TURNOVER_KEYS.has(key) && q.volume > 0 ? q.volume * q.close : null,
   }));
 }
 
@@ -236,7 +236,10 @@ async function getGlobalIndices(startDate, endDate = new Date()) {
   const series = results.map(r => {
     const byClose = new Map(r.points.map(p => [p.date, p.close]));
     const byAdj = new Map(r.points.map(p => [p.date, p.adjClose]));
-    const byTurnover = turnoverOnlyByTicker.get(r.ticker) ?? new Map(r.points.map(p => [p.date, p.turnover]));
+    const directTurnover = turnoverOnlyByTicker.get(r.ticker);
+    const byTurnover = directTurnover?.size
+      ? directTurnover
+      : new Map(r.points.map(p => [p.date, p.turnover]));
     return {
       ticker: r.ticker,
       label: r.label,
