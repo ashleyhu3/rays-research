@@ -793,6 +793,75 @@ app.get('/api/global-indices', async (req, res) => {
 // china-national-team-flow below.
 app.get('/api/index-breadth', (_req, res) => res.json(readIndexBreadth()));
 
+// Run a targeted breadth repair inside the deployed environment. This matters
+// when a local worker and Vercel use different Mongo credentials: the repair
+// must execute with the same storage configuration as the API that serves the
+// charts. Load the canonical aggregate first, then only the raw caches needed
+// by gapped series so a Vercel invocation does not download every index.
+const BREADTH_RAW_BLOB = {
+  sp500: 'breadthRawSp500History',
+  ndx: 'breadthRawNdxHistory',
+  hsi: 'breadthRawHsiHistory',
+  csi300: 'breadthRawCsi300History',
+  sox: 'breadthRawSoxHistory',
+  nikkei225: 'breadthRawNikkei225History',
+};
+
+app.post(
+  '/api/index-breadth/backfill',
+  requireAdminSecret,
+  requireStorageBlobs('indexBreadthHistory'),
+  async (_req, res) => {
+    try {
+      const before = readIndexBreadth();
+      const incompleteKeys = Object.entries(before)
+        .filter(([, series]) => {
+          const firstValid = series.pctAboveBoth?.findIndex(value => value != null) ?? -1;
+          return firstValid >= 0
+            && series.pctAboveBoth.slice(firstValid).some(value => value == null);
+        })
+        .map(([key]) => key);
+
+      if (!incompleteKeys.length) {
+        return res.json({ ok: true, rebuilt: [], message: 'All breadth series are already continuous' });
+      }
+
+      await Promise.all([
+        storage.load(
+          STORAGE_BLOB_BY_NAME.get('globalIndicesHistory').name,
+          STORAGE_BLOB_BY_NAME.get('globalIndicesHistory').file,
+        ),
+        ...incompleteKeys.map(key => {
+          const blob = STORAGE_BLOB_BY_NAME.get(BREADTH_RAW_BLOB[key]);
+          return storage.load(blob.name, blob.file);
+        }),
+      ]);
+
+      const { updateIndexBreadth } = require('./scrapers/indexBreadth');
+      for (const key of incompleteKeys) {
+        await updateIndexBreadth(key, { forceBootstrap: true });
+      }
+      await storage.flush();
+
+      const result = readIndexBreadth();
+      const summary = Object.fromEntries(Object.entries(result).map(([key, series]) => {
+        const firstValid = series.pctAboveBoth?.findIndex(value => value != null) ?? -1;
+        return [key, {
+          dates: series.dates.length,
+          valid: series.pctAboveBoth?.filter(value => value != null).length ?? 0,
+          internalGaps: firstValid < 0
+            ? series.dates.length
+            : series.pctAboveBoth.slice(firstValid).filter(value => value == null).length,
+        }];
+      }));
+      res.json({ ok: true, rebuilt: incompleteKeys, summary });
+    } catch (error) {
+      console.error('[index-breadth/backfill]', error.message);
+      res.status(500).json({ error: error.message });
+    }
+  },
+);
+
 /* ── China Rotation — Mongo-persisted daily history, no request-time scrape */
 app.get('/api/hk-china-performance', async (req, res) => {
   const rawStart = (req.query.start ?? '').trim();
