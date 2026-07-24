@@ -3,6 +3,14 @@ const zlib = require('zlib');
 const BASE = 'https://tradingeconomics.com';
 const DEFAULT_DATA_SOURCE = 'https://d3ii0wo49og5mi.cloudfront.net';
 const OBFUSCATION_KEY = 'tradingeconomics-charts-core-api-key';
+const FRED_CSV_URL = 'https://fred.stlouisfed.org/graph/fredgraph.csv';
+
+// Series pulled straight from FRED (fredgraph.csv, no API key) instead of
+// Trading Economics — TE has no breakeven-inflation or TIPS real-yield pages.
+const FRED_SERIES = {
+  us10yBreakeven: { fredId: 'T10YIE', name: '10-Year Breakeven Inflation Rate' },
+  us10yRealYield: { fredId: 'DFII10', name: '10-Year Treasury Inflation-Indexed Security, Constant Maturity' },
+};
 
 // Trading Economics page slugs are kept here (instead of opaque API symbols)
 // so every series remains traceable to the public source page shown in the UI.
@@ -147,6 +155,24 @@ async function fetchSeries(id, [country, slug]) {
   };
 }
 
+async function fetchFredSeries(id, { fredId, name }) {
+  const sourceUrl = `https://fred.stlouisfed.org/series/${fredId}`;
+  const text = await fetchText(`${FRED_CSV_URL}?id=${fredId}`);
+  const data = [];
+  for (const line of text.trim().split('\n').slice(1)) {
+    const [date, raw] = line.split(',');
+    // FRED marks non-trading-day / not-yet-published observations with "."
+    if (!raw || raw === '.') continue;
+    const value = Number(raw);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(date) && Number.isFinite(value)) data.push({ date, value });
+  }
+  if (!data.length) throw new Error(`FRED returned no data for ${fredId}`);
+  return {
+    id, name, unit: 'Percent', frequency: 'Daily',
+    source: 'FRED (Federal Reserve Bank of St. Louis)', sourceUrl, data,
+  };
+}
+
 async function mapLimited(entries, limit, worker) {
   const results = new Array(entries.length);
   let cursor = 0;
@@ -207,6 +233,13 @@ async function getMacroData() {
     if (result.status === 'fulfilled') series[id] = result.value;
     else errors[id] = result.reason?.message || 'Unknown error';
   });
+  const fredEntries = Object.entries(FRED_SERIES);
+  const fredSettled = await Promise.allSettled(fredEntries.map(([id, meta]) => fetchFredSeries(id, meta)));
+  fredSettled.forEach((result, index) => {
+    const id = fredEntries[index][0];
+    if (result.status === 'fulfilled') series[id] = result.value;
+    else errors[id] = result.reason?.message || 'FRED fetch failed';
+  });
   SPREADS.forEach(({ id, name, minuend, subtrahend }) => {
     const spread = calculateSpread(series[minuend], series[subtrahend], { id, name });
     if (spread) series[id] = spread;
@@ -234,4 +267,7 @@ function mergeMacroData(fresh, previous) {
   };
 }
 
-module.exports = { getMacroData, fetchSeries, SERIES, SPREADS, decodeChartPayload, calculateSpread, mergeMacroData };
+module.exports = {
+  getMacroData, fetchSeries, SERIES, SPREADS, FRED_SERIES, decodeChartPayload,
+  calculateSpread, fetchFredSeries, mergeMacroData,
+};

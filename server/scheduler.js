@@ -56,6 +56,7 @@ const scrapers = {
     const previous = (await snapshotStore.latest('commodities'))?.data;
     return getCommodityData(previous);
   },
+  fedWatch:         () => require('./scrapers/fedWatch').getFedWatchData(),
 };
 
 // TTLs match each source's natural update frequency.
@@ -107,6 +108,7 @@ const TTL = {
   indexBreadth:   24 * 3600000,  // daily — full constituent re-fetch per index is heavy; breadth doesn't need intraday freshness
   macro:          24 * 3600000,  // daily — monthly/weekly macro releases
   commodities:     6 * 3600000,  // 6-hourly — futures candles and daily spot quotes
+  fedWatch:       24 * 3600000,  // daily — Fed Funds futures settle once per session
 };
 
 // These scrapers already write their canonical time series to dedicated Mongo
@@ -195,7 +197,7 @@ function setup() {
   });
 
   // Daily at 03:00 UTC: aggregate stats whose sources only publish once per day
-  cron.schedule('0 3 * * *', () => refreshAll(['gpu', 'tftLcd', 'tpu', 'epochRevenue', 'sentiment', 'pypi', 'github', 'eia', 'mops', 'githubCommits', 'npm', 'huggingface', 'mcp', 'sec', 'webTraffic', 'customsDrones', 'japanLeverage', 'macro', 'commodities', 'chinaLiquidity', 'usLiquidity', 'carryTrade']));
+  cron.schedule('0 3 * * *', () => refreshAll(['gpu', 'tftLcd', 'tpu', 'epochRevenue', 'sentiment', 'pypi', 'github', 'eia', 'mops', 'githubCommits', 'npm', 'huggingface', 'mcp', 'sec', 'webTraffic', 'customsDrones', 'japanLeverage', 'macro', 'commodities', 'chinaLiquidity', 'usLiquidity', 'carryTrade', 'fedWatch']));
 
   // Options: warm every 6h, plus once shortly after boot so the RAG has data fast
   cron.schedule('30 */6 * * *', () => warmOptions());

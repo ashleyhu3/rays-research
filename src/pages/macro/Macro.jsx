@@ -10,7 +10,8 @@ const COLORS = ['#e8c547', '#56b4e9', '#5dd39e', '#ef8354', '#b48ead'];
 const PAGE_CHARTS = {
   'macro-yield': [
     ['United States', ['us2yYield', 'us10yYield', 'us30yYield'], ['2Y', '10Y', '30Y']],
-    ['10Y–2Y yield spread', ['us2y10ySpread'], ['10Y–2Y spread'], 'bar'],
+    ['10Y breakeven inflation & real yield', ['us10yBreakeven', 'us10yRealYield'], ['10Y breakeven inflation', '10Y real yield']],
+    ['10Y–2Y yield spread', ['us2y10ySpread'], ['10Y–2Y spread'], 'bar', 2],
     ['China', ['cn10yYield', 'cn30yYield'], ['10Y', '30Y']],
     ['Japan', ['jp10yYield', 'jp30yYield'], ['10Y', '30Y']],
     ['United Kingdom', ['uk10yYield', 'uk30yYield'], ['10Y', '30Y']],
@@ -64,12 +65,12 @@ const PAGE_CHARTS = {
   ],
 };
 
-function compact(value) {
+function compact(value, decimals) {
   const abs = Math.abs(value);
   if (abs >= 1e9) return `${(value / 1e9).toFixed(1)}B`;
   if (abs >= 1e6) return `${(value / 1e6).toFixed(1)}M`;
   if (abs >= 1e3) return `${(value / 1e3).toFixed(0)}K`;
-  return Number(value).toFixed(abs < 10 ? 1 : 0);
+  return Number(value).toFixed(decimals ?? (abs < 10 ? 1 : 0));
 }
 
 function fmtDate(iso) {
@@ -79,32 +80,42 @@ function fmtDate(iso) {
   });
 }
 
+// Latest reading uses the series' full history (not the date-range filter)
+// so switching to a narrower window never hides "where are we now".
+function latestPoint(series) {
+  return (series?.data ?? []).reduce((best, point) =>
+    Number.isFinite(point.value) && (!best || point.date > best.date) ? point : best, null);
+}
+
 function buildData(macro, keys, labels, startDate, endDate) {
   const available = keys.map(key => macro?.series?.[key]).filter(Boolean);
   const dates = [...new Set(available.flatMap(series => series.data
     .filter(point => inDateRange(point.date, startDate, endDate))
     .map(point => point.date)))].sort();
   const dateIndex = new Map(dates.map((date, index) => [date, index]));
-  const datasets = keys.flatMap((key, seriesIndex) => {
+  const datasets = [];
+  const latest = [];
+  keys.forEach((key, seriesIndex) => {
     const series = macro?.series?.[key];
-    if (!series) return [];
+    if (!series) return;
     const values = Array(dates.length).fill(null);
     series.data.forEach(point => {
       const index = dateIndex.get(point.date);
       if (index != null) values[index] = point.value;
     });
-    return [{
+    datasets.push({
       label: labels[seriesIndex], data: values,
       borderColor: COLORS[seriesIndex], backgroundColor: `${COLORS[seriesIndex]}55`,
       borderWidth: seriesIndex === 0 ? 2 : 1.7, pointRadius: 0, pointHoverRadius: 3,
       tension: 0.2, spanGaps: true,
-    }];
+    });
+    latest.push(latestPoint(series));
   });
-  return { labels: dates.map(fmtDate), datasets, available };
+  return { labels: dates.map(fmtDate), datasets, available, latest };
 }
 
 function MacroChart({ definition, macro, errors, startDate, endDate }) {
-  const [title, keys, labels, chartType = 'line'] = definition;
+  const [title, keys, labels, chartType = 'line', decimals] = definition;
   const built = useMemo(
     () => buildData(macro, keys, labels, startDate, endDate),
     [macro, keys, labels, startDate, endDate],
@@ -123,18 +134,31 @@ function MacroChart({ definition, macro, errors, startDate, endDate }) {
   }, [built.datasets, built.labels, chartType]);
   const unit = built.available[0]?.unit || '';
   const percentUnit = /percent|%/i.test(unit);
+  // Legend chips double as a "latest reading" readout, appended per series.
+  const latestText = useMemo(() => built.latest.map(point =>
+    point ? `${compact(point.value, decimals)}${percentUnit ? '%' : ''}` : null,
+  ), [built.latest, percentUnit, decimals]);
   const options = useMemo(() => {
-    const opts = baseOpts(value => `${compact(value)}${percentUnit ? '%' : ''}`);
+    const opts = baseOpts(value => `${compact(value, decimals)}${percentUnit ? '%' : ''}`);
     opts.plugins.legend = {
-      display: built.datasets.length > 1,
+      display: true,
       position: 'bottom',
-      labels: { color: '#c8c8c0', boxWidth: 10, padding: 12, font: { size: 10 } },
+      labels: {
+        color: '#c8c8c0', boxWidth: 10, padding: 12, font: { size: 10 },
+        generateLabels: chart => chart.data.datasets.map((dataset, index) => ({
+          text: latestText[index] ? `${dataset.label}  ${latestText[index]}` : dataset.label,
+          fillStyle: dataset.borderColor,
+          strokeStyle: dataset.borderColor,
+          hidden: !chart.isDatasetVisible(index),
+          datasetIndex: index,
+        })),
+      },
     };
     opts.plugins.tooltip.callbacks.label = context =>
-      ` ${context.dataset.label}: ${compact(context.parsed.y)}${percentUnit ? '%' : ''}`;
+      ` ${context.dataset.label}: ${compact(context.parsed.y, decimals)}${percentUnit ? '%' : ''}`;
     opts.plugins.zeroLine = { display: true };
     return opts;
-  }, [built.datasets.length, percentUnit]);
+  }, [latestText, percentUnit, decimals]);
   const source = built.available[0];
   const missing = keys.filter(key => !macro?.series?.[key]);
 
@@ -142,7 +166,7 @@ function MacroChart({ definition, macro, errors, startDate, endDate }) {
     <ChartCard
       chartId={`macro-${keys.join('-')}`}
       title={title}
-      src="Trading Economics"
+      src={source?.source || 'Trading Economics'}
       srcUrl={source?.sourceUrl || 'https://tradingeconomics.com'}
       freq={source?.frequency || undefined}
       lag="updated after release"

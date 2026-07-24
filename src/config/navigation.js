@@ -133,6 +133,7 @@ export const NAV_SECTIONS = [
     mode: 'macro',
     items: [
       { id: 'macro-yield', label: 'Yield' },
+      { id: 'macro-fed-watch', label: 'Fed Watch' },
       { id: 'macro-commodity', label: 'Commodity', subitems: COMMODITY_SUBTABS },
       { id: 'macro-us-inflation', label: 'US', subitems: [
         { id: 'macro-us-inflation', label: 'Inflation' },
@@ -285,6 +286,7 @@ export const VIEW_META = {
   'global-performance':   { title: 'ROTATION — GLOBAL' },
   'macro-us-inflation': { title: 'US · INFLATION' },
   'macro-yield':        { title: 'GOVERNMENT BOND YIELDS' },
+  'macro-fed-watch':    { title: 'FED WATCH — TARGET RATE PROBABILITIES' },
   'macro-commodity':    { title: 'COMMODITY' },
   'macro-us-labor':     { title: 'US · LABOR' },
   'macro-us-pmi':       { title: 'US · PMI' },

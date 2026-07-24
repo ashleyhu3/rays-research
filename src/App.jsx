@@ -61,6 +61,7 @@ import CarryTrade from './pages/liquidity/CarryTrade';
 import Transcripts from './pages/transcripts/Transcripts';
 import Macro from './pages/macro/Macro';
 import Commodity from './pages/macro/Commodity';
+import FedWatch from './pages/macro/FedWatch';
 // Source-specific signal pages
 import PyPI          from './pages/sources/PyPI';
 import GitHub        from './pages/sources/GitHub';
@@ -145,6 +146,7 @@ const VIEW_COMPONENTS = {
   'transcripts':      Transcripts,
   'macro-us-inflation': Macro,
   'macro-yield':        Macro,
+  'macro-fed-watch':    FedWatch,
   'macro-commodity':    Commodity,
   'macro-us-labor':     Macro,
   'macro-us-pmi':       Macro,

@@ -221,6 +221,7 @@ app.get('/api/taiwan-leverage',   cachedRoute('taiwanLeverage',   s.taiwanLevera
 app.get('/api/china-leverage',    cachedRoute('chinaLeverage',    s.chinaLeverage, null, { preferPersisted: true }));
 app.get('/api/macro',             cachedRoute('macro',            s.macro, null, { preferPersisted: true }));
 app.get('/api/commodities',       cachedRoute('commodities',      s.commodities, null, { preferPersisted: true }));
+app.get('/api/fed-watch',         cachedRoute('fedWatch',         s.fedWatch, null, { preferPersisted: true }));
 
 // One-off deep backfill (~5y, ~3600 SZSE requests + ~1200 SSE market-cap
 // requests at a polite pace — several minutes) triggered manually from the
