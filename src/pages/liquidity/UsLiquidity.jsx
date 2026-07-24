@@ -62,7 +62,12 @@ function SeriesChart({ payload, seriesKey, color, fmt, chartId, srcNote, height 
 
   const data = {
     labels: points.map(point => dateLabel(point.date)),
-    datasets: [mkDs(meta.name, color, points.map(point => point.value), true)],
+    datasets: [{
+      ...mkDs(meta.name, color, points.map(point => point.value), true),
+      pointRadius: 0,
+      pointHoverRadius: 5,
+      pointHitRadius: 8,
+    }],
   };
   const options = baseOpts(fmt);
   options.plugins.tooltip.callbacks.title = items => points[items[0]?.dataIndex]?.date ?? '';
