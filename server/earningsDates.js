@@ -302,36 +302,6 @@ async function getEarningsAnchors(ticker) {
   };
 }
 
-// The settled quarterly call-date history for one ticker, most recent first —
-// used by the Price Return tab to line price data up against past calls. Goes
-// through the same cache/staleness path as getEarningsAnchors, so it costs a
-// vendor call only the first time a ticker is asked for (or once a quarter
-// after that).
-async function getHistory(ticker) {
-  const entry = await loadTicker(ticker);
-  return entry.history ?? [];
-}
-
-// Force a fresh pull of the full settled history for one ticker, bypassing the
-// staleness gate. seedEarningsDatesFromWeb.js seeds many tickers with only the
-// last four quarters and marks them fresh, so historyStale() reports them
-// up to date and getHistory() never deepens them past four. The Price Return
-// backfill uses this to pull Alpha Vantage's full depth (typically many years)
-// instead. Costs one Alpha Vantage request; on failure the existing cache is
-// kept so a hit rate-limit can't blank a ticker that already had history.
-async function refreshHistory(ticker) {
-  const cached = readCache().tickers[ticker] ?? null;
-  try {
-    const history = await fetchHistory(ticker);
-    if (!history.length) return cached?.history ?? [];
-    writeCache(ticker, { ...(cached ?? {}), history, historyFetchedAt: new Date().toISOString() });
-    return history;
-  } catch (error) {
-    console.warn(`[earnings-dates] forced history refresh failed for ${ticker}: ${error.message}`);
-    return cached?.history ?? [];
-  }
-}
-
 module.exports = {
   BLOB,
   CALENDAR_TTL_DAYS,
@@ -341,9 +311,7 @@ module.exports = {
   addDays,
   calendarStale,
   getEarningsAnchors,
-  getHistory,
   historyStale,
-  refreshHistory,
   parseCalendarRows,
   pickAnchor,
 };

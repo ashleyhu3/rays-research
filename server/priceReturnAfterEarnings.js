@@ -2,7 +2,7 @@
 
 const path = require('path');
 const storage = require('./storage');
-const earningsDates = require('./earningsDates');
+const apiNinjas = require('./apiNinjasEarnings');
 const { DEFAULT_TICKERS } = require('./scripts/generateDailyOptionsReport');
 
 // SOXX is the semiconductor index ETF, not a company — it has no earnings
@@ -14,7 +14,7 @@ const PRICE_RETURN_TICKERS = DEFAULT_TICKERS.filter(t => t !== 'SOXX');
 // trading sessions, not 7 calendar days.
 const OFFSETS = { oneDay: 1, threeDay: 3, oneWeek: 5 };
 
-const QUARTERS_SHOWN = 20; // ~5 years of quarterly calls
+const QUARTERS_SHOWN = 40; // ~10 years of quarterly calls
 
 // NOTE: this blob must stay registered in server.js STORAGE_BLOBS, or init()
 // won't preload it from Mongo and every restart starts the backfill over.
@@ -55,6 +55,12 @@ function isoDate(d) {
   if (!d) return null;
   const dt = d instanceof Date ? d : new Date(d);
   return isNaN(dt.getTime()) ? null : dt.toISOString().slice(0, 10);
+}
+
+function addDays(dateStr, days) {
+  const date = new Date(`${dateStr}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
 }
 
 // Calendar quarter in which the earnings call happened — "2026-04-15" ->
@@ -106,27 +112,30 @@ function returnAfter(prices, reportDate, offset) {
   return target / base - 1;
 }
 
-async function computeTicker(ticker, { forceHistory = false } = {}) {
-  const history = forceHistory
-    ? await earningsDates.refreshHistory(ticker)
-    : await earningsDates.getHistory(ticker);
-  const recent = history.slice(0, QUARTERS_SHOWN);
+async function computeTicker(ticker) {
+  const reportDates = await apiNinjas.getEarningsReportDates(ticker);
+  const recent = reportDates.slice(0, QUARTERS_SHOWN);
   if (!recent.length) return null;
 
-  const earliestReport = recent[recent.length - 1].reportedDate;
-  const start = earningsDates.addDays(earliestReport, -10);
+  const earliestReport = recent[recent.length - 1];
+  const start = addDays(earliestReport, -10);
   const end = isoDate(new Date());
   const prices = await fetchPriceSeries(ticker, start, end);
 
   const quarters = {};
-  for (const row of recent) {
-    const label = quarterLabel(row.reportedDate);
+  for (const reportedDate of recent) {
+    const label = quarterLabel(reportedDate);
     if (!label) continue;
+    // A ticker that reported twice inside one calendar quarter (a timing shift
+    // between years) would collide on the same label; keep the earlier of the
+    // two so the column stays chronologically stable rather than flipping to a
+    // mid-quarter re-report.
+    if (quarters[label] && quarters[label].date <= reportedDate) continue;
     quarters[label] = {
-      date: row.reportedDate,
-      oneDay: returnAfter(prices, row.reportedDate, OFFSETS.oneDay),
-      threeDay: returnAfter(prices, row.reportedDate, OFFSETS.threeDay),
-      oneWeek: returnAfter(prices, row.reportedDate, OFFSETS.oneWeek),
+      date: reportedDate,
+      oneDay: returnAfter(prices, reportedDate, OFFSETS.oneDay),
+      threeDay: returnAfter(prices, reportedDate, OFFSETS.threeDay),
+      oneWeek: returnAfter(prices, reportedDate, OFFSETS.oneWeek),
     };
   }
   return quarters;
@@ -142,19 +151,17 @@ function writeCache(state) {
   storage.write(BLOB.name, BLOB.file, state);
 }
 
-// Ticker-by-ticker rather than parallel: earningsDates.getHistory already
-// serializes every Alpha Vantage call behind one shared pacer (see
-// earningsDates.js's `paced()`), and the free tier's 25 requests/day cap is
-// shared with the rest of the app, so there is nothing to gain from
-// concurrency here and a real risk of tripping the cap harder. Writing after
-// every ticker means a crash or a hit rate limit partway through a run keeps
-// whatever finished rather than losing the whole batch.
-async function backfill(tickers = PRICE_RETURN_TICKERS, { forceHistory = false } = {}) {
+// Ticker-by-ticker rather than parallel: each ticker is one API Ninjas request
+// plus one Yahoo Finance history pull, and running them sequentially keeps well
+// clear of both providers' rate limits without needing a pacer. Writing after
+// every ticker means a crash or a transient provider error partway through a
+// run keeps whatever finished rather than losing the whole batch.
+async function backfill(tickers = PRICE_RETURN_TICKERS) {
   const state = readCache();
   state.tickers ??= {};
   for (const ticker of tickers) {
     try {
-      const quarters = await computeTicker(ticker, { forceHistory });
+      const quarters = await computeTicker(ticker);
       if (quarters && Object.keys(quarters).length) {
         state.tickers[ticker] = quarters;
         console.log(`[price-return] ${ticker}: ${Object.keys(quarters).length} quarters`);
@@ -171,7 +178,7 @@ async function backfill(tickers = PRICE_RETURN_TICKERS, { forceHistory = false }
 }
 
 // What the Alerts page's Price Return tab reads: a synchronous, no-network
-// call so the request never blocks on Alpha Vantage or Yahoo Finance.
+// call so the request never blocks on API Ninjas or Yahoo Finance.
 function getTable() {
   const state = readCache();
   const byTicker = state.tickers ?? {};
