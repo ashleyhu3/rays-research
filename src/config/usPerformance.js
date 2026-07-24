@@ -51,12 +51,16 @@ export const EXTRA_TICKERS = {
   VIX:   { ticker: '^VIX',   label: 'VIX',   name: 'CBOE Volatility Index', color: '#eaeae0' },
   VIXEQ: { ticker: '^VIXEQ', label: 'VIXEQ', name: 'CBOE S&P 500 Constituent Volatility', color: '#f2b134' },
   VXN:   { ticker: '^VXN',   label: 'VXN',   name: 'CBOE Nasdaq-100 Volatility Index', color: '#3c8cdd' },
+  MOVE:  { ticker: '^MOVE',  label: 'MOVE',  name: 'ICE BofA MOVE Index', color: '#dc386e' },
   GLD:   { ticker: 'GLD',    label: 'GLD',   name: 'SPDR Gold Shares', color: '#eab308' },
 };
 
 // Chart 1 of the Sentiment section: raw index levels (not rebased — VIX,
-// VIXEQ and VXN are already directly comparable).
-export const VOL_INDEX_TICKERS = ['VIX', 'VIXEQ', 'VXN'];
+// VIXEQ and VXN are already directly comparable). MOVE (bond-market vol) is
+// on a much higher scale (~80-150 vs VIX's ~10-40), so it's plotted on a
+// secondary y-axis — see VOL_INDEX_SECONDARY_AXIS below.
+export const VOL_INDEX_TICKERS = ['VIX', 'VIXEQ', 'VXN', 'MOVE'];
+export const VOL_INDEX_SECONDARY_AXIS = ['MOVE'];
 
 // Chart 4 of the Sentiment section: GLD/VIX cross-asset ratio (gold vs the
 // fear gauge) — see https://x.com/Zac_Markovich/status/2030370942892048797

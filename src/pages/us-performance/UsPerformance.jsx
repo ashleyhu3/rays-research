@@ -4,7 +4,7 @@ import ChartCard from '../../components/chart/ChartCard';
 import { useResource } from '../../services/resourceCache';
 import {
   SPX_META, US_PERFORMANCE_ETFS, EXTRA_TICKERS, TECH_PAIRS, THEME_TICKERS, FACTOR_TICKERS,
-  SOX_CORRELATION_PAIRS, KWEB_CORRELATION_PAIRS, VOL_INDEX_TICKERS, GLD_VIX_PAIR,
+  SOX_CORRELATION_PAIRS, KWEB_CORRELATION_PAIRS, VOL_INDEX_TICKERS, VOL_INDEX_SECONDARY_AXIS, GLD_VIX_PAIR,
 } from '../../config/usPerformance';
 import { GRID, TICK, BORD } from '../../utils/chartHelpers';
 import { rankChartsByLatestStrength, rankDatasetsByLatestStrength } from '../../utils/chartRanking';
@@ -371,7 +371,9 @@ function buildCorrelationChartData(payload, pairs, startDate, endDate) {
 
 // Raw index levels (VIX/VIXEQ/VXN are directly comparable already — no
 // rebase-to-100 the way sector ETFs need for a relative-performance chart).
-function buildVolIndexChartData(payload, labels, startDate, endDate) {
+// Labels in `secondaryAxisLabels` (e.g. MOVE, which runs ~80-150 vs VIX's
+// ~10-40) plot against the right-hand y1 axis instead of the shared y axis.
+function buildVolIndexChartData(payload, labels, startDate, endDate, secondaryAxisLabels = []) {
   const bounds = visibleBounds(payload.dates, startDate, endDate);
   if (!bounds) return null;
 
@@ -391,6 +393,7 @@ function buildVolIndexChartData(payload, labels, startDate, endDate) {
       pointHitRadius: 6,
       tension: 0.15,
       spanGaps: true,
+      ...(secondaryAxisLabels.includes(label) ? { yAxisID: 'y1' } : {}),
     };
   }).filter(Boolean);
 
@@ -433,7 +436,7 @@ function buildVolSpreadChartData(payload, startDate, endDate) {
     : null;
 }
 
-function volIndexChartOptions({ include30 = false } = {}) {
+function volIndexChartOptions({ include30 = false, secondaryAxis = false } = {}) {
   return {
     responsive: true,
     maintainAspectRatio: false,
@@ -465,6 +468,14 @@ function volIndexChartOptions({ include30 = false } = {}) {
         border: BORD,
         ...(include30 ? { suggestedMax: 32 } : {}),
       },
+      ...(secondaryAxis ? {
+        y1: {
+          position: 'right',
+          grid: { drawOnChartArea: false },
+          ticks: { ...TICK, callback: v => v.toFixed(0) },
+          border: BORD,
+        },
+      } : {}),
     },
   };
 }
@@ -799,7 +810,7 @@ export default function UsPerformance({ section = null }) {
     [payload, startDate, endDate]
   );
   const volIndexData = useMemo(
-    () => (payload ? buildVolIndexChartData(payload, VOL_INDEX_TICKERS, startDate, endDate) : null),
+    () => (payload ? buildVolIndexChartData(payload, VOL_INDEX_TICKERS, startDate, endDate, VOL_INDEX_SECONDARY_AXIS) : null),
     [payload, startDate, endDate]
   );
   const volSpreadData = useMemo(
@@ -995,7 +1006,7 @@ export default function UsPerformance({ section = null }) {
         <div className="cgrid">
           {volIndexData && (
             <ChartCard title="VIX" src="Yahoo Finance" srcUrl="https://finance.yahoo.com" freq="Daily" height={340}>
-              <Line data={volIndexData} options={volIndexChartOptions({ include30: true })} plugins={[VIX_30_LINE]} />
+              <Line data={volIndexData} options={volIndexChartOptions({ include30: true, secondaryAxis: true })} plugins={[VIX_30_LINE]} />
             </ChartCard>
           )}
 
