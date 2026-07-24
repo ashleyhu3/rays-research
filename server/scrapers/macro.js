@@ -20,6 +20,7 @@ const SERIES = {
   uk30yYield: ['united-kingdom', '30-year-bond-yield'],
   de10yYield: ['germany', 'government-bond-yield'],
   de30yYield: ['germany', '30-year-bond-yield'],
+  ch10yYield: ['switzerland', 'government-bond-yield'],
   usCpiYoy: ['united-states', 'inflation-cpi'],
   usCoreCpiYoy: ['united-states', 'core-inflation-rate'],
   usCpiMom: ['united-states', 'inflation-rate-mom'],
@@ -163,26 +164,35 @@ async function mapLimited(entries, limit, worker) {
   return results;
 }
 
-function calculateSpread(longSeries, shortSeries) {
-  if (!longSeries?.data?.length || !shortSeries?.data?.length) return null;
-  const shortByDate = new Map(shortSeries.data.map(point => [point.date, point.value]));
-  const data = longSeries.data.flatMap(point => {
-    const shortValue = shortByDate.get(point.date);
-    return Number.isFinite(point.value) && Number.isFinite(shortValue)
-      ? [{ date: point.date, value: point.value - shortValue }]
+function calculateSpread(minuendSeries, subtrahendSeries, { id, name }) {
+  if (!minuendSeries?.data?.length || !subtrahendSeries?.data?.length) return null;
+  const subtrahendByDate = new Map(subtrahendSeries.data.map(point => [point.date, point.value]));
+  const data = minuendSeries.data.flatMap(point => {
+    const subtrahendValue = subtrahendByDate.get(point.date);
+    return Number.isFinite(point.value) && Number.isFinite(subtrahendValue)
+      ? [{ date: point.date, value: point.value - subtrahendValue }]
       : [];
   });
   if (!data.length) return null;
   return {
-    id: 'us2y10ySpread',
-    name: 'United States 2Y–10Y Treasury spread',
+    id,
+    name,
     unit: 'percentage points',
-    frequency: longSeries.frequency || shortSeries.frequency || 'Daily',
+    frequency: minuendSeries.frequency || subtrahendSeries.frequency || 'Daily',
     source: 'Calculated from Trading Economics',
-    sourceUrl: longSeries.sourceUrl,
+    sourceUrl: minuendSeries.sourceUrl,
     data,
   };
 }
+
+// Yield-spread series derived from two SERIES entries (minuend minus
+// subtrahend). Keeping the definitions in one place lets both the carry-trade
+// page (JP/CH vs US) and the rates page (US 2Y/10Y) share the same calc.
+const SPREADS = [
+  { id: 'us2y10ySpread', name: 'United States 2Y–10Y Treasury spread', minuend: 'us10yYield', subtrahend: 'us2yYield' },
+  { id: 'jpUs10ySpread', name: 'Japan–US 10Y yield spread', minuend: 'jp10yYield', subtrahend: 'us10yYield' },
+  { id: 'chUs10ySpread', name: 'Switzerland–US 10Y yield spread', minuend: 'ch10yYield', subtrahend: 'us10yYield' },
+];
 
 async function getMacroData() {
   const entries = Object.entries(SERIES);
@@ -197,9 +207,11 @@ async function getMacroData() {
     if (result.status === 'fulfilled') series[id] = result.value;
     else errors[id] = result.reason?.message || 'Unknown error';
   });
-  const spread = calculateSpread(series.us10yYield, series.us2yYield);
-  if (spread) series.us2y10ySpread = spread;
-  else if (series.us10yYield || series.us2yYield) errors.us2y10ySpread = 'Unable to align 2Y and 10Y observations';
+  SPREADS.forEach(({ id, name, minuend, subtrahend }) => {
+    const spread = calculateSpread(series[minuend], series[subtrahend], { id, name });
+    if (spread) series[id] = spread;
+    else if (series[minuend] || series[subtrahend]) errors[id] = `Unable to align ${minuend} and ${subtrahend} observations`;
+  });
   if (!Object.keys(series).length) throw new Error('Trading Economics returned no macro series');
   return { fetchedAt: new Date().toISOString(), series, errors };
 }
@@ -222,4 +234,4 @@ function mergeMacroData(fresh, previous) {
   };
 }
 
-module.exports = { getMacroData, fetchSeries, SERIES, decodeChartPayload, calculateSpread, mergeMacroData };
+module.exports = { getMacroData, fetchSeries, SERIES, SPREADS, decodeChartPayload, calculateSpread, mergeMacroData };

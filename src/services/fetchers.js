@@ -85,57 +85,77 @@ async function fetchJsonSafe(url, ms = 30000) {
 // github-commits crawls many repos and can be slow on a cold start
 const SLOW_KEYS = new Set(['github-commits', 'macro', 'commodities']);
 
-async function fetchBackendAll() {
-  const keys = ['pypi', 'gpu', 'github', 'openrouter', 'eia', 'mops', 'github-commits', 'docker', 'hn', 'openrouter-ranks', 'dram', 'nand', 'tft-lcd', 'aws', 'cpu', 'tpu', 'epoch-revenue', 'sentiment', 'mcp', 'sec', 'huggingface', 'metrics-history', 'web-traffic', 'customs-drones', 'macro', 'commodities'];
-  const results = await Promise.allSettled(keys.map(k => fetchJsonSafe(`/api/${k}`, SLOW_KEYS.has(k) ? 90000 : 30000)));
-  return Object.fromEntries(keys.map((k, i) => [
-    k, results[i].status === 'fulfilled' ? results[i].value : null,
-  ]));
+// Backend datasets: [response field, /api path]. Each is fetched independently
+// so a slow one never holds up the rest.
+const BACKEND_SOURCES = [
+  ['pypiHistory',     'pypi'],
+  ['gpu',             'gpu'],
+  ['github',          'github'],
+  ['openrouter',      'openrouter'],
+  ['eia',             'eia'],
+  ['mops',            'mops'],
+  ['githubCommits',   'github-commits'],
+  ['docker',          'docker'],
+  ['hn',              'hn'],
+  ['openrouterRanks', 'openrouter-ranks'],
+  ['dram',            'dram'],
+  ['nand',            'nand'],
+  ['tftLcd',          'tft-lcd'],
+  ['aws',             'aws'],
+  ['cpu',             'cpu'],
+  ['tpu',             'tpu'],
+  ['epochRevenue',    'epoch-revenue'],
+  ['sentiment',       'sentiment'],
+  ['mcp',             'mcp'],
+  ['sec',             'sec'],
+  ['hfServer',        'huggingface'],
+  ['metricsHistory',  'metrics-history'],
+  ['webTraffic',      'web-traffic'],
+  ['customsDrones',   'customs-drones'],
+  ['macro',           'macro'],
+  ['commodities',     'commodities'],
+];
+
+// The shape fetchAll resolves to, with every field empty. Used to seed a fresh
+// (uncached) progressive load so consumers get a stable object from the start.
+function emptySnapshot() {
+  const snap = { npm: {}, pypi: {}, hf: [] };
+  for (const [field] of BACKEND_SOURCES) snap[field] = null;
+  return snap;
 }
 
-/* ── Aggregate ────────────────────────────────────────────────────── */
-export async function fetchAll() {
-  const [npm, pypi, hf, backend] = await Promise.allSettled([
-    fetchNpm(),
-    fetchPypi(),
-    fetchHF(),
-    fetchBackendAll(),
-  ]);
+/* ── Aggregate (progressive) ──────────────────────────────────────────
+   Fires every source concurrently and invokes `onData(snapshot)` each time
+   one resolves, so the UI can paint each chart as its data lands instead of
+   waiting for the slowest source. Resolves to the final merged snapshot.
+   `seed` (e.g. a cached snapshot) is used as the baseline so partial updates
+   refine existing data rather than blanking it. */
+export async function fetchAllProgressive(onData, seed = null) {
+  const snapshot = { ...emptySnapshot(), ...(seed ?? {}) };
 
-  const ok = r => r.status === 'fulfilled' ? r.value : null;
-  const be = ok(backend) ?? {};
-
-  return {
-    // Browser-direct fetches
-    npm:         ok(npm)      ?? {},
-    pypi:        ok(pypi)     ?? {},
-    hf:          ok(hf)       ?? [],
-    // Backend-provided (may be null if server not running)
-    pypiHistory: be.pypi       ?? null,
-    gpu:         be.gpu        ?? null,
-    github:      be.github     ?? null,
-    openrouter:  be.openrouter ?? null,
-    eia:          be.eia              ?? null,
-    mops:         be.mops             ?? null,
-    githubCommits: be['github-commits'] ?? null,
-    docker:        be.docker           ?? null,
-    hn:            be.hn               ?? null,
-    openrouterRanks:  be['openrouter-ranks']      ?? null,
-    dram:             be.dram                     ?? null,
-    nand:             be.nand                     ?? null,
-    tftLcd:           be['tft-lcd']               ?? null,
-    aws:              be.aws                      ?? null,
-    cpu:              be.cpu                      ?? null,
-    tpu:              be.tpu                      ?? null,
-    epochRevenue:     be['epoch-revenue']         ?? null,
-    sentiment:        be.sentiment                ?? null,
-    mcp:              be.mcp                      ?? null,
-    sec:              be.sec                      ?? null,
-    hfServer:         be.huggingface              ?? null,
-    metricsHistory:   be['metrics-history']       ?? null,
-    webTraffic:       be['web-traffic']           ?? null,
-    customsDrones:    be['customs-drones']        ?? null,
-    macro:            be.macro                    ?? null,
-    commodities:      be.commodities              ?? null,
+  const apply = (field, value) => {
+    snapshot[field] = value;
+    // Hand out a fresh object so React sees a new reference and re-renders.
+    onData?.({ ...snapshot });
   };
+
+  const jobs = [
+    fetchNpm().then(v => apply('npm', v)).catch(() => {}),
+    fetchPypi().then(v => apply('pypi', v)).catch(() => {}),
+    fetchHF().then(v => apply('hf', v)).catch(() => {}),
+    ...BACKEND_SOURCES.map(([field, path]) =>
+      fetchJsonSafe(`/api/${path}`, SLOW_KEYS.has(path) ? 90000 : 30000)
+        .then(v => { if (v != null) apply(field, v); })
+        .catch(() => {})
+    ),
+  ];
+
+  await Promise.allSettled(jobs);
+  return snapshot;
+}
+
+/* ── Aggregate (await-all) ────────────────────────────────────────────
+   Back-compat wrapper that resolves only once everything has settled. */
+export async function fetchAll() {
+  return fetchAllProgressive();
 }

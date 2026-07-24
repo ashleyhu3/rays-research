@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react';
-import { Bar } from 'react-chartjs-2';
+import { Bar, Line } from 'react-chartjs-2';
 import ChartCard from '../../components/chart/ChartCard';
 import { useResource } from '../../services/resourceCache';
+import { useData } from '../../context/DataContext';
+import { baseOpts } from '../../utils/chartHelpers';
 
 const BLUE = '#4577b4';
 const PURPLE = '#7864b4';
@@ -19,6 +21,11 @@ const RANGES = [
 const SERIES = [
   { key: 'jpy', short: 'JPY', color: BLUE },
   { key: 'chf', short: 'CHF', color: PURPLE },
+];
+
+const SPREADS = [
+  { key: 'jpUs10ySpread', title: 'JP–US 10Y Spread', color: BLUE },
+  { key: 'chUs10ySpread', title: 'CH–US 10Y Spread', color: PURPLE },
 ];
 
 function fmtContracts(value, signed = false) {
@@ -84,6 +91,36 @@ function chartOptions(points) {
   };
 }
 
+function fmtPct(value) {
+  if (!Number.isFinite(value)) return '—';
+  return `${value.toFixed(2)}%`;
+}
+
+function spreadChartData(points, color) {
+  return {
+    labels: points.map(point => monthLabel(point.date)),
+    datasets: [{
+      label: 'Yield spread',
+      data: points.map(point => point.value),
+      borderColor: color,
+      backgroundColor: `${color}33`,
+      borderWidth: 1.7,
+      pointRadius: 0,
+      pointHoverRadius: 3,
+      tension: 0.15,
+      spanGaps: true,
+    }],
+  };
+}
+
+function spreadChartOptions(points) {
+  const opts = baseOpts(fmtPct);
+  opts.plugins.tooltip.callbacks.title = items => points[items[0]?.dataIndex]?.date ?? '';
+  opts.plugins.tooltip.callbacks.label = context => ` Spread: ${fmtPct(context.parsed.y)}`;
+  opts.scales.x.ticks.maxTicksLimit = 10;
+  return opts;
+}
+
 function Tile({ label, point, color }) {
   return (
     <div className="lev-tile">
@@ -98,12 +135,19 @@ export default function CarryTrade() {
   // Loads once on first visit, then served from the shared cache on every
   // subsequent mount (stays loaded across navigation and refresh).
   const { data: payload, error } = useResource('/api/carry-trade');
+  const { liveData } = useData();
+  const macro = liveData?.macro;
   const range = RANGES.find(item => item.id === rangeId) ?? RANGES[1];
 
   const visible = useMemo(() => Object.fromEntries(SERIES.map(series => [
     series.key,
     windowed(payload?.series?.[series.key]?.data, range),
   ])), [payload, range]);
+
+  const spreadVisible = useMemo(() => Object.fromEntries(SPREADS.map(spread => [
+    spread.key,
+    windowed(macro?.series?.[spread.key]?.data, range),
+  ])), [macro, range]);
 
   const toggles = (
     <div className="lev-toggles"><div className="view-toggle">
@@ -160,6 +204,29 @@ export default function CarryTrade() {
               srcNote="Non-commercial futures longs minus shorts. Positive values indicate net long positioning; negative values indicate net short positioning. Chart dates are CFTC position dates."
             >
               <Bar data={chartData(points, series.color)} options={chartOptions(points)} />
+            </ChartCard>
+          );
+        })}
+      </div>
+      <div className="cgrid">
+        {SPREADS.map(spread => {
+          const meta = macro?.series?.[spread.key];
+          const points = spreadVisible[spread.key];
+          return (
+            <ChartCard
+              key={spread.key}
+              chartId={`liquidity-carry-trade-${spread.key}`}
+              title={meta?.name ?? spread.title}
+              src="Trading Economics"
+              srcUrl={meta?.sourceUrl}
+              freq={meta?.frequency || 'Daily'}
+              lag="updated after release"
+              height={340}
+              srcNote="Positive values indicate the local 10Y yield trades above the US 10Y yield; negative values indicate it trades below — the carry incentive a JPY/CHF funding trade is compensating for."
+            >
+              {points?.length
+                ? <Line data={spreadChartData(points, spread.color)} options={spreadChartOptions(points)} />
+                : <div className="empty">{macro ? 'Yield spread data unavailable.' : 'Loading Trading Economics yield history…'}</div>}
             </ChartCard>
           );
         })}
