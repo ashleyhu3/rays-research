@@ -280,13 +280,13 @@ function assembleAllBreadth() {
 
 /* ── Top-level per-index update ───────────────────────────────────────── */
 
-async function updateIndexBreadth(indexKey) {
+async function updateIndexBreadth(indexKey, { forceBootstrap = false } = {}) {
   const config = INDEX_CONFIGS.find(c => c.key === indexKey);
   if (!config) throw new Error(`Unknown breadth index: ${indexKey}`);
 
   const tickers = await config.fetchConstituents();
   const rawHistory = loadRaw(indexKey);
-  const isBootstrap = needsBootstrap(rawHistory);
+  const isBootstrap = forceBootstrap || needsBootstrap(rawHistory);
   // Steady-state updates only need to overlap the retained observations. A
   // calendar year safely covers 260 sessions across all supported markets.
   const windowDays = isBootstrap ? BOOTSTRAP_WINDOW_DAYS : 365;

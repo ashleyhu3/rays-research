@@ -302,6 +302,16 @@ async function getEarningsAnchors(ticker) {
   };
 }
 
+// The settled quarterly call-date history for one ticker, most recent first —
+// used by the Price Return tab to line price data up against past calls. Goes
+// through the same cache/staleness path as getEarningsAnchors, so it costs a
+// vendor call only the first time a ticker is asked for (or once a quarter
+// after that).
+async function getHistory(ticker) {
+  const entry = await loadTicker(ticker);
+  return entry.history ?? [];
+}
+
 module.exports = {
   BLOB,
   CALENDAR_TTL_DAYS,
@@ -311,6 +321,7 @@ module.exports = {
   addDays,
   calendarStale,
   getEarningsAnchors,
+  getHistory,
   historyStale,
   parseCalendarRows,
   pickAnchor,
