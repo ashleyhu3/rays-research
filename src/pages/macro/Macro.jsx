@@ -6,6 +6,10 @@ import { baseOpts } from '../../utils/chartHelpers';
 import MacroDateControls, { inDateRange, isoYearsAgo, todayIso } from './MacroDateControls';
 
 const COLORS = ['#e8c547', '#56b4e9', '#5dd39e', '#ef8354', '#b48ead'];
+// Matches --bg-card — used as the outline stroke behind on-chart value labels
+// so they stay legible over gridlines/other series regardless of chart position.
+const SURFACE = '#111419';
+const COUNTRY_SHORT = { 'United States': 'US', China: 'CN', Japan: 'JP', 'United Kingdom': 'UK', Germany: 'DE' };
 
 const PAGE_CHARTS = {
   'macro-yield': [
@@ -73,6 +77,10 @@ function compact(value, decimals) {
   return Number(value).toFixed(decimals ?? (abs < 10 ? 1 : 0));
 }
 
+function fmtSeriesValue(value, decimals, percentUnit) {
+  return `${compact(value, decimals)}${percentUnit ? '%' : ''}`;
+}
+
 function fmtDate(iso) {
   const [year, month, day] = iso.split('-').map(Number);
   return new Date(year, month - 1, day || 1).toLocaleDateString('en-US', {
@@ -94,7 +102,6 @@ function buildData(macro, keys, labels, startDate, endDate) {
     .map(point => point.date)))].sort();
   const dateIndex = new Map(dates.map((date, index) => [date, index]));
   const datasets = [];
-  const latest = [];
   keys.forEach((key, seriesIndex) => {
     const series = macro?.series?.[key];
     if (!series) return;
@@ -109,12 +116,56 @@ function buildData(macro, keys, labels, startDate, endDate) {
       borderWidth: seriesIndex === 0 ? 2 : 1.7, pointRadius: 0, pointHoverRadius: 3,
       tension: 0.2, spanGaps: true,
     });
-    latest.push(latestPoint(series));
   });
-  return { labels: dates.map(fmtDate), datasets, available, latest };
+  return { labels: dates.map(fmtDate), datasets, available };
 }
 
-function MacroChart({ definition, macro, errors, startDate, endDate }) {
+// Draws each series' latest visible value directly next to its last plotted
+// point, in that series' own (never black) color — used on the Yield page in
+// place of a bottom legend. `options.macroPointMarks.fmt` formats the raw value.
+const POINT_VALUE_MARKS = {
+  id: 'macroPointMarks',
+  afterDatasetsDraw(chart, _args, pluginOptions) {
+    const fmt = pluginOptions?.fmt;
+    if (!fmt) return;
+    const { ctx, chartArea } = chart;
+    ctx.save();
+    chart.data.datasets.forEach((dataset, datasetIndex) => {
+      const meta = chart.getDatasetMeta(datasetIndex);
+      if (meta.hidden) return;
+      let index = dataset.data.length - 1;
+      while (index >= 0 && dataset.data[index] == null) index -= 1;
+      if (index < 0) return;
+      const point = meta.data[index];
+      if (!point) return;
+      const color = Array.isArray(dataset.borderColor) ? dataset.borderColor[index] : dataset.borderColor;
+      const text = fmt(dataset.data[index]);
+
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, 3, 0, Math.PI * 2);
+      ctx.fill();
+
+      const valueAbove = point.y - chartArea.top > 20;
+      ctx.font = "700 11px 'Inter', sans-serif";
+      ctx.textAlign = 'right';
+      ctx.textBaseline = valueAbove ? 'bottom' : 'top';
+      const x = Math.min(point.x, chartArea.right - 2);
+      const y = valueAbove ? point.y - 5 : point.y + 5;
+
+      // Dark outline keeps the bright series color legible over gridlines.
+      ctx.lineWidth = 3;
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = SURFACE;
+      ctx.strokeText(text, x, y);
+      ctx.fillStyle = color;
+      ctx.fillText(text, x, y);
+    });
+    ctx.restore();
+  },
+};
+
+function MacroChart({ definition, macro, errors, startDate, endDate, isYield }) {
   const [title, keys, labels, chartType = 'line', decimals] = definition;
   const built = useMemo(
     () => buildData(macro, keys, labels, startDate, endDate),
@@ -134,33 +185,28 @@ function MacroChart({ definition, macro, errors, startDate, endDate }) {
   }, [built.datasets, built.labels, chartType]);
   const unit = built.available[0]?.unit || '';
   const percentUnit = /percent|%/i.test(unit);
-  // Legend chips double as a "latest reading" readout, appended per series.
-  const latestText = useMemo(() => built.latest.map(point =>
-    point ? `${compact(point.value, decimals)}${percentUnit ? '%' : ''}` : null,
-  ), [built.latest, percentUnit, decimals]);
   const options = useMemo(() => {
-    const opts = baseOpts(value => `${compact(value, decimals)}${percentUnit ? '%' : ''}`);
-    opts.plugins.legend = {
-      display: true,
-      position: 'bottom',
-      labels: {
-        color: '#c8c8c0', boxWidth: 10, padding: 12, font: { size: 10 },
-        generateLabels: chart => chart.data.datasets.map((dataset, index) => ({
-          text: latestText[index] ? `${dataset.label}  ${latestText[index]}` : dataset.label,
-          fillStyle: dataset.borderColor,
-          strokeStyle: dataset.borderColor,
-          hidden: !chart.isDatasetVisible(index),
-          datasetIndex: index,
-        })),
-      },
-    };
+    const opts = baseOpts(value => fmtSeriesValue(value, decimals, percentUnit));
+    if (isYield) {
+      // Yield page shows latest values as on-chart point marks + top summary
+      // cards instead, so the bottom legend would just be duplicate text.
+      opts.plugins.legend = { display: false };
+      opts.plugins.macroPointMarks = { fmt: value => fmtSeriesValue(value, decimals, percentUnit) };
+    } else {
+      opts.plugins.legend = {
+        display: built.datasets.length > 1,
+        position: 'bottom',
+        labels: { color: '#c8c8c0', boxWidth: 10, padding: 12, font: { size: 10 } },
+      };
+    }
     opts.plugins.tooltip.callbacks.label = context =>
-      ` ${context.dataset.label}: ${compact(context.parsed.y, decimals)}${percentUnit ? '%' : ''}`;
+      ` ${context.dataset.label}: ${fmtSeriesValue(context.parsed.y, decimals, percentUnit)}`;
     opts.plugins.zeroLine = { display: true };
     return opts;
-  }, [latestText, percentUnit, decimals]);
+  }, [isYield, built.datasets.length, percentUnit, decimals]);
   const source = built.available[0];
   const missing = keys.filter(key => !macro?.series?.[key]);
+  const chartPlugins = isYield ? [POINT_VALUE_MARKS] : undefined;
 
   return (
     <ChartCard
@@ -175,10 +221,47 @@ function MacroChart({ definition, macro, errors, startDate, endDate }) {
     >
       {built.datasets.length
         ? chartType === 'bar'
-          ? <Bar data={chartData} options={options} />
-          : <Line data={chartData} options={options} />
+          ? <Bar data={chartData} options={options} plugins={chartPlugins} />
+          : <Line data={chartData} options={options} plugins={chartPlugins} />
         : <div className="macro-empty">{errors ? 'Series temporarily unavailable from Trading Economics.' : 'Loading macro history…'}</div>}
     </ChartCard>
+  );
+}
+
+// Top-of-page "latest reading" cards for the Yield page — same card format as
+// the Liquidity pages' .lev-tile row, one tile per series across all charts.
+function SummaryTiles({ charts, macro }) {
+  const tiles = useMemo(() => {
+    if (!macro) return [];
+    return charts.flatMap(([chartTitle, keys, labels, , decimals]) => {
+      const short = COUNTRY_SHORT[chartTitle];
+      return keys.flatMap((key, seriesIndex) => {
+        const series = macro.series?.[key];
+        const point = latestPoint(series);
+        if (!point) return [];
+        const percentUnit = /percent|%/i.test(series.unit || '');
+        return [{
+          key,
+          label: short ? `${short} ${labels[seriesIndex]}` : labels[seriesIndex],
+          color: COLORS[seriesIndex % COLORS.length],
+          text: fmtSeriesValue(point.value, decimals, percentUnit),
+        }];
+      });
+    });
+  }, [charts, macro]);
+
+  if (!tiles.length) return null;
+  return (
+    <div className="lev-head">
+      <div className="lev-stats">
+        {tiles.map(tile => (
+          <div className="lev-tile" key={tile.key}>
+            <div className="lev-tile-label"><span className="lev-dot" style={{ background: tile.color }} />{tile.label}</div>
+            <div className="lev-tile-value">{tile.text}</div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -188,6 +271,7 @@ export default function Macro({ viewId }) {
   const [endDate, setEndDate] = useState(() => todayIso());
   const macro = liveData?.macro;
   const charts = PAGE_CHARTS[viewId] || PAGE_CHARTS['macro-us-inflation'];
+  const isYield = viewId === 'macro-yield';
   return (
     <div className="macro-page">
       <MacroDateControls
@@ -196,6 +280,7 @@ export default function Macro({ viewId }) {
         onStartDate={setStartDate}
         onEndDate={setEndDate}
       />
+      {isYield && <SummaryTiles charts={charts} macro={macro} />}
       {macro?.fetchedAt && (
         <div className="macro-update">Trading Economics history · refreshed {new Date(macro.fetchedAt).toLocaleString()}</div>
       )}
@@ -209,6 +294,7 @@ export default function Macro({ viewId }) {
             errors={macro?.errors}
             startDate={startDate}
             endDate={endDate}
+            isYield={isYield}
           />
         ))}
       </div>
