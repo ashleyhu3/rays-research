@@ -63,19 +63,19 @@ function addDays(dateStr, days) {
   return date.toISOString().slice(0, 10);
 }
 
-// Calendar quarter in which the earnings call happened — "2026-04-15" ->
-// "2026 Q2". Bucketing by the report date rather than the fiscal-period-end
-// date lines every ticker up by reporting season: a column then holds each
-// company's call from the same three-month window regardless of its fiscal
-// calendar, so ~25% of names (NVDA, AVGO, AMAT, ADI, CSCO, ...) whose fiscal
-// quarters don't end in Mar/Jun/Sep/Dec still sit alongside everyone else that
-// reported that season instead of being shifted a column.
+// The fiscal quarter a report covers — i.e. the most recently completed
+// calendar quarter as of the report date, which is the report's calendar
+// quarter shifted back one. A Jul–Sep report covers Q2 (a company reporting on
+// 2026-07-23 is reporting its Q2 2026 results); a Jan–Mar report covers the
+// prior year's Q4. Every ticker shifts back by the same one quarter, so this
+// only relabels the columns — it doesn't change which tickers share a column.
 function quarterLabel(reportedDate) {
   const m = /^(\d{4})-(\d{2})/.exec(reportedDate || '');
   if (!m) return null;
-  const year = Number(m[1]);
-  const month = Number(m[2]);
-  return `${year} Q${Math.ceil(month / 3)}`;
+  let year = Number(m[1]);
+  let quarter = Math.ceil(Number(m[2]) / 3) - 1;
+  if (quarter === 0) { quarter = 4; year -= 1; }
+  return `${year} Q${quarter}`;
 }
 
 // Sortable key so quarter labels compare chronologically regardless of string order.
@@ -92,20 +92,35 @@ async function fetchPriceSeries(ticker, start, end) {
     .sort((a, b) => a.date.localeCompare(b.date));
 }
 
-// Cumulative close-to-close return from the session right before the report
-// to `offset` sessions after it. The report date itself counts as the first
-// post-report session when it falls on a trading day (the common case for an
-// after-market-close call); if it lands on a weekend/holiday, the next open
-// session stands in. Historical earnings dates carry no bmo/amc flag (Alpha
-// Vantage's EARNINGS endpoint doesn't report it), so this is a single
-// uniform convention rather than one branch per report time.
-function returnAfter(prices, reportDate, offset) {
-  if (!prices.length) return null;
-  const reportIndex = prices.findIndex(p => p.date >= reportDate);
-  if (reportIndex <= 0) return null; // no prior session to baseline against, or report is newer than all known prices
-  const baseIndex = reportIndex - 1;
+// A report reacts on a different session depending on timing: a before-open
+// ("bmo") report moves the stock that same day, an after-close ("amc") report
+// moves it the next session. Historical dates carry no bmo/amc flag, so timing
+// is inferred from the prices — the earnings reaction is almost always the
+// single largest move around the announcement. Returns the report's index in
+// the price series plus the size of the report-day and next-day moves; the
+// larger of the two is the reaction. `strong` marks quarters where one move
+// clearly dominates (so its timing is trustworthy on its own); ambiguous
+// quarters — both sessions moved a lot — defer to the ticker's usual timing.
+const AMBIGUOUS_RATIO = 1.6;
+
+function reactionAt(prices, reportDate) {
+  const ri = prices.findIndex(p => p.date >= reportDate);
+  if (ri <= 0) return null; // no prior session to baseline against, or newer than all known prices
+  if (ri + 1 >= prices.length) return { ri, timing: 'bmo', strong: false }; // no next session yet ⇒ assume report-day
+  const bmoMove = Math.abs(prices[ri].close / prices[ri - 1].close - 1);
+  const amcMove = Math.abs(prices[ri + 1].close / prices[ri].close - 1);
+  const hi = Math.max(bmoMove, amcMove);
+  const lo = Math.min(bmoMove, amcMove) || 1e-9;
+  return { ri, timing: amcMove > bmoMove ? 'amc' : 'bmo', strong: hi / lo >= AMBIGUOUS_RATIO };
+}
+
+// Cumulative close-to-close return from the last pre-reaction close to `offset`
+// sessions later. `timing` fixes which session is the baseline: bmo baselines
+// on the close before the report day, amc on the report day's own close.
+function returnFrom(prices, ri, timing, offset) {
+  const baseIndex = timing === 'amc' ? ri : ri - 1;
   const targetIndex = baseIndex + offset;
-  if (targetIndex >= prices.length) return null; // not enough trading history yet (recent report)
+  if (baseIndex < 0 || targetIndex >= prices.length) return null;
   const base = prices[baseIndex].close;
   const target = prices[targetIndex].close;
   if (!Number.isFinite(base) || !Number.isFinite(target) || base === 0) return null;
@@ -122,20 +137,46 @@ async function computeTicker(ticker) {
   const end = isoDate(new Date());
   const prices = await fetchPriceSeries(ticker, start, end);
 
-  const quarters = {};
+  // First pass: locate each report and read its timing off the prices.
+  const events = {};
   for (const reportedDate of recent) {
     const label = quarterLabel(reportedDate);
     if (!label) continue;
-    // A ticker that reported twice inside one calendar quarter (a timing shift
-    // between years) would collide on the same label; keep the earlier of the
-    // two so the column stays chronologically stable rather than flipping to a
-    // mid-quarter re-report.
-    if (quarters[label] && quarters[label].date <= reportedDate) continue;
+    // Two dates mapping to the same fiscal quarter (e.g. an ADR whose earnings
+    // call and later SEC filing both appear) collide on one label; keep the
+    // earliest, which is the actual earnings call the market reacted to rather
+    // than a weeks-later filing. Dates arrive newest-first, so overwrite only
+    // when this one is earlier.
+    if (events[label] && events[label].date <= reportedDate) continue;
+    const reaction = reactionAt(prices, reportedDate);
+    if (reaction) events[label] = { date: reportedDate, ...reaction };
+  }
+
+  // A company's report timing is consistent quarter to quarter (US large-caps
+  // report after close, foreign ADRs like TSM/ASML before the US open), so the
+  // quarters where one session clearly dominated vote on the ticker's timing,
+  // and that verdict is applied uniformly to every quarter — including the
+  // ambiguous ones and any lone quarter whose own move happened to point the
+  // other way from a coincidental non-earnings swing. Only a ticker with no
+  // decisive quarter at all falls back to per-quarter inference. Ties default
+  // to amc, the majority timing across the watchlist.
+  let amcVotes = 0;
+  let bmoVotes = 0;
+  for (const e of Object.values(events)) {
+    if (!e.strong) continue;
+    if (e.timing === 'amc') amcVotes++; else bmoVotes++;
+  }
+  const hasVerdict = amcVotes + bmoVotes > 0;
+  const tickerTiming = amcVotes >= bmoVotes ? 'amc' : 'bmo';
+
+  const quarters = {};
+  for (const [label, e] of Object.entries(events)) {
+    const timing = hasVerdict ? tickerTiming : e.timing;
     quarters[label] = {
-      date: reportedDate,
-      oneDay: returnAfter(prices, reportedDate, OFFSETS.oneDay),
-      threeDay: returnAfter(prices, reportedDate, OFFSETS.threeDay),
-      oneWeek: returnAfter(prices, reportedDate, OFFSETS.oneWeek),
+      date: e.date,
+      oneDay: returnFrom(prices, e.ri, timing, OFFSETS.oneDay),
+      threeDay: returnFrom(prices, e.ri, timing, OFFSETS.threeDay),
+      oneWeek: returnFrom(prices, e.ri, timing, OFFSETS.oneWeek),
     };
   }
   return quarters;
@@ -214,5 +255,6 @@ module.exports = {
   computeTicker,
   getTable,
   quarterLabel,
-  returnAfter,
+  reactionAt,
+  returnFrom,
 };
