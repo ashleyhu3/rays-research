@@ -94,7 +94,7 @@ function FedBalance({ payload }) {
       <div className="cgrid">
         <SeriesChart
           payload={payload} seriesKey="netAssets" color={BLUE} fmt={fmtUsdM}
-          chartId="us-liquidity-net-assets" span2
+          chartId="us-liquidity-net-assets"
           srcNote="Net Assets = Fed Total Assets − Treasury General Account − ON RRP award volume. Rising = reserves flowing into the banking system; falling = liquidity draining out."
         />
       </div>

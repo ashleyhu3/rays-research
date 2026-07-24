@@ -1414,6 +1414,11 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
 }
 .pr-table thead th.pr-ticker-col { z-index: 3; }
 .pr-table .pr-ticker { color: var(--text); font-weight: 700; }
+/* Beat `.or-table td { color: var(--sec) }` (higher specificity than a bare
+   .up/.dn class), so return cells actually read green/red. */
+.pr-table td.up { color: #3fb950; }
+.pr-table td.dn { color: #f87171; }
+.pr-table td.nt { color: var(--ter); }
 
 
 /* Topbar title block: report date is the prominent heading, "Daily Options

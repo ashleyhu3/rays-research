@@ -312,6 +312,26 @@ async function getHistory(ticker) {
   return entry.history ?? [];
 }
 
+// Force a fresh pull of the full settled history for one ticker, bypassing the
+// staleness gate. seedEarningsDatesFromWeb.js seeds many tickers with only the
+// last four quarters and marks them fresh, so historyStale() reports them
+// up to date and getHistory() never deepens them past four. The Price Return
+// backfill uses this to pull Alpha Vantage's full depth (typically many years)
+// instead. Costs one Alpha Vantage request; on failure the existing cache is
+// kept so a hit rate-limit can't blank a ticker that already had history.
+async function refreshHistory(ticker) {
+  const cached = readCache().tickers[ticker] ?? null;
+  try {
+    const history = await fetchHistory(ticker);
+    if (!history.length) return cached?.history ?? [];
+    writeCache(ticker, { ...(cached ?? {}), history, historyFetchedAt: new Date().toISOString() });
+    return history;
+  } catch (error) {
+    console.warn(`[earnings-dates] forced history refresh failed for ${ticker}: ${error.message}`);
+    return cached?.history ?? [];
+  }
+}
+
 module.exports = {
   BLOB,
   CALENDAR_TTL_DAYS,
@@ -323,6 +343,7 @@ module.exports = {
   getEarningsAnchors,
   getHistory,
   historyStale,
+  refreshHistory,
   parseCalendarRows,
   pickAnchor,
 };

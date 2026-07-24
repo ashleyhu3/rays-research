@@ -57,12 +57,15 @@ function isoDate(d) {
   return isNaN(dt.getTime()) ? null : dt.toISOString().slice(0, 10);
 }
 
-// Calendar quarter of a fiscal-period-end date — "2026-06-30" -> "2026 Q2".
-// Nearly every tracked ticker reports on a calendar fiscal year; the handful
-// that don't (e.g. TSM) still map onto the calendar bucket investors mean
-// when they say "Q2 earnings", which is the convention this tab follows.
-function quarterLabel(fiscalDateEnding) {
-  const m = /^(\d{4})-(\d{2})/.exec(fiscalDateEnding || '');
+// Calendar quarter in which the earnings call happened — "2026-04-15" ->
+// "2026 Q2". Bucketing by the report date rather than the fiscal-period-end
+// date lines every ticker up by reporting season: a column then holds each
+// company's call from the same three-month window regardless of its fiscal
+// calendar, so ~25% of names (NVDA, AVGO, AMAT, ADI, CSCO, ...) whose fiscal
+// quarters don't end in Mar/Jun/Sep/Dec still sit alongside everyone else that
+// reported that season instead of being shifted a column.
+function quarterLabel(reportedDate) {
+  const m = /^(\d{4})-(\d{2})/.exec(reportedDate || '');
   if (!m) return null;
   const year = Number(m[1]);
   const month = Number(m[2]);
@@ -103,8 +106,10 @@ function returnAfter(prices, reportDate, offset) {
   return target / base - 1;
 }
 
-async function computeTicker(ticker) {
-  const history = await earningsDates.getHistory(ticker);
+async function computeTicker(ticker, { forceHistory = false } = {}) {
+  const history = forceHistory
+    ? await earningsDates.refreshHistory(ticker)
+    : await earningsDates.getHistory(ticker);
   const recent = history.slice(0, QUARTERS_SHOWN);
   if (!recent.length) return null;
 
@@ -115,7 +120,7 @@ async function computeTicker(ticker) {
 
   const quarters = {};
   for (const row of recent) {
-    const label = quarterLabel(row.fiscalDateEnding);
+    const label = quarterLabel(row.reportedDate);
     if (!label) continue;
     quarters[label] = {
       date: row.reportedDate,
@@ -144,12 +149,12 @@ function writeCache(state) {
 // concurrency here and a real risk of tripping the cap harder. Writing after
 // every ticker means a crash or a hit rate limit partway through a run keeps
 // whatever finished rather than losing the whole batch.
-async function backfill(tickers = PRICE_RETURN_TICKERS) {
+async function backfill(tickers = PRICE_RETURN_TICKERS, { forceHistory = false } = {}) {
   const state = readCache();
   state.tickers ??= {};
   for (const ticker of tickers) {
     try {
-      const quarters = await computeTicker(ticker);
+      const quarters = await computeTicker(ticker, { forceHistory });
       if (quarters && Object.keys(quarters).length) {
         state.tickers[ticker] = quarters;
         console.log(`[price-return] ${ticker}: ${Object.keys(quarters).length} quarters`);
