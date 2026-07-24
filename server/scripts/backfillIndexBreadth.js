@@ -16,6 +16,10 @@ const NAMES = new Set([
   'breadthRawCsi300History',
   'breadthRawSoxHistory',
   'breadthRawNikkei225History',
+  'breadthRawChinextHistory',
+  'breadthRawTaiexHistory',
+  'breadthRawKospi200History',
+  'breadthRawTopixHistory',
 ]);
 
 async function main() {
@@ -25,8 +29,11 @@ async function main() {
     const incompleteKeys = Object.entries(before)
       .filter(([, series]) => {
         const firstValid = series.pctAboveBoth?.findIndex(value => value != null) ?? -1;
-        return firstValid >= 0
-          && series.pctAboveBoth.slice(firstValid).some(value => value == null);
+        // A brand-new index has no valid observations at all (firstValid < 0)
+        // and still needs its initial bootstrap; an existing one is incomplete
+        // only if a gap appears after its first valid observation.
+        if (firstValid < 0) return true;
+        return series.pctAboveBoth.slice(firstValid).some(value => value == null);
       })
       .map(([key]) => key);
 
@@ -35,7 +42,7 @@ async function main() {
       return;
     }
 
-    console.log(`[index-breadth-backfill] rebuilding incomplete series: ${incompleteKeys.join(', ')}`);
+    console.log(`[index-breadth-backfill] bootstrapping/rebuilding series: ${incompleteKeys.join(', ')}`);
     for (const key of incompleteKeys) {
       await updateIndexBreadth(key, { forceBootstrap: true });
     }

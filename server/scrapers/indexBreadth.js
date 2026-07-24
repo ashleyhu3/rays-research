@@ -19,10 +19,21 @@
  *                          plain <ul> list, "Company Name, ..., TICKER").
  *   nikkei225            — topforeignstocks.com's constituent table
  *                          (column-3 holds Yahoo-format "NNNN.T" tickers).
+ *   chinext              — cnindex.com.cn sample-detail API for index 399006
+ *                          (the 100 index members; seccode → "NNNNNN.SZ").
+ *   taiex                — TWSE's own STOCK_DAY_ALL open API, filtered to
+ *                          4-digit common-stock codes (the ~1,000 TWSE-listed
+ *                          names; excludes ETFs/warrants/OTC → "NNNN.TW").
+ *   kospi200             — Wikipedia's KOSPI 200 constituents table
+ *                          (the 200 members; Symbol → "NNNNNN.KS").
+ *   topix                — JPX's official listed-issues workbook, rows whose
+ *                          "Size (New Index Series)" names a TOPIX tier (the
+ *                          ~1,600 index members; Local Code → "NNNN.T").
  */
 'use strict';
 
 const cheerio = require('cheerio');
+const XLSX = require('@e965/xlsx');
 const path = require('path');
 const storage = require('../storage');
 const { isoDaysAgo } = require('./persistedSeries');
@@ -125,6 +136,94 @@ async function fetchNikkei225Constituents() {
   return tickers;
 }
 
+// ── ChiNext (创业板指, 399006): cnindex publishes the 100 index members ──
+// as JSON. `rows` (not `pageSize`) is the working page-size param; request 200
+// to be safe and dedupe. Codes are Shenzhen-listed → ".SZ".
+async function fetchChinextConstituents() {
+  const res = await fetch(
+    'https://www.cnindex.com.cn/sample-detail/detail?indexcode=399006&dateStr=&rows=200',
+    { headers: { 'User-Agent': BROWSER_UA }, signal: AbortSignal.timeout(20000) },
+  );
+  if (!res.ok) throw new Error(`ChiNext cnindex HTTP ${res.status}`);
+  const body = await res.json();
+  const rows = body?.data?.rows ?? [];
+  const tickers = rows
+    .map(r => String(r.seccode ?? '').replace(/\D/g, ''))
+    .filter(code => /^\d{6}$/.test(code))
+    .map(code => `${code}.SZ`);
+  if (!tickers.length) throw new Error('ChiNext cnindex: no members parsed');
+  return [...new Set(tickers)];
+}
+
+// ── TAIEX (^TWII): the Taiwan Weighted Index is every TWSE-listed common ──
+// stock. TWSE's STOCK_DAY_ALL report lists every security traded in the latest
+// session as CSV (date, code, name, …); 4-digit codes not starting with 0 are
+// the common stocks (00xx = ETFs, 6-digit = warrants, OTC/TPEx names never
+// appear here). All TWSE-listed → ".TW". (The openapi.twse.com.tw JSON mirror
+// resets Node's TLS connection, so this uses the www CSV report instead.)
+async function fetchTaiexConstituents() {
+  const res = await fetch('https://www.twse.com.tw/exchangeReport/STOCK_DAY_ALL?response=json', {
+    headers: { 'User-Agent': BROWSER_UA }, signal: AbortSignal.timeout(20000),
+  });
+  if (!res.ok) throw new Error(`TAIEX TWSE HTTP ${res.status}`);
+  const lines = (await res.text()).trim().split(/\r?\n/).slice(1); // drop CSV header row
+  const tickers = lines
+    .map(line => (line.split(',')[1] ?? '').replace(/["=\s]/g, ''))
+    .filter(code => /^[1-9]\d{3}$/.test(code))
+    .map(code => `${code}.TW`);
+  if (!tickers.length) throw new Error('TAIEX TWSE: no common stocks parsed');
+  return [...new Set(tickers)];
+}
+
+// ── KOSPI 200 (^KS200): Wikipedia keeps the full 200-name constituents ──
+// table. Pick whichever wikitable carries a Symbol/Code column and the most
+// rows. Codes are 6-digit KRX numbers → ".KS".
+async function fetchKospi200Constituents() {
+  const res = await fetch('https://en.wikipedia.org/wiki/KOSPI_200', {
+    headers: { 'User-Agent': BROWSER_UA }, signal: AbortSignal.timeout(20000),
+  });
+  if (!res.ok) throw new Error(`KOSPI 200 Wikipedia HTTP ${res.status}`);
+  const $ = cheerio.load(await res.text());
+  let best = [];
+  $('table.wikitable').each((_, table) => {
+    const headers = $(table).find('tr').first().find('th, td')
+      .map((_, cell) => $(cell).text().trim().toLowerCase()).get();
+    const symbolIndex = headers.findIndex(h => /symbol|code|ticker/.test(h));
+    if (symbolIndex === -1) return;
+    const rows = [];
+    $(table).find('tr').slice(1).each((_, tr) => {
+      const code = $($(tr).find('td')[symbolIndex]).text().replace(/\D/g, '');
+      if (/^\d{4,6}$/.test(code)) rows.push(`${code.padStart(6, '0')}.KS`);
+    });
+    if (rows.length > best.length) best = rows;
+  });
+  if (!best.length) throw new Error('KOSPI 200 Wikipedia: no constituents parsed');
+  return [...new Set(best)];
+}
+
+// ── TOPIX (^TPX): every TSE Prime common stock in the "New Index Series". ──
+// JPX's official listed-issues workbook tags each row's TOPIX tier in the
+// "Size (New Index Series)" column (Core30/Large70/Mid400/Small 1/Small 2);
+// any tier means TOPIX membership. Local Code is 4 digits → ".T".
+async function fetchTopixConstituents() {
+  const res = await fetch(
+    'https://www.jpx.co.jp/english/markets/statistics-equities/misc/tvdivq0000001vg2-att/data_e.xls',
+    { headers: { 'User-Agent': BROWSER_UA }, signal: AbortSignal.timeout(45000) },
+  );
+  if (!res.ok) throw new Error(`TOPIX JPX HTTP ${res.status}`);
+  const book = XLSX.read(Buffer.from(await res.arrayBuffer()), { type: 'buffer' });
+  const rows = XLSX.utils.sheet_to_json(book.Sheets[book.SheetNames[0]], { header: 1, raw: false });
+  const header = (rows[0] ?? []).map(cell => String(cell));
+  const codeIndex = header.findIndex(h => /Local Code/i.test(h));
+  const sizeIndex = header.findIndex(h => /Size \(New Index Series\)/i.test(h));
+  if (codeIndex === -1 || sizeIndex === -1) throw new Error('TOPIX JPX: unexpected workbook layout');
+  const tickers = rows.slice(1)
+    .filter(r => /TOPIX/i.test(String(r[sizeIndex] ?? '')) && /^\d{4}$/.test(String(r[codeIndex] ?? '').trim()))
+    .map(r => `${String(r[codeIndex]).trim()}.T`);
+  if (!tickers.length) throw new Error('TOPIX JPX: no constituents parsed');
+  return [...new Set(tickers)];
+}
+
 const INDEX_CONFIGS = [
   { key: 'sp500',     label: 'S&P 500',    fetchConstituents: () => fetchGithubCsvConstituents('sp500') },
   { key: 'ndx',       label: 'Nasdaq 100', fetchConstituents: () => fetchGithubCsvConstituents('nasdaq100') },
@@ -132,6 +231,10 @@ const INDEX_CONFIGS = [
   { key: 'csi300',    label: 'CSI 300',    fetchConstituents: () => fetchGithubCsvConstituents('csi300') },
   { key: 'sox',       label: 'SOX',        fetchConstituents: fetchSoxConstituents },
   { key: 'nikkei225', label: 'Nikkei 225', fetchConstituents: fetchNikkei225Constituents },
+  { key: 'chinext',   label: 'ChiNext',    fetchConstituents: fetchChinextConstituents },
+  { key: 'taiex',     label: 'TAIEX',      fetchConstituents: fetchTaiexConstituents },
+  { key: 'kospi200',  label: 'KOSPI 200',  fetchConstituents: fetchKospi200Constituents },
+  { key: 'topix',     label: 'TOPIX',      fetchConstituents: fetchTopixConstituents },
 ];
 
 // SOX/Nikkei225 have no direct turnover source (see globalIndices.js) — this
@@ -157,6 +260,10 @@ const RAW_BLOB = {
   csi300: 'breadthRawCsi300History',
   sox: 'breadthRawSoxHistory',
   nikkei225: 'breadthRawNikkei225History',
+  chinext: 'breadthRawChinextHistory',
+  taiex: 'breadthRawTaiexHistory',
+  kospi200: 'breadthRawKospi200History',
+  topix: 'breadthRawTopixHistory',
 };
 function rawFile(key) { return path.join(__dirname, '..', 'data', `${RAW_BLOB[key]}.json`); }
 
@@ -364,6 +471,7 @@ module.exports = {
     computeAggregates, rollingAverage, mergeRawPoints, pruneRaw,
     needsBootstrap,
     fetchGithubCsvConstituents, fetchSoxConstituents, fetchNikkei225Constituents,
+    fetchChinextConstituents, fetchTaiexConstituents, fetchKospi200Constituents, fetchTopixConstituents,
     assembleBreadth, mergeBreadthDaily,
   },
 };

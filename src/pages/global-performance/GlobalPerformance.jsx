@@ -396,7 +396,7 @@ export default function GlobalPerformance({ section = null }) {
           {breadthError && <div className="empty">Could not load breadth data: {breadthError}</div>}
           {!breadthPayload && !breadthError && <div className="empty">Loading breadth data…</div>}
           <div className="src-note" style={{ marginTop: 12 }}>
-            Breadth currently covers S&amp;P 500, Nasdaq 100, SOX, Hang Seng, CSI 300, and Nikkei 225 — ChiNext, TAIEX, KOSPI 200 and TOPIX are not yet available (no confirmed constituent-level data source).
+            Breadth is computed from each index's own constituents: S&amp;P 500, Nasdaq 100, SOX, Hang Seng, CSI 300, Nikkei 225, ChiNext (100 members), TAIEX (all TWSE-listed stocks), KOSPI 200, and TOPIX (JPX New Index Series). Constituent lists come from each market's official source; daily prices from Yahoo Finance.
           </div>
         </>
       )}
