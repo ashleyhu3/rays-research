@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useOptionsReport } from '../../context/OptionsReportContext';
 import EarningsCalendar from './Calendar';
+import PriceReturn from './PriceReturn';
 
-// Sentinel `selected` value for the Calendar nav item — distinct from any
-// ticker symbol so it can share the same sidebar list and selection state.
+// Sentinel `selected` values for the Calendar and Price Return nav items —
+// distinct from any ticker symbol so they can share the same sidebar list and
+// selection state.
 const CALENDAR_ID = '__calendar__';
+const PRICE_RETURN_ID = '__price-return__';
 const FLOW_DOT_COUNT = 3;
 const CURRENT_BAR_COLORS = { call: '#059669', put: '#dc2626' };
 
@@ -383,7 +386,10 @@ export default function Alerts() {
   const query = search.trim().toUpperCase();
   const filteredTickers = query ? tickers.filter(t => t.ticker.includes(query)) : tickers;
   const showCalendar = selected === CALENDAR_ID;
-  const active = showCalendar ? null : (tickers.find(t => t.ticker === selected) ?? tickers[0] ?? null);
+  const showPriceReturn = selected === PRICE_RETURN_ID;
+  const active = showCalendar || showPriceReturn
+    ? null
+    : (tickers.find(t => t.ticker === selected) ?? tickers[0] ?? null);
 
   const searchToFirstMatch = () => {
     if (filteredTickers.length) setSelected(filteredTickers[0].ticker);
@@ -408,10 +414,17 @@ export default function Alerts() {
           />
           <button
             type="button"
-            className={`or-nav-item or-nav-item--calendar${showCalendar ? ' active' : ''}`}
+            className={`or-nav-item${showCalendar ? ' active' : ''}`}
             onClick={() => setSelected(CALENDAR_ID)}
           >
             <span className="or-nav-name">Calendar</span>
+          </button>
+          <button
+            type="button"
+            className={`or-nav-item or-nav-item--divider${showPriceReturn ? ' active' : ''}`}
+            onClick={() => setSelected(PRICE_RETURN_ID)}
+          >
+            <span className="or-nav-name">Price Return</span>
           </button>
           {filteredTickers.length ? filteredTickers.map(t => (
             <TickerNavItem
@@ -427,6 +440,8 @@ export default function Alerts() {
         <div className="or-report">
           {showCalendar ? (
             <EarningsCalendar />
+          ) : showPriceReturn ? (
+            <PriceReturn />
           ) : loading && !report ? (
             <div className="or-status">Loading the latest report…</div>
           ) : !active ? (

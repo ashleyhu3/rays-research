@@ -102,6 +102,7 @@ app.use('/api/index-breadth', requireStorageBlobs('indexBreadthHistory'));
 app.use('/api/spx-put-call-ratio', requireStorageBlobs('spxPutCallRatioHistory'));
 app.use('/api/options', requireStorageBlobs('optionsOI'));
 app.use('/api/alerts/earnings-calendar', requireStorageBlobs('techEarningsCalendar'));
+app.use('/api/alerts/price-return', requireStorageBlobs('priceReturnAfterEarnings'));
 
 // Chat consumes many cached sources at once. Hydrate those projected snapshot
 // fields only when Chat is used, rather than on every deployment cold start.
@@ -1101,6 +1102,16 @@ const techEarningsCalendar = require('./techEarningsCalendar');
 
 app.get('/api/alerts/earnings-calendar', (req, res) => {
   res.json({ events: techEarningsCalendar.getStoredEvents() });
+});
+
+/* ── Price return after earnings (Alerts page) ───────────────────────── */
+// Populated by server/scripts/backfillPriceReturn.js — Alpha Vantage history
+// + Yahoo Finance daily prices, computed once and cached in Mongo — so this
+// route is also a synchronous cache read.
+const priceReturnAfterEarnings = require('./priceReturnAfterEarnings');
+
+app.get('/api/alerts/price-return', (req, res) => {
+  res.json(priceReturnAfterEarnings.getTable());
 });
 
 app.post('/api/chat', async (req, res) => {

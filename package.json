@@ -35,6 +35,7 @@
     "backfill:rotation": "node --env-file-if-exists=.env server/scripts/backfillRotation.js",
     "backfill:spx-put-call": "node --env-file-if-exists=.env server/scripts/backfillSpxPutCallRatio.js",
     "backfill:index-breadth": "node --env-file-if-exists=.env server/scripts/backfillIndexBreadth.js",
+    "backfill:price-return": "node --env-file=.env server/scripts/backfillPriceReturn.js",
     "backfill:aws-spot": "node --env-file=.env server/scripts/backfillAwsSpot.js",
     "backfill:cpu-spot": "node --env-file=.env server/scripts/backfillCpuSpot.js",
     "backfill:transcripts:alpha": "node --env-file=.env server/scripts/backfillAlphaVantageTranscripts.js",

@@ -1285,7 +1285,7 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
 }
 .or-nav-item:hover  { background: rgba(255,255,255,.04); color: var(--text); }
 .or-nav-item.active { background: var(--adim); color: var(--accent); }
-.or-nav-item--calendar { margin-bottom: 4px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.or-nav-item--divider { margin-bottom: 4px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
 .or-nav-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .or-nav-dots { display: inline-flex; align-items: center; justify-content: flex-end; gap: 4px; min-width: 35px; margin-left: auto; }
 .or-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; display: inline-block; }
@@ -1399,6 +1399,22 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
 .or-table td.or-empty { text-align: center; color: var(--ter); }
 .or-side-cell { font-weight: 600; letter-spacing: .03em; }
 .or-strike { color: var(--text); font-weight: 600; }
+
+/* Price return after earnings (Alerts page nav item) */
+.pr-page { display: flex; flex-direction: column; gap: 14px; }
+.pr-subtabs { display: flex; gap: 6px; }
+.pr-table-wrap { max-height: 72vh; overflow-y: auto; }
+.pr-table th:nth-child(2), .pr-table td:nth-child(2) { text-align: right; }
+.pr-table thead th {
+  position: sticky; top: 0; z-index: 2; background: var(--bg-card);
+}
+.pr-table .pr-ticker-col {
+  position: sticky; left: 0; z-index: 1;
+  background: var(--bg-card); text-align: left !important;
+}
+.pr-table thead th.pr-ticker-col { z-index: 3; }
+.pr-table .pr-ticker { color: var(--text); font-weight: 700; }
+
 
 /* Topbar title block: report date is the prominent heading, "Daily Options
    Report" a small label beside it. */

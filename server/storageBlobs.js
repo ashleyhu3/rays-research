@@ -28,4 +28,5 @@ module.exports = [
   blob('breadthRawSoxHistory'), blob('breadthRawNikkei225History'),
   blob('dailyOptionsReport'), blob('optionsPriorYearVolume'),
   blob('earningsDates'), blob('techEarningsCalendar'), blob('latestSnapshots'),
+  blob('priceReturnAfterEarnings'),
 ];
