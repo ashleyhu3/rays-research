@@ -97,8 +97,6 @@ function FedBalance({ payload }) {
           chartId="us-liquidity-net-assets"
           srcNote="Net Assets = Fed Total Assets − Treasury General Account − ON RRP award volume. Rising = reserves flowing into the banking system; falling = liquidity draining out."
         />
-      </div>
-      <div className="cgrid">
         <SeriesChart
           payload={payload} seriesKey="totalAssets" color={GOLD} fmt={fmtUsdM}
           chartId="us-liquidity-total-assets"
