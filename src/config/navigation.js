@@ -166,6 +166,11 @@ export const NAV_SECTIONS = [
     sectorId: 'liquidity',
     mode: 'liquidity',
     items: [
+      { id: 'liquidity-us', label: 'US', subitems: [
+        { key: 'fed-balance', label: 'Fed Balance' },
+        { key: 'credit', label: 'Credit' },
+        { key: 'interbank', label: 'Interbank' },
+      ] },
       { id: 'liquidity-china-flow', label: 'China', subitems: [
         { key: 'flow', label: 'Flow' },
         { key: 'stock-connect', label: 'Stock Connect' },
@@ -294,6 +299,7 @@ export const VIEW_META = {
   'leverage-china':   { title: 'LEVERAGE — CHINA A-SHARES' },
   'leverage-japan':   { title: 'LEVERAGE — JAPAN MARGIN TRADING' },
   'leverage-us':      { title: 'LEVERAGE — US MARGIN, FUTURES & OPTIONS' },
+  'liquidity-us': { title: 'LIQUIDITY — US' },
   'liquidity-china-flow': { title: 'LIQUIDITY — CHINA' },
   'liquidity-carry-trade': { title: 'LIQUIDITY — CARRY TRADE' },
   transcripts:        { title: 'EARNINGS TRANSCRIPT AGENT' },

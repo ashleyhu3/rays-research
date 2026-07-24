@@ -20,6 +20,7 @@ const { readIndexBreadth }           = require('./scrapers/indexBreadth');
 const { readSpxPutCallRatio }        = require('./scrapers/spxPutCallRatio');
 const { readChinaNationalTeamFlow }  = require('./scrapers/chinaNationalTeamFlow');
 const { readChinaLiquidity }         = require('./scrapers/chinaLiquidity');
+const { readUsLiquidity }            = require('./scrapers/usLiquidity');
 const { readCarryTrade }             = require('./scrapers/carryTrade');
 const { readKoreaLeverage }          = require('./scrapers/koreaLeverage');
 const { keywordRolling }             = require('./stocktwitsStore');
@@ -89,6 +90,7 @@ app.use('/api/sentiment/keyword', requireStorageBlobs('sentimentData'));
 app.use('/api/metrics-history', requireStorageBlobs('metricsHistory'));
 app.use('/api/china-national-team-flow', requireStorageBlobs('chinaNationalTeamFlowHistory'));
 app.use('/api/china-liquidity', requireStorageBlobs('chinaLiquidityHistory'));
+app.use('/api/us-liquidity', requireStorageBlobs('usLiquidityHistory'));
 app.use('/api/carry-trade', requireStorageBlobs('carryTradeHistory'));
 app.use('/api/korea-leverage', requireStorageBlobs('koreaLeverageHistory'));
 app.use('/api/us-performance', requireStorageBlobs('usPerformanceHistory'));
@@ -259,6 +261,7 @@ app.get('/api/china-leverage/backfill', (req, res) => res.json(chinaLeverageBack
 // Liquidity page reads never scrape upstream; scheduled collectors own writes.
 app.get('/api/china-national-team-flow', (_req, res) => res.json(readChinaNationalTeamFlow()));
 app.get('/api/china-liquidity', (_req, res) => res.json(readChinaLiquidity()));
+app.get('/api/us-liquidity', (_req, res) => res.json(readUsLiquidity()));
 app.get('/api/carry-trade', (_req, res) => res.json(readCarryTrade()));
 app.get('/api/japan-leverage',    cachedRoute('japanLeverage',    s.japanLeverage));
 app.get('/api/us-leverage',       cachedRoute('usLeverage',       s.usLeverage));

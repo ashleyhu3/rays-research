@@ -33,6 +33,7 @@ const scrapers = {
   chinaLeverage:    () => require('./scrapers/chinaLeverage').getChinaLeverage(),
   chinaNationalTeamFlow: () => require('./scrapers/chinaNationalTeamFlow').getChinaNationalTeamFlow(),
   chinaLiquidity: () => require('./scrapers/chinaLiquidity').updateChinaLiquidity(),
+  usLiquidity: () => require('./scrapers/usLiquidity').updateUsLiquidity(),
   carryTrade: () => require('./scrapers/carryTrade').updateCarryTrade(),
   japanLeverage:    () => require('./scrapers/japanLeverage').getJapanLeverage(),
   usLeverage:       () => require('./scrapers/usLeverage').getUsLeverage(),
@@ -92,6 +93,7 @@ const TTL = {
   chinaLeverage:  6 * 3600000,  // 6-hourly — SSE/SZSE post margin balances after the close; the HK 2× ETF ticks live
   chinaNationalTeamFlow: 6 * 3600000,  // 6-hourly — same SSE/SZSE post-close settlement cadence as chinaLeverage
   chinaLiquidity: 24 * 3600000,  // daily — A-share turnover plus monthly PBOC M2 YoY
+  usLiquidity:    24 * 3600000,  // daily — FRED weekly (Fed balance sheet) and daily (rates/spreads) releases
   carryTrade:     24 * 3600000,  // daily — weekly CFTC release, Friday after the close
   japanLeverage:  24 * 3600000,  // daily — JPX only republishes this workbook once a week; a daily poll picks up the new week
   usLeverage:      6 * 3600000,  // 6-hourly — ETF net assets move daily; CFTC is weekly and FINRA is monthly
@@ -113,6 +115,7 @@ const ROTATION_KEYS = ['usPerformance', 'hkChinaPerformance', 'hkPerformance', '
 const PERSISTED_ONLY = new Set(ROTATION_KEYS);
 PERSISTED_ONLY.add('chinaNationalTeamFlow');
 PERSISTED_ONLY.add('chinaLiquidity');
+PERSISTED_ONLY.add('usLiquidity');
 PERSISTED_ONLY.add('carryTrade');
 
 // Hard cap per scraper so one hung source can never wedge a refresh
@@ -192,7 +195,7 @@ function setup() {
   });
 
   // Daily at 03:00 UTC: aggregate stats whose sources only publish once per day
-  cron.schedule('0 3 * * *', () => refreshAll(['gpu', 'tftLcd', 'tpu', 'epochRevenue', 'sentiment', 'pypi', 'github', 'eia', 'mops', 'githubCommits', 'npm', 'huggingface', 'mcp', 'sec', 'webTraffic', 'customsDrones', 'japanLeverage', 'macro', 'commodities', 'chinaLiquidity', 'carryTrade']));
+  cron.schedule('0 3 * * *', () => refreshAll(['gpu', 'tftLcd', 'tpu', 'epochRevenue', 'sentiment', 'pypi', 'github', 'eia', 'mops', 'githubCommits', 'npm', 'huggingface', 'mcp', 'sec', 'webTraffic', 'customsDrones', 'japanLeverage', 'macro', 'commodities', 'chinaLiquidity', 'usLiquidity', 'carryTrade']));
 
   // Options: warm every 6h, plus once shortly after boot so the RAG has data fast
   cron.schedule('30 */6 * * *', () => warmOptions());
