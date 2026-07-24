@@ -7,8 +7,20 @@ const { DEFAULT_TICKERS } = require('./scripts/generateDailyOptionsReport');
 
 // SOXX is the semiconductor index ETF, not a company — it has no earnings
 // call to measure a reaction to (same reasoning as its pinned/excluded
-// treatment elsewhere on the Alerts page; see Alerts.jsx).
-const PRICE_RETURN_TICKERS = DEFAULT_TICKERS.filter(t => t !== 'SOXX');
+// treatment elsewhere on the Alerts page; see Alerts.jsx). It's excluded from
+// the ticker rows but drives the quarterly candlestick chart above the table.
+const INDEX_TICKER = 'SOXX';
+const PRICE_RETURN_TICKERS = DEFAULT_TICKERS.filter(t => t !== INDEX_TICKER);
+
+// The SOXX index constituents we also track, for the "SOXX Index" view that
+// narrows the table to just the index's members. Snapshot of iShares SOXX
+// holdings (via stockanalysis.com, 2026-07) intersected with the tracked list;
+// membership drifts slowly, so revise here if the index reconstitutes.
+const SOXX_CONSTITUENTS = [
+  'AMD', 'NVDA', 'MU', 'AVGO', 'INTC', 'AMAT', 'KLAC', 'TSM', 'LRCX', 'TXN',
+  'MRVL', 'ADI', 'NXPI', 'MPWR', 'QCOM', 'TER', 'ASML', 'MCHP', 'ALAB', 'ON',
+  'CRDO', 'ASX', 'MTSI', 'UMC',
+].filter(t => PRICE_RETURN_TICKERS.includes(t));
 
 // Trading-session offsets for the tab's three sub-views. "1 week" is 5
 // trading sessions, not 7 calendar days.
@@ -78,6 +90,17 @@ function quarterLabel(reportedDate) {
   return `${year} Q${quarter}`;
 }
 
+// The plain calendar quarter a date falls in — "2026-05-14" -> "2026 Q2".
+// Used for the SOXX candlestick, whose bars are the index's price during the
+// calendar quarter each column names (a column labelled "2026 Q2" sits above
+// SOXX's Apr–Jun 2026 candle), unlike quarterLabel which shifts back one for
+// the earnings columns.
+function calendarQuarterLabel(date) {
+  const m = /^(\d{4})-(\d{2})/.exec(date || '');
+  if (!m) return null;
+  return `${Number(m[1])} Q${Math.ceil(Number(m[2]) / 3)}`;
+}
+
 // Sortable key so quarter labels compare chronologically regardless of string order.
 function quarterSortKey(label) {
   const m = /^(\d{4}) Q(\d)$/.exec(label || '');
@@ -90,6 +113,34 @@ async function fetchPriceSeries(ticker, start, end) {
     .filter(q => q.date && q.close != null)
     .map(q => ({ date: isoDate(q.date), close: q.close }))
     .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+// Fetch SOXX daily bars and roll them up into one OHLC candle per calendar
+// quarter, keyed by calendar-quarter label. Open is the quarter's first
+// session, close its last, high/low the extremes across the quarter.
+async function computeIndexCandles() {
+  const start = addDays(isoDate(new Date()), -365 * 11); // ~11 years to cover the 10-year window
+  const end = isoDate(new Date());
+  const chart = await withRetry(() => getYF().chart(INDEX_TICKER, { period1: start, period2: end, interval: '1d' }));
+  const bars = (chart?.quotes ?? [])
+    .filter(q => q.date && q.open != null && q.close != null)
+    .map(q => ({ date: isoDate(q.date), open: q.open, high: q.high, low: q.low, close: q.close }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  const candles = {};
+  for (const bar of bars) {
+    const label = calendarQuarterLabel(bar.date);
+    if (!label) continue;
+    const c = candles[label];
+    if (!c) {
+      candles[label] = { open: bar.open, high: bar.high, low: bar.low, close: bar.close };
+    } else {
+      c.high = Math.max(c.high, bar.high);
+      c.low = Math.min(c.low, bar.low);
+      c.close = bar.close; // bars are chronological, so the last wins
+    }
+  }
+  return candles;
 }
 
 // A report reacts on a different session depending on timing: a before-open
@@ -200,6 +251,18 @@ function writeCache(state) {
 async function backfill(tickers = PRICE_RETURN_TICKERS) {
   const state = readCache();
   state.tickers ??= {};
+
+  // Compute the SOXX candlestick first (one pull, shared by the all-tickers and
+  // index views) so it's on `state` before the loop's incremental writes —
+  // otherwise the many per-ticker writes to the same doc can land after a final
+  // candle write and clobber it. On failure keep whatever candles were cached.
+  try {
+    state.soxx = await computeIndexCandles();
+    console.log(`[price-return] ${INDEX_TICKER}: ${Object.keys(state.soxx).length} quarterly candles`);
+  } catch (e) {
+    console.warn(`[price-return] ${INDEX_TICKER} candles failed: ${e.message}`);
+  }
+
   for (const ticker of tickers) {
     try {
       const quarters = await computeTicker(ticker);
@@ -215,6 +278,7 @@ async function backfill(tickers = PRICE_RETURN_TICKERS) {
     state.updatedAt = new Date().toISOString();
     writeCache(state);
   }
+
   return state;
 }
 
@@ -243,15 +307,28 @@ function getTable() {
     }))
     .sort((a, b) => a.ticker.localeCompare(b.ticker));
 
-  return { quarters, rows, updatedAt: state.updatedAt ?? null };
+  // SOXX candles restricted to the columns actually shown, in the same order.
+  const soxx = Object.fromEntries(
+    quarters.filter(label => state.soxx?.[label]).map(label => [label, state.soxx[label]]),
+  );
+
+  return {
+    quarters,
+    rows,
+    soxx,
+    soxxConstituents: SOXX_CONSTITUENTS,
+    updatedAt: state.updatedAt ?? null,
+  };
 }
 
 module.exports = {
   BLOB,
   OFFSETS,
   PRICE_RETURN_TICKERS,
+  SOXX_CONSTITUENTS,
   QUARTERS_SHOWN,
   backfill,
+  computeIndexCandles,
   computeTicker,
   getTable,
   quarterLabel,

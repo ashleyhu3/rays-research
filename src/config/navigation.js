@@ -279,6 +279,7 @@ export const VIEW_META = {
   community:          { title: 'HN PULSE' },
   options:            { title: 'OPTIONS FLOW' },
   alerts:             { title: 'DAILY OPTIONS REPORT' },
+  'price-return':     { title: 'PRICE RETURN AFTER EARNINGS' },
   sentiment:          { title: 'MARKETS — SENTIMENT & OPTIONS' },
   'us-performance':   { title: 'ROTATION — US' },
   'hk-china-performance': { title: 'ROTATION — CHINA' },

@@ -44,6 +44,7 @@ import Options from './pages/options/Options';
 import { PricingMemory, PricingGPU, PricingCPU, PricingTPU, PricingAWS } from './pages/pricing/Pricing';
 import Sentiment from './pages/sentiment/Sentiment';
 import Alerts, { OptionsReportTitle, OptionsReportControls } from './pages/alerts/Alerts';
+import PriceReturn from './pages/price-return/PriceReturn';
 import UsPerformance from './pages/us-performance/UsPerformance';
 import HkChinaPerformance from './pages/hk-china-performance/HkChinaPerformance';
 import HkPerformance from './pages/hk-performance/HkPerformance';
@@ -128,6 +129,7 @@ const VIEW_COMPONENTS = {
   'community':        Community,
   'options':          Options,
   'alerts':           Alerts,
+  'price-return':     PriceReturn,
   'us-performance':   UsPerformance,
   'hk-china-performance': HkChinaPerformance,
   'hk-performance':   HkPerformance,
@@ -214,7 +216,7 @@ export default function App() {
   const sectorId = SECTOR_OVERVIEW_IDS[currentView] ?? null;
   const ViewComponent = sectorId ? null : VIEW_COMPONENTS[currentView];
   const isAlerts = currentView === 'alerts';
-  const showSidebar = currentView !== 'options' && currentView !== 'chat' && currentView !== 'sentiment' && currentView !== 'sources' && currentView !== 'transcripts' && currentView !== 'alerts';
+  const showSidebar = currentView !== 'options' && currentView !== 'chat' && currentView !== 'sentiment' && currentView !== 'sources' && currentView !== 'transcripts' && currentView !== 'alerts' && currentView !== 'price-return';
 
   return (
     <DashboardProvider>
@@ -243,8 +245,8 @@ export default function App() {
                   : undefined
                 }
                 rightContent={isAlerts ? <OptionsReportControls /> : undefined}
-                weeks={!isAlerts && (mode === 'demand' || mode === 'pricing') ? weeks : undefined}
-                onWeeksChange={!isAlerts && (mode === 'demand' || mode === 'pricing') ? setWeeks : undefined}
+                weeks={!isAlerts && currentView !== 'price-return' && (mode === 'demand' || mode === 'pricing') ? weeks : undefined}
+                onWeeksChange={!isAlerts && currentView !== 'price-return' && (mode === 'demand' || mode === 'pricing') ? setWeeks : undefined}
                 months={mode === 'supply' ? months : undefined}
                 onMonthsChange={mode === 'supply' ? setMonths : undefined}
                 sectorId={sectorId}
