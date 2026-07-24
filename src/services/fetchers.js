@@ -93,69 +93,17 @@ async function fetchBackendAll() {
   ]));
 }
 
-/* ── Extra Mongo-backed datasets ──────────────────────────────────────
-   These used to be fetched by each page on mount (a spinner every time you
-   navigated there). They're pulled in here instead so the data loads once,
-   in the background, as soon as the site is visited, and every page just
-   reads it back out of the shared cache instead of re-fetching. */
-function isoYearsAgo(n) {
-  const d = new Date();
-  d.setFullYear(d.getFullYear() - n);
-  return d.toISOString().slice(0, 10);
-}
-function todayIso() {
-  return new Date().toISOString().slice(0, 10);
-}
-function isoDaysBefore(iso, n) {
-  const [y, m, d] = iso.split('-').map(Number);
-  const date = new Date(Date.UTC(y, m - 1, d));
-  date.setUTCDate(date.getUTCDate() - n);
-  return date.toISOString().slice(0, 10);
-}
-
-// The 1-year window each performance page starts on before the user touches
-// its date picker — mirrors ROLLING_FETCH_LOOKBACK_DAYS in each of those pages.
-function perfWindowParams(lookbackDays) {
-  return new URLSearchParams({ start: isoDaysBefore(isoYearsAgo(1), lookbackDays), end: todayIso() });
-}
-
-const EXTRA_ENDPOINTS = [
-  ['chinaLeverage',         '/api/china-leverage'],
-  ['japanLeverage',         '/api/japan-leverage'],
-  ['usLeverage',            '/api/us-leverage'],
-  ['chinaLiquidity',        '/api/china-liquidity'],
-  ['chinaNationalTeamFlow', '/api/china-national-team-flow'],
-  ['carryTrade',            '/api/carry-trade'],
-  ['dcBuildouts',           '/api/dc-buildouts'],
-  ['earningsCalendar',      '/api/alerts/earnings-calendar'],
-  ['dailyOptionsReport',    '/api/alerts/daily-options-report'],
-  ['usPerformance',         `/api/us-performance?${perfWindowParams(100)}`],
-  ['hkPerformance',         `/api/hk-performance?${perfWindowParams(80)}`],
-  ['hkChinaPerformance',    `/api/hk-china-performance?${perfWindowParams(80)}`],
-];
-
-async function fetchExtras() {
-  const results = await Promise.allSettled(
-    EXTRA_ENDPOINTS.map(([, url]) => fetchJsonSafe(url, 30000))
-  );
-  return Object.fromEntries(
-    EXTRA_ENDPOINTS.map(([key], i) => [key, results[i].status === 'fulfilled' ? results[i].value : null])
-  );
-}
-
 /* ── Aggregate ────────────────────────────────────────────────────── */
 export async function fetchAll() {
-  const [npm, pypi, hf, backend, extras] = await Promise.allSettled([
+  const [npm, pypi, hf, backend] = await Promise.allSettled([
     fetchNpm(),
     fetchPypi(),
     fetchHF(),
     fetchBackendAll(),
-    fetchExtras(),
   ]);
 
   const ok = r => r.status === 'fulfilled' ? r.value : null;
   const be = ok(backend) ?? {};
-  const ex = ok(extras) ?? {};
 
   return {
     // Browser-direct fetches
@@ -189,20 +137,5 @@ export async function fetchAll() {
     customsDrones:    be['customs-drones']        ?? null,
     macro:            be.macro                    ?? null,
     commodities:      be.commodities              ?? null,
-    // Extra Mongo-backed datasets (previously fetched per-page on mount)
-    chinaLeverage:         ex.chinaLeverage         ?? null,
-    japanLeverage:         ex.japanLeverage         ?? null,
-    usLeverage:            ex.usLeverage            ?? null,
-    chinaLiquidity:        ex.chinaLiquidity        ?? null,
-    chinaNationalTeamFlow: ex.chinaNationalTeamFlow ?? null,
-    carryTrade:            ex.carryTrade            ?? null,
-    dcBuildouts:           ex.dcBuildouts           ?? null,
-    earningsCalendar:      ex.earningsCalendar      ?? null,
-    dailyOptionsReport:    ex.dailyOptionsReport    ?? null,
-    // Default (1-year) window only — pages refetch themselves when the user
-    // picks a different date range.
-    usPerformanceDefault:      ex.usPerformance      ?? null,
-    hkPerformanceDefault:      ex.hkPerformance      ?? null,
-    hkChinaPerformanceDefault: ex.hkChinaPerformance ?? null,
   };
 }

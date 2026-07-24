@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Bar } from 'react-chartjs-2';
 import ChartCard from '../../components/chart/ChartCard';
-import { useData } from '../../context/DataContext';
+import { useResource } from '../../services/resourceCache';
 
 const BLUE = '#4577b4';
 const PURPLE = '#7864b4';
@@ -94,23 +94,11 @@ function Tile({ label, point, color }) {
 }
 
 export default function CarryTrade() {
-  const { liveData } = useData();
   const [rangeId, setRangeId] = useState('3y');
-  const [payload, setPayload] = useState(() => liveData?.carryTrade ?? null);
-  const [error, setError] = useState(null);
+  // Loads once on first visit, then served from the shared cache on every
+  // subsequent mount (stays loaded across navigation and refresh).
+  const { data: payload, error } = useResource('/api/carry-trade');
   const range = RANGES.find(item => item.id === rangeId) ?? RANGES[1];
-
-  // Preloaded by DataContext on app visit — only fetch here if that hasn't
-  // landed yet (e.g. this key failed server-side while others succeeded).
-  useEffect(() => {
-    if (liveData?.carryTrade) { setPayload(liveData.carryTrade); return undefined; }
-    let live = true;
-    fetch('/api/carry-trade')
-      .then(response => response.ok ? response.json() : Promise.reject(new Error(`HTTP ${response.status}`)))
-      .then(data => { if (live) setPayload(data); })
-      .catch(fetchError => { if (live) setError(fetchError.message); });
-    return () => { live = false; };
-  }, [liveData?.carryTrade]);
 
   const visible = useMemo(() => Object.fromEntries(SERIES.map(series => [
     series.key,

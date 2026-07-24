@@ -1,5 +1,7 @@
-import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
-import { useData } from './DataContext';
+import { createContext, useContext, useState, useCallback } from 'react';
+import { getResource, fetchResource, primeResource } from '../services/resourceCache';
+
+const REPORT_URL = '/api/alerts/daily-options-report';
 
 // Shared state for the daily options report so the page body and the Topbar
 // controls (Refresh / Download / the report date beside the title) stay in
@@ -30,31 +32,23 @@ function normalizeReport(report) {
 }
 
 export function OptionsReportProvider({ children }) {
-  const { liveData } = useData();
-  const [report, setReport]   = useState(null);
+  const [report, setReport]   = useState(() => {
+    const cached = getResource(REPORT_URL);
+    return cached ? normalizeReport(cached.report || null) : null;
+  });
   const [loading, setLoading] = useState(false);
   const [busy, setBusy]       = useState(false);
   const [msg, setMsg]         = useState(null);   // { kind: 'ok'|'err', text }
-  // Tracks whether report data has landed (from the eager preload or a
-  // direct load()), so revisiting the Alerts page doesn't refetch every time.
-  const seeded = useRef(false);
 
-  // Preloaded by DataContext on app visit — seed once it lands, unless a
-  // direct load() already beat it to the punch (e.g. slow preload).
-  useEffect(() => {
-    if (seeded.current || !liveData?.dailyOptionsReport) return;
-    seeded.current = true;
-    setReport(normalizeReport(liveData.dailyOptionsReport.report || null));
-  }, [liveData?.dailyOptionsReport]);
-
+  // Loads once on first visit, then served from the shared cache — revisiting
+  // the Alerts page doesn't refetch (stays loaded across navigation/refresh).
   const load = useCallback(async () => {
-    if (seeded.current) return;
-    seeded.current = true;
+    const cached = getResource(REPORT_URL);
+    if (cached) { setReport(normalizeReport(cached.report || null)); return; }
     setLoading(true);
     try {
-      const res = await fetch('/api/alerts/daily-options-report');
-      const json = await res.json();
-      if (res.ok) setReport(normalizeReport(json.report || null));
+      const json = await fetchResource(REPORT_URL);
+      setReport(normalizeReport(json.report || null));
     } catch { setReport(null); }
     finally { setLoading(false); }
   }, []);
@@ -65,6 +59,8 @@ export function OptionsReportProvider({ children }) {
       const res = await fetch('/api/alerts/daily-options-report/reload', { method: 'POST' });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`);
+      // Refresh replaces the cached copy so the fresh report stays loaded.
+      primeResource(REPORT_URL, json);
       setReport(normalizeReport(json.report || null));
       setMsg({ kind: 'ok', text: `Reloaded the report for ${json.report?.date || 'today'}.` });
     } catch (err) {

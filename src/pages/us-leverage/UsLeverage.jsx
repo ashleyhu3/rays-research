@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Line } from 'react-chartjs-2';
 import ChartCard from '../../components/chart/ChartCard';
-import { useData } from '../../context/DataContext';
+import { useResource } from '../../services/resourceCache';
 
 const SURFACE = '#111419';
 const MUTED = '#8a8a84';
@@ -683,27 +683,13 @@ function Tile({ label, value, color }) {
 }
 
 export default function UsLeverage() {
-  const { liveData } = useData();
   const [startDate, setStartDate] = useState(() => isoMonthsAgo(12));
   const [endDate, setEndDate] = useState(() => todayIso());
-  const [data, setData] = useState(() => liveData?.usLeverage ?? null);
-  const [error, setError] = useState(null);
+  // Loads once on first visit, then served from the shared cache on every
+  // subsequent mount (stays loaded across navigation and refresh).
+  const { data, error } = useResource('/api/us-leverage');
 
   const maxDate = todayIso();
-
-  // Preloaded by DataContext on app visit — only fetch here if that hasn't
-  // landed yet (e.g. this key failed server-side while others succeeded).
-  useEffect(() => {
-    if (liveData?.usLeverage) { setData(liveData.usLeverage); return undefined; }
-    let live = true;
-    fetch('/api/us-leverage')
-      .then(response => (response.ok
-        ? response.json()
-        : Promise.reject(new Error(`HTTP ${response.status}`))))
-      .then(payload => { if (live) setData(payload); })
-      .catch(fetchError => { if (live) setError(fetchError.message); });
-    return () => { live = false; };
-  }, [liveData?.usLeverage]);
 
   const etfWin = useMemo(
     () => (data?.leveragedEtf ? windowed(data.leveragedEtf.dates, { total: data.leveragedEtf.total }, startDate, endDate) : null),

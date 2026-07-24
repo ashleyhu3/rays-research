@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Bar, Bubble } from 'react-chartjs-2';
 import { feature } from 'topojson-client';
 import worldData from 'world-atlas/countries-50m.json';
@@ -7,7 +7,7 @@ import { stackedOpts, hBarOpts, GRID, TICK, BORD } from '../../utils/chartHelper
 import ChartCard from '../../components/chart/ChartCard';
 import EditableGrid from '../../components/chart/EditableGrid';
 import { CompanySupplyTable } from './SupplyChainMatrix';
-import { useData } from '../../context/DataContext';
+import { useResource } from '../../services/resourceCache';
 
 const worldCountries = feature(worldData, worldData.objects.countries);
 
@@ -596,20 +596,11 @@ const STATIC = {
 
 /* ─── Shared data hook ──────────────────────────────────────────── */
 function useDcBuildouts() {
-  const { liveData } = useData();
-  const [raw, setRaw] = useState(() => liveData?.dcBuildouts ?? STATIC);
-
-  // Preloaded by DataContext on app visit — only fetch here if that hasn't
-  // landed yet (e.g. this key failed server-side while others succeeded).
-  useEffect(() => {
-    if (liveData?.dcBuildouts) { setRaw(liveData.dcBuildouts); return; }
-    fetch('/api/dc-buildouts')
-      .then(r => r.ok ? r.json() : null)
-      .then(d => d && setRaw(d))
-      .catch(() => {});
-  }, [liveData?.dcBuildouts]);
-
-  return raw;
+  // Loads once on first visit, then served from the shared cache on every
+  // subsequent mount. Falls back to the bundled STATIC snapshot until (or if)
+  // the fetch resolves.
+  const { data } = useResource('/api/dc-buildouts');
+  return data ?? STATIC;
 }
 
 /* ─── Capacity operators (no Fig. 70 column) — combined sourcing table ───

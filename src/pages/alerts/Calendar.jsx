@@ -1,5 +1,4 @@
-import { useEffect, useState } from 'react';
-import { useData } from '../../context/DataContext';
+import { useResource } from '../../services/resourceCache';
 
 const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -44,34 +43,10 @@ function addMonths(date, offset) {
 // The earnings-call events scheduled during the display window, shown as
 // month grids — one entry per tracked ticker on the day of its next call.
 export default function EarningsCalendar() {
-  const { liveData } = useData();
-  const [events, setEvents] = useState(() => liveData?.earningsCalendar?.events ?? []);
-  const [loading, setLoading] = useState(!liveData?.earningsCalendar);
-  const [error, setError] = useState(null);
-
-  // Preloaded by DataContext on app visit — only fetch here if that hasn't
-  // landed yet (e.g. this key failed server-side while others succeeded).
-  useEffect(() => {
-    if (liveData?.earningsCalendar) {
-      setEvents(liveData.earningsCalendar.events ?? []);
-      setLoading(false);
-      return undefined;
-    }
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch('/api/alerts/earnings-calendar');
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`);
-        if (!cancelled) setEvents(json.events ?? []);
-      } catch (err) {
-        if (!cancelled) setError(err.message);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [liveData?.earningsCalendar]);
+  // Loads once on first visit, then served from the shared cache on every
+  // subsequent mount (stays loaded across navigation and refresh).
+  const { data, error, loading } = useResource('/api/alerts/earnings-calendar');
+  const events = data?.events ?? [];
 
   const now = new Date();
   const today = isoDate(now);

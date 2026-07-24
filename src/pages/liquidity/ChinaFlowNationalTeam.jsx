@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Bar } from 'react-chartjs-2';
 import ChartCard from '../../components/chart/ChartCard';
-import { useData } from '../../context/DataContext';
+import { useResource } from '../../services/resourceCache';
 
 // Same five-colour set china-leverage.jsx already uses for this "China"
 // family of pages — kept identical here for visual consistency.
@@ -282,26 +282,12 @@ function GroupPanel({ group, tickers, win }) {
 }
 
 export default function ChinaFlowNationalTeam() {
-  const { liveData } = useData();
   const [rangeId, setRangeId] = useState('3m');
-  const [data, setData] = useState(() => liveData?.chinaNationalTeamFlow ?? null);
-  const [error, setError] = useState(null);
+  // Loads once on first visit, then served from the shared cache on every
+  // subsequent mount (stays loaded across navigation and refresh).
+  const { data, error } = useResource('/api/china-national-team-flow');
 
   const range = RANGES.find(item => item.id === rangeId) ?? RANGES.find(item => item.id === '3m');
-
-  // Preloaded by DataContext on app visit — only fetch here if that hasn't
-  // landed yet (e.g. this key failed server-side while others succeeded).
-  useEffect(() => {
-    if (liveData?.chinaNationalTeamFlow) { setData(liveData.chinaNationalTeamFlow); return undefined; }
-    let live = true;
-    fetch('/api/china-national-team-flow')
-      .then(response => (response.ok
-        ? response.json()
-        : Promise.reject(new Error(`HTTP ${response.status}`))))
-      .then(payload => { if (live) setData(payload); })
-      .catch(fetchError => { if (live) setError(fetchError.message); });
-    return () => { live = false; };
-  }, [liveData?.chinaNationalTeamFlow]);
 
   const win = useMemo(
     () => (data ? windowed(data.dates, data.groups, data.tickerSeries, range) : null),

@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Line } from 'react-chartjs-2';
 import ChartCard from '../../components/chart/ChartCard';
-import { useData } from '../../context/DataContext';
+import { useResource } from '../../services/resourceCache';
 import {
   SPX_META, US_PERFORMANCE_ETFS, EXTRA_TICKERS, TECH_PAIRS, THEME_TICKERS, FACTOR_TICKERS,
   SOX_CORRELATION_PAIRS, KWEB_CORRELATION_PAIRS, VOL_INDEX_TICKERS, GLD_VIX_PAIR,
@@ -731,40 +731,19 @@ const SECTION_LABELS = {
 };
 
 export default function UsPerformance({ section = null }) {
-  const { liveData } = useData();
   const [startDate, setStartDate] = useState(() => isoYearsAgo(1));
   const [endDate, setEndDate] = useState(() => todayIso());
-  const [payload, setPayload] = useState(() => liveData?.usPerformanceDefault ?? null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const fetchStartDate = useMemo(
     () => isoDaysBefore(startDate, ROLLING_FETCH_LOOKBACK_DAYS),
     [startDate]
   );
-  // The default 1-year-to-today window DataContext preloads on app visit —
-  // captured once so later comparisons aren't thrown off by "today" ticking over.
-  const defaults = useRef({ start: isoYearsAgo(1), end: todayIso() }).current;
-  const isDefaultWindow = startDate === defaults.start && endDate === defaults.end;
-
-  useEffect(() => {
-    if (isDefaultWindow && liveData?.usPerformanceDefault) {
-      setPayload(liveData.usPerformanceDefault);
-      setLoading(false);
-      setError(null);
-      return undefined;
-    }
-    let live = true;
-    setLoading(true);
-    setError(null);
-    const params = new URLSearchParams({ start: fetchStartDate, end: endDate });
-    fetch(`/api/us-performance?${params}`)
-      .then(response => (response.ok
-        ? response.json()
-        : response.json().then(body => Promise.reject(new Error(body.error ?? `HTTP ${response.status}`)))))
-      .then(data => { if (live) { setPayload(data); setLoading(false); } })
-      .catch(fetchError => { if (live) { setError(fetchError.message); setLoading(false); } });
-    return () => { live = false; };
-  }, [fetchStartDate, endDate, isDefaultWindow, liveData?.usPerformanceDefault]);
+  // Each date-window is cached under its own URL — loads on first request, then
+  // served instantly from the shared cache on revisit or when reselected.
+  const perfUrl = useMemo(
+    () => `/api/us-performance?${new URLSearchParams({ start: fetchStartDate, end: endDate })}`,
+    [fetchStartDate, endDate]
+  );
+  const { data: payload, error, loading } = useResource(perfUrl);
 
   const overviewChartData = useMemo(
     () => (payload ? buildOverviewChartData(payload, startDate, endDate) : null),
