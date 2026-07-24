@@ -1414,11 +1414,15 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
 }
 .pr-table thead th.pr-ticker-col { z-index: 3; }
 .pr-table .pr-ticker { color: var(--text); font-weight: 700; }
-/* Beat `.or-table td { color: var(--sec) }` (higher specificity than a bare
-   .up/.dn class), so return cells actually read green/red. */
-.pr-table td.up { color: #3fb950; }
-.pr-table td.dn { color: #f87171; }
-.pr-table td.nt { color: var(--ter); }
+/* Return cells carry an inline heatmap background + white text set in JS
+   (returnFill / shareFill). Tighten the padding so a dense grid of coloured
+   cells still reads cleanly, and mute the no-data cells so they recede. */
+.pr-table td { padding: 8px 9px; }
+.pr-table td.pr-empty { color: var(--ter); background: none; }
+/* Average / % Positive summary rows pinned at the top of the body. */
+.pr-table tr.pr-summary td { font-weight: 700; }
+.pr-table tr.pr-summary-last td { border-bottom: 2px solid var(--border-hi); }
+.pr-table .pr-summary-label { color: var(--text); font-weight: 700; }
 
 
 /* Topbar title block: report date is the prominent heading, "Daily Options
