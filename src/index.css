@@ -1406,7 +1406,10 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
   flex: 0 0 168px; display: flex; flex-direction: column; gap: 2px;
   padding: 4px 12px 4px 0; border-right: 1px solid var(--border); margin-right: 18px;
 }
-.pr-page { display: flex; flex-direction: column; gap: 14px; flex: 1; min-width: 0; }
+.pr-page { display: flex; flex-direction: column; gap: 10px; flex: 1; min-width: 0; }
+/* Title and the 1D/3D/1W toggle share one row to save vertical space. */
+.pr-head { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.pr-head h3 { margin: 0; }
 .pr-subtabs { display: flex; gap: 6px; }
 
 /* One horizontal-scroll container holds the candlestick table and the data

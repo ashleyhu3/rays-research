@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useResource } from '../../services/resourceCache';
 
 // Fixed column geometry, shared by the candlestick chart and the data table so
@@ -6,7 +6,24 @@ import { useResource } from '../../services/resourceCache';
 // with the same <colgroup>, stacked in one horizontal-scroll container.
 const LABEL_W = 96; // sticky left column (ticker / y-axis)
 const COL_W = 60; // each quarter column
-const CHART_H = 440; // candlestick chart height
+
+// Chart takes ~1/3 of the scrollable table region so the table gets ~2/3. The
+// region is ~0.75 of the window (the top nav, header and subtabs take the rest),
+// so ~1/3 of it is ~0.24 of the window height. Responsive rather than fixed px.
+const CHART_VH = 0.24;
+const CHART_H_MIN = 180;
+
+function useChartHeight() {
+  const measure = () =>
+    Math.max(CHART_H_MIN, Math.round((typeof window !== 'undefined' ? window.innerHeight : 900) * CHART_VH));
+  const [height, setHeight] = useState(measure);
+  useEffect(() => {
+    const onResize = () => setHeight(measure());
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  return height;
+}
 
 const SUBTABS = [
   { key: 'oneDay', label: '1 Day' },
@@ -104,7 +121,7 @@ function tableWidth(quarters) {
   return LABEL_W + quarters.length * COL_W;
 }
 
-function CandleChart({ quarters, soxx }) {
+function CandleChart({ quarters, soxx, height }) {
   const candles = quarters.map(q => soxx[q]).filter(Boolean);
   if (!candles.length) return null;
 
@@ -118,7 +135,7 @@ function CandleChart({ quarters, soxx }) {
   const logHi = Math.log(hi);
   const logLo = Math.log(lo);
   const logSpan = (logHi - logLo) || 1;
-  const y = price => pad + (logHi - Math.log(price)) / logSpan * (CHART_H - 2 * pad);
+  const y = price => pad + (logHi - Math.log(price)) / logSpan * (height - 2 * pad);
 
   const axisTicks = niceLogTicks(lo, hi);
 
@@ -128,7 +145,7 @@ function CandleChart({ quarters, soxx }) {
       <tbody>
         <tr>
           <td className="pr-candle-axis">
-            <svg width={LABEL_W} height={CHART_H} aria-hidden="true">
+            <svg width={LABEL_W} height={height} aria-hidden="true">
               {axisTicks.map((p, i) => (
                 <text key={i} x={LABEL_W - 6} y={y(p) + 3} textAnchor="end" className="pr-candle-axis-label">
                   {p >= 10 ? p.toFixed(0) : p.toFixed(1)}
@@ -144,7 +161,7 @@ function CandleChart({ quarters, soxx }) {
             if (!c) {
               return (
                 <td key={q} className="pr-candle-cell">
-                  <svg width={COL_W} height={CHART_H} aria-hidden="true">{gridlines}</svg>
+                  <svg width={COL_W} height={height} aria-hidden="true">{gridlines}</svg>
                 </td>
               );
             }
@@ -156,7 +173,7 @@ function CandleChart({ quarters, soxx }) {
             const bw = Math.round(COL_W * 0.5);
             return (
               <td key={q} className="pr-candle-cell">
-                <svg width={COL_W} height={CHART_H} role="img"
+                <svg width={COL_W} height={height} role="img"
                   aria-label={`SOXX ${q}: open ${c.open.toFixed(2)}, high ${c.high.toFixed(2)}, low ${c.low.toFixed(2)}, close ${c.close.toFixed(2)}`}>
                   <title>{`SOXX ${q} — O ${c.open.toFixed(2)}  H ${c.high.toFixed(2)}  L ${c.low.toFixed(2)}  C ${c.close.toFixed(2)}`}</title>
                   {gridlines}
@@ -181,6 +198,7 @@ export default function PriceReturn() {
   const { data, error, loading } = useResource('/api/alerts/price-return');
   const [view, setView] = useState('all');
   const [metric, setMetric] = useState('oneDay');
+  const chartH = useChartHeight();
 
   const allRows = data?.rows ?? [];
   const soxxSet = useMemo(() => new Set(data?.soxxConstituents ?? []), [data]);
@@ -206,37 +224,35 @@ export default function PriceReturn() {
       </nav>
 
       <section className="pr-page">
-        <header className="cal-head">
+        <header className="pr-head">
           <h3>Price Return After Earnings{view === 'soxx' ? ' — SOXX Index' : ''}</h3>
+          <div className="pr-subtabs" role="tablist" aria-label="Return window">
+            {SUBTABS.map(tab => (
+              <button
+                key={tab.key}
+                type="button"
+                role="tab"
+                aria-selected={metric === tab.key}
+                className={`rbtn${metric === tab.key ? ' active' : ''}`}
+                onClick={() => setMetric(tab.key)}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
           {loading && <span className="cal-status">Loading price return data…</span>}
           {error && <span className="cal-status err">{error}</span>}
         </header>
-
-        <div className="pr-subtabs" role="tablist" aria-label="Return window">
-          {SUBTABS.map(tab => (
-            <button
-              key={tab.key}
-              type="button"
-              role="tab"
-              aria-selected={metric === tab.key}
-              className={`rbtn${metric === tab.key ? ' active' : ''}`}
-              onClick={() => setMetric(tab.key)}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
 
         {!loading && !error && !rows.length && (
           <div className="or-status">No price return data yet — run the backfill script to populate it.</div>
         )}
 
         {rows.length > 0 && (
-          <div className="or-table-wrap pr-scroll" style={{ '--pr-pin': `${CHART_H + 26}px` }}>
+          <div className="or-table-wrap pr-scroll" style={{ '--pr-pin': `${chartH + 4}px` }}>
             {/* Pinned so the SOXX chart stays in view while the table scrolls. */}
             <div className="pr-chart-pin">
-              <div className="pr-candle-caption">SOXX — quarterly price</div>
-              <CandleChart quarters={quarters} soxx={soxx} />
+              <CandleChart quarters={quarters} soxx={soxx} height={chartH} />
             </div>
             <table className="or-table pr-table" style={{ width: tableWidth(quarters) }}>
               <ColGroup quarters={quarters} />

@@ -236,7 +236,7 @@ export default function App() {
             />
           )}
           <main className="main">
-            {currentView !== 'chat' && (
+            {currentView !== 'chat' && currentView !== 'price-return' && (
               <Topbar
                 title={meta.title}
                 titleContent={
