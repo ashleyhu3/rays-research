@@ -6,7 +6,7 @@ import { useResource } from '../../services/resourceCache';
 // with the same <colgroup>, stacked in one horizontal-scroll container.
 const LABEL_W = 96; // sticky left column (ticker / y-axis)
 const COL_W = 60; // each quarter column
-const CHART_H = 360; // candlestick chart height
+const CHART_H = 440; // candlestick chart height
 
 const SUBTABS = [
   { key: 'oneDay', label: '1 Day' },
@@ -69,6 +69,23 @@ function columnSummary(rows, quarters, metric) {
   return { avg, share };
 }
 
+// Round "nice" price gridlines (…50, 100, 200, 500…) spanning [lo, hi] for a
+// log axis — the 1/2/5×10ⁿ ladder, which reads far cleaner than raw log-spaced
+// values. Always includes a tick at or below lo and at or above hi.
+function niceLogTicks(lo, hi) {
+  const ladder = [1, 2, 5];
+  const ticks = [];
+  const startExp = Math.floor(Math.log10(lo));
+  const endExp = Math.ceil(Math.log10(hi));
+  for (let exp = startExp; exp <= endExp; exp++) {
+    for (const m of ladder) {
+      const v = m * 10 ** exp;
+      if (v >= lo * 0.9 && v <= hi * 1.1) ticks.push(v);
+    }
+  }
+  return ticks.length ? ticks : [lo, hi];
+}
+
 function ColGroup({ quarters }) {
   return (
     <colgroup>
@@ -93,12 +110,17 @@ function CandleChart({ quarters, soxx }) {
 
   const hi = Math.max(...candles.map(c => c.high));
   const lo = Math.min(...candles.map(c => c.low));
-  const pad = 10;
-  const span = hi - lo || 1;
-  const y = price => pad + (hi - price) / span * (CHART_H - 2 * pad);
+  // Logarithmic price axis: SOXX ranges ~7x across the window, so a linear
+  // scale squashes the early, cheaper quarters into an unreadable strip. On a
+  // log scale equal percentage moves take equal vertical space, so every
+  // quarter's candle stays legible.
+  const pad = 12;
+  const logHi = Math.log(hi);
+  const logLo = Math.log(lo);
+  const logSpan = (logHi - logLo) || 1;
+  const y = price => pad + (logHi - Math.log(price)) / logSpan * (CHART_H - 2 * pad);
 
-  const TICKS = 6;
-  const axisTicks = Array.from({ length: TICKS }, (_, i) => hi - (span * i) / (TICKS - 1));
+  const axisTicks = niceLogTicks(lo, hi);
 
   return (
     <table className="pr-candle-table" style={{ width: tableWidth(quarters) }}>
@@ -109,7 +131,7 @@ function CandleChart({ quarters, soxx }) {
             <svg width={LABEL_W} height={CHART_H} aria-hidden="true">
               {axisTicks.map((p, i) => (
                 <text key={i} x={LABEL_W - 6} y={y(p) + 3} textAnchor="end" className="pr-candle-axis-label">
-                  {p >= 100 ? p.toFixed(0) : p.toFixed(1)}
+                  {p >= 10 ? p.toFixed(0) : p.toFixed(1)}
                 </text>
               ))}
             </svg>
@@ -210,9 +232,12 @@ export default function PriceReturn() {
         )}
 
         {rows.length > 0 && (
-          <div className="or-table-wrap pr-scroll">
-            <div className="pr-candle-caption">SOXX — quarterly price</div>
-            <CandleChart quarters={quarters} soxx={soxx} />
+          <div className="or-table-wrap pr-scroll" style={{ '--pr-pin': `${CHART_H + 26}px` }}>
+            {/* Pinned so the SOXX chart stays in view while the table scrolls. */}
+            <div className="pr-chart-pin">
+              <div className="pr-candle-caption">SOXX — quarterly price</div>
+              <CandleChart quarters={quarters} soxx={soxx} />
+            </div>
             <table className="or-table pr-table" style={{ width: tableWidth(quarters) }}>
               <ColGroup quarters={quarters} />
               <thead>

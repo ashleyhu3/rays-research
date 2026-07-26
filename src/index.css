@@ -1412,11 +1412,16 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
 /* One horizontal-scroll container holds the candlestick table and the data
    table stacked; both share the same <colgroup> widths so every candle lands
    directly above its quarter column. */
-.pr-scroll { max-height: 78vh; overflow: auto; }
+.pr-scroll { max-height: 82vh; overflow: auto; }
 .pr-table, .pr-candle-table { table-layout: fixed; border-collapse: collapse; }
+/* Keep the candlestick chart in view while the table scrolls underneath. */
+.pr-chart-pin {
+  position: sticky; top: 0; z-index: 6; background: var(--bg-card);
+  width: max-content;
+}
 .pr-candle-caption {
   position: sticky; left: 0; font-size: 10px; letter-spacing: .06em;
-  text-transform: uppercase; color: var(--sec); font-weight: 700; padding: 2px 0 4px;
+  text-transform: uppercase; color: var(--sec); font-weight: 700; padding: 4px 0;
   width: max-content;
 }
 
@@ -1432,8 +1437,9 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
 .pr-candle-grid { stroke: var(--border); stroke-width: 1; opacity: .5; }
 
 .pr-table th:nth-child(2), .pr-table td:nth-child(2) { text-align: right; }
+/* Header sticks just below the pinned chart (its height, via --pr-pin). */
 .pr-table thead th {
-  position: sticky; top: 0; z-index: 2; background: var(--bg-card);
+  position: sticky; top: var(--pr-pin, 0); z-index: 2; background: var(--bg-card);
 }
 .pr-table .pr-ticker-col {
   position: sticky; left: 0; z-index: 1;
