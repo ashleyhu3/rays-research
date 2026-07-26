@@ -1438,6 +1438,27 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
 }
 .pr-candle-axis-label { fill: var(--ter); font-size: 9px; font-family: var(--font-m); }
 .pr-candle-grid { stroke: var(--border); stroke-width: 1; opacity: .5; }
+.pr-candle-price { fill: var(--sec); font-size: 8.5px; font-family: var(--font-m); }
+.pr-candle-cell:hover { background: color-mix(in srgb, var(--text) 6%, transparent); }
+
+/* Floating OHLC card shown on candle hover. */
+.pr-hovercard {
+  position: fixed; z-index: 50; pointer-events: none;
+  min-width: 150px; padding: 8px 10px; border-radius: 8px;
+  background: var(--bg-card); border: 1px solid var(--border-hi);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, .45); font-family: var(--font-m);
+}
+.pr-hovercard-hd {
+  display: flex; justify-content: space-between; gap: 12px; align-items: baseline;
+  font-weight: 700; font-size: 11px; color: var(--text);
+  padding-bottom: 5px; margin-bottom: 5px; border-bottom: 1px solid var(--border);
+}
+.pr-hovercard-hd .up { color: #3fb950; }
+.pr-hovercard-hd .dn { color: #f87171; }
+.pr-hovercard dl { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 14px; margin: 0; }
+.pr-hovercard dl > div { display: flex; justify-content: space-between; gap: 8px; }
+.pr-hovercard dt { color: var(--ter); font-size: 10px; }
+.pr-hovercard dd { margin: 0; color: var(--text); font-size: 10px; font-weight: 600; }
 
 .pr-table th:nth-child(2), .pr-table td:nth-child(2) { text-align: right; }
 /* Header sticks just below the pinned chart (its height, via --pr-pin). */

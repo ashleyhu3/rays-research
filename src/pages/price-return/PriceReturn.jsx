@@ -121,7 +121,11 @@ function tableWidth(quarters) {
   return LABEL_W + quarters.length * COL_W;
 }
 
-function CandleChart({ quarters, soxx, height }) {
+function fmtPrice(v) {
+  return v >= 100 ? v.toFixed(0) : v.toFixed(1);
+}
+
+function CandleChart({ quarters, soxx, height, onHover }) {
   const candles = quarters.map(q => soxx[q]).filter(Boolean);
   if (!candles.length) return null;
 
@@ -171,14 +175,18 @@ function CandleChart({ quarters, soxx, height }) {
             const bodyH = Math.max(1, Math.abs(y(c.open) - y(c.close)));
             const cx = COL_W / 2;
             const bw = Math.round(COL_W * 0.5);
+            const labelY = Math.max(9, y(c.high) - 5); // close price sits just above the bar
             return (
-              <td key={q} className="pr-candle-cell">
+              <td key={q} className="pr-candle-cell"
+                onMouseEnter={e => onHover({ q, ...c, up, x: e.clientX, y: e.clientY })}
+                onMouseMove={e => onHover({ q, ...c, up, x: e.clientX, y: e.clientY })}
+                onMouseLeave={() => onHover(null)}>
                 <svg width={COL_W} height={height} role="img"
                   aria-label={`SOXX ${q}: open ${c.open.toFixed(2)}, high ${c.high.toFixed(2)}, low ${c.low.toFixed(2)}, close ${c.close.toFixed(2)}`}>
-                  <title>{`SOXX ${q} — O ${c.open.toFixed(2)}  H ${c.high.toFixed(2)}  L ${c.low.toFixed(2)}  C ${c.close.toFixed(2)}`}</title>
                   {gridlines}
                   <line x1={cx} x2={cx} y1={y(c.high)} y2={y(c.low)} stroke={color} strokeWidth="1.5" />
                   <rect x={cx - bw / 2} y={bodyTop} width={bw} height={bodyH} fill={color} />
+                  <text x={cx} y={labelY} textAnchor="middle" className="pr-candle-price">{fmtPrice(c.close)}</text>
                 </svg>
               </td>
             );
@@ -198,6 +206,7 @@ export default function PriceReturn() {
   const { data, error, loading } = useResource('/api/alerts/price-return');
   const [view, setView] = useState('all');
   const [metric, setMetric] = useState('oneDay');
+  const [hover, setHover] = useState(null);
   const chartH = useChartHeight();
 
   const allRows = data?.rows ?? [];
@@ -252,7 +261,7 @@ export default function PriceReturn() {
           <div className="or-table-wrap pr-scroll" style={{ '--pr-pin': `${chartH + 4}px` }}>
             {/* Pinned so the SOXX chart stays in view while the table scrolls. */}
             <div className="pr-chart-pin">
-              <CandleChart quarters={quarters} soxx={soxx} height={chartH} />
+              <CandleChart quarters={quarters} soxx={soxx} height={chartH} onHover={setHover} />
             </div>
             <table className="or-table pr-table" style={{ width: tableWidth(quarters) }}>
               <ColGroup quarters={quarters} />
@@ -303,6 +312,35 @@ export default function PriceReturn() {
           </div>
         )}
       </section>
+
+      {hover && <CandleHoverCard hover={hover} />}
+    </div>
+  );
+}
+
+// Floating OHLC card that follows the cursor over a candle. position: fixed so
+// it escapes the scroll container's clipping; nudged left/up near the viewport
+// edges so it never runs off-screen.
+function CandleHoverCard({ hover }) {
+  const flipX = hover.x > window.innerWidth - 190;
+  const flipY = hover.y > window.innerHeight - 150;
+  const style = {
+    left: flipX ? hover.x - 186 : hover.x + 16,
+    top: flipY ? hover.y - 140 : hover.y + 16,
+  };
+  const chg = hover.open ? (hover.close / hover.open - 1) * 100 : 0;
+  return (
+    <div className="pr-hovercard" style={style}>
+      <div className="pr-hovercard-hd">
+        SOXX · {hover.q}
+        <span className={hover.up ? 'up' : 'dn'}>{chg >= 0 ? '+' : ''}{chg.toFixed(2)}%</span>
+      </div>
+      <dl>
+        <div><dt>Open</dt><dd>{hover.open.toFixed(2)}</dd></div>
+        <div><dt>High</dt><dd>{hover.high.toFixed(2)}</dd></div>
+        <div><dt>Low</dt><dd>{hover.low.toFixed(2)}</dd></div>
+        <div><dt>Close</dt><dd>{hover.close.toFixed(2)}</dd></div>
+      </dl>
     </div>
   );
 }
