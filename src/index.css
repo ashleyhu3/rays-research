@@ -1429,6 +1429,7 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
   position: sticky; left: 0; z-index: 4; background: var(--bg-card); padding: 0;
 }
 .pr-candle-axis-label { fill: var(--ter); font-size: 9px; font-family: var(--font-m); }
+.pr-candle-grid { stroke: var(--border); stroke-width: 1; opacity: .5; }
 
 .pr-table th:nth-child(2), .pr-table td:nth-child(2) { text-align: right; }
 .pr-table thead th {

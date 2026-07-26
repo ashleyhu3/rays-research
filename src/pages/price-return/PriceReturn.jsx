@@ -6,7 +6,7 @@ import { useResource } from '../../services/resourceCache';
 // with the same <colgroup>, stacked in one horizontal-scroll container.
 const LABEL_W = 96; // sticky left column (ticker / y-axis)
 const COL_W = 60; // each quarter column
-const CHART_H = 150; // candlestick chart height
+const CHART_H = 360; // candlestick chart height
 
 const SUBTABS = [
   { key: 'oneDay', label: '1 Day' },
@@ -97,7 +97,8 @@ function CandleChart({ quarters, soxx }) {
   const span = hi - lo || 1;
   const y = price => pad + (hi - price) / span * (CHART_H - 2 * pad);
 
-  const axisTicks = [hi, (hi + lo) / 2, lo];
+  const TICKS = 6;
+  const axisTicks = Array.from({ length: TICKS }, (_, i) => hi - (span * i) / (TICKS - 1));
 
   return (
     <table className="pr-candle-table" style={{ width: tableWidth(quarters) }}>
@@ -115,7 +116,16 @@ function CandleChart({ quarters, soxx }) {
           </td>
           {quarters.map(q => {
             const c = soxx[q];
-            if (!c) return <td key={q} className="pr-candle-cell" />;
+            const gridlines = axisTicks.map((p, i) => (
+              <line key={i} x1="0" x2={COL_W} y1={y(p)} y2={y(p)} className="pr-candle-grid" />
+            ));
+            if (!c) {
+              return (
+                <td key={q} className="pr-candle-cell">
+                  <svg width={COL_W} height={CHART_H} aria-hidden="true">{gridlines}</svg>
+                </td>
+              );
+            }
             const up = c.close >= c.open;
             const color = up ? UP : DOWN;
             const bodyTop = y(Math.max(c.open, c.close));
@@ -127,6 +137,7 @@ function CandleChart({ quarters, soxx }) {
                 <svg width={COL_W} height={CHART_H} role="img"
                   aria-label={`SOXX ${q}: open ${c.open.toFixed(2)}, high ${c.high.toFixed(2)}, low ${c.low.toFixed(2)}, close ${c.close.toFixed(2)}`}>
                   <title>{`SOXX ${q} — O ${c.open.toFixed(2)}  H ${c.high.toFixed(2)}  L ${c.low.toFixed(2)}  C ${c.close.toFixed(2)}`}</title>
+                  {gridlines}
                   <line x1={cx} x2={cx} y1={y(c.high)} y2={y(c.low)} stroke={color} strokeWidth="1.5" />
                   <rect x={cx - bw / 2} y={bodyTop} width={bw} height={bodyH} fill={color} />
                 </svg>
