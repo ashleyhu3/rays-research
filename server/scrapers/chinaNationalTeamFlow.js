@@ -323,6 +323,7 @@ async function getChinaNationalTeamFlow(days = 30, tickerFilter = null) {
   // that's already refusing this IP — a later run picks up the remaining
   // tickers once the block clears (typically ~25-30 min).
   let szseBlocked = false;
+  const szseFailures = [];
   for (const ticker of szTickers) {
     if (szseBlocked) break;
     let rows = null;
@@ -343,6 +344,7 @@ async function getChinaNationalTeamFlow(days = 30, tickerFilter = null) {
     await storage.flush();
     if (!rows && lastError) {
       console.warn(`[chinaNationalTeamFlow] SZSE ${ticker}: ${lastError.message}`);
+      szseFailures.push(`${ticker}: ${lastError.message}`);
       if (/fetch failed|ECONNRESET|EAI_AGAIN|network|timeout/i.test(lastError.message ?? '')) {
         szseBlocked = true;
         console.warn('[chinaNationalTeamFlow] SZSE looks blocked — stopping remaining SZ tickers for this run; already-fetched data is saved, re-run later to pick up the rest.');
@@ -403,6 +405,10 @@ async function getChinaNationalTeamFlow(days = 30, tickerFilter = null) {
   });
 
   saveHistory(history);
+  await storage.flush();
+  if (szseFailures.length) {
+    throw new Error(`SZSE fund-size refresh incomplete — ${szseFailures.join('; ')}`);
+  }
   return assemble(history);
 }
 

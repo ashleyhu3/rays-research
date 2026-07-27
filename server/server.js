@@ -88,7 +88,6 @@ function requireStorageBlobs(...names) {
 // in cachedRoute() and need no full blob at all.
 app.use('/api/sentiment/keyword', requireStorageBlobs('sentimentData'));
 app.use('/api/metrics-history', requireStorageBlobs('metricsHistory'));
-app.use('/api/china-national-team-flow', requireStorageBlobs('chinaNationalTeamFlowHistory'));
 app.use('/api/china-liquidity', requireStorageBlobs('chinaLiquidityHistory'));
 app.use('/api/us-liquidity', requireStorageBlobs('usLiquidityHistory'));
 app.use('/api/carry-trade', requireStorageBlobs('carryTradeHistory'));
@@ -261,7 +260,21 @@ app.post('/api/china-leverage/backfill', requireAdminSecret, (req, res) => {
 });
 app.get('/api/china-leverage/backfill', (req, res) => res.json(chinaLeverageBackfillState));
 // Liquidity page reads never scrape upstream; scheduled collectors own writes.
-app.get('/api/china-national-team-flow', (_req, res) => res.json(readChinaNationalTeamFlow()));
+app.get('/api/china-national-team-flow', async (_req, res) => {
+  const blob = STORAGE_BLOB_BY_NAME.get('chinaNationalTeamFlowHistory');
+  try {
+    // This history is written by the external scheduled collector. Vercel can
+    // reuse one warm process across many collector runs, so a one-time lazy
+    // load would otherwise serve that process's old in-memory copy forever.
+    await storage.reload(blob.name, blob.file);
+  } catch (error) {
+    // Mongo being briefly unavailable should not take the chart down; serve
+    // the last successfully loaded copy and let the next request retry.
+    console.warn('[china-national-team-flow] Mongo reload failed, serving cached history:', error.message);
+    await storage.load(blob.name, blob.file);
+  }
+  res.json(readChinaNationalTeamFlow());
+});
 app.get('/api/china-liquidity', (_req, res) => res.json(readChinaLiquidity()));
 app.get('/api/us-liquidity', (_req, res) => res.json(readUsLiquidity()));
 app.get('/api/carry-trade', (_req, res) => res.json(readCarryTrade()));
