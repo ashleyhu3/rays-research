@@ -58,22 +58,25 @@ async function runFullPipeline({
   ticker: tickerInput,
   quarter,
   year,
-  source = 'provider',
+  source = 'auto',
 }, onEvent = () => {}) {
-  const storedSource = source === 'stored';
+  const normalizedPeriod = normalizePeriod(quarter, year);
+  const normalizedTicker = String(tickerInput || '').toUpperCase().replace(/[^A-Z0-9.-]/g, '');
+  const storedTranscript = source === 'provider'
+    ? null
+    : await readTranscript(normalizedTicker, normalizedPeriod.fiscalPeriod);
+  const storedSource = source === 'stored' || !!storedTranscript;
   onEvent({
     stage: 'collect',
     status: 'start',
     message: storedSource ? 'Loading pasted transcript…' : 'Fetching transcript from Alpha Vantage…',
   });
-  const normalizedPeriod = normalizePeriod(quarter, year);
-  const normalizedTicker = String(tickerInput || '').toUpperCase().replace(/[^A-Z0-9.-]/g, '');
-  const transcript = storedSource
-    ? await readTranscript(normalizedTicker, normalizedPeriod.fiscalPeriod)
-    : await collectFromAlphaVantage({ ticker: normalizedTicker, quarter, year });
-  if (!transcript) {
+  if (source === 'stored' && !storedTranscript) {
     throw new Error(`No stored transcript found for ${normalizedTicker} ${normalizedPeriod.fiscalPeriod}. Paste and save it before starting analysis.`);
   }
+  const transcript = storedSource
+    ? storedTranscript
+    : await collectFromAlphaVantage({ ticker: normalizedTicker, quarter, year });
   await saveTranscript(transcript);
   await saveEnrichment(semanticChunkDocument(transcript));
   const ticker = transcript.ticker;

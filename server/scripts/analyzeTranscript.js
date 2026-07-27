@@ -20,7 +20,7 @@ async function main() {
   const ticker = (argValue('--ticker') || '').toUpperCase();
   const quarter = (argValue('--quarter') || '').toUpperCase();
   const year = argValue('--year');
-  const source = argValue('--source') || 'provider';
+  const source = argValue('--source') || 'auto';
   if (!ticker || !quarter || !year) {
     throw new Error('Usage: analyzeTranscript.js --ticker GOOGL --quarter Q2 --year 2026');
   }

@@ -417,7 +417,6 @@ app.post('/api/transcripts/dispatch-analysis', async (req, res) => {
   const ticker = String(body.ticker || '').toUpperCase().replace(/[^A-Z0-9.-]/g, '');
   const quarter = String(body.quarter || '').toUpperCase().replace(/[^0-9Q]/g, '');
   const year = String(body.year || '').replace(/[^0-9]/g, '');
-  const source = body.source === 'stored' ? 'stored' : 'provider';
   if (!ticker || !/^Q[1-4]$/.test(quarter) || !/^\d{4}$/.test(year)) {
     return res.status(400).json({ error: 'ticker, quarter (Q1–Q4) and a four-digit year are required.' });
   }
@@ -436,7 +435,7 @@ app.post('/api/transcripts/dispatch-analysis', async (req, res) => {
         'User-Agent': 'rays-research-dashboard',
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ ref: ANALYZE_REF, inputs: { ticker, quarter, year, source } }),
+      body: JSON.stringify({ ref: ANALYZE_REF, inputs: { ticker, quarter, year } }),
     });
     if (ghResp.status === 204) {
       const runsUrl = `https://github.com/${ANALYZE_REPO}/actions/workflows/${ANALYZE_WORKFLOW}`;
