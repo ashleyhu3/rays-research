@@ -33,7 +33,9 @@ export function primeResource(url, data) {
 }
 
 async function requestJson(url) {
-  const res = await fetch(url);
+  // localStorage/memory are the intentional cache layers for these resources.
+  // Do not let the browser's HTTP cache add a third stale copy underneath them.
+  const res = await fetch(url, { cache: 'no-store' });
   if (!res.ok) {
     let message = `HTTP ${res.status}`;
     try {
@@ -61,8 +63,10 @@ export function fetchResource(url) {
 // Hook: read a URL's data, loading it lazily on first use and serving cached
 // data instantly on every subsequent mount. Pass `{ skip: true }` to hold off
 // (e.g. a param isn't ready yet). `url` may change (new date window) — each
-// distinct URL is cached separately.
-export function useResource(url, { skip = false } = {}) {
+// distinct URL is cached separately. Pass `{ revalidate: true }` for datasets
+// written by an external collector: cached data paints immediately, then a
+// network request refreshes it on every mount.
+export function useResource(url, { skip = false, revalidate = false } = {}) {
   const [data, setData] = useState(() => (skip ? null : getResource(url)));
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(() => !skip && !!url && getResource(url) == null);
@@ -75,17 +79,17 @@ export function useResource(url, { skip = false } = {}) {
       setData(cached);
       setError(null);
       setLoading(false);
-      return undefined;
+      if (!revalidate) return undefined;
     }
 
     let live = true;
-    setLoading(true);
+    if (cached == null) setLoading(true);
     setError(null);
     fetchResource(url)
       .then((d) => { if (live) { setData(d); setLoading(false); } })
       .catch((e) => { if (live) { setError(e.message); setLoading(false); } });
     return () => { live = false; };
-  }, [url, skip]);
+  }, [url, skip, revalidate]);
 
   return { data, error, loading };
 }

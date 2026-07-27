@@ -283,9 +283,10 @@ function GroupPanel({ group, tickers, win }) {
 
 export default function ChinaFlowNationalTeam() {
   const [rangeId, setRangeId] = useState('3m');
-  // Loads once on first visit, then served from the shared cache on every
-  // subsequent mount (stays loaded across navigation and refresh).
-  const { data, error } = useResource('/api/china-national-team-flow');
+  // Paint the shared cached series immediately, but always revalidate because
+  // the external scheduled collector can update it while this browser session
+  // (and its two-hour localStorage cache) remains open.
+  const { data, error } = useResource('/api/china-national-team-flow', { revalidate: true });
 
   const range = RANGES.find(item => item.id === rangeId) ?? RANGES.find(item => item.id === '3m');
 
