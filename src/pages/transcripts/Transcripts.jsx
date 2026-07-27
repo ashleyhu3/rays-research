@@ -34,6 +34,8 @@ const FOCUS_TOPICS = [
 const FOCUS_COLORS = [C.orange, C.mistral, C.teal, C.google, C.openai, C.perplexity];
 
 const DIR_ARROW = { up: '▲', down: '▼', flat: '→' };
+const ANALYSIS_CACHE_TTL_MS = 5 * 60 * 1000;
+const analysisResponseCache = new Map();
 
 const prettyPeriod = period => (period ? String(period).replace(/(\d{4})(Q\d)/, '$1 $2') : '');
 
@@ -318,7 +320,6 @@ export default function Transcripts() {
   const [metricFilter, setMetricFilter] = useState('all');
   const [valueUnit, setValueUnit] = useState(null);
   const selectKeyword = keyword => { setMetricFilter(keyword); setValueUnit(null); };
-  const [enrichment, setEnrichment] = useState(null);
   const [library, setLibrary] = useState([]);
 
   const [loading, setLoading] = useState('');
@@ -330,6 +331,10 @@ export default function Transcripts() {
   const [analysis, setAnalysis] = useState(null);
   const [analysisLoading, setAnalysisLoading] = useState(true);
   const [analysisError, setAnalysisError] = useState('');
+  const enrichment = useMemo(
+    () => analysis?.transcripts?.find(item => item.fiscal_period === period) || null,
+    [analysis, period],
+  );
 
   const refreshLibrary = () => {
     fetch('/api/transcripts/library')
@@ -350,6 +355,16 @@ export default function Transcripts() {
   // Load the completed Mongo snapshot. This request never starts analysis.
   useEffect(() => {
     if (!activeTicker) return;
+    const cached = analysisResponseCache.get(activeTicker);
+    if (cached && Date.now() - cached.storedAt < ANALYSIS_CACHE_TTL_MS) {
+      setAnalysis(cached.data);
+      setAnalysisError('');
+      setAnalysisLoading(false);
+      const latest = cached.data.reports?.[0]?.coverage?.periods?.at(-1);
+      if (latest) setPeriod(current => current || latest.replace(/\s+/g, ''));
+      return;
+    }
+    analysisResponseCache.delete(activeTicker);
     setAnalysisLoading(true);
     setAnalysisError('');
     fetch(`/api/transcripts/analysis/${activeTicker}`)
@@ -359,6 +374,7 @@ export default function Transcripts() {
         return data;
       })
       .then(data => {
+        analysisResponseCache.set(activeTicker, { data, storedAt: Date.now() });
         setAnalysis(data);
         const latest = data.reports?.[0]?.coverage?.periods?.at(-1);
         if (latest) setPeriod(current => current || latest.replace(/\s+/g, ''));
@@ -366,16 +382,6 @@ export default function Transcripts() {
       .catch(requestError => { setAnalysis(null); setAnalysisError(requestError.message); })
       .finally(() => setAnalysisLoading(false));
   }, [activeTicker, reloadNonce]);
-
-  // Load the enrichment (keyword counts, facts, tone) for the selected period.
-  useEffect(() => {
-    if (!activeTicker || !period) { setEnrichment(null); return; }
-    setEnrichment(null);
-    fetch(`/api/transcripts/enrichment/${activeTicker}/${period}`)
-      .then(response => response.ok ? response.json() : null)
-      .then(setEnrichment)
-      .catch(() => setEnrichment(null));
-  }, [activeTicker, period]);
 
   // Fire the GitHub Action that runs the full FinBERT pipeline on a runner, then
   // poll for the enriched result to land in Mongo and refresh the charts. The run
@@ -423,6 +429,7 @@ export default function Transcripts() {
 
       const { ticker: analyzedTicker, period, runsUrl } = data;
       if (data.cached) {
+        analysisResponseCache.delete(analyzedTicker);
         setActiveTicker(analyzedTicker);
         setPeriod(period);
         refreshLibrary();
@@ -452,6 +459,7 @@ export default function Transcripts() {
         } catch { /* transient — keep polling */ }
 
         if (ready) {
+          analysisResponseCache.delete(analyzedTicker);
           setActiveTicker(analyzedTicker);
           setPeriod(period);
           refreshLibrary();
@@ -637,11 +645,16 @@ export default function Transcripts() {
   // selected period's chunks; each line is that role's composite confidence.
   const callToneChart = useMemo(() => {
     const sectionRank = { prepared: 0, qa: 1 };
-    const spoken = (enrichment?.chunks || [])
-      .filter(chunk => (chunk.role === 'Management' || chunk.role === 'Analyst') && chunk.tone?.composite)
-      .map((chunk, index) => ({ chunk, index }))
-      .sort((a, b) => (sectionRank[a.chunk.section] ?? 2) - (sectionRank[b.chunk.section] ?? 2) || a.index - b.index)
-      .map(item => item.chunk);
+    const spoken = enrichment?.callToneSeries?.length
+      ? enrichment.callToneSeries
+      : (enrichment?.chunks || [])
+        .filter(chunk => (chunk.role === 'Management' || chunk.role === 'Analyst') && chunk.tone?.composite)
+        .map((chunk, index) => ({ chunk, index }))
+        .sort((a, b) => (sectionRank[a.chunk.section] ?? 2) - (sectionRank[b.chunk.section] ?? 2) || a.index - b.index)
+        .map(({ chunk }) => ({
+          role: chunk.role,
+          investorConfidence: chunk.tone.composite.investorConfidence,
+        }));
     if (spoken.length < 2) return null;
     const series = [
       { label: 'Management tone', role: 'Management', color: C.teal },
@@ -649,7 +662,7 @@ export default function Transcripts() {
     ];
     const datasets = series.map(item => ({
       label: item.label,
-      data: spoken.map(chunk => (chunk.role === item.role ? chunk.tone.composite.investorConfidence : null)),
+      data: spoken.map(point => (point.role === item.role ? point.investorConfidence : null)),
       borderColor: item.color,
       backgroundColor: fa(item.color, 0.12),
       borderWidth: 2,

@@ -80,6 +80,19 @@ function readEnrichmentLocal(ticker, fiscalPeriod) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
 }
 
+function buildCallToneSeries(chunks) {
+  const sectionRank = { prepared: 0, qa: 1 };
+  return (chunks || [])
+    .filter(chunk => (chunk.role === 'Management' || chunk.role === 'Analyst') && chunk.tone?.composite)
+    .map((chunk, index) => ({ chunk, index }))
+    .sort((a, b) => (sectionRank[a.chunk.section] ?? 2) - (sectionRank[b.chunk.section] ?? 2)
+      || a.index - b.index)
+    .map(({ chunk }) => ({
+      role: chunk.role,
+      investorConfidence: chunk.tone.composite.investorConfidence,
+    }));
+}
+
 async function readEnrichment(ticker, fiscalPeriod) {
   if (process.env.MONGODB_URI) {
     try {
@@ -197,17 +210,50 @@ async function readAnalysisCacheForTicker(ticker) {
   if (process.env.MONGODB_URI) {
     try {
       const mongoResult = await withMongoDatabase(async database => {
-        const query = { ticker: normalizedTicker, analysisCompletedAt: { $exists: true } };
-        const transcriptCount = await database.collection('transcript_enrichments').countDocuments(query);
-        if (!transcriptCount) return null;
-        const projection = transcriptCount > 1
-          ? { _id: 0, ticker: 1, fiscal_period: 1, crossQuarterAnalysis: 1 }
-          : { _id: 0, ticker: 1, fiscal_period: 1, transcriptAnalysis: 1 };
-        const latest = await database.collection('transcript_enrichments').findOne(
-          query,
-          { projection, sort: { year: -1, quarter: -1 } },
-        );
-        return { transcriptCount, latest };
+        const [result] = await database.collection('transcript_enrichments').aggregate([
+          { $match: { ticker: normalizedTicker, analysisCompletedAt: { $exists: true } } },
+          {
+            $facet: {
+              metadata: [{ $count: 'transcriptCount' }],
+              latest: [
+                { $sort: { year: -1, quarter: -1 } },
+                { $limit: 1 },
+                {
+                  $project: {
+                    _id: 0,
+                    ticker: 1,
+                    fiscal_period: 1,
+                    transcriptAnalysis: 1,
+                    crossQuarterAnalysis: 1,
+                  },
+                },
+              ],
+              transcripts: [
+                { $sort: { year: 1, quarter: 1 } },
+                {
+                  $project: {
+                    _id: 0,
+                    ticker: 1,
+                    quarter: 1,
+                    year: 1,
+                    fiscal_period: 1,
+                    analysisCompletedAt: 1,
+                    factSummary: 1,
+                    stats: 1,
+                    toneSummary: 1,
+                    keyFigures: 1,
+                    transcriptAnalysis: 1,
+                    callToneSeries: 1,
+                  },
+                },
+              ],
+            },
+          },
+        ]).toArray();
+        const transcriptCount = result?.metadata?.[0]?.transcriptCount || 0;
+        return transcriptCount
+          ? { transcriptCount, latest: result.latest[0], transcripts: result.transcripts }
+          : null;
       });
       if (mongoResult) return mongoResult;
     } catch (error) {
@@ -217,7 +263,9 @@ async function readAnalysisCacheForTicker(ticker) {
   const completed = listLocalEnrichmentFiles()
     .filter(doc => doc.ticker === normalizedTicker && doc.analysisCompletedAt)
     .sort((a, b) => `${a.year}${a.quarter}`.localeCompare(`${b.year}${b.quarter}`));
-  return completed.length ? { transcriptCount: completed.length, latest: completed.at(-1) } : null;
+  return completed.length
+    ? { transcriptCount: completed.length, latest: completed.at(-1), transcripts: completed }
+    : null;
 }
 
 async function listAnalyzedTickers() {
@@ -272,6 +320,7 @@ async function saveEnrichment(enrichment) {
         await facts.createIndex({ ticker: 1, fiscal_period: 1, topic: 1 }, { background: true });
 
         const { chunks: chunkDocuments, facts: factDocuments = [], ...summary } = enrichment;
+        if (chunkDocuments.length) summary.callToneSeries = buildCallToneSeries(chunkDocuments);
         await enrichments.updateOne(
           { ticker: enrichment.ticker, fiscal_period: enrichment.fiscal_period },
           {

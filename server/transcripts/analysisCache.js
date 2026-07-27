@@ -7,6 +7,8 @@ const {
 } = require('./enrichmentStore');
 
 const CACHE_VERSION = 1;
+const READ_CACHE_TTL_MS = 5 * 60 * 1000;
+const tickerReadCache = new Map();
 
 const normalizeTicker = value => String(value || '')
   .toUpperCase()
@@ -88,6 +90,8 @@ async function completedEnrichmentsForTicker(ticker) {
 // are rebuilt from those stored results only when the ticker gains a quarter,
 // then copied onto every analyzed transcript so all period views are consistent.
 async function refreshAnalysisCacheForTicker(ticker) {
+  const normalizedTicker = normalizeTicker(ticker);
+  tickerReadCache.delete(normalizedTicker);
   const enrichments = await completedEnrichmentsForTicker(ticker);
   if (!enrichments.length) return { transcriptCount: 0, crossQuarter: false };
 
@@ -106,6 +110,7 @@ async function refreshAnalysisCacheForTicker(ticker) {
     await saveEnrichment(enrichment);
   }
 
+  tickerReadCache.delete(normalizedTicker);
   return {
     transcriptCount: enrichments.length,
     crossQuarter: Boolean(crossQuarterAnalysis),
@@ -116,9 +121,14 @@ async function refreshAnalysisCacheForTicker(ticker) {
 // Read-only request path. It deliberately never imports or invokes the manager:
 // page navigation can load Mongo snapshots but cannot trigger analysis work.
 async function readCachedAnalysis(ticker) {
-  const cached = await readAnalysisCacheForTicker(ticker);
+  const normalizedTicker = normalizeTicker(ticker);
+  const inMemory = tickerReadCache.get(normalizedTicker);
+  if (inMemory && Date.now() - inMemory.storedAt < READ_CACHE_TTL_MS) return inMemory.data;
+  tickerReadCache.delete(normalizedTicker);
+
+  const cached = await readAnalysisCacheForTicker(normalizedTicker);
   if (!cached) return null;
-  const { latest, transcriptCount } = cached;
+  const { latest, transcriptCount, transcripts } = cached;
   const crossQuarter = transcriptCount > 1 ? latest?.crossQuarterAnalysis : null;
   const snapshot = crossQuarter || latest?.transcriptAnalysis;
   if (!snapshot) return {
@@ -126,12 +136,15 @@ async function readCachedAnalysis(ticker) {
     ticker: normalizeTicker(ticker),
     transcriptCount,
   };
-  return {
+  const result = {
     ...snapshot,
-    ticker: normalizeTicker(ticker),
+    ticker: normalizedTicker,
     transcriptCount,
     hasCrossQuarter: Boolean(crossQuarter),
+    transcripts,
   };
+  tickerReadCache.set(normalizedTicker, { data: result, storedAt: Date.now() });
+  return result;
 }
 
 module.exports = {
