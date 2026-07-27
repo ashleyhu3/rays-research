@@ -19,6 +19,7 @@ module.exports = [
   blob('usLiquidityHistory'),
   blob('carryTradeHistory'),
   blob('japanLeverageHistory'), blob('usLeverageHistory'),
+  blob('buybackHistory'),
   blob('aaiiSentimentHistory'), blob('spxPutCallRatioHistory'),
   blob('usPerformanceHistory'), blob('hkChinaPerformanceHistory'),
   blob('hkPerformanceHistory'), blob('chinaEtfPremiumHistory'),

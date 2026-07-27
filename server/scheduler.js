@@ -37,6 +37,7 @@ const scrapers = {
   carryTrade: () => require('./scrapers/carryTrade').updateCarryTrade(),
   japanLeverage:    () => require('./scrapers/japanLeverage').getJapanLeverage(),
   usLeverage:       () => require('./scrapers/usLeverage').getUsLeverage(),
+  buybacks:         () => require('./scrapers/buybacks').getBuybacks(),
   aaiiSentiment:    () => require('./scrapers/aaiiSentiment').getAaiiSentiment(),
   spxPutCallRatio:  () => require('./scrapers/spxPutCallRatio').getSpxPutCallRatio(),
   usPerformance:    () => require('./scrapers/usPerformance').updateUsPerformance(),
@@ -98,6 +99,7 @@ const TTL = {
   carryTrade:     24 * 3600000,  // daily — weekly CFTC release, Friday after the close
   japanLeverage:  24 * 3600000,  // daily — JPX only republishes this workbook once a week; a daily poll picks up the new week
   usLeverage:      6 * 3600000,  // 6-hourly — ETF net assets move daily; CFTC is weekly and FINRA is monthly
+  buybacks:       24 * 3600000,  // daily — announcements land through the session but the series is monthly
   aaiiSentiment:  24 * 3600000,  // daily — AAII publishes once a week (Thursdays)
   spxPutCallRatio: 6 * 3600000,  // 6-hourly — refresh Barchart's rolling 200-session put/call chart history
   usPerformance:   6 * 3600000,  // 6-hourly — persisted Rotation history; catches the US close
@@ -108,7 +110,7 @@ const TTL = {
   indexBreadth:   24 * 3600000,  // daily — full constituent re-fetch per index is heavy; breadth doesn't need intraday freshness
   macro:          24 * 3600000,  // daily — monthly/weekly macro releases
   commodities:     6 * 3600000,  // 6-hourly — futures candles and daily spot quotes
-  fedWatch:       24 * 3600000,  // daily — Fed Funds futures settle once per session
+  fedWatch:        1 * 3600000,  // hourly cache check — collector snapshots still follow futures settlement cadence
 };
 
 // These scrapers already write their canonical time series to dedicated Mongo
@@ -119,6 +121,7 @@ PERSISTED_ONLY.add('chinaNationalTeamFlow');
 PERSISTED_ONLY.add('chinaLiquidity');
 PERSISTED_ONLY.add('usLiquidity');
 PERSISTED_ONLY.add('carryTrade');
+PERSISTED_ONLY.add('buybacks');
 
 // Hard cap per scraper so one hung source can never wedge a refresh
 const SCRAPE_TIMEOUT = 5 * 60000;
@@ -197,7 +200,7 @@ function setup() {
   });
 
   // Daily at 03:00 UTC: aggregate stats whose sources only publish once per day
-  cron.schedule('0 3 * * *', () => refreshAll(['gpu', 'tftLcd', 'tpu', 'epochRevenue', 'sentiment', 'pypi', 'github', 'eia', 'mops', 'githubCommits', 'npm', 'huggingface', 'mcp', 'sec', 'webTraffic', 'customsDrones', 'japanLeverage', 'macro', 'commodities', 'chinaLiquidity', 'usLiquidity', 'carryTrade', 'fedWatch']));
+  cron.schedule('0 3 * * *', () => refreshAll(['gpu', 'tftLcd', 'tpu', 'epochRevenue', 'sentiment', 'pypi', 'github', 'eia', 'mops', 'githubCommits', 'npm', 'huggingface', 'mcp', 'sec', 'webTraffic', 'customsDrones', 'japanLeverage', 'macro', 'commodities', 'chinaLiquidity', 'usLiquidity', 'carryTrade', 'fedWatch', 'buybacks']));
 
   // Options: warm every 6h, plus once shortly after boot so the RAG has data fast
   cron.schedule('30 */6 * * *', () => warmOptions());

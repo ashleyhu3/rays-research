@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import { Line } from 'react-chartjs-2';
 import ChartCard from '../../components/chart/ChartCard';
+import BuybackPanel from '../../components/chart/BuybackPanel';
 import { getResource, fetchResource } from '../../services/resourceCache';
 
 const SURFACE = '#111419';
@@ -830,6 +831,7 @@ export default function ChinaLeverage() {
         fundsDate={data.etf?.fundsDate}
         layerTotal={data.etf?.total?.at(-1)}
       />
+      <BuybackPanel market="cn" startDate={startDate} endDate={endDate} />
     </>
   );
 }

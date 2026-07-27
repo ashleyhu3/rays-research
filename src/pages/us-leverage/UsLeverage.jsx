@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Line } from 'react-chartjs-2';
 import ChartCard from '../../components/chart/ChartCard';
+import BuybackPanel from '../../components/chart/BuybackPanel';
 import { useResource } from '../../services/resourceCache';
 
 const SURFACE = '#111419';
@@ -783,6 +784,7 @@ export default function UsLeverage() {
         fundsDate={data.leveragedEtf?.fundsDate}
         layerTotal={data.leveragedEtf?.total?.at(-1)}
       />
+      <BuybackPanel market="us" startDate={startDate} endDate={endDate} />
     </>
   );
 }

@@ -22,6 +22,7 @@ const { readChinaNationalTeamFlow }  = require('./scrapers/chinaNationalTeamFlow
 const { readChinaLiquidity }         = require('./scrapers/chinaLiquidity');
 const { readUsLiquidity }            = require('./scrapers/usLiquidity');
 const { readCarryTrade }             = require('./scrapers/carryTrade');
+const { readBuybacks }               = require('./scrapers/buybacks');
 const { readKoreaLeverage }          = require('./scrapers/koreaLeverage');
 const { keywordRolling }             = require('./stocktwitsStore');
 
@@ -221,7 +222,12 @@ app.get('/api/taiwan-leverage',   cachedRoute('taiwanLeverage',   s.taiwanLevera
 app.get('/api/china-leverage',    cachedRoute('chinaLeverage',    s.chinaLeverage, null, { preferPersisted: true }));
 app.get('/api/macro',             cachedRoute('macro',            s.macro, null, { preferPersisted: true }));
 app.get('/api/commodities',       cachedRoute('commodities',      s.commodities, null, { preferPersisted: true }));
-app.get('/api/fed-watch',         cachedRoute('fedWatch',         s.fedWatch, null, { preferPersisted: true }));
+app.get('/api/fed-watch',         cachedRoute(
+  'fedWatch',
+  s.fedWatch,
+  data => data?.schemaVersion === 2,
+  { preferPersisted: true },
+));
 
 // One-off deep backfill (~5y, ~3600 SZSE requests + ~1200 SSE market-cap
 // requests at a polite pace — several minutes) triggered manually from the
@@ -278,6 +284,7 @@ app.get('/api/china-national-team-flow', async (_req, res) => {
 app.get('/api/china-liquidity', (_req, res) => res.json(readChinaLiquidity()));
 app.get('/api/us-liquidity', (_req, res) => res.json(readUsLiquidity()));
 app.get('/api/carry-trade', (_req, res) => res.json(readCarryTrade()));
+app.get('/api/buybacks', (_req, res) => res.json(readBuybacks()));
 app.get('/api/japan-leverage',    cachedRoute('japanLeverage',    s.japanLeverage));
 app.get('/api/us-leverage',       cachedRoute('usLeverage',       s.usLeverage));
 app.get('/api/aaii-sentiment',    cachedRoute('aaiiSentiment',    s.aaiiSentiment));

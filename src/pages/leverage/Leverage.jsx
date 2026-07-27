@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import { Bar, Line } from 'react-chartjs-2';
 import ChartCard from '../../components/chart/ChartCard';
+import BuybackPanel from '../../components/chart/BuybackPanel';
 
 const BLUE = '#4577b4';
 const ORANGE = '#ad622d';
@@ -639,6 +640,12 @@ export default function Leverage({ marketId = 'korea' }) {
           {layer.key === 'margin' && <MarginDodPanel market={market} win={win} />}
         </Fragment>
       ))}
+
+      {/* Korea has no equivalent announced-buyback filing feed, so this panel is
+          Taiwan-only rather than part of the shared layer loop above. */}
+      {marketId === 'taiwan' && (
+        <BuybackPanel market="tw" startDate={startDate} endDate={endDate} />
+      )}
     </>
   );
 }

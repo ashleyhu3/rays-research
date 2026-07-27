@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useData } from '../../context/DataContext';
+import { useResource } from '../../services/resourceCache';
 
 function fmtPct(value) {
   return `${value.toFixed(1)}%`;
@@ -11,7 +12,14 @@ function rangeLabel(row) {
 
 export default function FedWatch() {
   const { liveData, loading } = useData();
-  const data = liveData?.fedWatch;
+  // FedWatch is settlement-driven and persisted by an external collector.
+  // Revalidate it on page entry instead of waiting for the dashboard-wide
+  // 24-hour refresh timer.
+  const { data: revalidatedData, loading: revalidating } = useResource(
+    '/api/fed-watch',
+    { revalidate: true },
+  );
+  const data = revalidatedData || liveData?.fedWatch;
   const meetings = data?.meetings || [];
   const validMeetings = meetings.filter(meeting => !meeting.error);
   const nextMeeting = validMeetings[0];
@@ -35,7 +43,7 @@ export default function FedWatch() {
           CME 30-Day Fed Funds futures (derived) · refreshed {new Date(data.fetchedAt).toLocaleString()}
         </div>
       )}
-      {!data && !loading && (
+      {!data && !loading && !revalidating && (
         <div className="macro-banner">Fed Watch data is unavailable. Use Refresh Data to retry.</div>
       )}
       {data && (

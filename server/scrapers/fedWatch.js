@@ -30,6 +30,7 @@ const FRED_CSV_URL = 'https://fred.stlouisfed.org/graph/fredgraph.csv';
 const YAHOO_CHART_URL = 'https://query1.finance.yahoo.com/v8/finance/chart';
 const UA = 'Mozilla/5.0 Signal Macro Dashboard';
 const STEP = 0.25; // Fed's standard target-rate increment, in percentage points
+const MIN_STABLE_POST_DAYS = 7;
 
 // FOMC decision (2nd meeting day) dates, confirmed against the Fed's published
 // 2026 calendar. Extend this list once the Fed announces its next tentative
@@ -53,6 +54,32 @@ function futuresSymbol(year, month) {
 
 function daysInMonth(year, month) {
   return new Date(year, month, 0).getDate();
+}
+
+function nextMonth(year, month) {
+  return month === 12 ? { year: year + 1, month: 1 } : { year, month: month + 1 };
+}
+
+// Meeting-month contracts are a poor post-decision signal when a meeting lands
+// at month-end: dividing the monthly average by only two or three post-meeting
+// days amplifies tiny price differences into implausibly large moves. In that
+// case use the following month, provided it contains no FOMC decision, since
+// its average is a clean estimate of the rate after the meeting.
+function calibrationContract(meeting, schedule = FOMC_MEETINGS) {
+  const [year, month, day] = meeting.date.split('-').map(Number);
+  const daysPost = daysInMonth(year, month) - day;
+  if (daysPost >= MIN_STABLE_POST_DAYS) {
+    return { year, month, method: 'meeting-month' };
+  }
+
+  const following = nextMonth(year, month);
+  const followingPrefix = `${following.year}-${String(following.month).padStart(2, '0')}-`;
+  const hasFollowingMonthMeeting = schedule.some(item => item.date.startsWith(followingPrefix));
+  if (!hasFollowingMonthMeeting) {
+    return { ...following, method: 'clean-post-month' };
+  }
+
+  return { year, month, method: 'meeting-month' };
 }
 
 function round(value, decimals) {
@@ -125,7 +152,9 @@ function computeFedWatch(meetings, currentEffr, currentTargetUpper, futuresBySym
 
     const entryAvgEffr = [...dist].reduce((sum, [step, p]) => sum + (currentEffr + step * STEP) * p, 0);
     const impliedAvg = 100 - futures.price;
-    const expectedMove = (impliedAvg - entryAvgEffr) * n / daysPost;
+    const expectedMove = futures.calibrationMethod === 'clean-post-month'
+      ? impliedAvg - entryAvgEffr
+      : (impliedAvg - entryAvgEffr) * n / daysPost;
 
     const loSteps = Math.floor(expectedMove / STEP + 1e-9);
     const frac = expectedMove / STEP - loSteps;
@@ -151,6 +180,7 @@ function computeFedWatch(meetings, currentEffr, currentTargetUpper, futuresBySym
       contractSymbol: futures.symbol,
       contractPrice: futures.price,
       contractAsOf: futures.date,
+      calibrationMethod: futures.calibrationMethod || 'meeting-month',
       impliedAvgRate: round(impliedAvg, 3),
       expectedMoveBp: round(expectedMove * 100, 1),
       rows,
@@ -164,14 +194,12 @@ async function getFedWatchData() {
   const today = new Date().toISOString().slice(0, 10);
   const upcoming = FOMC_MEETINGS.filter(m => m.date >= today);
   if (!upcoming.length) throw new Error('No upcoming FOMC meetings in the hardcoded schedule — update FOMC_MEETINGS');
+  const contracts = upcoming.map(meeting => calibrationContract(meeting, FOMC_MEETINGS));
 
   const [effrResult, targetResult, ...futuresResults] = await Promise.allSettled([
     fetchFredLatest('EFFR'),
     fetchFredLatest('DFEDTARU'),
-    ...upcoming.map(m => {
-      const [year, month] = m.date.split('-').map(Number);
-      return fetchFuturesClose(year, month);
-    }),
+    ...contracts.map(contract => fetchFuturesClose(contract.year, contract.month)),
   ]);
 
   if (effrResult.status !== 'fulfilled' || targetResult.status !== 'fulfilled') {
@@ -182,7 +210,12 @@ async function getFedWatchData() {
   const futuresBySymbol = {};
   upcoming.forEach((meeting, index) => {
     const result = futuresResults[index];
-    if (result.status === 'fulfilled') futuresBySymbol[meeting.date] = result.value;
+    if (result.status === 'fulfilled') {
+      futuresBySymbol[meeting.date] = {
+        ...result.value,
+        calibrationMethod: contracts[index].method,
+      };
+    }
     else errors[meeting.date] = result.reason?.message || 'Futures fetch failed';
   });
 
@@ -191,17 +224,18 @@ async function getFedWatchData() {
   );
 
   return {
+    schemaVersion: 2,
     fetchedAt: new Date().toISOString(),
     currentEffr: effrResult.value,
     currentTargetUpper: targetResult.value,
     basis,
     meetings,
     errors,
-    methodologyNote: 'Derived from CME 30-Day Fed Funds futures (ZQ) settlement prices, not CME’s official FedWatch API. Approximate — see server/scrapers/fedWatch.js.',
+    methodologyNote: 'Derived from CME 30-Day Fed Funds futures (ZQ) settlement prices, not CME’s official FedWatch API. Late-month meetings use the next clean contract month to avoid unstable day-weighting. Approximate — see server/scrapers/fedWatch.js.',
   };
 }
 
 module.exports = {
   getFedWatchData, computeFedWatch, fetchFuturesClose, fetchFredLatest, futuresSymbol,
-  FOMC_MEETINGS,
+  calibrationContract, FOMC_MEETINGS,
 };

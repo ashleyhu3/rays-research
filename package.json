@@ -4,8 +4,9 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "test": "npm run test:storage && npm run test:mailer && npm run test:transcripts && npm run test:options-report && npm run test:leverage && npm run test:spx-put-call && npm run test:global && npm run test:national-team-flow && npm run test:carry-trade && npm run test:macro && npm run test:commodities && npm run test:china-etf-premium",
+    "test": "npm run test:storage && npm run test:mailer && npm run test:transcripts && npm run test:options-report && npm run test:leverage && npm run test:buybacks && npm run test:spx-put-call && npm run test:global && npm run test:national-team-flow && npm run test:carry-trade && npm run test:macro && npm run test:commodities && npm run test:china-etf-premium",
     "test:storage": "node --test server/snapshotStore.test.js",
+    "test:buybacks": "node --test server/scrapers/buybacks.test.js",
     "test:carry-trade": "node --test server/scrapers/carryTrade.test.js",
     "test:commodities": "node --test server/scrapers/commodities.test.js",
     "test:macro": "node --test server/scrapers/macro.test.js",
@@ -29,6 +30,7 @@
     "backfill:carry-trade": "node --env-file-if-exists=.env server/scripts/backfillCarryTrade.js",
     "backfill:japan-leverage": "node --env-file=.env server/scripts/backfillJapanLeverage.js",
     "backfill:us-leverage": "node --env-file=.env server/scripts/backfillUsLeverage.js",
+    "backfill:buybacks": "node --env-file-if-exists=.env server/scripts/backfillBuybacks.js",
     "backfill:macro": "node --env-file-if-exists=.env server/scripts/backfillMacro.js",
     "backfill:commodities": "node --env-file-if-exists=.env server/scripts/backfillCommodities.js",
     "backfill:hk-performance": "node --env-file=.env server/scripts/backfillHkPerformance.js",
