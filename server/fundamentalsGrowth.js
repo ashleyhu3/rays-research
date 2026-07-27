@@ -12,9 +12,11 @@ const SOXX_SECTION = SOXX_CONSTITUENTS;
 const CSP_SECTION = CSP_TICKERS;
 const FUNDAMENTALS_TICKERS = [...SOXX_SECTION, ...CSP_SECTION];
 
-// The four sidebar views. Each is a growth rate derived from the same two
+// The sidebar views. The first four are growth rates derived from the same two
 // quarterly income-statement lines, so one fetch per ticker fills all four.
-const METRICS = ['revenueYoY', 'revenueQoQ', 'netIncomeYoY', 'netIncomeQoQ'];
+// freeCashFlow is a level rather than a growth rate — the raw dollar figure —
+// and comes from the same SEC filing, so it costs no extra request either.
+const METRICS = ['revenueYoY', 'revenueQoQ', 'netIncomeYoY', 'netIncomeQoQ', 'freeCashFlow'];
 
 // Primary source: the SEC Company Facts API. It is free, needs no API key, and
 // gives the long quarterly history this page needs. Yahoo's public fundamentals
@@ -62,6 +64,21 @@ const SEC_NET_INCOME_CONCEPTS = [
   'NetIncomeLoss',
   'ProfitLoss',
   'NetIncomeLossAvailableToCommonStockholdersBasic',
+];
+// Free cash flow = cash from operations less capital expenditure. Both legs come
+// off the cash-flow statement, which most filers tag only year-to-date, so these
+// go through secCumulativeQuarterSeries rather than the income-statement path.
+const SEC_OPERATING_CASH_FLOW_CONCEPTS = [
+  'NetCashProvidedByUsedInOperatingActivities',
+  'NetCashProvidedByUsedInOperatingActivitiesContinuingOperations',
+];
+// Amazon has historically also used productive-asset tags for this line. Keep
+// the standard PP&E tag first, then fill periods it does not cover from those
+// broader fallbacks.
+const SEC_CAPEX_CONCEPTS = [
+  'PaymentsToAcquirePropertyPlantAndEquipment',
+  'PaymentsToAcquireProductiveAssets',
+  'PaymentsForProceedsFromProductiveAssets',
 ];
 const AV_URL = 'https://www.alphavantage.co/query';
 const FMP_INCOME_STATEMENT_URL = 'https://financialmodelingprep.com/stable/income-statement';
@@ -182,10 +199,59 @@ function secQuarterSeries(units) {
   return byEnd;
 }
 
-function secMetricSeries(usGaap, concepts) {
+// Cash-flow-statement equivalent of secQuarterSeries. The income statement is
+// reliably tagged per-quarter, but the cash-flow statement usually is not:
+// Alphabet and Meta publish only year-to-date cash flows in their 10-Qs (Q1 is
+// the sole three-month duration), so the direct-quarter filter would leave three
+// of every four quarters blank. Anything longer than a quarter is therefore
+// differenced against the same fiscal year's previous cumulative fact — a
+// six-month figure less the three-month one is Q2, and the 10-K's full year less
+// the nine-month YTD is Q4. Filers that do tag three-month cash flows (Microsoft,
+// Amazon) keep those as-is; the differencing only fills what they leave out.
+function secCumulativeQuarterSeries(units) {
+  const facts = latestByPeriod((units?.USD ?? []).filter(entry =>
+    (entry.form === '10-Q' || entry.form === '10-K') &&
+    /^\d{4}-\d{2}-\d{2}$/.test(entry.start ?? '') &&
+    /^\d{4}-\d{2}-\d{2}$/.test(entry.end ?? '') &&
+    Number.isFinite(Number(entry.val)),
+  ));
+
+  const isQuarterLong = days => days != null && days >= 70 && days <= 120;
+  const byEnd = new Map();
+  const set = (periodEnd, value, filed) => {
+    const current = byEnd.get(periodEnd);
+    if (!current || (filed ?? '') > (current.filed ?? '')) byEnd.set(periodEnd, { periodEnd, value, filed });
+  };
+
+  for (const entry of facts) {
+    if (isQuarterLong(daysBetween(entry.start, entry.end))) set(entry.end, Number(entry.val), entry.filed);
+  }
+
+  // Second pass so a directly reported quarter always wins over a derived one.
+  for (const entry of facts) {
+    const span = daysBetween(entry.start, entry.end);
+    if (isQuarterLong(span) || span == null || span > 420) continue;
+    if (byEnd.has(entry.end)) continue;
+    // The cumulative fact one quarter shorter, from the same period start. Any
+    // such pair differences to the same quarter, so a trailing-twelve-month
+    // fact works here exactly as a year-to-date one does.
+    const prior = facts.find(other =>
+      other.start === entry.start &&
+      other.end < entry.end &&
+      isQuarterLong(daysBetween(other.end, entry.end)),
+    );
+    if (!prior) continue;
+    const value = Number(entry.val) - Number(prior.val);
+    if (Number.isFinite(value)) set(entry.end, value, entry.filed);
+  }
+
+  return byEnd;
+}
+
+function secMetricSeries(usGaap, concepts, seriesFn = secQuarterSeries) {
   const merged = new Map();
   for (const concept of concepts) {
-    const series = secQuarterSeries(usGaap?.[concept]?.units);
+    const series = seriesFn(usGaap?.[concept]?.units);
     for (const [periodEnd, row] of series) {
       // Concepts are ordered from most current/specific to legacy fallbacks.
       if (!merged.has(periodEnd)) merged.set(periodEnd, row.value);
@@ -199,12 +265,22 @@ function reportsFromSecCompanyFacts(body) {
   if (!usGaap) return [];
   const revenue = secMetricSeries(usGaap, SEC_REVENUE_CONCEPTS);
   const netIncome = secMetricSeries(usGaap, SEC_NET_INCOME_CONCEPTS);
+  const operatingCashFlow = secMetricSeries(usGaap, SEC_OPERATING_CASH_FLOW_CONCEPTS, secCumulativeQuarterSeries);
+  const capex = secMetricSeries(usGaap, SEC_CAPEX_CONCEPTS, secCumulativeQuarterSeries);
+  // Cash-flow periods are only reported alongside income-statement ones, so
+  // they never widen the quarter set; a quarter missing either leg is left null
+  // rather than being shown as if capex were zero.
   const periodEnds = [...new Set([...revenue.keys(), ...netIncome.keys()])].sort();
-  return periodEnds.map(periodEnd => ({
-    periodEnd,
-    revenue: revenue.get(periodEnd) ?? null,
-    netIncome: netIncome.get(periodEnd) ?? null,
-  }));
+  return periodEnds.map(periodEnd => {
+    const ocf = operatingCashFlow.get(periodEnd);
+    const capitalExpenditure = capex.get(periodEnd);
+    return {
+      periodEnd,
+      revenue: revenue.get(periodEnd) ?? null,
+      netIncome: netIncome.get(periodEnd) ?? null,
+      freeCashFlow: ocf != null && capitalExpenditure != null ? ocf - capitalExpenditure : null,
+    };
+  });
 }
 
 async function fetchSecIncomeStatement(ticker) {
@@ -327,6 +403,8 @@ function computeGrowth(reports) {
       periodEnd: cur.periodEnd,
       revenue: cur.revenue,
       netIncome: cur.netIncome,
+      // A level, not a growth rate — the CSP free-cash-flow view shows it raw.
+      freeCashFlow: cur.freeCashFlow ?? null,
       revenueQoQ: prevQ ? growth(cur.revenue, prevQ.revenue) : null,
       revenueYoY: yearBack ? growth(cur.revenue, yearBack.revenue) : null,
       netIncomeQoQ: prevQ ? growth(cur.netIncome, prevQ.netIncome) : null,

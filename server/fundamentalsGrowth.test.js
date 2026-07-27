@@ -51,6 +51,7 @@ test('YoY compares against the ticker own quarter four periods back', () => {
   assert.ok(Math.abs(q.revenueQoQ - (200 / 130 - 1)) < 1e-12);
   assert.ok(Math.abs(q.netIncomeYoY - 2) < 1e-12);
   assert.ok(Math.abs(q.netIncomeQoQ - (30 / 13 - 1)) < 1e-12);
+  assert.equal(q.freeCashFlow, null);
 
   // The oldest quarter has neither a prior quarter nor a prior year.
   assert.equal(quarters['2025 Q1'].revenueQoQ, null);
@@ -127,9 +128,47 @@ test('SEC facts keep discrete 10-Q values and derive the fourth quarter from the
   };
 
   assert.deepEqual(reportsFromSecCompanyFacts(body), [
-    { periodEnd: '2024-03-31', revenue: 100, netIncome: 10 },
-    { periodEnd: '2024-06-30', revenue: 120, netIncome: 20 },
-    { periodEnd: '2024-09-30', revenue: 130, netIncome: 30 },
-    { periodEnd: '2024-12-31', revenue: 150, netIncome: 40 },
+    { periodEnd: '2024-03-31', revenue: 100, netIncome: 10, freeCashFlow: null },
+    { periodEnd: '2024-06-30', revenue: 120, netIncome: 20, freeCashFlow: null },
+    { periodEnd: '2024-09-30', revenue: 130, netIncome: 30, freeCashFlow: null },
+    { periodEnd: '2024-12-31', revenue: 150, netIncome: 40, freeCashFlow: null },
   ]);
+});
+
+test('SEC cumulative cash-flow facts derive discrete quarterly free cash flow', () => {
+  const fact = (start, end, val, form, filed) => ({ start, end, val, form, filed });
+  const cashFacts = values => ({
+    units: {
+      USD: [
+        fact('2024-01-01', '2024-03-31', values[0], '10-Q', '2024-05-01'),
+        fact('2024-01-01', '2024-06-30', values[1], '10-Q', '2024-08-01'),
+        fact('2024-01-01', '2024-09-30', values[2], '10-Q', '2024-11-01'),
+        fact('2024-01-01', '2024-12-31', values[3], '10-K', '2025-02-01'),
+      ],
+    },
+  });
+  const incomeFacts = values => ({
+    units: {
+      USD: [
+        fact('2024-01-01', '2024-03-31', values[0], '10-Q', '2024-05-01'),
+        fact('2024-04-01', '2024-06-30', values[1], '10-Q', '2024-08-01'),
+        fact('2024-07-01', '2024-09-30', values[2], '10-Q', '2024-11-01'),
+        fact('2024-01-01', '2024-12-31', values.reduce((sum, value) => sum + value, 0), '10-K', '2025-02-01'),
+      ],
+    },
+  });
+  const body = {
+    facts: {
+      'us-gaap': {
+        RevenueFromContractWithCustomerExcludingAssessedTax: incomeFacts([100, 120, 130, 150]),
+        NetIncomeLoss: incomeFacts([10, 20, 30, 40]),
+        NetCashProvidedByUsedInOperatingActivities: cashFacts([40, 90, 150, 220]),
+        PaymentsToAcquirePropertyPlantAndEquipment: cashFacts([10, 25, 45, 70]),
+      },
+    },
+  };
+
+  const reports = reportsFromSecCompanyFacts(body);
+  assert.deepEqual(reports.map(row => row.freeCashFlow), [30, 35, 40, 45]);
+  assert.equal(computeGrowth(reports)['2024 Q4'].freeCashFlow, 45);
 });

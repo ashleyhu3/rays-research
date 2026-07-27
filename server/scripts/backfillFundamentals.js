@@ -5,9 +5,10 @@
  * constituents and the hyperscaler CSPs), pull its quarterly income statement
  * (SEC Company Facts for U.S. filers; Alpha Vantage
  * with a five-quarter FMP fallback for the four foreign ADRs) and compute
- * revenue and net-income growth YoY and QoQ for each quarter, plus the quarterly
- * SOXX candles (Yahoo Finance) the chart sits on. Writes incrementally, one
- * ticker at a time, so partial runs retain every completed company.
+ * revenue and net-income growth YoY and QoQ for each quarter, free cash flow
+ * for the CSP view, plus the quarterly SOXX candles (Yahoo Finance) the chart
+ * sits on. Writes incrementally, one ticker at a time, so partial runs retain
+ * every completed company.
  *
  * Usage:
  *   node --env-file=.env server/scripts/backfillFundamentals.js [options]

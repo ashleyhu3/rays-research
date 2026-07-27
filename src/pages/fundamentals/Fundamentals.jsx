@@ -36,20 +36,19 @@ function useChartHeight(tall) {
   return height;
 }
 
-// The sidebar is a two-level menu: two ticker-scope sections, each with the
-// same four growth metrics. Price Return puts its ticker-scope switch in the
-// sidebar and its metric switch in the header; this page has both switches in
-// the sidebar, so the eight combinations are all one click away.
+// The sidebar is a two-level menu. Free cash flow is specific to the CSP view;
+// the SOXX section keeps the four existing growth views.
 const METRICS = [
   { key: 'revenueYoY',   label: 'Revenue YoY',    title: 'Total Revenue — YoY Growth' },
   { key: 'revenueQoQ',   label: 'Revenue QoQ',    title: 'Total Revenue — QoQ Growth' },
   { key: 'netIncomeYoY', label: 'Net Income YoY', title: 'Net Income — YoY Growth' },
   { key: 'netIncomeQoQ', label: 'Net Income QoQ', title: 'Net Income — QoQ Growth' },
+  { key: 'freeCashFlow', label: 'Free Cash Flow', title: 'Free Cash Flow' },
 ];
 
 const SECTIONS = [
-  { key: 'soxx', label: 'SOXX', suffix: ' — SOXX Index' },
-  { key: 'csp',  label: 'CSP',  suffix: ' — Cloud Service Providers' },
+  { key: 'soxx', label: 'SOXX', suffix: ' — SOXX Index', metrics: METRICS.slice(0, 4) },
+  { key: 'csp',  label: 'CSP',  suffix: ' — Cloud Service Providers', metrics: METRICS },
 ];
 
 // Fallbacks if the API predates the section fields (stale cached blob). An
@@ -73,6 +72,16 @@ function formatPct(value) {
   // number still fits the 60px column.
   const digits = Math.abs(pct) >= 100 ? 0 : 1;
   return `${pct > 0 ? '+' : ''}${pct.toFixed(digits)}%`;
+}
+
+function formatDollars(value) {
+  if (value == null || !Number.isFinite(value)) return '—';
+  const abs = Math.abs(value);
+  const sign = value < 0 ? '−' : '';
+  if (abs >= 1e9) return `${sign}$${(abs / 1e9).toFixed(1)}B`;
+  if (abs >= 1e6) return `${sign}$${(abs / 1e6).toFixed(1)}M`;
+  if (abs >= 1e3) return `${sign}$${(abs / 1e3).toFixed(1)}K`;
+  return `${sign}$${abs.toFixed(0)}`;
 }
 
 // Diverging heatmap fill from a signed intensity in [-1, 1]: gray at 0, green
@@ -120,6 +129,17 @@ function columnSummary(rows, quarters, metric) {
     share[q] = values.filter(v => v > 0).length / values.length;
   }
   return { avg, share };
+}
+
+function maxAbsValue(rows, quarters, metric) {
+  let max = 0;
+  for (const row of rows) {
+    for (const q of quarters) {
+      const value = row.cells[q]?.[metric];
+      if (value != null && Number.isFinite(value)) max = Math.max(max, Math.abs(value));
+    }
+  }
+  return max || 1;
 }
 
 // Round "nice" price gridlines (…50, 100, 200, 500…) spanning [lo, hi] for a
@@ -236,8 +256,8 @@ function CandleChart({ quarters, soxx, height, onHover }) {
 // Quarterly revenue and net-income growth, one column per fiscal quarter
 // (chronological, oldest left), one row per ticker, above the same quarterly
 // SOXX candlestick the Price Return page uses. The sidebar picks one of two
-// ticker sections (SOXX constituents or the hyperscaler CSPs) and one of four
-// growth measures.
+// ticker sections (SOXX constituents or the hyperscaler CSPs), four growth
+// measures, and a CSP-only free-cash-flow level view.
 export default function Fundamentals() {
   const { data, error, loading } = useResource('/api/fundamentals/growth');
   const [section, setSection] = useState('soxx');
@@ -264,6 +284,13 @@ export default function Fundamentals() {
   const view = METRICS.find(v => v.key === metric) ?? METRICS[0];
   const sectionMeta = SECTIONS.find(s => s.key === section) ?? SECTIONS[0];
   const clamp = CLAMP[metric];
+  const isDollarMetric = metric === 'freeCashFlow';
+  const levelClamp = useMemo(
+    () => maxAbsValue(rows, quarters, metric),
+    [rows, quarters, metric],
+  );
+  const formatValue = isDollarMetric ? formatDollars : formatPct;
+  const valueFill = value => growthFill(value, isDollarMetric ? levelClamp : clamp);
 
   return (
     <div className="pr-layout">
@@ -271,7 +298,7 @@ export default function Fundamentals() {
         {SECTIONS.map(s => (
           <div key={s.key} className="pr-nav-group">
             <div className="pr-nav-group-label">{s.label}</div>
-            {METRICS.map(v => {
+            {s.metrics.map(v => {
               const active = section === s.key && metric === v.key;
               return (
                 <button
@@ -317,13 +344,13 @@ export default function Fundamentals() {
                 <tr className="pr-summary">
                   <td className="pr-ticker-col pr-summary-label">Median</td>
                   {quarters.map(q => (
-                    <td key={q} className={avg[q] == null ? 'pr-empty' : undefined} style={growthFill(avg[q], clamp)}>
-                      {formatPct(avg[q])}
+                    <td key={q} className={avg[q] == null ? 'pr-empty' : undefined} style={valueFill(avg[q])}>
+                      {formatValue(avg[q])}
                     </td>
                   ))}
                 </tr>
                 <tr className="pr-summary pr-summary-last">
-                  <td className="pr-ticker-col pr-summary-label">% Growing</td>
+                  <td className="pr-ticker-col pr-summary-label">{isDollarMetric ? '% Positive' : '% Growing'}</td>
                   {quarters.map(q => (
                     <td key={q} className={share[q] == null ? 'pr-empty' : undefined} style={shareFill(share[q])}>
                       {share[q] == null ? '—' : `${Math.round(share[q] * 100)}%`}
@@ -340,10 +367,10 @@ export default function Fundamentals() {
                         <td
                           key={q}
                           className={value == null ? 'pr-empty' : undefined}
-                          style={growthFill(value, clamp)}
+                          style={valueFill(value)}
                           title={cell?.periodEnd ? `Fiscal quarter ended ${cell.periodEnd}` : undefined}
                         >
-                          {formatPct(value)}
+                          {formatValue(value)}
                         </td>
                       );
                     })}
