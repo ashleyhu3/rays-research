@@ -47,6 +47,7 @@ export default function Navbar({ onNavigate, currentView }) {
   const isOptions   = currentView === 'options';
   const isAlerts    = currentView === 'alerts';
   const isPriceReturn = currentView === 'price-return';
+  const isFundamentals = currentView === 'fundamentals';
   const isSentiment = currentView === 'sentiment';
   const isSources   = currentView === 'sources';
   const isTranscripts = currentView === 'transcripts';
@@ -57,7 +58,7 @@ export default function Navbar({ onNavigate, currentView }) {
   const isLiquidity = mode === 'liquidity';
   const isUsPerf    = mode === 'us-performance';
   const isMacro     = mode === 'macro';
-  const isDemand    = mode === 'demand' && !isChat && !isAlerts && !isPriceReturn;
+  const isDemand    = mode === 'demand' && !isChat && !isAlerts && !isPriceReturn && !isFundamentals;
 
   const title = loading
     ? 'Updating live data…'
@@ -94,6 +95,12 @@ export default function Navbar({ onNavigate, currentView }) {
           onClick={() => onNavigate('price-return')}
         >
           Price Return
+        </button>
+        <button
+          className={`nlink${isFundamentals ? ' active' : ''}`}
+          onClick={() => onNavigate('fundamentals')}
+        >
+          Fundamentals
         </button>
         <button
           className={`nlink${isUsPerf ? ' active' : ''}`}

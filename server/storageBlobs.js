@@ -31,5 +31,5 @@ module.exports = [
   blob('breadthRawKospi200History'), blob('breadthRawTopixHistory'),
   blob('dailyOptionsReport'), blob('optionsPriorYearVolume'),
   blob('earningsDates'), blob('techEarningsCalendar'), blob('latestSnapshots'),
-  blob('priceReturnAfterEarnings'),
+  blob('priceReturnAfterEarnings'), blob('fundamentalsGrowth'),
 ];

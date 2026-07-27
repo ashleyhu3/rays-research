@@ -226,6 +226,20 @@ function setup() {
       .catch(e => console.warn('[tech-earnings-calendar] startup batch failed:', e.message));
   }, 25000);
 
+  // Fundamentals page (revenue / net-income growth): a weekly refresh is enough
+  // because quarterly statements only change when a company reports. Most of
+  // the roster now comes from the quota-free SEC Company Facts API. Run before
+  // the earnings-calendar batch so the four foreign ADR fallbacks get first use
+  // of Alpha Vantage's shared daily allowance.
+  cron.schedule('0 3 * * 0', async () => {
+    try {
+      const state = await require('./fundamentalsGrowth').runDailyBatch();
+      console.log(`[fundamentals] weekly batch: ${Object.keys(state.tickers ?? {}).length} tickers covered`);
+    } catch (e) {
+      console.error('[fundamentals] weekly batch failed:', e.message);
+    }
+  }, { timezone: 'Asia/Hong_Kong' });
+
   // Daily options report: scrape options data and generate the web-visible
   // report at 06:00 Hong Kong time. The GitHub workflow runs the same task for
   // sleeping deployments.

@@ -45,6 +45,7 @@ import { PricingMemory, PricingGPU, PricingCPU, PricingTPU, PricingAWS } from '.
 import Sentiment from './pages/sentiment/Sentiment';
 import Alerts, { OptionsReportTitle, OptionsReportControls } from './pages/alerts/Alerts';
 import PriceReturn from './pages/price-return/PriceReturn';
+import Fundamentals from './pages/fundamentals/Fundamentals';
 import UsPerformance from './pages/us-performance/UsPerformance';
 import HkChinaPerformance from './pages/hk-china-performance/HkChinaPerformance';
 import HkPerformance from './pages/hk-performance/HkPerformance';
@@ -130,6 +131,7 @@ const VIEW_COMPONENTS = {
   'options':          Options,
   'alerts':           Alerts,
   'price-return':     PriceReturn,
+  'fundamentals':     Fundamentals,
   'us-performance':   UsPerformance,
   'hk-china-performance': HkChinaPerformance,
   'hk-performance':   HkPerformance,
@@ -174,6 +176,10 @@ const VIEW_COMPONENTS = {
   chat:                    Chat,
 };
 
+// Pages that render their own left nav and page heading inside the component,
+// so the shared Sidebar and Topbar would only duplicate that chrome.
+const SELF_CHROMED_VIEWS = new Set(['price-return', 'fundamentals']);
+
 export default function App() {
   const [currentView, setCurrentView] = useState('overview');
   const [weeks, setWeeks] = useState(52);
@@ -216,7 +222,8 @@ export default function App() {
   const sectorId = SECTOR_OVERVIEW_IDS[currentView] ?? null;
   const ViewComponent = sectorId ? null : VIEW_COMPONENTS[currentView];
   const isAlerts = currentView === 'alerts';
-  const showSidebar = currentView !== 'options' && currentView !== 'chat' && currentView !== 'sentiment' && currentView !== 'sources' && currentView !== 'transcripts' && currentView !== 'alerts' && currentView !== 'price-return';
+  const isSelfChromed = SELF_CHROMED_VIEWS.has(currentView);
+  const showSidebar = currentView !== 'options' && currentView !== 'chat' && currentView !== 'sentiment' && currentView !== 'sources' && currentView !== 'transcripts' && currentView !== 'alerts' && !isSelfChromed;
 
   return (
     <DashboardProvider>
@@ -236,7 +243,7 @@ export default function App() {
             />
           )}
           <main className="main">
-            {currentView !== 'chat' && currentView !== 'price-return' && (
+            {currentView !== 'chat' && !isSelfChromed && (
               <Topbar
                 title={meta.title}
                 titleContent={
@@ -245,8 +252,8 @@ export default function App() {
                   : undefined
                 }
                 rightContent={isAlerts ? <OptionsReportControls /> : undefined}
-                weeks={!isAlerts && currentView !== 'price-return' && (mode === 'demand' || mode === 'pricing') ? weeks : undefined}
-                onWeeksChange={!isAlerts && currentView !== 'price-return' && (mode === 'demand' || mode === 'pricing') ? setWeeks : undefined}
+                weeks={!isAlerts && !isSelfChromed && (mode === 'demand' || mode === 'pricing') ? weeks : undefined}
+                onWeeksChange={!isAlerts && !isSelfChromed && (mode === 'demand' || mode === 'pricing') ? setWeeks : undefined}
                 months={mode === 'supply' ? months : undefined}
                 onMonthsChange={mode === 'supply' ? setMonths : undefined}
                 sectorId={sectorId}

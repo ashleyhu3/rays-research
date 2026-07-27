@@ -103,6 +103,7 @@ app.use('/api/spx-put-call-ratio', requireStorageBlobs('spxPutCallRatioHistory')
 app.use('/api/options', requireStorageBlobs('optionsOI'));
 app.use('/api/alerts/earnings-calendar', requireStorageBlobs('techEarningsCalendar'));
 app.use('/api/alerts/price-return', requireStorageBlobs('priceReturnAfterEarnings'));
+app.use('/api/fundamentals/growth', requireStorageBlobs('fundamentalsGrowth'));
 
 // Chat consumes many cached sources at once. Hydrate those projected snapshot
 // fields only when Chat is used, rather than on every deployment cold start.
@@ -1201,6 +1202,16 @@ const priceReturnAfterEarnings = require('./priceReturnAfterEarnings');
 
 app.get('/api/alerts/price-return', (req, res) => {
   res.json(priceReturnAfterEarnings.getTable());
+});
+
+/* ── Fundamentals growth (Fundamentals page) ─────────────────────────── */
+// Populated by server/scripts/backfillFundamentals.js — SEC/Alpha Vantage
+// quarterly income statements + Yahoo Finance SOXX candles, computed once and
+// cached in Mongo — so this route is also a synchronous cache read.
+const fundamentalsGrowth = require('./fundamentalsGrowth');
+
+app.get('/api/fundamentals/growth', (req, res) => {
+  res.json(fundamentalsGrowth.getTable());
 });
 
 app.post('/api/chat', async (req, res) => {

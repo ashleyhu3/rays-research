@@ -13,19 +13,57 @@ const FUNDAMENTALS_TICKERS = SOXX_CONSTITUENTS;
 // quarterly income-statement lines, so one fetch per ticker fills all four.
 const METRICS = ['revenueYoY', 'revenueQoQ', 'netIncomeYoY', 'netIncomeQoQ'];
 
-// Source: Alpha Vantage INCOME_STATEMENT. Yahoo Finance publishes the same two
-// lines (spot-checked identical to the dollar for NVDA/TSM/ASML), but its free
-// fundamentals-timeseries endpoint only serves the trailing FIVE quarters —
-// enough for a single YoY point, nowhere near the ~10-year grid this page
-// mirrors from Price Return. Alpha Vantage returns ~81 quarters per ticker and
-// covers the foreign ADRs (TSM, ASML, ASX, UMC) that SEC XBRL does not file
-// quarterly. Its cost is a hard 25-request/day cap on the free tier, which is
-// why backfill is a resumable per-ticker loop rather than one bulk pull.
+// Primary source: the SEC Company Facts API. It is free, needs no API key, and
+// gives the long quarterly history this page needs. Yahoo's public fundamentals
+// endpoint only exposes the trailing five quarters, while Alpha Vantage's free
+// key is shared with other jobs and has a hard 25-request/day cap. The four
+// foreign private issuers without quarterly SEC facts therefore retain Alpha
+// Vantage as a fallback; the other 20 constituents no longer depend on that
+// scarce quota.
+const SEC_COMPANY_FACTS_URL = 'https://data.sec.gov/api/xbrl/companyfacts';
+const SEC_CIK = {
+  AMD: '0000002488',
+  NVDA: '0001045810',
+  MU: '0000723125',
+  AVGO: '0001730168',
+  INTC: '0000050863',
+  AMAT: '0000006951',
+  KLAC: '0000319201',
+  LRCX: '0000707549',
+  TXN: '0000097476',
+  MRVL: '0001835632',
+  ADI: '0000006281',
+  NXPI: '0001413447',
+  MPWR: '0001280452',
+  QCOM: '0000804328',
+  TER: '0000097210',
+  MCHP: '0000827054',
+  ALAB: '0001736297',
+  ON: '0001097864',
+  CRDO: '0001807794',
+  MTSI: '0001493594',
+};
+const SEC_REVENUE_CONCEPTS = [
+  'RevenueFromContractWithCustomerExcludingAssessedTax',
+  'SalesRevenueNet',
+  'SalesRevenueGoodsNet',
+  'Revenues',
+];
+const SEC_NET_INCOME_CONCEPTS = [
+  'NetIncomeLoss',
+  'ProfitLoss',
+  'NetIncomeLossAvailableToCommonStockholdersBasic',
+];
 const AV_URL = 'https://www.alphavantage.co/query';
+const FMP_INCOME_STATEMENT_URL = 'https://financialmodelingprep.com/stable/income-statement';
 const DAILY_REQUEST_BUDGET = 24; // one spare below Alpha Vantage's 25/day cap
 
 function avApiKey() {
   return process.env.ALPHA_VANTAGE_API_KEY || process.env.ALPHAVANTAGE_API_KEY || '';
+}
+
+function fmpApiKey() {
+  return process.env.FMP_API_KEY || '';
 }
 
 // NOTE: this blob must stay registered in server/storageBlobs.js, or init()
@@ -61,6 +99,121 @@ function toNumber(value) {
   if (value == null || value === 'None' || value === '') return null;
   const n = Number(value);
   return Number.isFinite(n) ? n : null;
+}
+
+function daysBetween(start, end) {
+  const a = Date.parse(`${start}T00:00:00Z`);
+  const b = Date.parse(`${end}T00:00:00Z`);
+  return Number.isFinite(a) && Number.isFinite(b) ? (b - a) / 86_400_000 + 1 : null;
+}
+
+function latestByPeriod(entries) {
+  const byPeriod = new Map();
+  for (const entry of entries) {
+    // Keep the same duration when it appears in both a 10-Q and a later 10-K.
+    // The 10-K comparative copy otherwise wins on filing date, then gets
+    // discarded by the direct-quarter filter and leaves a false gap.
+    const key = `${entry.start}:${entry.end}:${entry.form}`;
+    const current = byPeriod.get(key);
+    // Later filings contain restatements of prior comparative periods. Prefer
+    // those over the value as originally filed.
+    if (!current || (entry.filed ?? '') > (current.filed ?? '')) byPeriod.set(key, entry);
+  }
+  return [...byPeriod.values()];
+}
+
+// Convert one SEC duration concept into discrete fiscal quarters. 10-Q facts
+// include both three-month and year-to-date values, so only ~quarter-duration
+// rows are direct observations. A 10-K supplies the missing fourth quarter as
+// full-year value less the three earlier quarters within the same fiscal year.
+function secQuarterSeries(units) {
+  const facts = latestByPeriod((units?.USD ?? []).filter(entry =>
+    (entry.form === '10-Q' || entry.form === '10-K') &&
+    /^\d{4}-\d{2}-\d{2}$/.test(entry.start ?? '') &&
+    /^\d{4}-\d{2}-\d{2}$/.test(entry.end ?? '') &&
+    Number.isFinite(Number(entry.val)),
+  ));
+
+  const direct = facts.filter(entry => {
+    const days = daysBetween(entry.start, entry.end);
+    return entry.form === '10-Q' && days >= 70 && days <= 120;
+  });
+  const annual = facts.filter(entry => {
+    const days = daysBetween(entry.start, entry.end);
+    return entry.form === '10-K' && days >= 300 && days <= 420;
+  });
+
+  const byEnd = new Map();
+  for (const entry of direct) {
+    const current = byEnd.get(entry.end);
+    if (!current || (entry.filed ?? '') > (current.filed ?? '')) {
+      byEnd.set(entry.end, { periodEnd: entry.end, value: Number(entry.val), filed: entry.filed });
+    }
+  }
+
+  for (const year of annual) {
+    const firstThree = direct
+      .filter(q => q.start >= year.start && q.end < year.end)
+      .sort((a, b) => a.end.localeCompare(b.end));
+    const unique = new Map();
+    for (const q of firstThree) {
+      const current = unique.get(q.end);
+      if (!current || (q.filed ?? '') > (current.filed ?? '')) unique.set(q.end, q);
+    }
+    const quarters = [...unique.values()].sort((a, b) => a.end.localeCompare(b.end));
+    if (quarters.length !== 3) continue;
+    const value = Number(year.val) - quarters.reduce((sum, q) => sum + Number(q.val), 0);
+    if (!Number.isFinite(value)) continue;
+    const current = byEnd.get(year.end);
+    if (!current || (year.filed ?? '') > (current.filed ?? '')) {
+      byEnd.set(year.end, { periodEnd: year.end, value, filed: year.filed });
+    }
+  }
+
+  return byEnd;
+}
+
+function secMetricSeries(usGaap, concepts) {
+  const merged = new Map();
+  for (const concept of concepts) {
+    const series = secQuarterSeries(usGaap?.[concept]?.units);
+    for (const [periodEnd, row] of series) {
+      // Concepts are ordered from most current/specific to legacy fallbacks.
+      if (!merged.has(periodEnd)) merged.set(periodEnd, row.value);
+    }
+  }
+  return merged;
+}
+
+function reportsFromSecCompanyFacts(body) {
+  const usGaap = body?.facts?.['us-gaap'];
+  if (!usGaap) return [];
+  const revenue = secMetricSeries(usGaap, SEC_REVENUE_CONCEPTS);
+  const netIncome = secMetricSeries(usGaap, SEC_NET_INCOME_CONCEPTS);
+  const periodEnds = [...new Set([...revenue.keys(), ...netIncome.keys()])].sort();
+  return periodEnds.map(periodEnd => ({
+    periodEnd,
+    revenue: revenue.get(periodEnd) ?? null,
+    netIncome: netIncome.get(periodEnd) ?? null,
+  }));
+}
+
+async function fetchSecIncomeStatement(ticker) {
+  const cik = SEC_CIK[ticker];
+  if (!cik) return null;
+  const res = await fetch(`${SEC_COMPANY_FACTS_URL}/CIK${cik}.json`, {
+    headers: {
+      // SEC fair-access policy requires an identifying User-Agent. Deployments
+      // can provide a real contact through SEC_USER_AGENT without code changes.
+      'User-Agent': process.env.SEC_USER_AGENT || 'rays-research fundamentals research@localhost',
+      Accept: 'application/json',
+    },
+    signal: AbortSignal.timeout(30_000),
+  });
+  if (!res.ok) throw new Error(`SEC Company Facts HTTP ${res.status}`);
+  const reports = reportsFromSecCompanyFacts(await res.json());
+  if (!reports.length) throw new Error('SEC Company Facts returned no quarterly reports');
+  return reports;
 }
 
 // Percent change with a sign-aware guard. A growth rate off a negative or zero
@@ -108,6 +261,39 @@ async function fetchIncomeStatement(ticker) {
     .sort((a, b) => a.periodEnd.localeCompare(b.periodEnd)); // oldest first
 }
 
+// FMP's configured free plan exposes five quarterly statements. That is enough
+// for current QoQ plus one YoY observation, making it a useful immediate
+// fallback when Alpha Vantage's daily quota is gone. A later successful Alpha
+// Vantage run merges in the longer history.
+async function fetchFmpIncomeStatement(ticker) {
+  const key = fmpApiKey();
+  if (!key) throw new Error('FMP_API_KEY is not set');
+
+  const url = new URL(FMP_INCOME_STATEMENT_URL);
+  url.searchParams.set('symbol', ticker);
+  url.searchParams.set('period', 'quarter');
+  url.searchParams.set('limit', '5');
+  url.searchParams.set('apikey', key);
+
+  const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+  if (!res.ok) throw new Error(`FMP income statement HTTP ${res.status}`);
+  const text = await res.text();
+  let body;
+  try { body = JSON.parse(text); }
+  catch { throw new Error(text.slice(0, 180) || 'FMP returned an invalid response'); }
+  if (!Array.isArray(body)) {
+    throw new Error(body?.['Error Message'] || 'FMP returned no quarterly reports');
+  }
+  return body
+    .map(row => ({
+      periodEnd: row.date,
+      revenue: toNumber(row.revenue),
+      netIncome: toNumber(row.netIncome),
+    }))
+    .filter(row => /^\d{4}-\d{2}-\d{2}$/.test(row.periodEnd ?? ''))
+    .sort((a, b) => a.periodEnd.localeCompare(b.periodEnd));
+}
+
 // Growth is computed off the ticker's OWN period sequence (index -1 for QoQ,
 // -4 for YoY), not off the calendar labels, so a company that skipped a filing
 // or shifted its fiscal year never silently compares two non-adjacent
@@ -140,7 +326,21 @@ function computeGrowth(reports) {
 }
 
 async function computeTicker(ticker) {
-  const reports = await fetchIncomeStatement(ticker);
+  let reports;
+  if (SEC_CIK[ticker]) {
+    reports = await fetchSecIncomeStatement(ticker);
+  } else {
+    try {
+      reports = await fetchIncomeStatement(ticker);
+    } catch (alphaError) {
+      try {
+        reports = await fetchFmpIncomeStatement(ticker);
+      } catch (fmpError) {
+        if (alphaError.message === 'RATE_LIMIT') throw alphaError;
+        throw new Error(`Alpha Vantage: ${alphaError.message}; FMP: ${fmpError.message}`);
+      }
+    }
+  }
   if (!reports.length) return null;
   return computeGrowth(reports);
 }
@@ -148,6 +348,7 @@ async function computeTicker(ticker) {
 function readCache() {
   const blob = storage.read(BLOB.name, BLOB.file);
   if (!blob.tickers) blob.tickers = {};
+  if (!blob.fetchedAt) blob.fetchedAt = {};
   return blob;
 }
 
@@ -162,30 +363,45 @@ function writeCache(state) {
 async function backfill(tickers = FUNDAMENTALS_TICKERS, { pause = 900 } = {}) {
   const state = readCache();
   state.tickers ??= {};
+  state.fetchedAt ??= {};
 
   // The SOXX candles come from Yahoo, cost one request, and are shared by every
   // metric view — computed first so the loop's incremental writes can't land
   // after a final candle write and clobber it. On failure keep what's cached.
+  // Persisted immediately rather than waiting on the loop's per-ticker write:
+  // Alpha Vantage's cap can break out of the loop on the very first ticker, and
+  // the chart shouldn't be held hostage to a quota that has nothing to do with it.
   try {
     state.soxx = await computeIndexCandles();
+    state.updatedAt = new Date().toISOString();
+    writeCache(state);
     console.log(`[fundamentals] SOXX: ${Object.keys(state.soxx).length} quarterly candles`);
   } catch (e) {
     console.warn(`[fundamentals] SOXX candles failed: ${e.message}`);
   }
 
+  let alphaVantageRateLimited = false;
   for (const ticker of tickers) {
+    if (alphaVantageRateLimited && !SEC_CIK[ticker]) {
+      console.warn(`[fundamentals] ${ticker}: deferred — Alpha Vantage daily cap already reached`);
+      continue;
+    }
     try {
       const quarters = await computeTicker(ticker);
       if (quarters && Object.keys(quarters).length) {
-        state.tickers[ticker] = quarters;
-        console.log(`[fundamentals] ${ticker}: ${Object.keys(quarters).length} quarters`);
+        // Retain deeper history if a quota-limited provider only returns a
+        // recent top-up window; same-label current values replace stale ones.
+        state.tickers[ticker] = { ...(state.tickers[ticker] ?? {}), ...quarters };
+        state.fetchedAt[ticker] = new Date().toISOString();
+        console.log(`[fundamentals] ${ticker}: ${Object.keys(state.tickers[ticker]).length} quarters`);
       } else {
         console.warn(`[fundamentals] ${ticker}: no quarterly income statement available`);
       }
     } catch (e) {
       if (e.message === 'RATE_LIMIT') {
-        console.warn(`[fundamentals] Alpha Vantage daily cap reached at ${ticker} — stopping, ${tickers.length - tickers.indexOf(ticker)} ticker(s) left for the next run`);
-        break;
+        alphaVantageRateLimited = true;
+        console.warn(`[fundamentals] ${ticker}: Alpha Vantage daily cap reached — continuing with SEC-backed tickers`);
+        continue;
       }
       console.warn(`[fundamentals] ${ticker} failed: ${e.message}`);
     }
@@ -203,7 +419,7 @@ async function backfill(tickers = FUNDAMENTALS_TICKERS, { pause = 900 } = {}) {
 // skipped are the ones that go first next time.
 async function runDailyBatch() {
   const state = readCache();
-  const staleness = ticker => state.tickers?.[ticker]?.__fetchedAt ?? '';
+  const staleness = ticker => state.fetchedAt?.[ticker] ?? ''; // never-fetched sorts first
   const ordered = [...FUNDAMENTALS_TICKERS].sort((a, b) => staleness(a).localeCompare(staleness(b)));
   return backfill(ordered.slice(0, DAILY_REQUEST_BUDGET));
 }
@@ -257,5 +473,7 @@ module.exports = {
   fiscalQuarterLabel,
   getTable,
   growth,
+  reportsFromSecCompanyFacts,
   runDailyBatch,
+  secQuarterSeries,
 };

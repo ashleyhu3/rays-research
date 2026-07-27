@@ -280,6 +280,7 @@ export const VIEW_META = {
   options:            { title: 'OPTIONS FLOW' },
   alerts:             { title: 'DAILY OPTIONS REPORT' },
   'price-return':     { title: 'PRICE RETURN AFTER EARNINGS' },
+  fundamentals:       { title: 'FUNDAMENTALS — REVENUE & NET INCOME GROWTH' },
   sentiment:          { title: 'MARKETS — SENTIMENT & OPTIONS' },
   'us-performance':   { title: 'ROTATION — US' },
   'hk-china-performance': { title: 'ROTATION — CHINA' },
