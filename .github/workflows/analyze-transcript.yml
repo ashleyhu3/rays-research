@@ -22,6 +22,10 @@ on:
       year:
         description: 'Fiscal year (e.g. 2026)'
         required: true
+      source:
+        description: 'Transcript source: provider or stored'
+        required: false
+        default: 'provider'
 
 concurrency:
   group: analyze-transcript-${{ github.event.inputs.ticker }}-${{ github.event.inputs.year }}${{ github.event.inputs.quarter }}
@@ -73,4 +77,5 @@ jobs:
           node server/scripts/analyzeTranscript.js \
             --ticker "${{ github.event.inputs.ticker }}" \
             --quarter "${{ github.event.inputs.quarter }}" \
-            --year "${{ github.event.inputs.year }}"
+            --year "${{ github.event.inputs.year }}" \
+            --source "${{ github.event.inputs.source || 'provider' }}"

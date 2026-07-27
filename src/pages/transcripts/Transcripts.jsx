@@ -3,10 +3,12 @@ import { Line } from 'react-chartjs-2';
 import '../../utils/chartSetup';
 import { C, fa } from '../../config/colors';
 import { baseOpts } from '../../utils/chartHelpers';
-import { adminHeaders, clearAdminSecret } from '../../utils/adminAuth';
 import './Transcripts.css';
 
 const CURRENT_YEAR = new Date().getFullYear();
+const CURRENT_MONTH = new Date().getMonth();
+const DEFAULT_QUARTER = CURRENT_MONTH < 3 ? 'Q4' : `Q${Math.ceil(CURRENT_MONTH / 3)}`;
+const DEFAULT_YEAR = CURRENT_MONTH < 3 ? CURRENT_YEAR - 1 : CURRENT_YEAR;
 
 // Display names for the covered tickers. Anything not listed falls back to the
 // raw symbol, so newly collected tickers still render in the selector.
@@ -139,13 +141,14 @@ function DispatchStatus({ dispatch }) {
   if (!dispatch) return null;
   const { phase, ticker, period, runsUrl, elapsedSec } = dispatch;
   const label = prettyPeriod(period);
-  const busy = phase === 'dispatching' || phase === 'running';
+  const busy = phase === 'preparing' || phase === 'dispatching' || phase === 'running';
   return (
     <div className={`tx-dispatch is-${phase}`}>
       <div className="tx-dispatch-head">
         {busy ? <span className="tx-spinner" /> : <span className="tx-dispatch-mark">{phase === 'done' ? '✓' : '!'}</span>}
         <strong>
           {phase === 'dispatching' && 'Starting GitHub Action…'}
+          {phase === 'preparing' && 'Preparing pasted transcript…'}
           {phase === 'running' && `Analyzing ${ticker} ${label} on a runner…`}
           {phase === 'done' && `${ticker} ${label} analyzed`}
           {phase === 'timeout' && 'Still running…'}
@@ -153,6 +156,7 @@ function DispatchStatus({ dispatch }) {
         </strong>
       </div>
       <p className="tx-dispatch-copy">
+        {phase === 'preparing' && 'Normalizing speakers and sections before the full analysis starts.'}
         {phase === 'running' && `FinBERT + LLM tone, facts and figures run on a GitHub Actions runner, then publish to the database. This usually takes a few minutes.${elapsedSec ? ` Elapsed ${elapsedSec}s.` : ''}`}
         {phase === 'done' && 'Results are live — the charts below have updated.'}
         {phase === 'timeout' && 'The runner is taking longer than usual. Results will appear here automatically once it finishes.'}
@@ -166,11 +170,32 @@ function DispatchStatus({ dispatch }) {
 
 function Collector({
   ticker, setTicker, quarter, setQuarter, year, setYear,
-  onCollect, onParse,
+  onAnalyze,
   loading, error, dispatch, library, onSelectLibrary,
 }) {
-  const [manualOpen, setManualOpen] = useState(false);
+  const [source, setSource] = useState('provider');
   const [manualText, setManualText] = useState('');
+  const [earningsDate, setEarningsDate] = useState('');
+  const fileRef = useRef(null);
+  const wordCount = manualText.trim() ? manualText.trim().split(/\s+/).length : 0;
+
+  const submitAnalysis = event => {
+    event.preventDefault();
+    onAnalyze({
+      ticker,
+      quarter,
+      year: Number(year),
+      source,
+      ...(source === 'stored' ? { text: manualText, earnings_date: earningsDate || undefined } : {}),
+    });
+  };
+
+  const loadFile = async event => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setManualText(await file.text());
+    event.target.value = '';
+  };
 
   return (
     <aside className="tx-collector">
@@ -179,14 +204,25 @@ function Collector({
           <div className="tx-eyebrow">Source</div>
           <h2>Analyze a transcript</h2>
         </div>
-        <span className="tx-live-dot">Free tier</span>
+        <span className="tx-live-dot">Pipeline ready</span>
       </div>
-      <p className="tx-card-copy">Pull a full earnings call by ticker and fiscal quarter from Alpha Vantage, or paste your own. Collection normalizes speakers and tags the focus keywords locally.</p>
+      <p className="tx-card-copy">Fetch a published earnings call or paste any transcript. Both sources run through the same tone, facts, guidance, and key-figure pipeline.</p>
 
-      <form onSubmit={onCollect} className="tx-form">
+      <div className="tx-source-tabs" role="tablist" aria-label="Transcript source">
+        <button type="button" role="tab" aria-selected={source === 'provider'} className={source === 'provider' ? 'active' : ''} onClick={() => setSource('provider')}>
+          <Icon name="database" size={14} />
+          Fetch transcript
+        </button>
+        <button type="button" role="tab" aria-selected={source === 'stored'} className={source === 'stored' ? 'active' : ''} onClick={() => setSource('stored')}>
+          <Icon name="file" size={14} />
+          Paste or upload
+        </button>
+      </div>
+
+      <form onSubmit={submitAnalysis} className="tx-form">
         <label>
-          Ticker
-          <input value={ticker} onChange={event => setTicker(event.target.value.toUpperCase())} placeholder="GOOGL" maxLength={10} spellCheck={false} />
+          Company ticker
+          <input value={ticker} onChange={event => setTicker(event.target.value.toUpperCase())} placeholder="e.g. GOOGL" maxLength={10} spellCheck={false} />
         </label>
         <div className="tx-form-row">
           <label>
@@ -200,32 +236,45 @@ function Collector({
             <input type="number" min="2000" max="2100" value={year} onChange={event => setYear(event.target.value)} />
           </label>
         </div>
-        <button className="tx-primary" disabled={!!loading || !ticker.trim()}>
-          {loading && loading.startsWith('Analyzing') ? <span className="tx-spinner" /> : <Icon name="database" />}
-          {loading && loading.startsWith('Analyzing') ? loading : 'Collect & analyze'}
+        {source === 'stored' && (
+          <div className="tx-paste-fields">
+            <label>
+              <span className="tx-label-row">Earnings date <em>optional</em></span>
+              <input type="date" value={earningsDate} onChange={event => setEarningsDate(event.target.value)} />
+            </label>
+            <label>
+              Transcript text
+              <textarea
+                value={manualText}
+                onChange={event => setManualText(event.target.value)}
+                placeholder={'Prepared Remarks\n\nSpeaker Name — Title\nTranscript paragraph…\n\nQuestion-and-Answer Session…'}
+                spellCheck={false}
+              />
+            </label>
+            <div className="tx-paste-actions">
+              <input ref={fileRef} type="file" accept=".txt,.md,text/plain,text/markdown" onChange={loadFile} hidden />
+              <button type="button" onClick={() => fileRef.current?.click()} disabled={!!loading}>
+                <Icon name="upload" size={13} /> Upload .txt or .md
+              </button>
+              <button type="button" onClick={() => setManualText(SAMPLE)} disabled={!!loading}>Load sample</button>
+              <span>{wordCount.toLocaleString()} words</span>
+            </div>
+          </div>
+        )}
+        <button className="tx-primary" disabled={!!loading || !ticker.trim() || (source === 'stored' && !manualText.trim())}>
+          {loading ? <span className="tx-spinner" /> : <Icon name="arrow" />}
+          {loading || (source === 'stored' ? 'Analyze pasted transcript' : 'Fetch & analyze transcript')}
         </button>
-        <small className="tx-form-note">Fires a GitHub Action that runs the full pipeline — collect, FinBERT + LLM tone, facts, key figures — on a runner, then publishes. Takes a few minutes; results appear below when done.</small>
+        <small className="tx-form-note">
+          {source === 'stored'
+            ? 'Speaker labels and Q&A headings improve parsing. Your pasted text is normalized, fully analyzed, and added to the library.'
+            : 'Fetches the selected fiscal quarter from Alpha Vantage, then runs the complete analysis and publishes it here.'}
+        </small>
       </form>
 
       <DispatchStatus dispatch={dispatch} />
 
       {error && <div className="tx-error">{error}</div>}
-
-      <div className="tx-divider"><span>or paste a transcript</span></div>
-      <button className="tx-secondary" onClick={() => setManualOpen(value => !value)}>
-        <Icon name="upload" /> {manualOpen ? 'Hide pasted transcript' : 'Paste transcript'}
-      </button>
-      {manualOpen && (
-        <div className="tx-manual">
-          <textarea value={manualText} onChange={event => setManualText(event.target.value)} placeholder="Prepared Remarks&#10;&#10;Speaker Name -- Title&#10;Transcript paragraph…" />
-          <div>
-            <button onClick={() => setManualText(SAMPLE)} disabled={!!loading}>Load sample</button>
-            <button onClick={() => onParse(manualText)} disabled={!!loading || !ticker.trim() || !manualText.trim()}>
-              {loading === 'Parsing transcript locally…' ? 'Parsing…' : 'Parse locally'}
-            </button>
-          </div>
-        </div>
-      )}
 
       <div className="tx-library">
         <div className="tx-library-head">
@@ -261,8 +310,8 @@ function ChartCard({ title, hint, tall, wide, hasData, children }) {
 
 export default function Transcripts() {
   const [ticker, setTicker] = useState('GOOGL');
-  const [quarter, setQuarter] = useState('Q1');
-  const [year, setYear] = useState(CURRENT_YEAR);
+  const [quarter, setQuarter] = useState(DEFAULT_QUARTER);
+  const [year, setYear] = useState(DEFAULT_YEAR);
 
   const [activeTicker, setActiveTicker] = useState('GOOGL');
   const [period, setPeriod] = useState(null);
@@ -319,41 +368,6 @@ export default function Transcripts() {
       .catch(() => setEnrichment(null));
   }, [activeTicker, period]);
 
-  async function submit(endpoint, payload, label, { admin = false } = {}) {
-    if (loading) return;
-    setLoading(label);
-    setError('');
-    try {
-      // Collection is a write endpoint gated by ADMIN_SECRET — attach the
-      // operator's Bearer header (prompts once, cached in localStorage).
-      const headers = admin
-        ? adminHeaders({ 'Content-Type': 'application/json' })
-        : { 'Content-Type': 'application/json' };
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(payload),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        // Wrong/stale secret — drop it so the next attempt re-prompts.
-        if (response.status === 401 && admin) {
-          clearAdminSecret();
-          throw new Error('Admin secret rejected — check the value and try again.');
-        }
-        throw new Error(data.error || `HTTP ${response.status}`);
-      }
-      const collected = data.transcript || {};
-      setActiveTicker(collected.ticker || payload.ticker.toUpperCase());
-      setPeriod(collected.fiscal_period || null);
-      refreshLibrary();
-    } catch (requestError) {
-      setError(requestError.message);
-    } finally {
-      setLoading('');
-    }
-  }
-
   // Fire the GitHub Action that runs the full FinBERT pipeline on a runner, then
   // poll for the enriched result to land in Mongo and refresh the charts. The run
   // is async (a few minutes), so this shows a queued/running status rather than
@@ -362,25 +376,47 @@ export default function Transcripts() {
     if (loading) return;
     setLoading(label);
     setError('');
-    setDispatch({ phase: 'dispatching', ticker: payload.ticker.toUpperCase(), period: null, runsUrl: null, elapsedSec: 0 });
+    const runTicker = payload.ticker.toUpperCase();
+    const runPeriod = `${payload.year}${payload.quarter}`;
+    setDispatch({ phase: payload.source === 'stored' ? 'preparing' : 'dispatching', ticker: runTicker, period: runPeriod, runsUrl: null, elapsedSec: 0 });
     try {
+      if (payload.source === 'stored') {
+        if (!payload.text?.trim()) throw new Error('Paste a transcript or upload a text file first.');
+        const parseResponse = await fetch('/api/transcripts/parse', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const parsed = await parseResponse.json().catch(() => ({}));
+        if (!parseResponse.ok) throw new Error(parsed.error || `Could not parse transcript (HTTP ${parseResponse.status}).`);
+        setActiveTicker(parsed.transcript?.ticker || runTicker);
+        setPeriod(parsed.transcript?.fiscal_period || runPeriod);
+        refreshLibrary();
+        setDispatch({ phase: 'dispatching', ticker: runTicker, period: runPeriod, runsUrl: null, elapsedSec: 0 });
+      }
+
+      const baselineCompletion = await fetch(`/api/transcripts/enrichment/${runTicker}/${runPeriod}`)
+        .then(res => (res.ok ? res.json() : null))
+        .then(doc => doc?.analysisCompletedAt || null)
+        .catch(() => null);
       const response = await fetch('/api/transcripts/dispatch-analysis', {
         method: 'POST',
-        headers: adminHeaders({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify(payload),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ticker: payload.ticker,
+          quarter: payload.quarter,
+          year: payload.year,
+          source: payload.source,
+        }),
       });
-      if (response.status === 401) {
-        clearAdminSecret();
-        throw new Error('Admin secret rejected — check the value and try again.');
-      }
       const data = await response.json().catch(() => ({}));
       if (!response.ok || !data.ok) throw new Error(data.error || `HTTP ${response.status}`);
 
-      const { ticker: runTicker, period, runsUrl } = data;
+      const { ticker: analyzedTicker, period, runsUrl } = data;
       const startedAt = Date.now();
       const POLL_MS = 20000;
       const MAX_MS = 15 * 60 * 1000;
-      setDispatch({ phase: 'running', ticker: runTicker, period, runsUrl, elapsedSec: 0 });
+      setDispatch({ phase: 'running', ticker: analyzedTicker, period, runsUrl, elapsedSec: 0 });
 
       // Poll the enrichment endpoint until the runner has published tone.
       for (;;) {
@@ -391,13 +427,14 @@ export default function Transcripts() {
 
         let ready = false;
         try {
-          const enrichmentDoc = await fetch(`/api/transcripts/enrichment/${runTicker}/${period}`)
+          const enrichmentDoc = await fetch(`/api/transcripts/enrichment/${analyzedTicker}/${period}`)
             .then(res => (res.ok ? res.json() : null));
-          ready = (enrichmentDoc?.toneSummary?.chunks || 0) > 0;
+          ready = !!enrichmentDoc?.analysisCompletedAt
+            && enrichmentDoc.analysisCompletedAt !== baselineCompletion;
         } catch { /* transient — keep polling */ }
 
         if (ready) {
-          setActiveTicker(runTicker);
+          setActiveTicker(analyzedTicker);
           setPeriod(period);
           refreshLibrary();
           setReloadNonce(nonce => nonce + 1);
@@ -418,11 +455,10 @@ export default function Transcripts() {
     }
   }
 
-  const onCollect = event => {
-    event.preventDefault();
-    dispatchAnalyze({ ticker, quarter, year: Number(year) }, `Analyzing ${ticker.toUpperCase()} ${year}${quarter}…`);
-  };
-  const onParse = text => submit('/api/transcripts/parse', { ticker, quarter, year: Number(year), text }, 'Parsing transcript locally…');
+  const onAnalyze = payload => dispatchAnalyze(
+    payload,
+    `Analyzing ${payload.ticker.toUpperCase()} ${payload.year}${payload.quarter}…`,
+  );
   const onSelectLibrary = item => {
     setActiveTicker(item.ticker);
     setPeriod(item.fiscal_period);
@@ -616,7 +652,7 @@ export default function Transcripts() {
           ticker={ticker} setTicker={setTicker}
           quarter={quarter} setQuarter={setQuarter}
           year={year} setYear={setYear}
-          onCollect={onCollect} onParse={onParse}
+          onAnalyze={onAnalyze}
           loading={loading} error={error} dispatch={dispatch}
           library={library} onSelectLibrary={onSelectLibrary}
         />

@@ -5,6 +5,7 @@
 // for one transcript and prints progress as it goes.
 //
 //   node server/scripts/analyzeTranscript.js --ticker GOOGL --quarter Q2 --year 2026
+//   node server/scripts/analyzeTranscript.js --ticker ACME --quarter Q2 --year 2026 --source stored
 //
 // Env: ALPHA_VANTAGE_API_KEY, GROQ_API_KEY and/or GEMINI_API_KEY, MONGODB_URI,
 // and TRANSCRIPT_PYTHON (interpreter with torch + transformers for FinBERT).
@@ -19,11 +20,12 @@ async function main() {
   const ticker = (argValue('--ticker') || '').toUpperCase();
   const quarter = (argValue('--quarter') || '').toUpperCase();
   const year = argValue('--year');
+  const source = argValue('--source') || 'provider';
   if (!ticker || !quarter || !year) {
     throw new Error('Usage: analyzeTranscript.js --ticker GOOGL --quarter Q2 --year 2026');
   }
 
-  await runFullPipeline({ ticker, quarter, year }, event => {
+  await runFullPipeline({ ticker, quarter, year, source }, event => {
     if (event.status === 'log') {
       console.log(`  ${event.message}`);
     } else if (event.stage === 'done') {

@@ -117,6 +117,50 @@ function readLocalLibrary() {
     .sort((a, b) => String(b.metadata?.collectedAt || '').localeCompare(String(a.metadata?.collectedAt || '')));
 }
 
+function readTranscriptLocal(ticker, fiscalPeriod) {
+  const safeTicker = String(ticker || '').toUpperCase().replace(/[^A-Z0-9.-]/g, '');
+  const safePeriod = String(fiscalPeriod || '').toUpperCase().replace(/[^0-9Q]/g, '');
+  if (!safeTicker || !safePeriod || !fs.existsSync(TRANSCRIPT_ROOT)) return null;
+
+  for (const providerEntry of fs.readdirSync(TRANSCRIPT_ROOT, { withFileTypes: true })) {
+    if (!providerEntry.isDirectory() || providerEntry.name === 'processed') continue;
+    const file = path.join(TRANSCRIPT_ROOT, providerEntry.name, safeTicker, `${safePeriod}.json`);
+    if (!fs.existsSync(file)) continue;
+    try {
+      return JSON.parse(fs.readFileSync(file, 'utf8'));
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+async function readTranscript(ticker, fiscalPeriod) {
+  const safeTicker = String(ticker || '').toUpperCase().replace(/[^A-Z0-9.-]/g, '');
+  const safePeriod = String(fiscalPeriod || '').toUpperCase().replace(/[^0-9Q]/g, '');
+  if (!safeTicker || !safePeriod) return null;
+
+  if (process.env.MONGODB_URI) {
+    const { MongoClient } = require('mongodb');
+    const client = new MongoClient(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 8000 });
+    try {
+      await client.connect();
+      const document = await client.db(process.env.MONGODB_DB || undefined)
+        .collection('normalized_transcripts')
+        .findOne(
+          { ticker: safeTicker, fiscal_period: safePeriod },
+          { projection: { _id: 0, updatedAt: 0 } },
+        );
+      if (document) return document;
+    } catch (error) {
+      console.warn('[transcript-store] MongoDB transcript read failed; using local file:', error.message);
+    } finally {
+      await client.close().catch(() => {});
+    }
+  }
+  return readTranscriptLocal(safeTicker, safePeriod);
+}
+
 async function listTranscripts() {
   const local = readLocalLibrary();
   if (!process.env.MONGODB_URI) return local;
@@ -158,4 +202,11 @@ async function listTranscripts() {
   }
 }
 
-module.exports = { listTranscripts, readLocalLibrary, saveTranscript, transcriptMarkdown };
+module.exports = {
+  listTranscripts,
+  readLocalLibrary,
+  readTranscript,
+  readTranscriptLocal,
+  saveTranscript,
+  transcriptMarkdown,
+};

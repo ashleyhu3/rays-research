@@ -6,7 +6,8 @@ const { spawn } = require('child_process');
 const { collectFromAlphaVantage } = require('./alphavantage');
 const { semanticChunkDocument } = require('./chunker');
 const { readEnrichmentLocal, saveEnrichment } = require('./enrichmentStore');
-const { saveTranscript } = require('./store');
+const { normalizePeriod } = require('./parser');
+const { readTranscript, saveTranscript } = require('./store');
 
 // Full transcript pipeline: collect → FinBERT/emotion tone → LLM tone → facts →
 // key figures → publish, scoped to a single transcript. The three JS steps and
@@ -53,9 +54,26 @@ function runAnalysisStep(command, args, onLine) {
 // Run the whole pipeline for one transcript. `onEvent` receives progress events
 // ({ stage, status, message, ticker, period }); callers render them as an NDJSON
 // stream (endpoint) or console logs (CLI). Throws on failure.
-async function runFullPipeline({ ticker: tickerInput, quarter, year }, onEvent = () => {}) {
-  onEvent({ stage: 'collect', status: 'start', message: 'Fetching transcript from Alpha Vantage…' });
-  const transcript = await collectFromAlphaVantage({ ticker: tickerInput, quarter, year });
+async function runFullPipeline({
+  ticker: tickerInput,
+  quarter,
+  year,
+  source = 'provider',
+}, onEvent = () => {}) {
+  const storedSource = source === 'stored';
+  onEvent({
+    stage: 'collect',
+    status: 'start',
+    message: storedSource ? 'Loading pasted transcript…' : 'Fetching transcript from Alpha Vantage…',
+  });
+  const normalizedPeriod = normalizePeriod(quarter, year);
+  const normalizedTicker = String(tickerInput || '').toUpperCase().replace(/[^A-Z0-9.-]/g, '');
+  const transcript = storedSource
+    ? await readTranscript(normalizedTicker, normalizedPeriod.fiscalPeriod)
+    : await collectFromAlphaVantage({ ticker: normalizedTicker, quarter, year });
+  if (!transcript) {
+    throw new Error(`No stored transcript found for ${normalizedTicker} ${normalizedPeriod.fiscalPeriod}. Paste and save it before starting analysis.`);
+  }
   await saveTranscript(transcript);
   await saveEnrichment(semanticChunkDocument(transcript));
   const ticker = transcript.ticker;
@@ -78,7 +96,10 @@ async function runFullPipeline({ ticker: tickerInput, quarter, year }, onEvent =
   // Publish the fully-enriched local copy to Mongo so the UI reads it.
   onEvent({ stage: 'publish', status: 'start', message: 'Publishing to database…' });
   const finalEnrichment = readEnrichmentLocal(ticker, period);
-  if (finalEnrichment) await saveEnrichment(finalEnrichment);
+  if (finalEnrichment) {
+    finalEnrichment.analysisCompletedAt = new Date().toISOString();
+    await saveEnrichment(finalEnrichment);
+  }
   onEvent({ stage: 'publish', status: 'done' });
 
   onEvent({ stage: 'done', status: 'done', ticker, period });

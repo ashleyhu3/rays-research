@@ -31,7 +31,7 @@ const PORT  = process.env.PORT || 3001;
 const isProd = process.env.NODE_ENV === 'production';
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '2mb' }));
 
 // Health must stay independent of MongoDB. Deployment probes should be able to
 // distinguish a live function from a slow or unavailable data dependency.
@@ -390,7 +390,12 @@ app.post('/api/transcripts/analyze', requireAdminSecret, async (req, res) => {
   const send = payload => { try { res.write(`${JSON.stringify(payload)}\n`); } catch { /* client gone */ } };
 
   try {
-    await runFullPipeline({ ticker: body.ticker, quarter: body.quarter, year: body.year }, send);
+    await runFullPipeline({
+      ticker: body.ticker,
+      quarter: body.quarter,
+      year: body.year,
+      source: body.source,
+    }, send);
   } catch (e) {
     console.error('[transcripts:analyze]', e.message);
     send({ stage: 'error', status: 'error', message: e.message });
@@ -407,11 +412,12 @@ const ANALYZE_REPO = process.env.GITHUB_REPO || 'ashleyhu3/rays-research';
 const ANALYZE_WORKFLOW = process.env.ANALYZE_WORKFLOW_FILE || 'analyze-transcript.yml';
 const ANALYZE_REF = process.env.ANALYZE_WORKFLOW_REF || 'main';
 
-app.post('/api/transcripts/dispatch-analysis', requireAdminSecret, async (req, res) => {
+app.post('/api/transcripts/dispatch-analysis', async (req, res) => {
   const body = req.body ?? {};
   const ticker = String(body.ticker || '').toUpperCase().replace(/[^A-Z0-9.-]/g, '');
   const quarter = String(body.quarter || '').toUpperCase().replace(/[^0-9Q]/g, '');
   const year = String(body.year || '').replace(/[^0-9]/g, '');
+  const source = body.source === 'stored' ? 'stored' : 'provider';
   if (!ticker || !/^Q[1-4]$/.test(quarter) || !/^\d{4}$/.test(year)) {
     return res.status(400).json({ error: 'ticker, quarter (Q1–Q4) and a four-digit year are required.' });
   }
@@ -430,7 +436,7 @@ app.post('/api/transcripts/dispatch-analysis', requireAdminSecret, async (req, r
         'User-Agent': 'rays-research-dashboard',
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ ref: ANALYZE_REF, inputs: { ticker, quarter, year } }),
+      body: JSON.stringify({ ref: ANALYZE_REF, inputs: { ticker, quarter, year, source } }),
     });
     if (ghResp.status === 204) {
       const runsUrl = `https://github.com/${ANALYZE_REPO}/actions/workflows/${ANALYZE_WORKFLOW}`;
