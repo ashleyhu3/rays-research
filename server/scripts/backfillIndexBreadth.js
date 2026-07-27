@@ -35,14 +35,23 @@ async function main() {
     }
 
     console.log(`[index-breadth-backfill] bootstrapping/rebuilding series: ${incompleteKeys.join(', ')}`);
+    const failures = [];
     for (const key of incompleteKeys) {
-      await updateIndexBreadth(key, { forceBootstrap: true });
+      try {
+        await updateIndexBreadth(key, { forceBootstrap: true });
+      } catch (error) {
+        failures.push(`${key}: ${error.message}`);
+        console.error(`[index-breadth-backfill] ${key} failed: ${error.message}`);
+      }
     }
     await storage.flush();
     const result = readIndexBreadth();
     for (const [key, series] of Object.entries(result)) {
       const valid = series.pctAboveBoth?.filter(value => value != null).length ?? 0;
       console.log(`[index-breadth-backfill] ${key}: ${series.dates.length} dates, ${valid} valid SMA observations`);
+    }
+    if (failures.length) {
+      throw new Error(`Incomplete breadth backfill (${failures.join('; ')})`);
     }
   } finally {
     await storage.close();

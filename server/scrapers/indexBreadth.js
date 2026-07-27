@@ -57,7 +57,9 @@ async function withRetry(fn, tries = 3) {
     try { return await fn(); }
     catch (e) {
       const rateLimited = e.message?.includes('429') || /Too Many Requests|crumb/i.test(e.message ?? '');
-      if (i === tries || !rateLimited) throw e;
+      const transientNetworkError = /fetch failed|timed? ?out|socket|ECONNRESET|EAI_AGAIN|UND_ERR_/i
+        .test(`${e.message ?? ''} ${e.cause?.message ?? ''} ${e.cause?.code ?? ''}`);
+      if (i === tries || (!rateLimited && !transientNetworkError)) throw e;
       await sleep(1500 * i);
     }
   }
@@ -420,7 +422,7 @@ async function updateIndexBreadth(indexKey, { forceBootstrap = false } = {}) {
   const config = INDEX_CONFIGS.find(c => c.key === indexKey);
   if (!config) throw new Error(`Unknown breadth index: ${indexKey}`);
 
-  const tickers = await config.fetchConstituents();
+  const tickers = await withRetry(() => config.fetchConstituents());
   const rawHistory = loadRaw(indexKey);
   const breadthHistory = loadBreadthHistory();
   const existingSeries = assembleBreadth(breadthHistory, indexKey);

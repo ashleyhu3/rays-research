@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Line } from 'react-chartjs-2';
 import ChartCard from '../../components/chart/ChartCard';
 import { useResource } from '../../services/resourceCache';
@@ -117,9 +117,106 @@ function FedBalance({ payload }) {
   );
 }
 
+const PRICE_RANGES = [
+  { id: '1y', label: '1Y', years: 1 },
+  { id: '3y', label: '3Y', years: 3 },
+  { id: '5y', label: '5Y', years: 5 },
+  { id: 'all', label: 'All', years: 0 },
+];
+
+// Three different price scales ($79 vs 4,800 vs 7,400) can only share one
+// axis rebased to a common base, so each line is indexed to 100 at the first
+// date in view; the tooltip still carries the underlying quote.
+const PRICE_SERIES = [
+  { key: 'hygPrice', label: 'HYG', color: RED, fmt: value => `$${value.toFixed(2)}` },
+  { key: 'msciWorldPrice', label: 'MSCI World', color: GOLD, fmt: value => value.toLocaleString('en-US', { maximumFractionDigits: 0 }) },
+  { key: 'spxPrice', label: 'S&P 500', color: BLUE, fmt: value => value.toLocaleString('en-US', { maximumFractionDigits: 0 }) },
+];
+
+function fmtIndex(value) {
+  if (!Number.isFinite(value)) return '—';
+  return value.toFixed(1);
+}
+
+function PriceComparisonChart({ payload, years = 0 }) {
+  const { dates, series } = useMemo(() => {
+    const byKey = Object.fromEntries(PRICE_SERIES.map(entry => [
+      entry.key,
+      new Map((payload.series?.[entry.key]?.data ?? []).map(point => [point.date, point.value])),
+    ]));
+    // Only dates every series traded on — the three feeds keep slightly
+    // different calendars, and a rebased line must not step over a gap.
+    const first = byKey[PRICE_SERIES[0].key];
+    let common = [...first.keys()].filter(date => PRICE_SERIES.every(entry => byKey[entry.key].has(date))).sort();
+    if (years && common.length) {
+      const cutoff = new Date(`${common.at(-1)}T00:00:00Z`);
+      cutoff.setUTCFullYear(cutoff.getUTCFullYear() - years);
+      const start = cutoff.toISOString().slice(0, 10);
+      common = common.filter(date => date >= start);
+    }
+    return {
+      dates: common,
+      series: PRICE_SERIES.map(entry => ({
+        ...entry,
+        raw: common.map(date => byKey[entry.key].get(date)),
+      })),
+    };
+  }, [payload, years]);
+
+  const legend = PRICE_SERIES.map(entry => [entry.label, entry.color]);
+  const title = 'HYG vs MSCI World vs S&P 500 (rebased to 100)';
+
+  if (!dates.length) {
+    return (
+      <ChartCard chartId="us-liquidity-credit-vs-equities" title={title} height={360} span2>
+        <div className="empty">No stored price history yet. The daily collector will populate it.</div>
+      </ChartCard>
+    );
+  }
+
+  const data = {
+    labels: dates.map(dateLabel),
+    datasets: series.map(entry => {
+      const base = entry.raw[0];
+      return {
+        ...mkDs(entry.label, entry.color, entry.raw.map(value => (value / base) * 100)),
+        pointRadius: 0,
+        pointHoverRadius: 5,
+        pointHitRadius: 8,
+        borderWidth: 1.8,
+        tension: 0.15,
+      };
+    }),
+  };
+
+  const options = baseOpts(fmtIndex);
+  options.plugins.tooltip.callbacks.title = items => dates[items[0]?.dataIndex] ?? '';
+  options.plugins.tooltip.callbacks.label = context => {
+    const entry = series.find(item => item.label === context.dataset.label);
+    const raw = entry?.raw[context.dataIndex];
+    return ` ${context.dataset.label}: ${fmtIndex(context.parsed.y)}  ·  ${Number.isFinite(raw) ? entry.fmt(raw) : '—'}`;
+  };
+  options.scales.x.ticks.maxTicksLimit = 10;
+
+  return (
+    <ChartCard
+      chartId="us-liquidity-credit-vs-equities"
+      title={title}
+      src="Yahoo Finance"
+      srcUrl={payload.series?.hygPrice?.sourceUrl}
+      freq="Daily" height={360} span2 legend={legend}
+      srcNote="Closing prices for HYG (the high-yield corporate bond ETF), the MSCI World index and the S&P 500, each set to 100 on the first date in view so the three scales are comparable. HYG is a price line and excludes coupon income. When credit spreads widen, HYG typically rolls over ahead of — or alongside — equities; the gap between the lines is the risk appetite the credit market is pricing versus the equity market."
+    >
+      <Line data={data} options={options} />
+    </ChartCard>
+  );
+}
+
 function Credit({ payload }) {
   const hy = payload.series?.hySpread?.data?.at(-1)?.value;
   const ig = payload.series?.igSpread?.data?.at(-1)?.value;
+  const [rangeId, setRangeId] = useState('5y');
+  const range = PRICE_RANGES.find(item => item.id === rangeId) ?? PRICE_RANGES[0];
   return (
     <>
       <div className="lev-head">
@@ -127,15 +224,27 @@ function Credit({ payload }) {
           <Tile label="High Yield spread" value={hy} color={RED} fmt={fmtPct} />
           <Tile label="Investment Grade spread" value={ig} color={BLUE} fmt={fmtPct} />
         </div>
+        <div className="lev-toggles"><div className="view-toggle">
+          {PRICE_RANGES.map(item => (
+            <button
+              key={item.id}
+              className={`vt-btn${item.id === rangeId ? ' active' : ''}`}
+              onClick={() => setRangeId(item.id)}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div></div>
       </div>
       <div className="cgrid">
+        <PriceComparisonChart payload={payload} years={range.years} />
         <SeriesChart
-          payload={payload} seriesKey="hySpread" color={RED} fmt={fmtPct}
+          payload={payload} seriesKey="hySpread" color={RED} fmt={fmtPct} years={range.years}
           chartId="us-liquidity-hy-spread"
           srcNote="ICE BofA US High Yield Index Option-Adjusted Spread — the extra yield high-yield corporate bonds pay over Treasuries. Widening signals rising credit stress. FRED's public download of this ICE-licensed series is limited to roughly the trailing three years."
         />
         <SeriesChart
-          payload={payload} seriesKey="igSpread" color={BLUE} fmt={fmtPct}
+          payload={payload} seriesKey="igSpread" color={BLUE} fmt={fmtPct} years={range.years}
           chartId="us-liquidity-ig-spread"
           srcNote="ICE BofA US Corporate Index Option-Adjusted Spread — the investment-grade counterpart to the high-yield spread above."
         />
