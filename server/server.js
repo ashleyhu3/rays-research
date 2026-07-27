@@ -842,7 +842,7 @@ app.post(
       const before = readIndexBreadth();
       const {
         updateIndexBreadth,
-        _test: { incompleteBreadthKeys },
+        incompleteBreadthKeys,
       } = require('./scrapers/indexBreadth');
       const incompleteKeys = incompleteBreadthKeys(before);
 

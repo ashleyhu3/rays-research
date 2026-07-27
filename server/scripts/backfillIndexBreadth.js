@@ -5,7 +5,7 @@ const allBlobs = require('../storageBlobs');
 const {
   readIndexBreadth,
   updateIndexBreadth,
-  _test: { incompleteBreadthKeys },
+  incompleteBreadthKeys,
 } = require('../scrapers/indexBreadth');
 
 const NAMES = new Set([
@@ -23,15 +23,42 @@ const NAMES = new Set([
   'breadthRawTopixHistory',
 ]);
 
+const RAW_BLOB = {
+  sp500: 'breadthRawSp500History',
+  ndx: 'breadthRawNdxHistory',
+  hsi: 'breadthRawHsiHistory',
+  csi300: 'breadthRawCsi300History',
+  sox: 'breadthRawSoxHistory',
+  nikkei225: 'breadthRawNikkei225History',
+  chinext: 'breadthRawChinextHistory',
+  taiex: 'breadthRawTaiexHistory',
+  kospi200: 'breadthRawKospi200History',
+  topix: 'breadthRawTopixHistory',
+};
+
 async function main() {
   try {
-    await storage.init(allBlobs.filter(blob => NAMES.has(blob.name)));
+    const blobs = allBlobs.filter(blob => NAMES.has(blob.name));
+    const blobByName = new Map(blobs.map(blob => [blob.name, blob]));
+    await storage.init(blobs, { preload: false });
+    const aggregateBlob = blobByName.get('indexBreadthHistory');
+    await storage.load(aggregateBlob.name, aggregateBlob.file);
+
     const before = readIndexBreadth();
     const incompleteKeys = incompleteBreadthKeys(before);
 
     if (!incompleteKeys.length) {
       console.log('[index-breadth-backfill] all breadth series are already continuous');
       return;
+    }
+
+    for (const key of incompleteKeys) {
+      const blob = blobByName.get(RAW_BLOB[key]);
+      await storage.load(blob.name, blob.file);
+    }
+    if (incompleteKeys.some(key => key === 'sox' || key === 'nikkei225')) {
+      const turnoverBlob = blobByName.get('globalIndicesHistory');
+      await storage.load(turnoverBlob.name, turnoverBlob.file);
     }
 
     console.log(`[index-breadth-backfill] bootstrapping/rebuilding series: ${incompleteKeys.join(', ')}`);

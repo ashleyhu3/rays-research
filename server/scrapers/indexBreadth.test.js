@@ -94,3 +94,10 @@ test('incompleteBreadthKeys includes absent configured indices', () => {
   assert.ok(keys.includes('sp500'));
   assert.ok(keys.includes('topix'));
 });
+
+test('parseChinextFallbackHtml extracts and deduplicates explicit Shenzhen codes', () => {
+  assert.deepEqual(
+    _test.parseChinextFallbackHtml('SHE:300750 x SHE:300059 x SHE:300750'),
+    ['300750.SZ', '300059.SZ'],
+  );
+});

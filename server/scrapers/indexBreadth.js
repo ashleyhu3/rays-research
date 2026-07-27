@@ -141,20 +141,50 @@ async function fetchNikkei225Constituents() {
 // ── ChiNext (创业板指, 399006): cnindex publishes the 100 index members ──
 // as JSON. `rows` (not `pageSize`) is the working page-size param; request 200
 // to be safe and dedupe. Codes are Shenzhen-listed → ".SZ".
+function parseChinextFallbackHtml(html) {
+  return [...new Set(
+    [...String(html).matchAll(/\bSHE:(\d{6})\b/g)].map(match => `${match[1]}.SZ`),
+  )];
+}
+
+async function fetchChinextFallbackConstituents() {
+  // marketcap.company publishes the full 100-name index over two 50-row
+  // pages. It is only a continuity fallback for outages of the official CNI
+  // API; codes are explicit "SHE:300750" identifiers, not inferred from names.
+  const base = 'https://marketcap.company/stock-indices/chinext-index-market-cap/';
+  const responses = await Promise.all([base, `${base}?page=2`].map(url => fetch(url, {
+    headers: { 'User-Agent': BROWSER_UA },
+    signal: AbortSignal.timeout(20000),
+  })));
+  for (const response of responses) {
+    if (!response.ok) throw new Error(`ChiNext fallback HTTP ${response.status}`);
+  }
+  const tickers = parseChinextFallbackHtml((await Promise.all(responses.map(r => r.text()))).join('\n'));
+  if (tickers.length < 90) {
+    throw new Error(`ChiNext fallback: expected about 100 members, parsed ${tickers.length}`);
+  }
+  return tickers;
+}
+
 async function fetchChinextConstituents() {
-  const res = await fetch(
-    'https://www.cnindex.com.cn/sample-detail/detail?indexcode=399006&dateStr=&rows=200',
-    { headers: { 'User-Agent': BROWSER_UA }, signal: AbortSignal.timeout(20000) },
-  );
-  if (!res.ok) throw new Error(`ChiNext cnindex HTTP ${res.status}`);
-  const body = await res.json();
-  const rows = body?.data?.rows ?? [];
-  const tickers = rows
-    .map(r => String(r.seccode ?? '').replace(/\D/g, ''))
-    .filter(code => /^\d{6}$/.test(code))
-    .map(code => `${code}.SZ`);
-  if (!tickers.length) throw new Error('ChiNext cnindex: no members parsed');
-  return [...new Set(tickers)];
+  try {
+    const res = await fetch(
+      'https://www.cnindex.com.cn/sample-detail/detail?indexcode=399006&dateStr=&rows=200',
+      { headers: { 'User-Agent': BROWSER_UA }, signal: AbortSignal.timeout(20000) },
+    );
+    if (!res.ok) throw new Error(`ChiNext cnindex HTTP ${res.status}`);
+    const body = await res.json();
+    const rows = body?.data?.rows ?? [];
+    const tickers = rows
+      .map(r => String(r.seccode ?? '').replace(/\D/g, ''))
+      .filter(code => /^\d{6}$/.test(code))
+      .map(code => `${code}.SZ`);
+    if (!tickers.length) throw new Error('ChiNext cnindex: no members parsed');
+    return [...new Set(tickers)];
+  } catch (error) {
+    console.warn(`[indexBreadth:chinext] official constituents unavailable (${error.message}); using fallback`);
+    return fetchChinextFallbackConstituents();
+  }
 }
 
 // ── TAIEX (^TWII): the Taiwan Weighted Index is every TWSE-listed common ──
@@ -507,12 +537,14 @@ module.exports = {
   updateIndexBreadth,
   updateAllIndexBreadth,
   readIndexBreadth,
+  incompleteBreadthKeys,
   INDEX_CONFIGS,
   _test: {
     computeAggregates, rollingAverage, mergeRawPoints, pruneRaw,
     needsBootstrap,
     fetchGithubCsvConstituents, fetchSoxConstituents, fetchNikkei225Constituents,
-    fetchChinextConstituents, fetchTaiexConstituents, fetchKospi200Constituents, fetchTopixConstituents,
+    parseChinextFallbackHtml, fetchChinextConstituents, fetchTaiexConstituents,
+    fetchKospi200Constituents, fetchTopixConstituents,
     assembleBreadth, mergeBreadthDaily, breadthSeriesNeedsRepair, incompleteBreadthKeys,
   },
 };

@@ -22,6 +22,14 @@ const SOXX_CONSTITUENTS = [
   'CRDO', 'ASX', 'MTSI', 'UMC',
 ].filter(t => PRICE_RETURN_TICKERS.includes(t));
 
+// The hyperscaler cloud service providers, for the "CSP" view. These are the
+// buyers on the other side of the semi supply chain, so their post-earnings
+// reaction reads as a demand signal rather than a supply one. GOOG (not GOOGL)
+// is the class tracked everywhere else in the app.
+const CSP_TICKERS = [
+  'AMZN', 'GOOG', 'MSFT', 'META',
+].filter(t => PRICE_RETURN_TICKERS.includes(t));
+
 // Trading-session offsets for the tab's three sub-views. "1 week" is 5
 // trading sessions, not 7 calendar days.
 const OFFSETS = { oneDay: 1, threeDay: 3, oneWeek: 5 };
@@ -317,6 +325,7 @@ function getTable() {
     rows,
     soxx,
     soxxConstituents: SOXX_CONSTITUENTS,
+    cspTickers: CSP_TICKERS,
     updatedAt: state.updatedAt ?? null,
   };
 }
@@ -326,6 +335,7 @@ module.exports = {
   OFFSETS,
   PRICE_RETURN_TICKERS,
   SOXX_CONSTITUENTS,
+  CSP_TICKERS,
   QUARTERS_SHOWN,
   backfill,
   computeIndexCandles,

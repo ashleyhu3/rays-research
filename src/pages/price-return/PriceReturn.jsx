@@ -12,16 +12,25 @@ const COL_W = 60; // each quarter column
 // so ~1/3 of it is ~0.24 of the window height. Responsive rather than fixed px.
 const CHART_VH = 0.24;
 const CHART_H_MIN = 180;
+// The CSP view holds only four tickers, so the table needs a fraction of the
+// vertical space the other views do — give the reclaimed height to the chart.
+const CHART_VH_TALL = 0.46;
+const CHART_H_MIN_TALL = 320;
 
-function useChartHeight() {
-  const measure = () =>
-    Math.max(CHART_H_MIN, Math.round((typeof window !== 'undefined' ? window.innerHeight : 900) * CHART_VH));
-  const [height, setHeight] = useState(measure);
+function useChartHeight(tall) {
+  const measure = (isTall) => {
+    const vh = typeof window !== 'undefined' ? window.innerHeight : 900;
+    return isTall
+      ? Math.max(CHART_H_MIN_TALL, Math.round(vh * CHART_VH_TALL))
+      : Math.max(CHART_H_MIN, Math.round(vh * CHART_VH));
+  };
+  const [height, setHeight] = useState(() => measure(tall));
   useEffect(() => {
-    const onResize = () => setHeight(measure());
+    const onResize = () => setHeight(measure(tall));
+    onResize();
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
-  }, []);
+  }, [tall]);
   return height;
 }
 
@@ -34,7 +43,13 @@ const SUBTABS = [
 const VIEWS = [
   { key: 'all', label: 'All Tickers' },
   { key: 'soxx', label: 'SOXX Index' },
+  { key: 'csp', label: 'CSP' },
 ];
+
+const VIEW_TITLES = { soxx: ' — SOXX Index', csp: ' — Cloud Service Providers' };
+
+// Fallback if the API predates the cspTickers field (stale cached blob).
+const CSP_FALLBACK = ['AMZN', 'GOOG', 'MSFT', 'META'];
 
 // A ±10% move saturates the heatmap fully; larger moves clamp there.
 const FILL_CLAMP = 0.10;
@@ -207,11 +222,16 @@ export default function PriceReturn() {
   const [view, setView] = useState('all');
   const [metric, setMetric] = useState('oneDay');
   const [hover, setHover] = useState(null);
-  const chartH = useChartHeight();
+  const chartH = useChartHeight(view === 'csp');
 
   const allRows = data?.rows ?? [];
   const soxxSet = useMemo(() => new Set(data?.soxxConstituents ?? []), [data]);
-  const rows = view === 'soxx' ? allRows.filter(r => soxxSet.has(r.ticker)) : allRows;
+  const cspSet = useMemo(() => new Set(data?.cspTickers ?? CSP_FALLBACK), [data]);
+  const rows = useMemo(() => {
+    if (view === 'soxx') return allRows.filter(r => soxxSet.has(r.ticker));
+    if (view === 'csp') return allRows.filter(r => cspSet.has(r.ticker));
+    return allRows;
+  }, [view, allRows, soxxSet, cspSet]);
   // API returns quarters newest-first; show chronologically (oldest left).
   const quarters = useMemo(() => [...(data?.quarters ?? [])].reverse(), [data]);
   const soxx = data?.soxx ?? {};
@@ -234,7 +254,7 @@ export default function PriceReturn() {
 
       <section className="pr-page">
         <header className="pr-head">
-          <h3>Price Return After Earnings{view === 'soxx' ? ' — SOXX Index' : ''}</h3>
+          <h3>Price Return After Earnings{VIEW_TITLES[view] ?? ''}</h3>
           <div className="pr-subtabs" role="tablist" aria-label="Return window">
             {SUBTABS.map(tab => (
               <button
