@@ -55,28 +55,17 @@ async function mapLimit(items, limit, fn) {
   return out;
 }
 
-// ChiNext and STAR50 raw indices have no daily history on Yahoo Finance
-// (only a 1-5 day range is exposed there) — fetched from East Money's public
-// kline API instead, which carries full history for both. East Money's
-// endpoint is itself flaky (see fetchEastmoneyIndexSeries), so each also
-// carries a Yahoo-tradeable tracking-ETF fallback rather than risk an empty,
-// hour-cached series on a bad request.
-const EASTMONEY_SECID = {
-  '399006.SZ': '0.399006', // ChiNext
-  '000688.SS': '1.000688', // STAR50 (科创50)
-};
-const EASTMONEY_FALLBACK_TICKER = {
-  '399006.SZ': '159915.SZ', // E Fund ChiNext ETF
-  '000688.SS': '588000.SS', // China AMC STAR50 ETF
-};
-
 const TICKERS = [
   // Broad indices (overview chart + per-index ratio vs CSI300)
   { ticker: '800000', yahooTicker: '^HSI', label: 'HSI', name: 'HSI' },
-  { ticker: '800700', yahooTicker: '^HSTECH', label: 'HSTECH', name: 'HSTECH' },
+  // Yahoo exposes only intraday quotes for the raw HSTECH, ChiNext and STAR50
+  // instruments. Use one fixed tracking ETF for each history. Do not switch
+  // between raw indices and ETFs: their different nominal scales create false
+  // ~1,000x moves when persisted refresh windows overlap.
+  { ticker: '800700', yahooTicker: '3032.HK', label: 'HSTECH', name: 'HSTECH' },
   { ticker: '000001.SS', label: '000001', name: 'SSE Composite' },
-  { ticker: '399006.SZ', label: '399006', name: 'ChiNext' },
-  { ticker: '000688.SS', label: '000688', name: 'STAR50 (科创50)' },
+  { ticker: '399006.SZ', yahooTicker: '159915.SZ', label: '399006', name: 'ChiNext' },
+  { ticker: '000688.SS', yahooTicker: '588000.SS', label: '000688', name: 'STAR50 (科创50)' },
   { ticker: '000300.SS', label: 'CSI300', name: 'CSI 300' },
 
   // TMT & AI
@@ -86,7 +75,7 @@ const TICKERS = [
   { ticker: '515880.SS', label: '515880', name: '通信' },
   { ticker: '515050.SS', label: '515050', name: '5G' },
   { ticker: '159819.SZ', label: '159819', name: 'AI 人工智能' },
-  { ticker: '159336.SZ', label: '159336', name: '软件' },
+  { ticker: '159852.SZ', label: '159852', name: '软件' },
   { ticker: '516860.SS', label: '516860', name: '金融科技' },
   { ticker: '159732.SZ', label: '159732', name: '消费电子' },
 
@@ -108,6 +97,8 @@ const TICKERS = [
   { ticker: '512690.SS', label: '512690', name: '白酒' },
   { ticker: '159843.SZ', label: '159843', name: '食品饮料' },
   { ticker: '159766.SZ', label: '159766', name: '旅游' },
+  { ticker: '516110.SS', label: '516110', name: '美容护理' },
+  { ticker: '516680.SS', label: '516680', name: '516680' },
 
   // 金融 & 周期
   { ticker: '512880.SS', label: '512880', name: '证券' },
@@ -119,6 +110,7 @@ const TICKERS = [
   { ticker: '561360.SS', label: '561360', name: '石油' },
   { ticker: '159865.SZ', label: '159865', name: '农业/畜牧' },
   { ticker: '159607.SZ', label: '159607', name: '化工' },
+  { ticker: '512200.SS', label: '512200', name: '房地产' },
 
   // 机械军工
   { ticker: '512680.SS', label: '512680', name: '军工' },
@@ -201,39 +193,6 @@ async function fetchSeries(yf, ticker, start, end) {
   return adjustForSplits(points);
 }
 
-function yyyymmdd(d) {
-  return isoDate(d).replace(/-/g, '');
-}
-
-// East Money's kline endpoint is flaky under back-to-back requests (frequent
-// mid-response connection resets, unrelated to headers/UA) — needs retries
-// with backoff, unlike Yahoo's rate-limit-shaped 429s. Kept short enough
-// overall (~45s worst case) that a bad run still falls through to the Yahoo
-// ETF fallback quickly rather than stalling the page load.
-async function fetchEastmoneyIndexSeries(secid, start, end, tries = 4) {
-  const url = 'https://push2his.eastmoney.com/api/qt/stock/kline/get'
-    + `?secid=${secid}&ut=7eea3edcaed734bea9cbfc24409ed989`
-    + '&fields1=f1,f2,f3,f4,f5,f6&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61'
-    + `&klt=101&fqt=0&beg=${yyyymmdd(start)}&end=${yyyymmdd(end)}`;
-
-  for (let i = 1; i <= tries; i++) {
-    try {
-      const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
-      const json = await res.json();
-      const klines = json?.data?.klines ?? [];
-      if (klines.length) {
-        // Each line: date,open,close,high,low,volume,amount,amplitude,pctChg,change,turnover
-        return klines.map(line => {
-          const [date, , close] = line.split(',');
-          return { date, close: Number(close) };
-        });
-      }
-    } catch { /* retry below */ }
-    if (i < tries) await sleep(2000 + i * 2000);
-  }
-  throw new Error('East Money kline request failed after retries');
-}
-
 function inclusiveEndDate(endDate) {
   const end = new Date(endDate);
   end.setUTCDate(end.getUTCDate() + 1);
@@ -246,19 +205,6 @@ async function getHkChinaPerformance(startDate, endDate = new Date()) {
   const start = new Date(startDate);
 
   const results = await mapLimit(TICKERS, 4, async meta => {
-    const eastmoneySecid = EASTMONEY_SECID[meta.ticker];
-    if (eastmoneySecid) {
-      try {
-        return { ...meta, points: await fetchEastmoneyIndexSeries(eastmoneySecid, start, end), error: null };
-      } catch (e) {
-        try {
-          const points = await fetchSeries(yf, EASTMONEY_FALLBACK_TICKER[meta.ticker], start, end);
-          return { ...meta, points, error: null };
-        } catch (fallbackError) {
-          return { ...meta, points: [], error: `${e.message} (fallback: ${fallbackError.message})` };
-        }
-      }
-    }
     try {
       return { ...meta, points: await fetchSeries(yf, meta.yahooTicker ?? meta.ticker, start, end), error: null };
     } catch (e) {

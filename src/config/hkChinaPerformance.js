@@ -17,18 +17,19 @@ export const HSTECH_META = {
   label: 'HSTECH',
   name: 'HSTECH',
   color: '#b48ead',
+  proxyTicker: '3032.HK',
 };
 
 // Section 1 — broad indices, rebased together in an aggregate chart plus
 // individual ratio-vs-CSI300 cards (mirrors the US page's Sector section).
-// ChiNext and STAR50 are fetched server-side from East Money (not Yahoo,
-// which has no daily history for those two raw index instruments).
+// HSTECH, ChiNext and STAR50 use fixed tracking instruments server-side
+// because Yahoo does not expose historical bars for the raw indices.
 export const HK_CHINA_INDEX_TICKERS = [
   HSI_META,
   HSTECH_META,
   { ticker: '000001.SS', label: '000001', name: 'SSE Composite',   color: '#3c8cdd' },
-  { ticker: '399006.SZ', label: '399006', name: 'ChiNext',         color: '#da5a2f' },
-  { ticker: '000688.SS', label: '000688', name: 'STAR50 (科创50)', color: '#198f5e' },
+  { ticker: '399006.SZ', label: '399006', name: 'ChiNext',         color: '#da5a2f', proxyTicker: '159915.SZ' },
+  { ticker: '000688.SS', label: '000688', name: 'STAR50 (科创50)', color: '#198f5e', proxyTicker: '588000.SS' },
 ];
 
 export const HK_CHINA_EXTRA_INDEX_PAIRS = [
@@ -50,7 +51,7 @@ export const HK_CHINA_SECTIONS = [
       { ticker: '515880.SS', label: '515880', name: '通信',           color: '#9c7c1c' },
       { ticker: '515050.SS', label: '515050', name: '5G',             color: '#8749df' },
       { ticker: '159819.SZ', label: '159819', name: 'AI 人工智能',    color: '#dc386e' },
-      { ticker: '159336.SZ', label: '159336', name: '软件',           color: '#44981b' },
+      { ticker: '159852.SZ', label: '159852', name: '软件',           color: '#44981b' },
       { ticker: '516860.SS', label: '516860', name: '金融科技',       color: '#1f96ad' },
       { ticker: '159732.SZ', label: '159732', name: '消费电子',       color: '#dd40dd' },
     ],
@@ -81,6 +82,8 @@ export const HK_CHINA_SECTIONS = [
       { ticker: '512690.SS', label: '512690', name: '白酒',     color: '#3c8cdd' },
       { ticker: '159843.SZ', label: '159843', name: '食品饮料', color: '#da5a2f' },
       { ticker: '159766.SZ', label: '159766', name: '旅游',     color: '#198f5e' },
+      { ticker: '516110.SS', label: '516110', name: '美容护理', color: '#9c7c1c' },
+      { ticker: '516680.SS', label: '516680', name: '516680',   color: '#8749df' },
     ],
   },
   {
@@ -95,6 +98,7 @@ export const HK_CHINA_SECTIONS = [
       { ticker: '561360.SS', label: '561360', name: '石油',       color: '#44981b' },
       { ticker: '159865.SZ', label: '159865', name: '农业/畜牧',  color: '#1f96ad' },
       { ticker: '159607.SZ', label: '159607', name: '化工',       color: '#dd40dd' },
+      { ticker: '512200.SS', label: '512200', name: '房地产',     color: '#89931a' },
     ],
   },
   {

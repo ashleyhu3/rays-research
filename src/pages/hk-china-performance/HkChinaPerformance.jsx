@@ -19,10 +19,11 @@ const PRESETS = [
 ];
 
 const INDEX_TICKERS = new Set([...HK_CHINA_INDEX_TICKERS.map(t => t.ticker), CSI300_META.ticker]);
-// ChiNext and STAR50 are fetched from East Money server-side (see
-// server/scrapers/hkChinaPerformance.js) — Yahoo has no daily history for
-// those two raw index instruments.
-const EASTMONEY_TICKERS = new Set(['399006.SZ', '000688.SS']);
+const SECTOR_SECTIONS = HK_CHINA_SECTIONS.slice(
+  0,
+  HK_CHINA_SECTIONS.findIndex(section => section.title === 'Machinery') + 1
+);
+const SECTOR_COLORS = ['#3c8cdd', '#da5a2f', '#198f5e', '#9c7c1c', '#8749df', '#dc386e'];
 const ROLLING_AVG_DAYS = 50;
 // A 50-session moving average needs extra calendar days to cover weekends and holidays.
 const ROLLING_FETCH_LOOKBACK_DAYS = 80;
@@ -148,6 +149,13 @@ function findSeries(payload, ticker) {
   return payload.series.find(s => s.ticker === ticker);
 }
 
+function indexSource(...metas) {
+  const proxies = metas.map(meta => meta?.proxyTicker).filter(Boolean);
+  return proxies.length
+    ? `Yahoo Finance · ETF ${proxies.join('/')} proxy`
+    : undefined;
+}
+
 function buildOverviewChartData(payload, startDate, endDate) {
   const bounds = visibleBounds(payload.dates, startDate, endDate);
   if (!bounds) return null;
@@ -176,6 +184,55 @@ function buildOverviewChartData(payload, startDate, endDate) {
       spanGaps: true,
     };
   });
+  return { labels, datasets };
+}
+
+// Chain-link each section's equal-weight daily return so newly listed,
+// suspended, or discontinued ETFs do not create artificial jumps when the
+// set of available constituents changes.
+function buildSectorOverviewChartData(payload, startDate, endDate) {
+  const bounds = visibleBounds(payload.dates, startDate, endDate);
+  if (!bounds) return null;
+
+  const labels = sliceBounds(payload.dates, bounds).map(fmtDate);
+  const datasets = SECTOR_SECTIONS.map((section, sectionIndex) => {
+    const series = section.tickers
+      .map(meta => findSeries(payload, meta.ticker))
+      .filter(Boolean);
+    const data = new Array(labels.length).fill(null);
+    if (series.length && data.length) data[0] = 100;
+
+    for (let offset = 1; offset < data.length; offset += 1) {
+      const dateIndex = bounds.startIndex + offset;
+      const returns = series.flatMap(item => {
+        const previous = item.closes[dateIndex - 1];
+        const current = item.closes[dateIndex];
+        return previous != null && current != null && previous !== 0
+          ? [current / previous]
+          : [];
+      });
+      data[offset] = data[offset - 1] == null
+        ? null
+        : returns.length
+          ? data[offset - 1] * (returns.reduce((sum, value) => sum + value, 0) / returns.length)
+          : data[offset - 1];
+    }
+
+    return {
+      label: section.title,
+      fullName: `${section.title} equal-weight composite`,
+      data,
+      borderColor: SECTOR_COLORS[sectionIndex % SECTOR_COLORS.length],
+      backgroundColor: 'transparent',
+      borderWidth: 2,
+      pointRadius: 0,
+      pointHoverRadius: 3,
+      pointHitRadius: 6,
+      tension: 0.15,
+      spanGaps: true,
+    };
+  });
+
   return { labels, datasets };
 }
 
@@ -377,6 +434,10 @@ export default function HkChinaPerformance({ section = null }) {
     () => (payload ? buildOverviewChartData(payload, startDate, endDate) : null),
     [payload, startDate, endDate]
   );
+  const sectorOverviewChartData = useMemo(
+    () => (payload ? buildSectorOverviewChartData(payload, startDate, endDate) : null),
+    [payload, startDate, endDate]
+  );
   const indexRatioCharts = useMemo(() => {
     if (!payload) return [];
     return HK_CHINA_INDEX_TICKERS
@@ -391,9 +452,7 @@ export default function HkChinaPerformance({ section = null }) {
         id: `${numerator.ticker}-${denominator.ticker}`,
         title: `${numerator.label}/${denominator.label}`,
         data: buildPairChartData(payload, numerator, denominator, startDate, endDate),
-        src: EASTMONEY_TICKERS.has(numerator.ticker) || EASTMONEY_TICKERS.has(denominator.ticker)
-          ? 'Yahoo Finance, East Money'
-          : undefined,
+        src: indexSource(numerator, denominator),
       }))
       .filter(chart => chart.data);
   }, [payload, startDate, endDate]);
@@ -473,7 +532,7 @@ export default function HkChinaPerformance({ section = null }) {
         <div className="cgrid">
           <ChartCard
             title="Aggregate Performance"
-            src="Yahoo Finance, East Money"
+            src="Yahoo Finance · fixed index/ETF tracking feeds"
             freq="Daily"
             span2
             height={480}
@@ -486,6 +545,21 @@ export default function HkChinaPerformance({ section = null }) {
               <Line data={overviewChartData} options={chartOptions()} plugins={[BASELINE_100]} />
             )}
           </ChartCard>
+          <ChartCard
+            title="Sector Performance · Equal Weight"
+            src="Yahoo Finance · TMT through Machinery composites"
+            freq="Daily"
+            span2
+            height={480}
+          >
+            {error ? (
+              <div className="empty">Could not load China sector performance data: {error}</div>
+            ) : !sectorOverviewChartData ? (
+              <div className="empty">{loading ? 'Loading China sector performance data…' : 'No data'}</div>
+            ) : (
+              <Line data={sectorOverviewChartData} options={chartOptions()} plugins={[BASELINE_100]} />
+            )}
+          </ChartCard>
         </div>
       )}
       {section != null && <div className="usp-section-label">{section === 'all' ? 'Index' : section === 'sentiment' ? 'Sentiment' : section}</div>}
@@ -496,7 +570,7 @@ export default function HkChinaPerformance({ section = null }) {
             id: meta.ticker,
             title: meta.name,
             data,
-            src: EASTMONEY_TICKERS.has(meta.ticker) ? 'Yahoo Finance, East Money' : undefined,
+            src: indexSource(meta, CSI300_META),
           })),
           ...extraIndexRatioCharts,
         ])}
