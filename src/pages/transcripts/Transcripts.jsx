@@ -339,7 +339,7 @@ export default function Transcripts() {
   };
   useEffect(refreshLibrary, []);
 
-  // Load the cross-quarter analysis for the active ticker.
+  // Load the completed Mongo snapshot. This request never starts analysis.
   useEffect(() => {
     if (!activeTicker) return;
     setAnalysisLoading(true);
@@ -362,6 +362,7 @@ export default function Transcripts() {
   // Load the enrichment (keyword counts, facts, tone) for the selected period.
   useEffect(() => {
     if (!activeTicker || !period) { setEnrichment(null); return; }
+    setEnrichment(null);
     fetch(`/api/transcripts/enrichment/${activeTicker}/${period}`)
       .then(response => response.ok ? response.json() : null)
       .then(setEnrichment)
@@ -413,6 +414,14 @@ export default function Transcripts() {
       if (!response.ok || !data.ok) throw new Error(data.error || `HTTP ${response.status}`);
 
       const { ticker: analyzedTicker, period, runsUrl } = data;
+      if (data.cached) {
+        setActiveTicker(analyzedTicker);
+        setPeriod(period);
+        refreshLibrary();
+        setReloadNonce(nonce => nonce + 1);
+        setDispatch({ phase: 'done', ticker: analyzedTicker, period, runsUrl: null, elapsedSec: 0 });
+        return;
+      }
       const startedAt = Date.now();
       const POLL_MS = 20000;
       const MAX_MS = 15 * 60 * 1000;
@@ -430,7 +439,8 @@ export default function Transcripts() {
           const enrichmentDoc = await fetch(`/api/transcripts/enrichment/${analyzedTicker}/${period}`)
             .then(res => (res.ok ? res.json() : null));
           ready = !!enrichmentDoc?.analysisCompletedAt
-            && enrichmentDoc.analysisCompletedAt !== baselineCompletion;
+            && enrichmentDoc.analysisCompletedAt !== baselineCompletion
+            && !!enrichmentDoc?.transcriptAnalysis;
         } catch { /* transient — keep polling */ }
 
         if (ready) {
@@ -464,10 +474,14 @@ export default function Transcripts() {
     setPeriod(item.fiscal_period);
   };
 
-  const report = analysis?.reports?.[0];
-  const timelines = analysis?.analysis?.timelines ?? [];
-  const usage = analysis?.modelUsage;
+  const hasCrossQuarter = analysis?.hasCrossQuarter === true;
+  const transcriptAnalysis = enrichment?.transcriptAnalysis || analysis;
+  const crossQuarterAnalysis = hasCrossQuarter ? analysis : null;
+  const report = transcriptAnalysis?.reports?.[0];
+  const crossReport = crossQuarterAnalysis?.reports?.[0];
+  const timelines = crossQuarterAnalysis?.analysis?.timelines ?? [];
   const toneReady = (enrichment?.toneSummary?.chunks || 0) > 0;
+  const coveredPeriods = crossReport?.coverage?.periods || report?.coverage?.periods || [];
 
   // Distinct tickers with a collected/analyzed transcript, for the selector.
   // Derived from the library the page already loads — no extra request.
@@ -493,7 +507,10 @@ export default function Transcripts() {
   };
 
   // All structured figures across quarters (for the value trend chart).
-  const allFigures = useMemo(() => analysis?.keyFigures ?? [], [analysis]);
+  const allFigures = useMemo(
+    () => crossQuarterAnalysis?.keyFigures ?? transcriptAnalysis?.keyFigures ?? [],
+    [crossQuarterAnalysis, transcriptAnalysis],
+  );
 
   // Figures for the selected transcript only (for the grid).
   const periodFigures = useMemo(() => allFigures
@@ -531,7 +548,7 @@ export default function Transcripts() {
     if (!series.length) return null;
     const units = [...new Set(series.map(item => item.unit))];
     const unit = valueUnit && units.includes(valueUnit) ? valueUnit : units[0];
-    const periods = report?.coverage?.periods ?? [];
+    const periods = coveredPeriods;
     const datasets = series
       .filter(item => item.unit === unit)
       .slice(0, 5)
@@ -547,11 +564,11 @@ export default function Transcripts() {
         spanGaps: true,
       }));
     return { keyword: chartKeyword, unit, units, labels: periods, datasets };
-  }, [chartKeyword, allFigures, valueUnit, report]);
+  }, [chartKeyword, allFigures, valueUnit, coveredPeriods]);
 
   // Confidence-per-quarter lines for each focus signal that has a timeline.
   const toneOverTime = useMemo(() => {
-    const periods = report?.coverage?.periods ?? [];
+    const periods = coveredPeriods;
     if (!periods.length) return null;
     const datasets = FOCUS_TOPICS.map((topic, index) => {
       const timeline = timelines.find(item => item.topic === topic);
@@ -570,14 +587,17 @@ export default function Transcripts() {
       };
     }).filter(Boolean);
     return datasets.length ? { labels: periods, datasets } : null;
-  }, [report, timelines]);
+  }, [coveredPeriods, timelines]);
 
   // Overall transcript tone per quarter, split by speaker: management answers
   // read as an investor ("investor tone") vs. the analysts' questions
   // ("analyst tone"). Both are the same 0–100 composite confidence score.
-  const roleTones = useMemo(() => analysis?.toneByRole ?? [], [analysis]);
+  const roleTones = useMemo(
+    () => crossQuarterAnalysis?.toneByRole ?? [],
+    [crossQuarterAnalysis],
+  );
   const roleToneOverTime = useMemo(() => {
-    const periods = report?.coverage?.periods ?? [];
+    const periods = coveredPeriods;
     if (!periods.length || !roleTones.length) return null;
     const byPeriod = new Map(roleTones.map(item => [item.period, item]));
     const series = [
@@ -598,7 +618,7 @@ export default function Transcripts() {
     return datasets.some(dataset => dataset.data.some(value => value != null))
       ? { labels: periods, datasets }
       : null;
-  }, [report, roleTones]);
+  }, [coveredPeriods, roleTones]);
 
   // Within a single transcript: how management and analyst tone move statement
   // by statement as the call unfolds (prepared remarks → Q&A). Built from the
@@ -682,7 +702,7 @@ export default function Transcripts() {
           )}
           {analysisLoading ? (
             <section className="tx-analysis-overview is-loading">
-              <div className="tx-analysis-loader"><span className="tx-spinner" /> Running cross-quarter analysis…</div>
+              <div className="tx-analysis-loader"><span className="tx-spinner" /> Loading saved transcript analysis…</div>
             </section>
           ) : analysisError ? (
             <section className="tx-analysis-overview is-error">{analysisError}</section>
@@ -692,7 +712,7 @@ export default function Transcripts() {
                 <div>
                   <h2>{report.company} <span>· transcript intelligence</span></h2>
                   <div className="tx-period-tabs">
-                    {report.coverage.periods.map(name => {
+                    {coveredPeriods.map(name => {
                       const fiscal = name.replace(/\s+/g, '');
                       return (
                         <button
@@ -745,16 +765,20 @@ export default function Transcripts() {
                 </div>
               </div>
 
-              <div className="tx-eyebrow">Tone analysis</div>
-              <div className="tx-chart-grid">
-                <ChartCard title="Analyst vs investor tone" hint={report.coverage.periods.length > 1 ? 'management answers vs. analyst questions · 0–100' : 'add more quarters to trend'} wide tall hasData={!!roleToneOverTime}>
-                  <Line options={lineOptions} data={roleToneOverTime || { labels: [], datasets: [] }} />
-                </ChartCard>
+              {hasCrossQuarter && (
+                <>
+                  <div className="tx-eyebrow">Cross-quarter analysis</div>
+                  <div className="tx-chart-grid">
+                    <ChartCard title="Analyst vs investor tone" hint="management answers vs. analyst questions · 0–100" wide tall hasData={!!roleToneOverTime}>
+                      <Line options={lineOptions} data={roleToneOverTime || { labels: [], datasets: [] }} />
+                    </ChartCard>
 
-                <ChartCard title="Tone across quarters" hint={report.coverage.periods.length > 1 ? 'investor confidence by signal · 0–100' : 'add more quarters to trend'} wide tall hasData={!!toneOverTime}>
-                  <Line options={lineOptions} data={toneOverTime || { labels: [], datasets: [] }} />
-                </ChartCard>
-              </div>
+                    <ChartCard title="Tone across quarters" hint="investor confidence by signal · 0–100" wide tall hasData={!!toneOverTime}>
+                      <Line options={lineOptions} data={toneOverTime || { labels: [], datasets: [] }} />
+                    </ChartCard>
+                  </div>
+                </>
+              )}
 
               <section className="tx-figures-card">
                 <div className="tx-chart-head">
@@ -814,7 +838,7 @@ export default function Transcripts() {
                   >
                     <Line options={lineOptions} data={callToneChart || { labels: [], datasets: [] }} />
                   </ChartCard>
-                ) : (
+                ) : hasCrossQuarter ? (
                   <div className="tx-chart-card is-wide">
                     <div className="tx-chart-head">
                       <h3>{valueChart ? `${valueChart.keyword} values over time` : `${metricFilter} values over time`}</h3>
@@ -835,6 +859,14 @@ export default function Transcripts() {
                         : <div className="tx-chart-empty">No values repeat across quarters for this keyword.</div>}
                     </div>
                   </div>
+                ) : (
+                  <ChartCard
+                    title="Management vs analyst tone through the call"
+                    hint={period ? 'per-statement confidence, prepared remarks → Q&A · 0–100' : 'select a quarter'}
+                    wide tall hasData={!!callToneChart}
+                  >
+                    <Line options={lineOptions} data={callToneChart || { labels: [], datasets: [] }} />
+                  </ChartCard>
                 )}
               </div>
             </>

@@ -5,7 +5,7 @@ const { spawn } = require('child_process');
 
 const { collectFromAlphaVantage } = require('./alphavantage');
 const { semanticChunkDocument } = require('./chunker');
-const { readEnrichmentLocal, saveEnrichment } = require('./enrichmentStore');
+const { readEnrichment, readEnrichmentLocal, saveEnrichment } = require('./enrichmentStore');
 const { normalizePeriod } = require('./parser');
 const { readTranscript, saveTranscript } = require('./store');
 
@@ -62,6 +62,22 @@ async function runFullPipeline({
 }, onEvent = () => {}) {
   const normalizedPeriod = normalizePeriod(quarter, year);
   const normalizedTicker = String(tickerInput || '').toUpperCase().replace(/[^A-Z0-9.-]/g, '');
+  const cached = await readEnrichment(normalizedTicker, normalizedPeriod.fiscalPeriod);
+  if (cached?.analysisCompletedAt) {
+    if (!cached.transcriptAnalysis) {
+      const { refreshAnalysisCacheForTicker } = require('./analysisCache');
+      await refreshAnalysisCacheForTicker(normalizedTicker);
+    }
+    onEvent({
+      stage: 'done',
+      status: 'done',
+      ticker: normalizedTicker,
+      period: normalizedPeriod.fiscalPeriod,
+      cached: true,
+      message: 'Loaded completed analysis from MongoDB.',
+    });
+    return { ticker: normalizedTicker, period: normalizedPeriod.fiscalPeriod, cached: true };
+  }
   const storedTranscript = source === 'provider'
     ? null
     : await readTranscript(normalizedTicker, normalizedPeriod.fiscalPeriod);
@@ -102,6 +118,8 @@ async function runFullPipeline({
   if (finalEnrichment) {
     finalEnrichment.analysisCompletedAt = new Date().toISOString();
     await saveEnrichment(finalEnrichment);
+    const { refreshAnalysisCacheForTicker } = require('./analysisCache');
+    await refreshAnalysisCacheForTicker(ticker);
   }
   onEvent({ stage: 'publish', status: 'done' });
 

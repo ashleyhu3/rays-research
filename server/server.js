@@ -337,6 +337,7 @@ const { semanticChunkDocument } = require('./transcripts/chunker');
 const { listLocalEnrichments, readEnrichment, saveEnrichment } = require('./transcripts/enrichmentStore');
 const { parseTranscriptDocument } = require('./transcripts/parser');
 const { runFullPipeline } = require('./transcripts/pipeline');
+const { readCachedAnalysis, refreshAnalysisCacheForTicker } = require('./transcripts/analysisCache');
 const { listTranscripts, saveTranscript } = require('./transcripts/store');
 const { runTranscriptAgent, parseTranscript, fetchTranscript, analyzeSeries } = require('./transcriptAgent');
 
@@ -352,6 +353,12 @@ app.get('/api/transcripts/library', async (_req, res) => {
 app.post('/api/transcripts/collect', requireAdminSecret, async (req, res) => {
   const body = req.body ?? {};
   try {
+    const ticker = String(body.ticker || '').toUpperCase().replace(/[^A-Z0-9.-]/g, '');
+    const fiscalPeriod = `${String(body.year || '').replace(/\D/g, '')}${String(body.quarter || '').toUpperCase()}`;
+    const completed = await readEnrichment(ticker, fiscalPeriod);
+    if (completed?.analysisCompletedAt) {
+      return res.json({ transcript: completed, enrichment: completed, cached: true });
+    }
     const transcript = await collectFromAlphaVantage({
       ticker: body.ticker,
       quarter: body.quarter,
@@ -420,6 +427,12 @@ app.post('/api/transcripts/dispatch-analysis', async (req, res) => {
   if (!ticker || !/^Q[1-4]$/.test(quarter) || !/^\d{4}$/.test(year)) {
     return res.status(400).json({ error: 'ticker, quarter (Q1–Q4) and a four-digit year are required.' });
   }
+  const period = `${year}${quarter}`;
+  const completed = await readEnrichment(ticker, period);
+  if (completed?.analysisCompletedAt) {
+    if (!completed.transcriptAnalysis) await refreshAnalysisCacheForTicker(ticker);
+    return res.json({ ok: true, cached: true, ticker, period });
+  }
   const token = process.env.GH_ANALYZE_DISPATCH_TOKEN || process.env.GITHUB_TOKEN;
   if (!token) {
     return res.status(500).json({ error: 'GH_ANALYZE_DISPATCH_TOKEN is not set — add a token with actions:write.' });
@@ -439,7 +452,7 @@ app.post('/api/transcripts/dispatch-analysis', async (req, res) => {
     });
     if (ghResp.status === 204) {
       const runsUrl = `https://github.com/${ANALYZE_REPO}/actions/workflows/${ANALYZE_WORKFLOW}`;
-      return res.json({ ok: true, ticker, period: `${year}${quarter}`, runsUrl });
+      return res.json({ ok: true, ticker, period, runsUrl });
     }
     const detail = (await ghResp.text()).slice(0, 300);
     console.error('[transcripts:dispatch]', ghResp.status, detail);
@@ -454,6 +467,12 @@ app.post('/api/transcripts/dispatch-analysis', async (req, res) => {
 app.post('/api/transcripts/parse', async (req, res) => {
   const body = req.body ?? {};
   try {
+    const ticker = String(body.ticker || '').toUpperCase().replace(/[^A-Z0-9.-]/g, '');
+    const fiscalPeriod = `${String(body.year || '').replace(/\D/g, '')}${String(body.quarter || '').toUpperCase()}`;
+    const completed = await readEnrichment(ticker, fiscalPeriod);
+    if (completed?.analysisCompletedAt) {
+      return res.json({ transcript: completed, enrichment: completed, cached: true });
+    }
     const transcript = parseTranscriptDocument({
       ticker: body.ticker,
       quarter: body.quarter,
@@ -518,72 +537,16 @@ app.get('/api/transcripts/analysis/:ticker', async (req, res) => {
   const ticker = String(req.params.ticker || '').toUpperCase().replace(/[^A-Z0-9.-]/g, '');
   if (!ticker) return res.status(400).json({ error: 'ticker required' });
   try {
-    const enrichments = (await listLocalEnrichments()).filter(
-      enrichment => String(enrichment.ticker || enrichment.symbol || '').toUpperCase() === ticker,
-    );
-    if (!enrichments.length) {
+    const cached = await readCachedAnalysis(ticker);
+    if (!cached) {
       return res.status(404).json({ error: `No analyzed transcripts found for ${ticker}.` });
     }
-
-    const { runTranscriptManager } = await import('./transcripts/manager.mjs');
-    const result = await runTranscriptManager({ documents: enrichments });
-    const totalChunks = enrichments.reduce(
-      (sum, enrichment) => sum + (enrichment.toneSummary?.chunks || enrichment.stats?.chunks || 0),
-      0,
-    );
-    const llmInterpreted = enrichments.reduce(
-      (sum, enrichment) => sum + (enrichment.toneSummary?.llmInterpreted || 0),
-      0,
-    );
-    // Flatten structured key figures across every quarter so the UI can show a
-    // keyword's trajectory report-over-report in one grid.
-    const quarterOrder = enrichment => (Number(enrichment.year) || 0) * 10
-      + (Number(String(enrichment.quarter || '').replace(/\D/g, '')) || 0);
-    const keyFigures = enrichments
-      .slice()
-      .sort((a, b) => quarterOrder(b) - quarterOrder(a))
-      .flatMap(enrichment => (enrichment.keyFigures || []).map(figure => ({
-        ...figure,
-        period: `${enrichment.year} ${enrichment.quarter}`,
-        periodKey: quarterOrder(enrichment),
-        fiscal_period: enrichment.fiscal_period,
-      })));
-    // Per-quarter tone split by who is speaking: management answers (read as an
-    // investor would — "investor tone") vs. the analysts asking the questions
-    // ("analyst tone"). Both use the same composite investor-confidence score so
-    // they trend on one 0–100 axis.
-    const roleToneAverage = (chunks, role) => {
-      const scores = (chunks || [])
-        .filter(chunk => chunk.role === role && chunk.tone?.composite)
-        .map(chunk => chunk.tone.composite.investorConfidence);
-      return scores.length
-        ? Number((scores.reduce((sum, value) => sum + value, 0) / scores.length).toFixed(1))
-        : null;
-    };
-    const toneByRole = enrichments
-      .slice()
-      .sort((a, b) => quarterOrder(a) - quarterOrder(b))
-      .map(enrichment => ({
-        period: `${enrichment.year} ${enrichment.quarter}`,
-        fiscal_period: enrichment.fiscal_period,
-        investor: roleToneAverage(enrichment.chunks, 'Management'),
-        analyst: roleToneAverage(enrichment.chunks, 'Analyst'),
-      }));
-    res.json({
-      ticker,
-      analysis: result.analysis,
-      reports: result.reports,
-      keyFigures,
-      toneByRole,
-      execution: result.events,
-      modelUsage: {
-        deterministicPipeline: true,
-        totalChunks,
-        llmInterpreted,
-        llmShare: totalChunks ? Number((llmInterpreted / totalChunks).toFixed(4)) : 0,
-        scope: 'Optional qualitative tone interpretation on selected management answers only.',
-      },
-    });
+    if (cached.pendingCache) {
+      return res.status(409).json({
+        error: `Stored analysis for ${ticker} predates the Mongo cache. Run the cache backfill once.`,
+      });
+    }
+    res.json(cached);
   } catch (e) {
     console.error('[transcripts:analysis]', e.message);
     res.status(500).json({ error: e.message });
