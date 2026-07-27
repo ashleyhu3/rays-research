@@ -29,6 +29,7 @@
     "backfill:china-national-team-flow": "node --env-file=.env server/scripts/backfillChinaNationalTeamFlow.js",
     "backfill:china-liquidity": "node --env-file=.env server/scripts/backfillChinaLiquidity.js",
     "backfill:carry-trade": "node --env-file-if-exists=.env server/scripts/backfillCarryTrade.js",
+    "backfill:us-liquidity": "node --env-file-if-exists=.env server/scripts/backfillUsLiquidity.js",
     "backfill:japan-leverage": "node --env-file=.env server/scripts/backfillJapanLeverage.js",
     "backfill:us-leverage": "node --env-file=.env server/scripts/backfillUsLeverage.js",
     "backfill:buybacks": "node --env-file-if-exists=.env server/scripts/backfillBuybacks.js",

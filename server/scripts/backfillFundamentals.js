@@ -1,8 +1,9 @@
 'use strict';
 
 /**
- * Backfill the Fundamentals page: for every SOXX-constituent ticker, pull its
- * quarterly income statement (SEC Company Facts for U.S. filers; Alpha Vantage
+ * Backfill the Fundamentals page: for every ticker in its two sections (SOXX
+ * constituents and the hyperscaler CSPs), pull its quarterly income statement
+ * (SEC Company Facts for U.S. filers; Alpha Vantage
  * with a five-quarter FMP fallback for the four foreign ADRs) and compute
  * revenue and net-income growth YoY and QoQ for each quarter, plus the quarterly
  * SOXX candles (Yahoo Finance) the chart sits on. Writes incrementally, one

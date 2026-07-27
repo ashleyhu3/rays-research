@@ -1406,6 +1406,14 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
   flex: 0 0 168px; display: flex; flex-direction: column; gap: 2px;
   padding: 4px 12px 4px 0; border-right: 1px solid var(--border); margin-right: 18px;
 }
+/* Two-level sidebar (Fundamentals): a ticker-scope heading over its metric
+   tabs, repeated per section. Price Return's flat one-level nav is unaffected. */
+.pr-nav-group { display: flex; flex-direction: column; gap: 2px; }
+.pr-nav-group + .pr-nav-group { margin-top: 14px; }
+.pr-nav-group-label {
+  padding: 0 10px 4px; font-size: 10px; font-weight: 700; letter-spacing: .10em;
+  text-transform: uppercase; color: var(--ter);
+}
 .pr-page { display: flex; flex-direction: column; gap: 10px; flex: 1; min-width: 0; }
 /* Title and the 1D/3D/1W toggle share one row to save vertical space. */
 .pr-head { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }

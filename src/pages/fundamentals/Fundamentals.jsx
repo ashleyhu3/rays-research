@@ -14,28 +14,48 @@ const COL_W = 60; // each quarter column
 // so ~1/3 of it is ~0.24 of the window height. Responsive rather than fixed px.
 const CHART_VH = 0.24;
 const CHART_H_MIN = 180;
+// The CSP section holds only four tickers, so the table needs a fraction of the
+// vertical space the SOXX section does — give the reclaimed height to the chart.
+const CHART_VH_TALL = 0.46;
+const CHART_H_MIN_TALL = 320;
 
-function useChartHeight() {
-  const measure = () =>
-    Math.max(CHART_H_MIN, Math.round((typeof window !== 'undefined' ? window.innerHeight : 900) * CHART_VH));
-  const [height, setHeight] = useState(measure);
+function useChartHeight(tall) {
+  const measure = (isTall) => {
+    const vh = typeof window !== 'undefined' ? window.innerHeight : 900;
+    return isTall
+      ? Math.max(CHART_H_MIN_TALL, Math.round(vh * CHART_VH_TALL))
+      : Math.max(CHART_H_MIN, Math.round(vh * CHART_VH));
+  };
+  const [height, setHeight] = useState(() => measure(tall));
   useEffect(() => {
-    const onResize = () => setHeight(measure());
+    const onResize = () => setHeight(measure(tall));
+    onResize();
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
-  }, []);
+  }, [tall]);
   return height;
 }
 
-// The four sidebar views. Price Return puts its ticker-scope switch here and
-// its metric switch in the header; this page has a single fixed ticker scope
-// (the SOXX constituents), so the four metrics take the sidebar instead.
-const VIEWS = [
+// The sidebar is a two-level menu: two ticker-scope sections, each with the
+// same four growth metrics. Price Return puts its ticker-scope switch in the
+// sidebar and its metric switch in the header; this page has both switches in
+// the sidebar, so the eight combinations are all one click away.
+const METRICS = [
   { key: 'revenueYoY',   label: 'Revenue YoY',    title: 'Total Revenue — YoY Growth' },
   { key: 'revenueQoQ',   label: 'Revenue QoQ',    title: 'Total Revenue — QoQ Growth' },
   { key: 'netIncomeYoY', label: 'Net Income YoY', title: 'Net Income — YoY Growth' },
   { key: 'netIncomeQoQ', label: 'Net Income QoQ', title: 'Net Income — QoQ Growth' },
 ];
+
+const SECTIONS = [
+  { key: 'soxx', label: 'SOXX', suffix: ' — SOXX Index' },
+  { key: 'csp',  label: 'CSP',  suffix: ' — Cloud Service Providers' },
+];
+
+// Fallbacks if the API predates the section fields (stale cached blob). An
+// empty SOXX fallback means "everything not in CSP", which is what the payload
+// used to be.
+const CSP_FALLBACK = ['AMZN', 'GOOG', 'MSFT', 'META'];
 
 // Growth rates swing far wider than post-earnings price moves, so the heatmap
 // saturates at a wider band than Price Return's ±10% — a ±50% quarter is a big
@@ -213,42 +233,64 @@ function CandleChart({ quarters, soxx, height, onHover }) {
   );
 }
 
-// Quarterly revenue and net-income growth for the SOXX index constituents, one
-// column per fiscal quarter (chronological, oldest left), one row per ticker,
-// above the same quarterly SOXX candlestick the Price Return page uses. The
-// sidebar switches between the four growth measures.
+// Quarterly revenue and net-income growth, one column per fiscal quarter
+// (chronological, oldest left), one row per ticker, above the same quarterly
+// SOXX candlestick the Price Return page uses. The sidebar picks one of two
+// ticker sections (SOXX constituents or the hyperscaler CSPs) and one of four
+// growth measures.
 export default function Fundamentals() {
   const { data, error, loading } = useResource('/api/fundamentals/growth');
+  const [section, setSection] = useState('soxx');
   const [metric, setMetric] = useState('revenueYoY');
   const [hover, setHover] = useState(null);
-  const chartH = useChartHeight();
+  const chartH = useChartHeight(section === 'csp');
 
-  const rows = data?.rows ?? [];
+  const allRows = data?.rows ?? [];
+  const cspSet = useMemo(() => new Set(data?.cspTickers ?? CSP_FALLBACK), [data]);
+  const soxxSet = useMemo(() => new Set(data?.soxxTickers ?? []), [data]);
+  const rows = useMemo(() => {
+    if (section === 'csp') return allRows.filter(r => cspSet.has(r.ticker));
+    // Explicit SOXX roster when the API sends one; otherwise "not a CSP", which
+    // matches what the payload contained before the section split.
+    return soxxSet.size
+      ? allRows.filter(r => soxxSet.has(r.ticker))
+      : allRows.filter(r => !cspSet.has(r.ticker));
+  }, [section, allRows, soxxSet, cspSet]);
+
   // API returns quarters newest-first; show chronologically (oldest left).
   const quarters = useMemo(() => [...(data?.quarters ?? [])].reverse(), [data]);
   const soxx = data?.soxx ?? {};
   const { avg, share } = useMemo(() => columnSummary(rows, quarters, metric), [rows, quarters, metric]);
-  const view = VIEWS.find(v => v.key === metric) ?? VIEWS[0];
+  const view = METRICS.find(v => v.key === metric) ?? METRICS[0];
+  const sectionMeta = SECTIONS.find(s => s.key === section) ?? SECTIONS[0];
   const clamp = CLAMP[metric];
 
   return (
     <div className="pr-layout">
       <nav className="pr-nav" aria-label="Fundamentals views">
-        {VIEWS.map(v => (
-          <button
-            key={v.key}
-            type="button"
-            className={`or-nav-item${metric === v.key ? ' active' : ''}`}
-            onClick={() => setMetric(v.key)}
-          >
-            <span className="or-nav-name">{v.label}</span>
-          </button>
+        {SECTIONS.map(s => (
+          <div key={s.key} className="pr-nav-group">
+            <div className="pr-nav-group-label">{s.label}</div>
+            {METRICS.map(v => {
+              const active = section === s.key && metric === v.key;
+              return (
+                <button
+                  key={v.key}
+                  type="button"
+                  className={`or-nav-item${active ? ' active' : ''}`}
+                  onClick={() => { setSection(s.key); setMetric(v.key); }}
+                >
+                  <span className="or-nav-name">{v.label}</span>
+                </button>
+              );
+            })}
+          </div>
         ))}
       </nav>
 
       <section className="pr-page">
         <header className="pr-head">
-          <h3>{view.title} — SOXX Index</h3>
+          <h3>{view.title}{sectionMeta.suffix}</h3>
           {loading && <span className="cal-status">Loading fundamentals data…</span>}
           {error && <span className="cal-status err">{error}</span>}
         </header>

@@ -2,12 +2,15 @@
 
 const path = require('path');
 const storage = require('./storage');
-const { SOXX_CONSTITUENTS, computeIndexCandles, QUARTERS_SHOWN } = require('./priceReturnAfterEarnings');
+const { SOXX_CONSTITUENTS, CSP_TICKERS, computeIndexCandles, QUARTERS_SHOWN } = require('./priceReturnAfterEarnings');
 
-// Same roster as the Price Return page's "SOXX Index" view — the tracked
-// tickers that are also iShares SOXX holdings. Kept as a re-export rather than
-// a second literal list so the two pages can never drift apart.
-const FUNDAMENTALS_TICKERS = SOXX_CONSTITUENTS;
+// The page's two sections, mirroring the Price Return page's ticker-scope
+// views: the tracked iShares SOXX holdings, and the hyperscaler cloud service
+// providers that buy from them. Kept as re-exports rather than second literal
+// lists so the two pages can never drift apart.
+const SOXX_SECTION = SOXX_CONSTITUENTS;
+const CSP_SECTION = CSP_TICKERS;
+const FUNDAMENTALS_TICKERS = [...SOXX_SECTION, ...CSP_SECTION];
 
 // The four sidebar views. Each is a growth rate derived from the same two
 // quarterly income-statement lines, so one fetch per ticker fills all four.
@@ -42,6 +45,12 @@ const SEC_CIK = {
   ON: '0001097864',
   CRDO: '0001807794',
   MTSI: '0001493594',
+  // CSP section. All four are domestic filers with full quarterly SEC facts,
+  // so the section costs no Alpha Vantage quota.
+  AMZN: '0001018724',
+  GOOG: '0001652044', // Alphabet Inc. — one filer for both share classes
+  MSFT: '0000789019',
+  META: '0001326801',
 };
 const SEC_REVENUE_CONCEPTS = [
   'RevenueFromContractWithCustomerExcludingAssessedTax',
@@ -415,15 +424,21 @@ async function backfill(tickers = FUNDAMENTALS_TICKERS, { pause = 900 } = {}) {
   return state;
 }
 
-// Scheduled entry point. The roster is small enough to fit inside one day's
-// request budget, but the run is still ordered stalest-first so that if the
-// budget is ever shared with another Alpha Vantage job, the tickers that got
-// skipped are the ones that go first next time.
+// Scheduled entry point. Only the handful of tickers without SEC facts spend
+// Alpha Vantage quota, so the budget is applied to those alone — SEC-backed
+// tickers are free and all of them run every day. Both groups are ordered
+// stalest-first, so if the budget is ever shared with another Alpha Vantage
+// job, the tickers that got skipped are the ones that go first next time.
 async function runDailyBatch() {
   const state = readCache();
   const staleness = ticker => state.fetchedAt?.[ticker] ?? ''; // never-fetched sorts first
   const ordered = [...FUNDAMENTALS_TICKERS].sort((a, b) => staleness(a).localeCompare(staleness(b)));
-  return backfill(ordered.slice(0, DAILY_REQUEST_BUDGET));
+  const free = ordered.filter(t => SEC_CIK[t]);
+  const metered = ordered.filter(t => !SEC_CIK[t]).slice(0, DAILY_REQUEST_BUDGET);
+  // Interleave back into staleness order so an early rate-limit break still
+  // leaves the run having touched the stalest tickers first.
+  const batch = new Set([...free, ...metered]);
+  return backfill(ordered.filter(t => batch.has(t)));
 }
 
 // What the Fundamentals page reads: a synchronous, no-network cache read so the
@@ -460,6 +475,8 @@ function getTable() {
     rows,
     soxx,
     metrics: METRICS,
+    soxxTickers: SOXX_SECTION,
+    cspTickers: CSP_SECTION,
     updatedAt: state.updatedAt ?? null,
   };
 }
@@ -467,6 +484,8 @@ function getTable() {
 module.exports = {
   BLOB,
   FUNDAMENTALS_TICKERS,
+  SOXX_SECTION,
+  CSP_SECTION,
   METRICS,
   QUARTERS_SHOWN,
   backfill,

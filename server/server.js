@@ -850,16 +850,17 @@ app.post(
         return res.json({ ok: true, rebuilt: [], message: 'All breadth series are already continuous' });
       }
 
-      await Promise.all([
-        storage.load(
+      const blobsToLoad = incompleteKeys.map(key => {
+        const blob = STORAGE_BLOB_BY_NAME.get(BREADTH_RAW_BLOB[key]);
+        return storage.load(blob.name, blob.file);
+      });
+      if (incompleteKeys.some(key => key === 'sox' || key === 'nikkei225')) {
+        blobsToLoad.push(storage.load(
           STORAGE_BLOB_BY_NAME.get('globalIndicesHistory').name,
           STORAGE_BLOB_BY_NAME.get('globalIndicesHistory').file,
-        ),
-        ...incompleteKeys.map(key => {
-          const blob = STORAGE_BLOB_BY_NAME.get(BREADTH_RAW_BLOB[key]);
-          return storage.load(blob.name, blob.file);
-        }),
-      ]);
+        ));
+      }
+      await Promise.all(blobsToLoad);
 
       for (const key of incompleteKeys) {
         await updateIndexBreadth(key, { forceBootstrap: true });
