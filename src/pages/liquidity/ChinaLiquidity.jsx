@@ -7,7 +7,27 @@ import ChinaStockConnect from './ChinaStockConnect';
 
 const BLUE = '#4577b4';
 const GOLD = '#c9a227';
+const GREEN = '#3a9e6b';
 const MUTED = '#8a8a84';
+
+/** Per-series presentation. `monthly` drives both the axis-label cadence and the
+ * lookback: the daily series show a rolling year, M2 keeps its full history. */
+const SERIES = {
+  turnover: {
+    color: BLUE, percent: false, monthly: false, lag: 'End of trading day',
+    note: 'Daily total A-share market turnover (成交额), persisted by the scheduled collector.',
+  },
+  turnoverRate: {
+    color: GREEN, percent: true, monthly: false, lag: 'End of trading day',
+    note: 'Daily A-share turnover (成交额) divided by whole-market free-float market cap '
+      + '(自由流通市值). The denominator is summed across the A-share universe from Tushare '
+      + 'daily_basic as Σ(free_share × close) for each trade date.',
+  },
+  m2Yoy: {
+    color: GOLD, percent: true, monthly: true, lag: 'Published monthly',
+    note: 'Year-over-year growth is calculated from the stored monthly M2 level series.',
+  },
+};
 
 function compactCny(value) {
   if (!Number.isFinite(value)) return '—';
@@ -28,8 +48,7 @@ function LiquiditySeries({ kind }) {
   const { data: payload, error } = useResource('/api/china-liquidity');
 
   const series = payload?.[kind];
-  const monthly = kind === 'm2Yoy';
-  const color = monthly ? GOLD : BLUE;
+  const { color, percent, monthly, lag, note } = SERIES[kind];
   const points = useMemo(() => {
     const all = series?.data ?? [];
     if (monthly) return all;
@@ -44,7 +63,7 @@ function LiquiditySeries({ kind }) {
   if (!points.length) return <div className="empty">No stored {series.name} history yet. The daily collector will populate it.</div>;
 
   const latest = points.at(-1);
-  const display = monthly ? `${latest.value.toFixed(2)}%` : compactCny(latest.value);
+  const display = percent ? `${latest.value.toFixed(2)}%` : compactCny(latest.value);
   const data = {
     labels: points.map(point => dateLabel(point.date, monthly)),
     datasets: [{
@@ -60,13 +79,15 @@ function LiquiditySeries({ kind }) {
       legend: { display: false },
       tooltip: { callbacks: {
         title: items => points[items[0]?.dataIndex]?.date ?? '',
-        label: context => monthly ? ` ${context.raw.toFixed(2)}% YoY` : ` ${compactCny(context.raw)}`,
+        label: context => percent
+          ? ` ${context.raw.toFixed(2)}%${monthly ? ' YoY' : ''}`
+          : ` ${compactCny(context.raw)}`,
       } },
     },
     scales: {
       x: { grid: { display: false }, ticks: { color: MUTED, maxTicksLimit: 12, maxRotation: 0, font: { size: 10 } } },
       y: { grid: { color: 'rgba(255,255,255,.07)' }, ticks: {
-        color: MUTED, font: { size: 10 }, callback: value => monthly ? `${value}%` : compactCny(Number(value)),
+        color: MUTED, font: { size: 10 }, callback: value => percent ? `${value}%` : compactCny(Number(value)),
       } },
     },
   };
@@ -83,11 +104,9 @@ function LiquiditySeries({ kind }) {
         <ChartCard
           chartId={`china-liquidity-${kind}`} title={`China · ${series.name}`}
           src={<a className="ch-src" href={series.sourceUrl} target="_blank" rel="noopener noreferrer">{series.source}</a>}
-          freq={series.frequency} lag={monthly ? 'Published monthly' : 'End of trading day'}
+          freq={series.frequency} lag={lag}
           span2 height={360}
-          srcNote={monthly
-            ? 'Year-over-year growth is calculated from the stored monthly M2 level series.'
-            : 'Daily total A-share market turnover (成交额), persisted by the scheduled collector.'}
+          srcNote={note}
         >
           <Line data={data} options={options} />
         </ChartCard>
@@ -99,6 +118,7 @@ function LiquiditySeries({ kind }) {
 export default function ChinaLiquidity({ section }) {
   if (section === 'stock-connect') return <ChinaStockConnect />;
   if (section === 'turnover') return <LiquiditySeries kind="turnover" />;
+  if (section === 'turnover-rate') return <LiquiditySeries kind="turnoverRate" />;
   if (section === 'money-supply') return <LiquiditySeries kind="m2Yoy" />;
   return <ChinaFlowNationalTeam />;
 }

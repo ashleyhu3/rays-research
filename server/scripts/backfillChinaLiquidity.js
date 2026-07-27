@@ -4,6 +4,9 @@ const storage = require('../storage');
 const { updateChinaLiquidity } = require('../scrapers/chinaLiquidity');
 
 const DAYS = Math.max(366, Number(process.argv[2]) || 730);
+// One Tushare daily_basic call per trade date, so the whole window is ~240 calls a
+// year. Override with a smaller number to fill the free-float series in chunks.
+const FREE_FLOAT_DAYS = Number(process.argv[3]) || DAYS;
 const BLOBS = [{ name: 'chinaLiquidityHistory', file: path.join(__dirname, '..', 'data', 'chinaLiquidityHistory.json') }];
 
 async function main() {
@@ -12,11 +15,12 @@ async function main() {
     throw new Error('MongoDB was configured but unavailable; refusing to write the backfill to a local fallback');
   }
   console.log(`[china-liquidity] storage mode: ${storage.status().mode} — backfilling ${DAYS} days…`);
-  const data = await updateChinaLiquidity(DAYS);
+  const data = await updateChinaLiquidity(DAYS, FREE_FLOAT_DAYS);
   await storage.flush();
   await storage.close();
   const series = {
     turnover: data.turnover.data,
+    turnoverRate: data.turnoverRate.data,
     m2Yoy: data.m2Yoy.data,
     southboundNetFlow: data.stockConnect.southboundNetFlow.data,
     northboundTurnover: data.stockConnect.northboundTurnover.data,

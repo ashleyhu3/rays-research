@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Line } from 'react-chartjs-2';
 import ChartCard from '../../components/chart/ChartCard';
 import { useResource } from '../../services/resourceCache';
-import { baseOpts, mkDs } from '../../utils/chartHelpers';
+import { baseOpts, mkDs, GRID } from '../../utils/chartHelpers';
 
 const BLUE = '#4577b4';
 const GOLD = '#c9a227';
@@ -124,18 +124,38 @@ const PRICE_RANGES = [
   { id: 'all', label: 'All', years: 0 },
 ];
 
-// Three different price scales ($79 vs 4,800 vs 7,400) can only share one
-// axis rebased to a common base, so each line is indexed to 100 at the first
-// date in view; the tooltip still carries the underlying quote.
+// Three price scales ($79 vs 4,800 vs 7,400) cannot share an axis, and simply
+// rebasing them to 100 does not help either: HYG is a coupon-bearing bond ETF
+// that trades in a $70–85 band, so next to two compounding equity indices its
+// line flattens out. Each series is therefore standardized against its own
+// window — (price − mean) / standard deviation — which is a per-series linear
+// rescale, so every line keeps its true shape while the three swing at a
+// comparable amplitude and their turning points can be read against each other.
 const PRICE_SERIES = [
   { key: 'hygPrice', label: 'HYG', color: RED, fmt: value => `$${value.toFixed(2)}` },
   { key: 'msciWorldPrice', label: 'MSCI World', color: GOLD, fmt: value => value.toLocaleString('en-US', { maximumFractionDigits: 0 }) },
   { key: 'spxPrice', label: 'S&P 500', color: BLUE, fmt: value => value.toLocaleString('en-US', { maximumFractionDigits: 0 }) },
 ];
 
+function fmtSigma(value) {
+  if (!Number.isFinite(value)) return '—';
+  return `${value >= 0 ? '+' : '−'}${Math.abs(value).toFixed(1)}σ`;
+}
+
 function fmtIndex(value) {
   if (!Number.isFinite(value)) return '—';
   return value.toFixed(1);
+}
+
+// Population standard deviation of the visible window — the window is the
+// whole population being compared here, not a sample drawn from a longer one.
+function standardize(values) {
+  const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
+  const variance = values.reduce((sum, value) => sum + (value - mean) ** 2, 0) / values.length;
+  const deviation = Math.sqrt(variance);
+  // A perfectly flat window would divide by zero; render it as the mean line.
+  if (!deviation) return values.map(() => 0);
+  return values.map(value => (value - mean) / deviation);
 }
 
 function PriceComparisonChart({ payload, years = 0 }) {
@@ -145,7 +165,7 @@ function PriceComparisonChart({ payload, years = 0 }) {
       new Map((payload.series?.[entry.key]?.data ?? []).map(point => [point.date, point.value])),
     ]));
     // Only dates every series traded on — the three feeds keep slightly
-    // different calendars, and a rebased line must not step over a gap.
+    // different calendars, and a standardized line must not step over a gap.
     const first = byKey[PRICE_SERIES[0].key];
     let common = [...first.keys()].filter(date => PRICE_SERIES.every(entry => byKey[entry.key].has(date))).sort();
     if (years && common.length) {
@@ -164,7 +184,7 @@ function PriceComparisonChart({ payload, years = 0 }) {
   }, [payload, years]);
 
   const legend = PRICE_SERIES.map(entry => [entry.label, entry.color]);
-  const title = 'HYG vs MSCI World vs S&P 500 (rebased to 100)';
+  const title = 'HYG vs MSCI World vs S&P 500 — volatility-normalized';
 
   if (!dates.length) {
     return (
@@ -176,27 +196,33 @@ function PriceComparisonChart({ payload, years = 0 }) {
 
   const data = {
     labels: dates.map(dateLabel),
-    datasets: series.map(entry => {
-      const base = entry.raw[0];
-      return {
-        ...mkDs(entry.label, entry.color, entry.raw.map(value => (value / base) * 100)),
-        pointRadius: 0,
-        pointHoverRadius: 5,
-        pointHitRadius: 8,
-        borderWidth: 1.8,
-        tension: 0.15,
-      };
-    }),
+    datasets: series.map(entry => ({
+      ...mkDs(entry.label, entry.color, standardize(entry.raw)),
+      pointRadius: 0,
+      pointHoverRadius: 5,
+      pointHitRadius: 8,
+      borderWidth: 1.8,
+      tension: 0.15,
+    })),
   };
 
-  const options = baseOpts(fmtIndex);
+  const options = baseOpts(fmtSigma);
   options.plugins.tooltip.callbacks.title = items => dates[items[0]?.dataIndex] ?? '';
+  // The normalized value answers "where in its own range is it"; the quote and
+  // the rebased index keep the actual price and the actual return in reach.
   options.plugins.tooltip.callbacks.label = context => {
     const entry = series.find(item => item.label === context.dataset.label);
     const raw = entry?.raw[context.dataIndex];
-    return ` ${context.dataset.label}: ${fmtIndex(context.parsed.y)}  ·  ${Number.isFinite(raw) ? entry.fmt(raw) : '—'}`;
+    if (!Number.isFinite(raw)) return ` ${context.dataset.label}: —`;
+    const rebased = (raw / entry.raw[0]) * 100;
+    return ` ${context.dataset.label}: ${fmtSigma(context.parsed.y)}  ·  ${entry.fmt(raw)}  ·  ${fmtIndex(rebased)}`;
   };
   options.scales.x.ticks.maxTicksLimit = 10;
+  // The zero line is each series' own window mean — the reference every line
+  // shares — so it reads brighter than the rest of the grid.
+  options.scales.y.grid = {
+    color: context => (context.tick.value === 0 ? 'rgba(255,255,255,.22)' : GRID.color),
+  };
 
   return (
     <ChartCard
@@ -205,7 +231,7 @@ function PriceComparisonChart({ payload, years = 0 }) {
       src="Yahoo Finance"
       srcUrl={payload.series?.hygPrice?.sourceUrl}
       freq="Daily" height={360} span2 legend={legend}
-      srcNote="Closing prices for HYG (the high-yield corporate bond ETF), the MSCI World index and the S&P 500, each set to 100 on the first date in view so the three scales are comparable. HYG is a price line and excludes coupon income. When credit spreads widen, HYG typically rolls over ahead of — or alongside — equities; the gap between the lines is the risk appetite the credit market is pricing versus the equity market."
+      srcNote="Closing prices for HYG (the high-yield corporate bond ETF), the MSCI World index and the S&P 500, each expressed in standard deviations from its own mean over the selected window. That rescaling is linear, so every line keeps its true shape, but HYG — a $70–85 bond ETF next to two compounding equity indices — swings at a readable amplitude instead of flattening out. Zero is each series' own window average; the axis is not a return. Hover for the underlying quote and the rebased index (first date in view = 100). All three are price lines and exclude income, so HYG's coupon is not reflected. When credit spreads widen, HYG typically rolls over ahead of — or alongside — equities; lines pulling apart is credit and equity risk appetite diverging."
     >
       <Line data={data} options={options} />
     </ChartCard>

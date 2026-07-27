@@ -176,6 +176,7 @@ export const NAV_SECTIONS = [
         { key: 'flow', label: 'Flow' },
         { key: 'stock-connect', label: 'Stock Connect' },
         { key: 'turnover', label: 'Turnover' },
+        { key: 'turnover-rate', label: 'Turnover Rate' },
         { key: 'money-supply', label: 'Money Supply' },
       ] },
       { id: 'liquidity-carry-trade', label: 'Carry Trade' },
