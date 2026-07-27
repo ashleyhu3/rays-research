@@ -62,7 +62,14 @@ export const EXTRA_TICKERS = {
 export const VOL_INDEX_TICKERS = ['VIX', 'VIXEQ', 'VXN', 'MOVE'];
 export const VOL_INDEX_SECONDARY_AXIS = ['MOVE'];
 
-// Chart 4 of the Sentiment section: GLD/VIX cross-asset ratio (gold vs the
+// Relative-volatility charts in the Sentiment section. These use the same
+// rebased ratio + 50-day average format as the US Sector charts.
+export const VOL_RATIO_PAIRS = [
+  ['VIXEQ', 'VIX'],
+  ['VXN', 'VIX'],
+];
+
+// GLD/VIX cross-asset ratio (gold vs the
 // fear gauge) — see https://x.com/Zac_Markovich/status/2030370942892048797
 export const GLD_VIX_PAIR = ['GLD', 'VIX'];
 
