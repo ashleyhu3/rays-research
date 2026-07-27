@@ -334,7 +334,15 @@ export default function Transcripts() {
   const refreshLibrary = () => {
     fetch('/api/transcripts/library')
       .then(response => response.ok ? response.json() : [])
-      .then(data => setLibrary(Array.isArray(data) ? data : []))
+      .then(data => {
+        const items = Array.isArray(data) ? data : [];
+        setLibrary(items);
+        const latest = items
+          .filter(item => item.ticker === activeTicker && item.fiscal_period)
+          .sort((a, b) => a.fiscal_period.localeCompare(b.fiscal_period))
+          .at(-1);
+        if (latest) setPeriod(current => current || latest.fiscal_period);
+      })
       .catch(() => setLibrary([]));
   };
   useEffect(refreshLibrary, []);
@@ -353,7 +361,7 @@ export default function Transcripts() {
       .then(data => {
         setAnalysis(data);
         const latest = data.reports?.[0]?.coverage?.periods?.at(-1);
-        if (latest) setPeriod(latest.replace(/\s+/g, ''));
+        if (latest) setPeriod(current => current || latest.replace(/\s+/g, ''));
       })
       .catch(requestError => { setAnalysis(null); setAnalysisError(requestError.message); })
       .finally(() => setAnalysisLoading(false));
@@ -500,8 +508,12 @@ export default function Transcripts() {
 
   const selectTicker = symbol => {
     if (symbol === activeTicker) return;
+    const latest = library
+      .filter(item => item.ticker === symbol && item.fiscal_period)
+      .sort((a, b) => a.fiscal_period.localeCompare(b.fiscal_period))
+      .at(-1);
     setActiveTicker(symbol);
-    setPeriod(null);
+    setPeriod(latest?.fiscal_period || null);
     setMetricFilter('all');
     setValueUnit(null);
   };

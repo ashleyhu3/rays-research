@@ -4,13 +4,12 @@
 // were introduced. It derives individual and cross-quarter views exclusively
 // from already-enriched Mongo data; it does not call transcript providers,
 // FinBERT, or an LLM.
-const { listLocalEnrichments } = require('../transcripts/enrichmentStore');
+const { closeMongoConnection, listAnalyzedTickers } = require('../transcripts/enrichmentStore');
 const { refreshAnalysisCacheForTicker } = require('../transcripts/analysisCache');
 
 async function main() {
   const requestedTicker = String(process.argv[2] || '').toUpperCase();
-  const enrichments = (await listLocalEnrichments()).filter(item => item.analysisCompletedAt);
-  const tickers = [...new Set(enrichments.map(item => item.ticker))]
+  const tickers = (await listAnalyzedTickers())
     .filter(Boolean)
     .filter(ticker => !requestedTicker || ticker === requestedTicker)
     .sort();
@@ -21,7 +20,9 @@ async function main() {
   }
 }
 
-main().catch(error => {
-  console.error('[transcript-cache] fatal:', error.message);
-  process.exit(1);
-});
+main()
+  .catch(error => {
+    console.error('[transcript-cache] fatal:', error.message);
+    process.exitCode = 1;
+  })
+  .finally(closeMongoConnection);

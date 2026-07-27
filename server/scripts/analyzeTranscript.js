@@ -10,6 +10,7 @@
 // Env: ALPHA_VANTAGE_API_KEY, GROQ_API_KEY and/or GEMINI_API_KEY, MONGODB_URI,
 // and TRANSCRIPT_PYTHON (interpreter with torch + transformers for FinBERT).
 const { runFullPipeline } = require('../transcripts/pipeline');
+const { closeMongoConnection } = require('../transcripts/enrichmentStore');
 
 const argValue = name => {
   const index = process.argv.indexOf(name);
@@ -37,7 +38,9 @@ async function main() {
   });
 }
 
-main().catch(error => {
-  console.error('[analyze] fatal:', error.message);
-  process.exit(1);
-});
+main()
+  .catch(error => {
+    console.error('[analyze] fatal:', error.message);
+    process.exitCode = 1;
+  })
+  .finally(closeMongoConnection);

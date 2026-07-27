@@ -4,6 +4,69 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..', 'data', 'transcripts', 'processed');
+const MONGO_IDLE_MS = 10000;
+
+let sharedClient = null;
+let sharedClientPromise = null;
+let activeMongoUsers = 0;
+let mongoIdleTimer = null;
+
+async function acquireMongoDatabase() {
+  if (mongoIdleTimer) {
+    clearTimeout(mongoIdleTimer);
+    mongoIdleTimer = null;
+  }
+  if (!sharedClientPromise) {
+    const { MongoClient } = require('mongodb');
+    const client = new MongoClient(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 8000 });
+    sharedClientPromise = client.connect()
+      .then(() => {
+        sharedClient = client;
+        return client;
+      })
+      .catch(error => {
+        sharedClient = null;
+        sharedClientPromise = null;
+        throw error;
+      });
+  }
+  const client = await sharedClientPromise;
+  activeMongoUsers += 1;
+  return client.db(process.env.MONGODB_DB || undefined);
+}
+
+function releaseMongoDatabase() {
+  activeMongoUsers = Math.max(0, activeMongoUsers - 1);
+  if (activeMongoUsers || mongoIdleTimer || !sharedClient) return;
+  mongoIdleTimer = setTimeout(async () => {
+    mongoIdleTimer = null;
+    if (activeMongoUsers || !sharedClient) return;
+    const client = sharedClient;
+    sharedClient = null;
+    sharedClientPromise = null;
+    await client.close().catch(() => {});
+  }, MONGO_IDLE_MS);
+  mongoIdleTimer.unref?.();
+}
+
+async function withMongoDatabase(handler) {
+  const database = await acquireMongoDatabase();
+  try {
+    return await handler(database);
+  } finally {
+    releaseMongoDatabase();
+  }
+}
+
+async function closeMongoConnection() {
+  if (mongoIdleTimer) clearTimeout(mongoIdleTimer);
+  mongoIdleTimer = null;
+  const client = sharedClient || await sharedClientPromise?.catch(() => null);
+  sharedClient = null;
+  sharedClientPromise = null;
+  activeMongoUsers = 0;
+  if (client) await client.close().catch(() => {});
+}
 
 function enrichmentPath(ticker, fiscalPeriod) {
   const safeTicker = String(ticker || '').toUpperCase().replace(/[^A-Z0-9.-]/g, '');
@@ -19,34 +82,23 @@ function readEnrichmentLocal(ticker, fiscalPeriod) {
 
 async function readEnrichment(ticker, fiscalPeriod) {
   if (process.env.MONGODB_URI) {
-    const { MongoClient } = require('mongodb');
-    const client = new MongoClient(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 8000 });
     try {
-      await client.connect();
-      const database = client.db(process.env.MONGODB_DB || undefined);
-      const doc = await database.collection('transcript_enrichments').findOne(
-        { ticker: String(ticker).toUpperCase(), fiscal_period: String(fiscalPeriod).toUpperCase() },
-        { projection: { _id: 0 } },
-      );
-      if (doc) {
-        // Chunks and facts live in separate collections (saveEnrichment splits
-        // them out and $unsets facts from the enrichment doc). Re-attach both,
-        // or downstream scripts that re-save the enrichment will clobber the
-        // local copy's facts.
-        const [chunks, facts] = await Promise.all([
-          database.collection('transcript_chunks')
-            .find({ ticker: doc.ticker, fiscal_period: doc.fiscal_period }, { projection: { _id: 0 } })
-            .toArray(),
-          database.collection('transcript_facts')
-            .find({ ticker: doc.ticker, fiscal_period: doc.fiscal_period }, { projection: { _id: 0 } })
-            .toArray(),
-        ]);
-        return { ...doc, chunks, ...(facts.length ? { facts } : {}) };
-      }
+      const mongoResult = await withMongoDatabase(async database => {
+        // Cross-quarter data has its own lightweight endpoint. Excluding its
+        // duplicated snapshot keeps a period-detail response small.
+        const doc = await database.collection('transcript_enrichments').findOne(
+          { ticker: String(ticker).toUpperCase(), fiscal_period: String(fiscalPeriod).toUpperCase() },
+          { projection: { _id: 0, crossQuarterAnalysis: 0 } },
+        );
+        if (!doc) return null;
+        const chunks = await database.collection('transcript_chunks')
+          .find({ ticker: doc.ticker, fiscal_period: doc.fiscal_period }, { projection: { _id: 0 } })
+          .toArray();
+        return { ...doc, chunks };
+      });
+      if (mongoResult) return mongoResult;
     } catch (error) {
       console.warn('[enrichment-store] MongoDB read failed; falling back to local:', error.message);
-    } finally {
-      await client.close().catch(() => {});
     }
   }
   return readEnrichmentLocal(ticker, fiscalPeriod);
@@ -54,53 +106,20 @@ async function readEnrichment(ticker, fiscalPeriod) {
 
 async function listLocalEnrichments() {
   if (process.env.MONGODB_URI) {
-    const { MongoClient } = require('mongodb');
-    const client = new MongoClient(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 8000 });
     try {
-      await client.connect();
-      const database = client.db(process.env.MONGODB_DB || undefined);
-      const docs = await database.collection('transcript_enrichments')
-        .find({}, { projection: { _id: 0 } })
-        .toArray();
-      if (docs.length) {
-        // Chunks and facts are stored in separate collections; re-attach both
-        // per enrichment. The analysis manager reparses any document lacking
-        // chunks, so returning summary-only docs makes it throw on the
-        // deployed site (which reads from Mongo) while working locally. Facts
-        // must be re-attached too: the fact/figure scripts re-save the whole
-        // enrichment to the local file, so a fact-less doc silently wipes the
-        // local facts (and leaves figure extraction with no candidates).
-        const [chunks, facts] = await Promise.all([
-          database.collection('transcript_chunks').find({}, { projection: { _id: 0 } }).toArray(),
-          database.collection('transcript_facts').find({}, { projection: { _id: 0 } }).toArray(),
-        ]);
-        const groupByKey = items => {
-          const map = new Map();
-          for (const item of items) {
-            const key = `${item.ticker}:${item.fiscal_period}`;
-            if (!map.has(key)) map.set(key, []);
-            map.get(key).push(item);
-          }
-          return map;
-        };
-        const chunksByKey = groupByKey(chunks);
-        const factsByKey = groupByKey(facts);
-        return docs.map(doc => {
-          const key = `${doc.ticker}:${doc.fiscal_period}`;
-          const docFacts = factsByKey.get(key);
-          return {
-            ...doc,
-            chunks: chunksByKey.get(key) || [],
-            ...(docFacts && docFacts.length ? { facts: docFacts } : {}),
-          };
-        });
-      }
+      const mongoResults = await listMongoEnrichments(database => database.collection('transcript_enrichments').find(
+        {},
+        { projection: { _id: 0, crossQuarterAnalysis: 0 } },
+      ).toArray());
+      if (mongoResults.length) return mongoResults;
     } catch (error) {
       console.warn('[enrichment-store] MongoDB list failed; falling back to local:', error.message);
-    } finally {
-      await client.close().catch(() => {});
     }
   }
+  return listLocalEnrichmentFiles();
+}
+
+function listLocalEnrichmentFiles() {
   if (!fs.existsSync(ROOT)) return [];
   return fs.readdirSync(ROOT, { withFileTypes: true })
     .filter(entry => entry.isDirectory())
@@ -117,6 +136,104 @@ async function listLocalEnrichments() {
         })
         .filter(Boolean);
     });
+}
+
+async function listMongoEnrichments(loadDocuments) {
+  return withMongoDatabase(async database => {
+    const docs = await loadDocuments(database);
+    if (!docs.length) return [];
+    const tickers = [...new Set(docs.map(doc => doc.ticker).filter(Boolean))];
+    const scope = tickers.length === 1 ? { ticker: tickers[0] } : {};
+    const [chunks, facts] = await Promise.all([
+      database.collection('transcript_chunks').find(scope, { projection: { _id: 0 } }).toArray(),
+      database.collection('transcript_facts').find(scope, { projection: { _id: 0 } }).toArray(),
+    ]);
+    const groupByKey = items => {
+      const map = new Map();
+      for (const item of items) {
+        const key = `${item.ticker}:${item.fiscal_period}`;
+        if (!map.has(key)) map.set(key, []);
+        map.get(key).push(item);
+      }
+      return map;
+    };
+    const chunksByKey = groupByKey(chunks);
+    const factsByKey = groupByKey(facts);
+    return docs.map(doc => {
+      const key = `${doc.ticker}:${doc.fiscal_period}`;
+      const docFacts = factsByKey.get(key);
+      return {
+        ...doc,
+        chunks: chunksByKey.get(key) || [],
+        ...(docFacts?.length ? { facts: docFacts } : {}),
+      };
+    });
+  });
+}
+
+async function listEnrichmentsForTicker(ticker, { completedOnly = false } = {}) {
+  const normalizedTicker = String(ticker || '').toUpperCase().replace(/[^A-Z0-9.-]/g, '');
+  if (process.env.MONGODB_URI) {
+    try {
+      const query = {
+        ticker: normalizedTicker,
+        ...(completedOnly ? { analysisCompletedAt: { $exists: true } } : {}),
+      };
+      const mongoResults = await listMongoEnrichments(database => database.collection('transcript_enrichments')
+        .find(query, { projection: { _id: 0, crossQuarterAnalysis: 0 } })
+        .toArray());
+      if (mongoResults.length) return mongoResults;
+    } catch (error) {
+      console.warn('[enrichment-store] MongoDB ticker read failed; falling back to local:', error.message);
+    }
+  }
+  return listLocalEnrichmentFiles()
+    .filter(doc => doc.ticker === normalizedTicker)
+    .filter(doc => !completedOnly || doc.analysisCompletedAt);
+}
+
+async function readAnalysisCacheForTicker(ticker) {
+  const normalizedTicker = String(ticker || '').toUpperCase().replace(/[^A-Z0-9.-]/g, '');
+  if (process.env.MONGODB_URI) {
+    try {
+      const mongoResult = await withMongoDatabase(async database => {
+        const query = { ticker: normalizedTicker, analysisCompletedAt: { $exists: true } };
+        const transcriptCount = await database.collection('transcript_enrichments').countDocuments(query);
+        if (!transcriptCount) return null;
+        const projection = transcriptCount > 1
+          ? { _id: 0, ticker: 1, fiscal_period: 1, crossQuarterAnalysis: 1 }
+          : { _id: 0, ticker: 1, fiscal_period: 1, transcriptAnalysis: 1 };
+        const latest = await database.collection('transcript_enrichments').findOne(
+          query,
+          { projection, sort: { year: -1, quarter: -1 } },
+        );
+        return { transcriptCount, latest };
+      });
+      if (mongoResult) return mongoResult;
+    } catch (error) {
+      console.warn('[enrichment-store] MongoDB analysis-cache read failed; falling back to local:', error.message);
+    }
+  }
+  const completed = listLocalEnrichmentFiles()
+    .filter(doc => doc.ticker === normalizedTicker && doc.analysisCompletedAt)
+    .sort((a, b) => `${a.year}${a.quarter}`.localeCompare(`${b.year}${b.quarter}`));
+  return completed.length ? { transcriptCount: completed.length, latest: completed.at(-1) } : null;
+}
+
+async function listAnalyzedTickers() {
+  if (process.env.MONGODB_URI) {
+    try {
+      const mongoTickers = await withMongoDatabase(database => database.collection('transcript_enrichments')
+        .distinct('ticker', { analysisCompletedAt: { $exists: true } }));
+      if (mongoTickers.length) return mongoTickers;
+    } catch (error) {
+      console.warn('[enrichment-store] MongoDB ticker list failed; falling back to local:', error.message);
+    }
+  }
+  return [...new Set(listLocalEnrichmentFiles()
+    .filter(doc => doc.analysisCompletedAt)
+    .map(doc => doc.ticker)
+    .filter(Boolean))];
 }
 
 // Which enrichments a batch script should process. A run scoped to a single
@@ -143,54 +260,44 @@ async function saveEnrichment(enrichment) {
 
   let mongoStored = false;
   if (process.env.MONGODB_URI) {
-    const { MongoClient } = require('mongodb');
-    const client = new MongoClient(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 8000 });
     try {
-      await client.connect();
-      const database = client.db(process.env.MONGODB_DB || undefined);
-      const enrichments = database.collection('transcript_enrichments');
-      const chunks = database.collection('transcript_chunks');
-      const facts = database.collection('transcript_facts');
-      await enrichments.createIndex({ ticker: 1, fiscal_period: 1 }, { unique: true, background: true });
-      await chunks.createIndex({ id: 1 }, { unique: true, background: true });
-      await chunks.createIndex({ ticker: 1, fiscal_period: 1, topic: 1 }, { background: true });
-      await facts.createIndex({ id: 1 }, { unique: true, background: true });
-      await facts.createIndex({ ticker: 1, fiscal_period: 1, topic: 1 }, { background: true });
+      mongoStored = await withMongoDatabase(async database => {
+        const enrichments = database.collection('transcript_enrichments');
+        const chunks = database.collection('transcript_chunks');
+        const facts = database.collection('transcript_facts');
+        await enrichments.createIndex({ ticker: 1, fiscal_period: 1 }, { unique: true, background: true });
+        await chunks.createIndex({ id: 1 }, { unique: true, background: true });
+        await chunks.createIndex({ ticker: 1, fiscal_period: 1, topic: 1 }, { background: true });
+        await facts.createIndex({ id: 1 }, { unique: true, background: true });
+        await facts.createIndex({ ticker: 1, fiscal_period: 1, topic: 1 }, { background: true });
 
-      const { chunks: chunkDocuments, facts: factDocuments = [], ...summary } = enrichment;
-      await enrichments.updateOne(
-        { ticker: enrichment.ticker, fiscal_period: enrichment.fiscal_period },
-        {
-          $set: { ...summary, updatedAt: new Date().toISOString() },
-          $unset: { facts: '' },
-        },
-        { upsert: true },
-      );
-      await chunks.deleteMany({
-        ticker: enrichment.ticker,
-        fiscal_period: enrichment.fiscal_period,
+        const { chunks: chunkDocuments, facts: factDocuments = [], ...summary } = enrichment;
+        await enrichments.updateOne(
+          { ticker: enrichment.ticker, fiscal_period: enrichment.fiscal_period },
+          {
+            $set: { ...summary, updatedAt: new Date().toISOString() },
+            $unset: { facts: '' },
+          },
+          { upsert: true },
+        );
+        await chunks.deleteMany({ ticker: enrichment.ticker, fiscal_period: enrichment.fiscal_period });
+        if (chunkDocuments.length) {
+          await chunks.insertMany(chunkDocuments.map(chunk => ({
+            ...chunk,
+            storedAt: new Date().toISOString(),
+          })));
+        }
+        await facts.deleteMany({ ticker: enrichment.ticker, fiscal_period: enrichment.fiscal_period });
+        if (factDocuments.length) {
+          await facts.insertMany(factDocuments.map(fact => ({
+            ...fact,
+            storedAt: new Date().toISOString(),
+          })));
+        }
+        return true;
       });
-      if (chunkDocuments.length) {
-        await chunks.insertMany(chunkDocuments.map(chunk => ({
-          ...chunk,
-          storedAt: new Date().toISOString(),
-        })));
-      }
-      await facts.deleteMany({
-        ticker: enrichment.ticker,
-        fiscal_period: enrichment.fiscal_period,
-      });
-      if (factDocuments.length) {
-        await facts.insertMany(factDocuments.map(fact => ({
-          ...fact,
-          storedAt: new Date().toISOString(),
-        })));
-      }
-      mongoStored = true;
     } catch (error) {
       console.warn('[enrichment-store] MongoDB write failed; local file was saved:', error.message);
-    } finally {
-      await client.close().catch(() => {});
     }
   }
 
@@ -201,9 +308,13 @@ async function saveEnrichment(enrichment) {
 }
 
 module.exports = {
+  closeMongoConnection,
   enrichmentPath,
+  listAnalyzedTickers,
+  listEnrichmentsForTicker,
   listLocalEnrichments,
   loadEnrichmentsForRun,
+  readAnalysisCacheForTicker,
   readEnrichment,
   readEnrichmentLocal,
   saveEnrichment,

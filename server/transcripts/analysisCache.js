@@ -1,6 +1,10 @@
 'use strict';
 
-const { listLocalEnrichments, saveEnrichment } = require('./enrichmentStore');
+const {
+  listEnrichmentsForTicker,
+  readAnalysisCacheForTicker,
+  saveEnrichment,
+} = require('./enrichmentStore');
 
 const CACHE_VERSION = 1;
 
@@ -74,9 +78,7 @@ async function buildAnalysisSnapshot(enrichments, type) {
 }
 
 async function completedEnrichmentsForTicker(ticker) {
-  const normalizedTicker = normalizeTicker(ticker);
-  return (await listLocalEnrichments())
-    .filter(enrichment => normalizeTicker(enrichment.ticker || enrichment.symbol) === normalizedTicker)
+  return (await listEnrichmentsForTicker(ticker, { completedOnly: true }))
     .filter(isCompleted)
     .sort((a, b) => quarterOrder(a) - quarterOrder(b));
 }
@@ -114,20 +116,20 @@ async function refreshAnalysisCacheForTicker(ticker) {
 // Read-only request path. It deliberately never imports or invokes the manager:
 // page navigation can load Mongo snapshots but cannot trigger analysis work.
 async function readCachedAnalysis(ticker) {
-  const enrichments = await completedEnrichmentsForTicker(ticker);
-  if (!enrichments.length) return null;
-  const latest = enrichments.at(-1);
-  const crossQuarter = enrichments.length > 1 ? latest.crossQuarterAnalysis : null;
-  const snapshot = crossQuarter || latest.transcriptAnalysis;
+  const cached = await readAnalysisCacheForTicker(ticker);
+  if (!cached) return null;
+  const { latest, transcriptCount } = cached;
+  const crossQuarter = transcriptCount > 1 ? latest?.crossQuarterAnalysis : null;
+  const snapshot = crossQuarter || latest?.transcriptAnalysis;
   if (!snapshot) return {
     pendingCache: true,
     ticker: normalizeTicker(ticker),
-    transcriptCount: enrichments.length,
+    transcriptCount,
   };
   return {
     ...snapshot,
     ticker: normalizeTicker(ticker),
-    transcriptCount: enrichments.length,
+    transcriptCount,
     hasCrossQuarter: Boolean(crossQuarter),
   };
 }
