@@ -216,16 +216,18 @@ async function fetchSecIncomeStatement(ticker) {
   return reports;
 }
 
-// Percent change with a sign-aware guard. A growth rate off a negative or zero
-// base is not interpretable — "net income went from -$1bn to -$0.5bn" is a
-// +50% move by the arithmetic and a 50% improvement in reality, and the two
-// disagree the moment the base flips sign. Loss-making bases return null and
-// render as an empty cell instead of a number that reads backwards.
+// Sign-aware percent change. Dividing the change by the magnitude of the prior
+// period preserves ordinary growth for positive bases while making movements
+// around losses read intuitively:
+//   -100 -> -50  = +50% improvement
+//   -50  -> -75  = -50% deterioration
+//   -50  ->  25  = +150% improvement / return to profit
+// A zero base remains undefined because no finite percentage can describe it.
 function growth(current, prior) {
   if (current == null || prior == null) return null;
   if (!Number.isFinite(current) || !Number.isFinite(prior)) return null;
-  if (prior <= 0) return null;
-  return current / prior - 1;
+  if (prior === 0) return null;
+  return (current - prior) / Math.abs(prior);
 }
 
 async function fetchIncomeStatement(ticker) {

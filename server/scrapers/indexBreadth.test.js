@@ -28,3 +28,69 @@ test('needsBootstrap flags caches too short to produce a useful SMA200 history',
   assert.equal(_test.needsBootstrap(short), true);
   assert.equal(_test.needsBootstrap(makeHistory(260)), false);
 });
+
+test('mergeBreadthDaily does not replace backfilled values with warm-up nulls', () => {
+  const history = {
+    sp500: {
+      '2026-01-02': { pctAboveBoth: 55, pctBelowBoth: 25, pctUp: 60 },
+    },
+  };
+  _test.mergeBreadthDaily(history, 'sp500', {
+    dates: ['2026-01-02'],
+    pctAboveBoth: [null],
+    pctBelowBoth: [null],
+    pctUp: [null],
+  });
+  assert.deepEqual(history.sp500['2026-01-02'], {
+    pctAboveBoth: 55,
+    pctBelowBoth: 25,
+    pctUp: 60,
+  });
+});
+
+test('mergeBreadthDaily still replaces valid values with newer valid values', () => {
+  const history = {
+    sp500: {
+      '2026-01-02': { pctAboveBoth: 55, pctBelowBoth: 25, pctUp: 60 },
+    },
+  };
+  _test.mergeBreadthDaily(history, 'sp500', {
+    dates: ['2026-01-02'],
+    pctAboveBoth: [57],
+    pctBelowBoth: [23],
+    pctUp: [62],
+  });
+  assert.deepEqual(history.sp500['2026-01-02'], {
+    pctAboveBoth: 57,
+    pctBelowBoth: 23,
+    pctUp: 62,
+  });
+});
+
+test('breadthSeriesNeedsRepair detects new series and internal gaps in every metric', () => {
+  assert.equal(_test.breadthSeriesNeedsRepair({ dates: [] }), true);
+  assert.equal(_test.breadthSeriesNeedsRepair({
+    dates: ['a', 'b', 'c'],
+    pctAboveBoth: [null, 50, 51],
+    pctBelowBoth: [null, 20, 19],
+    pctUp: [null, 55, 56],
+  }, 2), false);
+  assert.equal(_test.breadthSeriesNeedsRepair({
+    dates: ['a', 'b', 'c'],
+    pctAboveBoth: [null, 50, 51],
+    pctBelowBoth: [null, 20, 19],
+    pctUp: [50, null, 56],
+  }, 2), true);
+  assert.equal(_test.breadthSeriesNeedsRepair({
+    dates: ['a', 'b', 'c'],
+    pctAboveBoth: [null, 50, 51],
+    pctBelowBoth: [null, 20, 19],
+    pctUp: [null, 55, 56],
+  }, 3), true);
+});
+
+test('incompleteBreadthKeys includes absent configured indices', () => {
+  const keys = _test.incompleteBreadthKeys({});
+  assert.ok(keys.includes('sp500'));
+  assert.ok(keys.includes('topix'));
+});

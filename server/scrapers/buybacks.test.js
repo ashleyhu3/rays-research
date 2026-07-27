@@ -140,6 +140,23 @@ test('aggregateChina falls back to share cap x price cap when no amount is state
   assert.equal(months['2026-06'].amount, 12.5e6);
 });
 
+test('a month inside the range with no announcements records a real zero', () => {
+  // These tables are complete filing records, so a month with no rows means no
+  // buybacks were announced — not that the month is missing. Taiwan has exactly
+  // two such months since 2000 (2010-01, 2023-04).
+  const tw = aggregateTaiwan([
+    { date: '2023-03-10', code: '2330', shares: 1e6, priceLow: 10, priceHigh: 20 },
+    { date: '2023-05-10', code: '2317', shares: 1e6, priceLow: 10, priceHigh: 20 },
+  ]);
+  assert.deepEqual(tw['2023-04'], { amount: 0, floor: 0, count: 0 });
+
+  const cn = aggregateChina([
+    { DIM_SCODE: '000001', DIM_DATE: '2026-01-05 00:00:00', REPURAMOUNTLIMIT: 1e8 },
+    { DIM_SCODE: '000002', DIM_DATE: '2026-03-05 00:00:00', REPURAMOUNTLIMIT: 1e8 },
+  ]);
+  assert.deepEqual(cn['2026-02'], { amount: 0, floor: 0, count: 0 });
+});
+
 test('aggregateChina counts a plan once even if the table repeats it', () => {
   const row = { DIM_SCODE: '000005', DIM_DATE: '2026-06-03 00:00:00', REPURAMOUNTLIMIT: 1e8 };
   const months = aggregateChina([row, { ...row }]);

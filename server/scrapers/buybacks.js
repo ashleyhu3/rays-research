@@ -317,7 +317,7 @@ function aggregateChina(rows, sinceMonth) {
     if (Number.isFinite(amount) && amount > 0) bucket.amount += amount;
     if (Number.isFinite(floor) && floor > 0) bucket.floor += floor;
   }
-  return months;
+  return fillQuietMonths(months);
 }
 
 /* ── 3. Taiwan — MOPS treasury-stock filings ──────────────────────── */
@@ -400,6 +400,23 @@ function aggregateTaiwan(rows, sinceMonth) {
     bucket.count += 1;
     if (row.shares > 0 && row.priceHigh > 0) bucket.amount += row.shares * row.priceHigh;
     if (row.shares > 0 && row.priceLow > 0) bucket.floor += row.shares * row.priceLow;
+  }
+  return fillQuietMonths(months);
+}
+
+/**
+ * Write an explicit zero for every month inside the covered range that produced
+ * no announcements. China and Taiwan come from complete filing tables, so a
+ * month with no rows genuinely saw no buybacks announced — quiet, not missing.
+ * Recording that as a real zero keeps "absent from storage" meaning exactly one
+ * thing everywhere: never collected. (Taiwan has two such months since 2000:
+ * 2010-01 and 2023-04.)
+ */
+function fillQuietMonths(months) {
+  const keys = Object.keys(months).sort();
+  if (!keys.length) return months;
+  for (let month = keys[0]; month <= keys[keys.length - 1]; month = shiftMonth(month, 1)) {
+    if (!months[month]) months[month] = { amount: 0, floor: 0, count: 0 };
   }
   return months;
 }

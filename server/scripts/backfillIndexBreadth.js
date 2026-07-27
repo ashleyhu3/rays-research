@@ -5,6 +5,7 @@ const allBlobs = require('../storageBlobs');
 const {
   readIndexBreadth,
   updateIndexBreadth,
+  _test: { incompleteBreadthKeys },
 } = require('../scrapers/indexBreadth');
 
 const NAMES = new Set([
@@ -26,16 +27,7 @@ async function main() {
   try {
     await storage.init(allBlobs.filter(blob => NAMES.has(blob.name)));
     const before = readIndexBreadth();
-    const incompleteKeys = Object.entries(before)
-      .filter(([, series]) => {
-        const firstValid = series.pctAboveBoth?.findIndex(value => value != null) ?? -1;
-        // A brand-new index has no valid observations at all (firstValid < 0)
-        // and still needs its initial bootstrap; an existing one is incomplete
-        // only if a gap appears after its first valid observation.
-        if (firstValid < 0) return true;
-        return series.pctAboveBoth.slice(firstValid).some(value => value == null);
-      })
-      .map(([key]) => key);
+    const incompleteKeys = incompleteBreadthKeys(before);
 
     if (!incompleteKeys.length) {
       console.log('[index-breadth-backfill] all breadth series are already continuous');

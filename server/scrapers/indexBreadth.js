@@ -359,10 +359,15 @@ function saveBreadthHistory(h) { storage.write(BREADTH_BLOB, BREADTH_FILE, h); }
 function mergeBreadthDaily(history, key, computed) {
   history[key] = history[key] ?? {};
   for (let i = 0; i < computed.dates.length; i += 1) {
-    history[key][computed.dates[i]] = {
-      pctAboveBoth: computed.pctAboveBoth[i],
-      pctBelowBoth: computed.pctBelowBoth[i],
-      pctUp: computed.pctUp[i],
+    const date = computed.dates[i];
+    const previous = history[key][date] ?? {};
+    // A steady-state raw cache contains only 260 observations. Its first 199
+    // SMA200 results are therefore null by construction; those warm-up nulls
+    // must never erase valid values produced by an earlier two-year bootstrap.
+    history[key][date] = {
+      pctAboveBoth: computed.pctAboveBoth[i] ?? previous.pctAboveBoth ?? null,
+      pctBelowBoth: computed.pctBelowBoth[i] ?? previous.pctBelowBoth ?? null,
+      pctUp: computed.pctUp[i] ?? previous.pctUp ?? null,
     };
   }
 }
@@ -376,6 +381,30 @@ function assembleBreadth(history, key) {
     pctBelowBoth: dates.map(d => byDate[d]?.pctBelowBoth ?? null),
     pctUp: dates.map(d => byDate[d]?.pctUp ?? null),
   };
+}
+
+const BREADTH_METRICS = ['pctAboveBoth', 'pctBelowBoth', 'pctUp'];
+
+function breadthSeriesNeedsRepair(series, minValidObservations = SMA_LONG) {
+  if (!series?.dates?.length) return true;
+  return BREADTH_METRICS.some(metric => {
+    const values = series[metric] ?? [];
+    const firstValid = values.findIndex(value => value != null);
+    // A wholly empty metric needs bootstrapping. Null warm-up observations
+    // before the first valid value are expected, but later gaps are not. Also
+    // require enough valid history to cover most of the page's one-year view;
+    // this is what distinguishes an under-filled legacy 260-row bootstrap
+    // (only ~60 valid SMA200 rows) from a healthy two-year bootstrap.
+    return firstValid < 0
+      || values.slice(firstValid).some(value => value == null)
+      || values.filter(value => value != null).length < minValidObservations;
+  });
+}
+
+function incompleteBreadthKeys(payload) {
+  return INDEX_CONFIGS
+    .map(config => config.key)
+    .filter(key => breadthSeriesNeedsRepair(payload?.[key]));
 }
 
 function assembleAllBreadth() {
@@ -393,7 +422,11 @@ async function updateIndexBreadth(indexKey, { forceBootstrap = false } = {}) {
 
   const tickers = await config.fetchConstituents();
   const rawHistory = loadRaw(indexKey);
-  const isBootstrap = forceBootstrap || needsBootstrap(rawHistory);
+  const breadthHistory = loadBreadthHistory();
+  const existingSeries = assembleBreadth(breadthHistory, indexKey);
+  const isBootstrap = forceBootstrap
+    || needsBootstrap(rawHistory)
+    || breadthSeriesNeedsRepair(existingSeries);
   // Steady-state updates only need to overlap the retained observations. A
   // calendar year safely covers 260 sessions across all supported markets.
   const windowDays = isBootstrap ? BOOTSTRAP_WINDOW_DAYS : 365;
@@ -417,12 +450,13 @@ async function updateIndexBreadth(indexKey, { forceBootstrap = false } = {}) {
   // Compute the aggregate from the FULL just-fetched window (all of it on a
   // bootstrap run) before pruning — pruning first would throw away the
   // bootstrap history before it's ever used to compute anything.
-  const dates = Object.keys(rawHistory).sort();
+  const dates = Object.keys(rawHistory)
+    .filter(date => /^\d{4}-\d{2}-\d{2}$/.test(date))
+    .sort();
   const closesByTicker = {};
   for (const t of tickers) closesByTicker[t] = dates.map(d => rawHistory[d]?.[t]?.close ?? null);
   const aggregated = computeAggregates(dates, closesByTicker);
 
-  const breadthHistory = loadBreadthHistory();
   mergeBreadthDaily(breadthHistory, indexKey, aggregated);
   saveBreadthHistory(breadthHistory);
 
@@ -450,12 +484,17 @@ async function updateIndexBreadth(indexKey, { forceBootstrap = false } = {}) {
 }
 
 async function updateAllIndexBreadth() {
+  const failures = [];
   for (const config of INDEX_CONFIGS) {
     try {
       await updateIndexBreadth(config.key);
     } catch (e) {
+      failures.push(`${config.key}: ${e.message}`);
       console.warn(`[indexBreadth] ${config.key}: ${e.message}`);
     }
+  }
+  if (failures.length) {
+    throw new Error(`Breadth refresh failed for ${failures.join('; ')}`);
   }
   return assembleAllBreadth();
 }
@@ -472,6 +511,6 @@ module.exports = {
     needsBootstrap,
     fetchGithubCsvConstituents, fetchSoxConstituents, fetchNikkei225Constituents,
     fetchChinextConstituents, fetchTaiexConstituents, fetchKospi200Constituents, fetchTopixConstituents,
-    assembleBreadth, mergeBreadthDaily,
+    assembleBreadth, mergeBreadthDaily, breadthSeriesNeedsRepair, incompleteBreadthKeys,
   },
 };

@@ -92,6 +92,7 @@ app.use('/api/metrics-history', requireStorageBlobs('metricsHistory'));
 app.use('/api/china-liquidity', requireStorageBlobs('chinaLiquidityHistory'));
 app.use('/api/us-liquidity', requireStorageBlobs('usLiquidityHistory'));
 app.use('/api/carry-trade', requireStorageBlobs('carryTradeHistory'));
+app.use('/api/buybacks', requireStorageBlobs('buybackHistory'));
 app.use('/api/korea-leverage', requireStorageBlobs('koreaLeverageHistory'));
 app.use('/api/us-performance', requireStorageBlobs('usPerformanceHistory'));
 app.use('/api/hk-china-performance', requireStorageBlobs('hkChinaPerformanceHistory'));
@@ -826,6 +827,10 @@ const BREADTH_RAW_BLOB = {
   csi300: 'breadthRawCsi300History',
   sox: 'breadthRawSoxHistory',
   nikkei225: 'breadthRawNikkei225History',
+  chinext: 'breadthRawChinextHistory',
+  taiex: 'breadthRawTaiexHistory',
+  kospi200: 'breadthRawKospi200History',
+  topix: 'breadthRawTopixHistory',
 };
 
 app.post(
@@ -835,13 +840,11 @@ app.post(
   async (_req, res) => {
     try {
       const before = readIndexBreadth();
-      const incompleteKeys = Object.entries(before)
-        .filter(([, series]) => {
-          const firstValid = series.pctAboveBoth?.findIndex(value => value != null) ?? -1;
-          return firstValid >= 0
-            && series.pctAboveBoth.slice(firstValid).some(value => value == null);
-        })
-        .map(([key]) => key);
+      const {
+        updateIndexBreadth,
+        _test: { incompleteBreadthKeys },
+      } = require('./scrapers/indexBreadth');
+      const incompleteKeys = incompleteBreadthKeys(before);
 
       if (!incompleteKeys.length) {
         return res.json({ ok: true, rebuilt: [], message: 'All breadth series are already continuous' });
@@ -858,7 +861,6 @@ app.post(
         }),
       ]);
 
-      const { updateIndexBreadth } = require('./scrapers/indexBreadth');
       for (const key of incompleteKeys) {
         await updateIndexBreadth(key, { forceBootstrap: true });
       }

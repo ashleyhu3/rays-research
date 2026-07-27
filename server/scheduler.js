@@ -125,6 +125,12 @@ PERSISTED_ONLY.add('buybacks');
 
 // Hard cap per scraper so one hung source can never wedge a refresh
 const SCRAPE_TIMEOUT = 5 * 60000;
+// Breadth fetches daily OHLC for thousands of constituents across ten
+// indices, sequentially to avoid Yahoo rate limits. Five minutes can expire
+// while a healthy refresh is still working and falsely report it as failed.
+const SCRAPE_TIMEOUT_BY_KEY = {
+  indexBreadth: 30 * 60000,
+};
 function withTimeout(promise, ms, key) {
   return Promise.race([
     promise,
@@ -134,7 +140,11 @@ function withTimeout(promise, ms, key) {
 
 async function refreshAll(keys = Object.keys(scrapers)) {
   console.log(`[refresh] Starting: ${keys.join(', ')}`);
-  const results = await Promise.allSettled(keys.map(k => withTimeout(scrapers[k](), SCRAPE_TIMEOUT, k)));
+  const results = await Promise.allSettled(keys.map(k => withTimeout(
+    scrapers[k](),
+    SCRAPE_TIMEOUT_BY_KEY[k] ?? SCRAPE_TIMEOUT,
+    k,
+  )));
   keys.forEach((k, i) => {
     if (results[i].status === 'fulfilled' && results[i].value != null) {
       if (!PERSISTED_ONLY.has(k)) {

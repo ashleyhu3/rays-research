@@ -23,12 +23,13 @@ test('a fiscal period is labelled by the calendar quarter it actually covers', (
   assert.equal(fiscalQuarterLabel(undefined), null);
 });
 
-test('growth off a non-positive base is null, not a sign-flipped percentage', () => {
+test('growth uses the prior magnitude so changes around losses keep an intuitive sign', () => {
   assert.equal(growth(150, 100), 0.5);
   assert.equal(growth(50, 100), -0.5);
-  // A loss narrowing from -1000 to -500 is a 50% improvement but arithmetic
-  // says -50%; refusing to answer beats printing the wrong sign.
-  assert.equal(growth(-500, -1000), null);
+  assert.equal(growth(-500, -1000), 0.5);
+  assert.equal(growth(-1500, -1000), -0.5);
+  assert.equal(growth(500, -1000), 1.5);
+  assert.equal(growth(-500, 1000), -1.5);
   assert.equal(growth(500, 0), null);
   assert.equal(growth(500, null), null);
   assert.equal(growth(null, 500), null);
