@@ -236,12 +236,12 @@ function buildEqualWeightChartData(payload, startDate, endDate) {
     datasets: [
       {
         type: 'bar',
-        label: 'RSP Volume',
+        label: 'RSP Trading Volume',
         fullName: 'Invesco S&P 500 Equal Weight ETF trading volume',
         data: volumes,
         yAxisID: 'volume',
-        backgroundColor: 'rgba(242,177,52,.18)',
-        borderColor: 'rgba(242,177,52,.38)',
+        backgroundColor: 'rgba(60,140,221,.38)',
+        borderColor: 'rgba(60,140,221,.72)',
         borderWidth: 1,
         barPercentage: 1,
         categoryPercentage: 1,
