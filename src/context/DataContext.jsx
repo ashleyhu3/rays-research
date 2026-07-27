@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { fetchAllProgressive } from '../services/fetchers';
 import { getCached, setCached } from '../services/cache';
+import { preloadDashboardPages } from '../services/dashboardPreload';
 import { adminHeaders, clearAdminSecret } from '../utils/adminAuth';
 
 export const DataContext = createContext(null);
@@ -93,6 +94,10 @@ export function DataProvider({ children }) {
   }, [applyLive]);
 
   useEffect(() => {
+    // Page-specific endpoints used to wait until their component mounted.
+    // Start them on every full-page load so navigation adopts warm/in-flight
+    // data instead of beginning from zero after the user clicks a page.
+    preloadDashboardPages();
     load(false);
     timer.current = setInterval(() => load(true), 24 * 60 * 60 * 1000);
     return () => {

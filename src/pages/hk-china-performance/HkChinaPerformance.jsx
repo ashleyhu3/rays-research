@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Line } from 'react-chartjs-2';
 import ChartCard from '../../components/chart/ChartCard';
 import { useResource } from '../../services/resourceCache';
@@ -400,9 +400,6 @@ function premiumChartOptions() {
 export default function HkChinaPerformance({ section = null }) {
   const [startDate, setStartDate] = useState(() => isoYearsAgo(1));
   const [endDate, setEndDate] = useState(() => todayIso());
-  const [premiumPayload, setPremiumPayload] = useState(null);
-  const [premiumLoading, setPremiumLoading] = useState(false);
-  const [premiumError, setPremiumError] = useState(null);
   const fetchStartDate = useMemo(
     () => isoDaysBefore(startDate, ROLLING_FETCH_LOOKBACK_DAYS),
     [startDate]
@@ -414,21 +411,15 @@ export default function HkChinaPerformance({ section = null }) {
     [fetchStartDate, endDate]
   );
   const { data: payload, error, loading } = useResource(perfUrl);
-
-  useEffect(() => {
-    if (section !== 'sentiment') return undefined;
-    let live = true;
-    setPremiumLoading(true);
-    setPremiumError(null);
-    const params = new URLSearchParams({ start: startDate, end: endDate });
-    fetch(`/api/china-etf-premium?${params}`)
-      .then(response => (response.ok
-        ? response.json()
-        : response.json().then(body => Promise.reject(new Error(body.error ?? `HTTP ${response.status}`)))))
-      .then(data => { if (live) { setPremiumPayload(data); setPremiumLoading(false); } })
-      .catch(fetchError => { if (live) { setPremiumError(fetchError.message); setPremiumLoading(false); } });
-    return () => { live = false; };
-  }, [section, startDate, endDate]);
+  const premiumUrl = useMemo(
+    () => `/api/china-etf-premium?${new URLSearchParams({ start: startDate, end: endDate })}`,
+    [startDate, endDate],
+  );
+  const {
+    data: premiumPayload,
+    loading: premiumLoading,
+    error: premiumError,
+  } = useResource(premiumUrl);
 
   const overviewChartData = useMemo(
     () => (payload ? buildOverviewChartData(payload, startDate, endDate) : null),

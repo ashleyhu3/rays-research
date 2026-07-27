@@ -115,14 +115,19 @@ const HISTORY = createPersistedSeries({
   blob: 'usPerformanceHistory',
   file: path.join(__dirname, '..', 'data', 'usPerformanceHistory.json'),
   tickers: TICKERS,
-  fields: ['closes', 'adjCloses'],
+  fields: ['closes', 'adjCloses', 'volumes'],
 });
 
 async function fetchSeries(yf, ticker, start, end) {
   const chart = await withRetry(() => yf.chart(ticker, { period1: start, period2: end, interval: '1d' }));
   const quotes = (chart?.quotes ?? []).filter(q => q.date && q.close != null);
   // adjclose is absent for indices (no dividends to adjust for) — fall back to close.
-  return quotes.map(q => ({ date: isoDate(q.date), close: q.close, adjClose: q.adjclose ?? q.close }));
+  return quotes.map(q => ({
+    date: isoDate(q.date),
+    close: q.close,
+    adjClose: q.adjclose ?? q.close,
+    volume: Number.isFinite(q.volume) && q.volume > 0 ? q.volume : null,
+  }));
 }
 
 // Yahoo Finance carries only a single live snapshot for ^VIXEQ (no chart
@@ -158,6 +163,8 @@ async function fetchCboeIndexHistory(symbol, ticker) {
 }
 
 const VIXEQ_TICKER = '^VIXEQ';
+const RSP_TICKER = 'RSP';
+const VOLUME_HISTORY_DAYS = 1825;
 
 function inclusiveEndDate(endDate) {
   const end = new Date(endDate);
@@ -195,12 +202,14 @@ async function getUsPerformance(startDate, endDate = new Date()) {
   const series = results.map(r => {
     const byDate = new Map(r.points.map(p => [p.date, p.close]));
     const byDateAdj = new Map(r.points.map(p => [p.date, p.adjClose]));
+    const byDateVolume = new Map(r.points.map(p => [p.date, p.volume]));
     return {
       ticker: r.ticker,
       label: r.label,
       name: r.name,
       closes: dates.map(d => byDate.get(d) ?? null),
       adjCloses: dates.map(d => byDateAdj.get(d) ?? null),
+      volumes: dates.map(d => byDateVolume.get(d) ?? null),
       error: r.error,
     };
   });
@@ -208,9 +217,37 @@ async function getUsPerformance(startDate, endDate = new Date()) {
   return { start: dates[0] ?? isoDate(start), end: dates[dates.length - 1] ?? isoDate(endDate), dates, series };
 }
 
+async function backfillRspVolumeIfNeeded(endDate) {
+  const stored = HISTORY.assemble();
+  const rsp = stored.series.find(series => series.ticker === RSP_TICKER);
+  const historicalCutoff = isoDaysAgo(60);
+  const hasHistoricalVolume = rsp?.volumes?.some(
+    (volume, index) => volume != null && stored.dates[index] < historicalCutoff
+  );
+  if (hasHistoricalVolume) return;
+
+  const points = await fetchSeries(
+    getYF(),
+    RSP_TICKER,
+    new Date(isoDaysAgo(VOLUME_HISTORY_DAYS)),
+    inclusiveEndDate(endDate)
+  );
+  HISTORY.merge({
+    dates: points.map(point => point.date),
+    series: [{ ticker: RSP_TICKER, volumes: points.map(point => point.volume) }],
+  });
+}
+
 async function updateUsPerformance(days = 45) {
   const end = new Date().toISOString().slice(0, 10);
   HISTORY.merge(await getUsPerformance(isoDaysAgo(days), end));
+  try {
+    // Existing stores predate volume persistence. Fill five years of RSP
+    // volume once so every date preset gets bars immediately after refresh.
+    await backfillRspVolumeIfNeeded(end);
+  } catch (e) {
+    console.warn(`[usPerformance] RSP volume backfill: ${e.message}`);
+  }
   try {
     HISTORY.merge(await fetchCboeIndexHistory('VIXEQ', VIXEQ_TICKER));
   } catch (e) {

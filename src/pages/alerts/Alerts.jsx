@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useOptionsReport } from '../../context/OptionsReportContext';
+import { useResource } from '../../services/resourceCache';
 import EarningsCalendar from './Calendar';
 
 // Sentinel `selected` value for the Calendar nav item — distinct from any
@@ -342,19 +343,11 @@ const PINNED_TICKER = 'SOXX';
 export default function Alerts() {
   const { report, loading, msg, load } = useOptionsReport();
   const [selected, setSelected] = useState(null);
-  const [calEvents, setCalEvents] = useState([]);
   const [search, setSearch] = useState('');
+  const { data: calendarData } = useResource('/api/alerts/earnings-calendar');
+  const calEvents = calendarData?.events ?? [];
 
   useEffect(() => { load(); }, [load]);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch('/api/alerts/earnings-calendar')
-      .then(res => res.json())
-      .then(json => { if (!cancelled) setCalEvents(json.events ?? []); })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, []);
 
   // Sidebar order: SOXX pinned first, then every other ticker by how soon its
   // next earnings call is (today counts as the closest). Tickers whose call

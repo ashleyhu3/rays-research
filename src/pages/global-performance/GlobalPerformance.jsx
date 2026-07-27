@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Line } from 'react-chartjs-2';
 import ChartCard from '../../components/chart/ChartCard';
 import { GLOBAL_INDICES, BREADTH_PHASE1_KEYS } from '../../config/globalIndices';
 import { GRID, TICK, BORD } from '../../utils/chartHelpers';
+import { useResource } from '../../services/resourceCache';
 
 const PRESETS = [
   { id: 'ytd', label: 'YTD', getStart: () => `${new Date().getFullYear()}-01-01` },
@@ -217,33 +218,12 @@ export default function GlobalPerformance({ section = null }) {
   const [endDate, setEndDate] = useState(() => todayIso());
   const maxDate = todayIso();
 
-  const [indicesPayload, setIndicesPayload] = useState(null);
-  const [indicesError, setIndicesError] = useState(null);
-  useEffect(() => {
-    let live = true;
-    const params = new URLSearchParams({ start: '2000-01-01', end: maxDate });
-    fetch(`/api/global-indices?${params}`)
-      .then(response => (response.ok
-        ? response.json()
-        : response.json().then(body => Promise.reject(new Error(body.error ?? `HTTP ${response.status}`)))))
-      .then(data => { if (live) setIndicesPayload(data); })
-      .catch(fetchError => { if (live) setIndicesError(fetchError.message); });
-    return () => { live = false; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const [breadthPayload, setBreadthPayload] = useState(null);
-  const [breadthError, setBreadthError] = useState(null);
-  useEffect(() => {
-    let live = true;
-    fetch('/api/index-breadth')
-      .then(response => (response.ok
-        ? response.json()
-        : response.json().then(body => Promise.reject(new Error(body.error ?? `HTTP ${response.status}`)))))
-      .then(data => { if (live) setBreadthPayload(data); })
-      .catch(fetchError => { if (live) setBreadthError(fetchError.message); });
-    return () => { live = false; };
-  }, []);
+  const indicesUrl = useMemo(
+    () => `/api/global-indices?${new URLSearchParams({ start: '2000-01-01', end: maxDate })}`,
+    [maxDate],
+  );
+  const { data: indicesPayload, error: indicesError } = useResource(indicesUrl);
+  const { data: breadthPayload, error: breadthError } = useResource('/api/index-breadth');
 
   const breadthChartPairs = useMemo(() => {
     if (!breadthPayload) return [];

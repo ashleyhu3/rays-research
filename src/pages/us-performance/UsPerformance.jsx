@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Line } from 'react-chartjs-2';
 import ChartCard from '../../components/chart/ChartCard';
 import { useResource } from '../../services/resourceCache';
@@ -215,6 +215,39 @@ function buildPairChartData(payload, numMeta, denMeta, startDate, endDate) {
         tension: 0.15,
         spanGaps: true,
       },
+    ],
+  };
+}
+
+function buildEqualWeightChartData(payload, startDate, endDate) {
+  const rspMeta = metaForLabel('RSP');
+  const chartData = rspMeta
+    ? buildPairChartData(payload, rspMeta, SPX_META, startDate, endDate)
+    : null;
+  const rspSeries = rspMeta && findSeries(payload, rspMeta.ticker);
+  const bounds = visibleBounds(payload.dates, startDate, endDate);
+  if (!chartData || !rspSeries?.volumes || !bounds) return chartData;
+
+  const volumes = sliceBounds(rspSeries.volumes, bounds);
+  if (!volumes.some(Number.isFinite)) return chartData;
+
+  return {
+    ...chartData,
+    datasets: [
+      {
+        type: 'bar',
+        label: 'RSP Volume',
+        fullName: 'Invesco S&P 500 Equal Weight ETF trading volume',
+        data: volumes,
+        yAxisID: 'volume',
+        backgroundColor: 'rgba(242,177,52,.18)',
+        borderColor: 'rgba(242,177,52,.38)',
+        borderWidth: 1,
+        barPercentage: 1,
+        categoryPercentage: 1,
+        order: 2,
+      },
+      ...chartData.datasets,
     ],
   };
 }
@@ -518,7 +551,7 @@ function putCallChartOptions() {
   };
 }
 
-function chartOptions({ relative = false, compact = false } = {}) {
+function chartOptions({ relative = false, compact = false, volume = false } = {}) {
   return {
     responsive: true,
     maintainAspectRatio: false,
@@ -546,6 +579,9 @@ function chartOptions({ relative = false, compact = false } = {}) {
           label: c => {
             const v = c.parsed.y;
             if (v == null) return ` ${c.dataset.label}: —`;
+            if (c.dataset.yAxisID === 'volume') {
+              return ` ${c.dataset.label}: ${new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(v)}`;
+            }
             const pct = v - 100;
             if (relative) {
               const ratio = c.dataset.ratios?.[c.dataIndex];
@@ -564,6 +600,19 @@ function chartOptions({ relative = false, compact = false } = {}) {
         ticks: { ...TICK, maxTicksLimit: compact ? 5 : 8, callback: v => v.toFixed(0) },
         border: BORD,
       },
+      ...(volume ? {
+        volume: {
+          position: 'right',
+          beginAtZero: true,
+          grid: { drawOnChartArea: false },
+          ticks: {
+            ...TICK,
+            maxTicksLimit: 4,
+            callback: value => new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(value),
+          },
+          border: BORD,
+        },
+      } : {}),
     },
   };
 }
@@ -663,8 +712,7 @@ export default function UsPerformance({ section = null }) {
   }, [payload, startDate, endDate]);
   const equalWeightChart = useMemo(() => {
     if (!payload) return null;
-    const rspMeta = metaForLabel('RSP');
-    return rspMeta ? buildPairChartData(payload, rspMeta, SPX_META, startDate, endDate) : null;
+    return buildEqualWeightChartData(payload, startDate, endDate);
   }, [payload, startDate, endDate]);
   const techCharts = useMemo(() => {
     if (!payload) return [];
@@ -734,21 +782,9 @@ export default function UsPerformance({ section = null }) {
     return numMeta && denMeta ? buildPairChartData(payload, numMeta, denMeta, startDate, endDate) : null;
   }, [payload, startDate, endDate]);
 
-  // AAII weekly sentiment isn't part of the price-series payload above — it's
-  // fetched lazily, only once the Sentiment subtab is actually opened.
-  const [aaiiData, setAaiiData] = useState(null);
-  const [aaiiError, setAaiiError] = useState(null);
-  useEffect(() => {
-    if (section !== 'sentiment' || aaiiData || aaiiError) return undefined;
-    let live = true;
-    fetch('/api/aaii-sentiment')
-      .then(response => (response.ok
-        ? response.json()
-        : response.json().then(body => Promise.reject(new Error(body.error ?? `HTTP ${response.status}`)))))
-      .then(data => { if (live) setAaiiData(data); })
-      .catch(fetchError => { if (live) setAaiiError(fetchError.message); });
-    return () => { live = false; };
-  }, [section, aaiiData, aaiiError]);
+  // These secondary Sentiment datasets are shared resources too, so refresh
+  // can warm them before the subtab is opened.
+  const { data: aaiiData, error: aaiiError } = useResource('/api/aaii-sentiment');
   const aaiiChartData = useMemo(() => {
     if (!aaiiData?.dates?.length) return null;
     // Respect the page's shared date-range picker, same as every other chart here.
@@ -767,19 +803,7 @@ export default function UsPerformance({ section = null }) {
 
   // SPX put/call ratios are backfilled from the same 200-session historical
   // feed that powers Barchart's lower chart, then refreshed on the server.
-  const [putCallData, setPutCallData] = useState(null);
-  const [putCallError, setPutCallError] = useState(null);
-  useEffect(() => {
-    if (section !== 'sentiment' || putCallData || putCallError) return undefined;
-    let live = true;
-    fetch('/api/spx-put-call-ratio')
-      .then(response => (response.ok
-        ? response.json()
-        : response.json().then(body => Promise.reject(new Error(body.error ?? `HTTP ${response.status}`)))))
-      .then(data => { if (live) setPutCallData(data); })
-      .catch(fetchError => { if (live) setPutCallError(fetchError.message); });
-    return () => { live = false; };
-  }, [section, putCallData, putCallError]);
+  const { data: putCallData, error: putCallError } = useResource('/api/spx-put-call-ratio');
   const putCallChartData = useMemo(() => {
     if (!putCallData?.dates?.length) return null;
     const bounds = visibleBounds(putCallData.dates, startDate, endDate);
@@ -835,7 +859,7 @@ export default function UsPerformance({ section = null }) {
 
   const ratioGrid = (charts, pinned = []) => (
     <div className="usp-etf-grid">
-      {[...pinned, ...rankChartsByLatestStrength(charts)].map(({ id, title, data }) => (
+      {[...pinned, ...rankChartsByLatestStrength(charts)].map(({ id, title, data, volume = false }) => (
         <ChartCard
           key={id}
           title={title}
@@ -846,7 +870,7 @@ export default function UsPerformance({ section = null }) {
         >
           <Line
             data={data}
-            options={chartOptions({ relative: true, compact: true })}
+            options={chartOptions({ relative: true, compact: true, volume })}
             plugins={[BASELINE_100]}
           />
         </ChartCard>
@@ -882,7 +906,12 @@ export default function UsPerformance({ section = null }) {
       {section === 'all' && !error && (relativeCharts.length > 0 || equalWeightChart) &&
         ratioGrid(
           relativeCharts.map(({ etf, data }) => ({ id: etf.ticker, title: etf.name, data })),
-          equalWeightChart ? [{ id: 'rsp-spx', title: 'Equal Weight', data: equalWeightChart }] : []
+          equalWeightChart ? [{
+            id: 'rsp-spx',
+            title: 'Equal Weight',
+            data: equalWeightChart,
+            volume: equalWeightChart.datasets.some(dataset => dataset.yAxisID === 'volume'),
+          }] : []
         )}
 
       {section === 'tech' && !error && techCharts.length > 0 && ratioGrid(techCharts)}
