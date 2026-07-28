@@ -63,10 +63,11 @@ async function main() {
   // them together inside refreshAll's Promise.allSettled burst, causing SZSE
   // to block the runner and leaving every Shenzhen ETF stale. Finish flow
   // first, then start the rest of the collection.
+  let isolatedFailure = null;
   if (keys.includes('chinaNationalTeamFlow') && keys.length > 1) {
     const [flowResult] = await scheduler.refreshAll(['chinaNationalTeamFlow']);
     if (flowResult?.status !== 'fulfilled' || flowResult.value == null) {
-      throw flowResult?.reason ?? new Error('chinaNationalTeamFlow returned no data');
+      isolatedFailure = flowResult?.reason ?? new Error('chinaNationalTeamFlow returned no data');
     }
     keys = keys.filter(key => key !== 'chinaNationalTeamFlow');
   }
@@ -78,6 +79,9 @@ async function main() {
 
   await storage.flush();              // ensure all Mongo upserts land before exit
   await storage.close();
+  // Keep collecting unrelated sources even when SZSE is unavailable, but make
+  // the one-shot job non-green after all safe writes have been flushed.
+  if (isolatedFailure) throw isolatedFailure;
   console.log('[collect] done.');
 }
 
