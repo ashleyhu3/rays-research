@@ -172,13 +172,19 @@ async function getHkPerformance(days = 30) {
   const startIso = isoDate(start);
   const endIso = isoDate(today);
 
+  // East Money closes synchronized bursts for these HK index endpoints. Fetch
+  // volume sequentially so the first worker batch is not consistently lost.
+  const volumeByTicker = new Map();
+  for (const meta of TICKERS) {
+    const volumes = await fetchEastmoneyVolumeSeries(meta.eastmoneyCode, startIso, endIso);
+    volumeByTicker.set(meta.ticker, volumes);
+  }
+
   const results = await mapLimit(TICKERS, 4, async meta => {
-    const [levelsResult, volumes] = await Promise.all([
-      fetchHsiIndexSeries(HSI_CODES[meta.ticker], days, startIso)
-        .then(levels => ({ levels, error: null }))
-        .catch(error => ({ levels: [], error: error.message })),
-      fetchEastmoneyVolumeSeries(meta.eastmoneyCode, startIso, endIso),
-    ]);
+    const levelsResult = await fetchHsiIndexSeries(HSI_CODES[meta.ticker], days, startIso)
+      .then(levels => ({ levels, error: null }))
+      .catch(error => ({ levels: [], error: error.message }));
+    const volumes = volumeByTicker.get(meta.ticker) ?? [];
     const levelByDate = new Map(levelsResult.levels.map(point => [point.date, point.close]));
     const volumeByDate = new Map(volumes.map(point => [point.date, point.volume]));
     const dates = [...new Set([...levelByDate.keys(), ...volumeByDate.keys()])].sort();
