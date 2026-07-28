@@ -1,6 +1,7 @@
 'use strict';
 
 const path = require('path');
+const storage = require('../storage');
 const { createPersistedSeries, isoDaysAgo } = require('./persistedSeries');
 
 const BROWSER_UA =
@@ -121,9 +122,11 @@ const TICKERS = [
   { ticker: '512890.SS', label: '512890', name: '红利低波' },
 ];
 
+const HISTORY_BLOB = 'hkChinaPerformanceHistory';
+const HISTORY_FILE = path.join(__dirname, '..', 'data', 'hkChinaPerformanceHistory.json');
 const HISTORY = createPersistedSeries({
-  blob: 'hkChinaPerformanceHistory',
-  file: path.join(__dirname, '..', 'data', 'hkChinaPerformanceHistory.json'),
+  blob: HISTORY_BLOB,
+  file: HISTORY_FILE,
   tickers: TICKERS,
   fields: ['closes', 'volumes'],
 });
@@ -138,18 +141,17 @@ const HISTORY = createPersistedSeries({
 // for them here rather than trusting Yahoo's fields as-is.
 const GLITCH_MOVE_THRESHOLD = 1.15;   // >15% single-day move away from neighbors
 const GLITCH_REVERT_TOLERANCE = 0.12; // round-trip back within 12% counts as a revert
-const SPLIT_PRICE_THRESHOLD = 1.5;    // >50% single-day move
-const SPLIT_VOLUME_THRESHOLD = 1.5;   // paired with a >50% volume swing
+const SPLIT_PRICE_THRESHOLD = 1.25;   // >25% persistent single-day move
 
 // Repairs isolated single-day bad ticks (a spike that fully reverts the very
-// next day), then back-adjusts history for genuine, volume-confirmed splits
+// next day), then back-adjusts history for genuine persistent unit splits
 // so the whole series is continuous — the same idea as dividend-adjusted
 // close, applied to unit splits Yahoo isn't tracking for these tickers.
 function adjustForSplits(points) {
   const n = points.length;
   if (n < 3) return points;
   const closes = points.map(p => p.close);
-  const volumes = points.map(p => p.volume);
+  let splitDetected = false;
 
   for (let i = 1; i < n - 1; i += 1) {
     const prev = closes[i - 1];
@@ -171,18 +173,18 @@ function adjustForSplits(points) {
     const cur = closes[i];
     if (prev != null && cur != null) {
       const priceRatio = cur / prev;
-      const volPrev = volumes[i - 1];
-      const volCur = volumes[i];
-      const volRatio = volPrev && volCur ? volCur / volPrev : null;
       const isBigPriceMove = priceRatio > SPLIT_PRICE_THRESHOLD || priceRatio < 1 / SPLIT_PRICE_THRESHOLD;
-      const isVolumeConfirmed = volRatio != null
-        && (volRatio > SPLIT_VOLUME_THRESHOLD || volRatio < 1 / SPLIT_VOLUME_THRESHOLD);
-      if (isBigPriceMove && isVolumeConfirmed) cumFactor *= priceRatio;
+      if (isBigPriceMove) {
+        cumFactor *= priceRatio;
+        splitDetected = true;
+      }
     }
     adjusted[i - 1] = closes[i - 1] != null ? closes[i - 1] * cumFactor : null;
   }
 
-  return points.map((p, i) => ({ ...p, close: adjusted[i] }));
+  const result = points.map((p, i) => ({ ...p, close: adjusted[i] }));
+  result.splitDetected = splitDetected;
+  return result;
 }
 
 async function fetchSeries(yf, ticker, start, end) {
@@ -198,12 +200,12 @@ function inclusiveEndDate(endDate) {
   return end;
 }
 
-async function getHkChinaPerformance(startDate, endDate = new Date()) {
+async function getHkChinaPerformance(startDate, endDate = new Date(), tickers = TICKERS) {
   const yf  = getYF();
   const end = inclusiveEndDate(endDate);
   const start = new Date(startDate);
 
-  const results = await mapLimit(TICKERS, 4, async meta => {
+  const results = await mapLimit(tickers, 4, async meta => {
     try {
       return { ...meta, points: await fetchSeries(yf, meta.yahooTicker ?? meta.ticker, start, end), error: null };
     } catch (e) {
@@ -232,12 +234,43 @@ async function getHkChinaPerformance(startDate, endDate = new Date()) {
     };
   });
 
-  return { start: dates[0] ?? isoDate(start), end: dates[dates.length - 1] ?? isoDate(endDate), dates, series };
+  return {
+    start: dates[0] ?? isoDate(start),
+    end: dates[dates.length - 1] ?? isoDate(endDate),
+    dates,
+    series,
+    requiresBackfill: results.some(result => result.points.splitDetected),
+  };
+}
+
+// Five-year UI windows request an extra 80 calendar days for rolling averages.
+// Keep additional overlap so a repair always replaces the visible boundary.
+const AUTO_BACKFILL_DAYS = 2000;
+const MIN_EXPECTED_HISTORY_POINTS = 200;
+
+function needsHistoryBackfill(payload) {
+  return payload.series.some(series => (
+    series.closes.filter(Number.isFinite).length < MIN_EXPECTED_HISTORY_POINTS
+  ));
 }
 
 async function updateHkChinaPerformance(days = 45) {
+  // A warm web process may have loaded this blob before an external collector
+  // backfilled it. Always merge against Mongo's latest copy, never that stale
+  // in-memory snapshot.
+  await storage.reload(HISTORY_BLOB, HISTORY_FILE);
+  const fetchDays = needsHistoryBackfill(HISTORY.assemble())
+    ? Math.max(days, AUTO_BACKFILL_DAYS)
+    : days;
   const end = new Date().toISOString().slice(0, 10);
-  HISTORY.merge(await getHkChinaPerformance(isoDaysAgo(days), end));
+  let payload = await getHkChinaPerformance(isoDaysAgo(fetchDays), end);
+  // A rolling refresh that encounters a unit split must rebuild the whole
+  // visible history. Otherwise only its 45-day pre-split slice is back-adjusted
+  // and the old/new adjustment bases create a new cliff at the merge boundary.
+  if (fetchDays < AUTO_BACKFILL_DAYS && payload.requiresBackfill) {
+    payload = await getHkChinaPerformance(isoDaysAgo(AUTO_BACKFILL_DAYS), end);
+  }
+  HISTORY.merge(payload);
   return HISTORY.assemble();
 }
 
@@ -245,4 +278,11 @@ function readHkChinaPerformance(startDate, endDate) {
   return HISTORY.assemble(startDate, endDate);
 }
 
-module.exports = { getHkChinaPerformance, updateHkChinaPerformance, readHkChinaPerformance, TICKERS };
+module.exports = {
+  getHkChinaPerformance,
+  updateHkChinaPerformance,
+  readHkChinaPerformance,
+  needsHistoryBackfill,
+  adjustForSplits,
+  TICKERS,
+};

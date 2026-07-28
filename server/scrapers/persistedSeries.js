@@ -7,12 +7,15 @@ function createPersistedSeries({ blob, file, tickers, fields }) {
 
   function merge(payload) {
     const history = load();
+    const patches = {};
     for (let dateIndex = 0; dateIndex < (payload.dates ?? []).length; dateIndex += 1) {
       const date = payload.dates[dateIndex];
       if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
-      const row = { ...(history[date] ?? {}) };
+      const row = {};
       for (const series of payload.series ?? []) {
-        const values = { ...(row[series.ticker] ?? {}) };
+        // Preserve fields omitted by a partial source response (for example,
+        // turnover when the price request still succeeded).
+        const values = { ...(history[date]?.[series.ticker] ?? {}) };
         let hasValue = false;
         for (const field of fields) {
           const value = series[field]?.[dateIndex];
@@ -23,10 +26,9 @@ function createPersistedSeries({ blob, file, tickers, fields }) {
         }
         if (hasValue) row[series.ticker] = values;
       }
-      if (Object.keys(row).length) history[date] = row;
+      if (Object.keys(row).length) patches[date] = row;
     }
-    storage.write(blob, file, history);
-    return history;
+    return storage.mergeDatedRows(blob, file, patches);
   }
 
   function assemble(startDate = null, endDate = null) {

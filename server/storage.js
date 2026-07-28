@@ -186,6 +186,56 @@ function write(name, file, obj) {
   }
 }
 
+/**
+ * Merge date-keyed patches without replacing the whole Mongo blob.
+ *
+ * Rotation collectors can overlap with a warm web process. A whole-document
+ * write from either process would otherwise publish the stale copy it loaded
+ * at startup and erase history written by the other process. Mongo pipeline
+ * updates merge each date row against the database's current value instead.
+ */
+function mergeDatedRows(name, file, rows) {
+  const entries = Object.entries(rows ?? {}).filter(([, patch]) => (
+    patch && typeof patch === 'object' && Object.keys(patch).length > 0
+  ));
+  if (!entries.length) return read(name, file);
+
+  const current = read(name, file);
+  for (const [date, patch] of entries) {
+    current[date] = { ...(current[date] ?? {}), ...patch };
+  }
+  cache.set(name, current);
+  for (const key of fieldCache.keys()) {
+    if (key.startsWith(`${name}:`)) fieldCache.delete(key);
+  }
+
+  if (mode === 'mongo' && collection) {
+    // Keep each update comfortably below Mongo's document/expression limits.
+    for (let offset = 0; offset < entries.length; offset += 100) {
+      const set = {};
+      for (const [date, patch] of entries.slice(offset, offset + 100)) {
+        set[`data.${date}`] = {
+          $mergeObjects: [
+            { $ifNull: [`$data.${date}`, {}] },
+            { $literal: patch },
+          ],
+        };
+      }
+      set.updatedAt = '$$NOW';
+      const p = collection.updateOne(
+        { _id: name },
+        [{ $set: set }],
+        { upsert: true },
+      ).catch(error => console.warn(`[storage] Mongo dated-row merge "${name}" failed:`, error.message))
+        .finally(() => pending.delete(p));
+      pending.add(p);
+    }
+  } else {
+    writeFileBlob(file, current);
+  }
+  return current;
+}
+
 // Re-read one blob straight from Mongo into the cache, picking up whatever a
 // different process (a script, another instance) wrote directly — without
 // re-running whatever scrape produced it. No-op in file mode: there is only one
@@ -335,7 +385,7 @@ function status() {
 }
 
 module.exports = {
-  init, load, loadMany, read, write, reload, readField, writeField,
+  init, load, loadMany, read, write, mergeDatedRows, reload, readField, writeField,
   readCompressed, writeCompressed,
   flush, seedFromFiles, close, status,
 };

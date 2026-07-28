@@ -885,6 +885,15 @@ app.get('/api/hk-china-performance', async (req, res) => {
     return res.status(400).json({ error: 'Start date cannot be after end date' });
 
   try {
+    const blob = STORAGE_BLOB_BY_NAME.get('hkChinaPerformanceHistory');
+    try {
+      // External scheduled collectors update this blob while Vercel instances
+      // stay warm. Reload so the page never serves an old in-memory snapshot.
+      await storage.reload(blob.name, blob.file);
+    } catch (reloadError) {
+      console.warn('[hk-china-performance] Mongo reload failed, serving cached history:', reloadError.message);
+      await storage.load(blob.name, blob.file);
+    }
     res.json(readHkChinaPerformance(start, end));
   } catch (e) {
     console.error('[hk-china-performance]', start, end, e.message);
