@@ -98,7 +98,6 @@ const TICKERS = [
   { ticker: '159843.SZ', label: '159843', name: '食品饮料' },
   { ticker: '159766.SZ', label: '159766', name: '旅游' },
   { ticker: '516110.SS', label: '516110', name: '美容护理' },
-  { ticker: '516680.SS', label: '516680', name: '516680' },
 
   // 金融 & 周期
   { ticker: '512880.SS', label: '512880', name: '证券' },

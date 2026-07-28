@@ -83,7 +83,6 @@ export const HK_CHINA_SECTIONS = [
       { ticker: '159843.SZ', label: '159843', name: '食品饮料', color: '#da5a2f' },
       { ticker: '159766.SZ', label: '159766', name: '旅游',     color: '#198f5e' },
       { ticker: '516110.SS', label: '516110', name: '美容护理', color: '#9c7c1c' },
-      { ticker: '516680.SS', label: '516680', name: '516680',   color: '#8749df' },
     ],
   },
   {
