@@ -80,3 +80,18 @@ Hong Kong time when it is awake and a Chrome/Chromium binary is available.
 Required secrets for the scheduled workflow: `MASSIVE_API_KEY` and
 `MONGODB_URI`. Optional: `OPTIONS_REPORT_TICKERS` defaults to `TSM,ASML`.
 No SMTP or email API account is needed for the Alerts page report.
+
+## Equity risk premium data
+
+The Macro → Equity Risk Premium page combines the existing Trading Economics
+US/China 10-year yield histories with licensed valuation histories. Set
+`MACROMICRO_API_KEY` for the MacroMicro Access API. The built-in series are:
+
+- `20052` — S&P 500 forward P/E (NTM)
+- `31679` — Hang Seng Index P/E (trailing, matching the requested source)
+
+MacroMicro does not expose a verified public CSI 300 forward-P/E series.
+Configure a licensed forward series with `MACROMICRO_CHINA_FORWARD_PE_ID` and,
+optionally, `MACROMICRO_CHINA_FORWARD_PE_URL`. `MACROMICRO_API_BASE_URL` can
+override the API host. The page deliberately does not substitute the trailing
+P/E histories published by Lixinger or Legulegu.

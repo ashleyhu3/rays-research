@@ -2,10 +2,17 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { mergeMacroData, SERIES } = require('./macro');
+const { mergeMacroData, SERIES, VALUATION_SERIES } = require('./macro');
 
 test('US core PPI YoY uses the percent-change series rather than the price index', () => {
   assert.deepEqual(SERIES.usCorePpiYoy, ['united-states', 'core-producer-prices-yoy']);
+});
+
+test('equity-risk-premium valuation inputs preserve their reported P/E basis', () => {
+  assert.equal(VALUATION_SERIES.usForwardPe.statId, '20052');
+  assert.equal(VALUATION_SERIES.usForwardPe.peBasis, 'NTM');
+  assert.equal(VALUATION_SERIES.hkPe.statId, '31679');
+  assert.equal(VALUATION_SERIES.hkPe.peBasis, 'Trailing');
 });
 
 test('a partial macro refresh retains previously stored US yield history', () => {

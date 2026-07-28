@@ -39,8 +39,13 @@ export function calculateErp(peSeries, usYieldSeries, cnYieldSeries, chinaWeight
     const cnPoint = cn[cnIndex];
     if (!usPoint || (weight > 0 && !cnPoint)) return [];
     const used = weight > 0 ? [usPoint, cnPoint] : [usPoint];
-    const newestYieldDate = used.reduce((latest, point) => point.date > latest ? point.date : latest, '');
-    const gapDays = (new Date(`${observation.date}T00:00:00Z`) - new Date(`${newestYieldDate}T00:00:00Z`)) / 86400000;
+    // Both legs of a blended yield must be fresh, so measure the gap from the
+    // older of the matched observations.
+    const oldestYieldDate = used.reduce(
+      (oldest, point) => !oldest || point.date < oldest ? point.date : oldest,
+      '',
+    );
+    const gapDays = (new Date(`${observation.date}T00:00:00Z`) - new Date(`${oldestYieldDate}T00:00:00Z`)) / 86400000;
     if (gapDays < 0 || gapDays > maxGapDays || observation.value <= 0) return [];
     const bondYield = weight > 0
       ? usPoint.value * (1 - weight) + cnPoint.value * weight
