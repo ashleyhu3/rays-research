@@ -161,6 +161,7 @@ async function refreshAll(keys = Object.keys(scrapers)) {
       console.warn(`[refresh] ✗ ${k}:`, msg);
     }
   });
+  return results;
 }
 
 async function refreshRotation() {

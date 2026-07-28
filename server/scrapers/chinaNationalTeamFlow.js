@@ -153,7 +153,14 @@ async function sseFundSizeDay(code, day) {
 
 /* ── SZSE: ShowReport fund_jjgm catalog (real date-range query) ────── */
 
-const SZSE_URL = 'https://www.szse.cn/api/report/ShowReport/data';
+// The fund-specific hostname serves the same official ShowReport catalog but
+// has proven materially more reliable from scheduled-runner egress than the
+// general www host. Keep www as a fallback because SZSE occasionally shifts
+// CDN/WAF behaviour between the two.
+const SZSE_URLS = [
+  'https://fund.szse.cn/api/report/ShowReport/data',
+  'https://www.szse.cn/api/report/ShowReport/data',
+];
 const SZSE_REFERER = 'https://fund.szse.cn/marketdata/etf/index.html';
 // The report rejects any txtStart/txtEnd span over ~6 months ("起止时间段超过
 // 半年") — verified empirically. Stay comfortably under that per chunk.
@@ -174,26 +181,35 @@ async function szseFundSizeChunk(code, from, to) {
   for (let page = 1; page <= 200; page++) {
     let json;
     try {
-      json = await withRetry(async () => {
-        const q = new URLSearchParams({
-          SHOWTYPE: 'JSON',
-          CATALOGID: 'fund_jjgm',
-          TABKEY: 'tab1',
-          txtDm: code,
-          txtStart: from,
-          txtEnd: to,
-          PAGENO: String(page),
-          random: String(Math.random()),
-        });
-        const res = await fetch(`${SZSE_URL}?${q}`, {
-          headers: { 'User-Agent': UA, Referer: SZSE_REFERER },
-          signal: AbortSignal.timeout(20000),
-        });
-        if (!res.ok) throw new Error(`SZSE fund size HTTP ${res.status}`);
-        const body = await res.json();
-        if (body?.[0]?.error) throw new Error(`SZSE fund size: ${body[0].error}`);
-        return body;
+      const q = new URLSearchParams({
+        SHOWTYPE: 'JSON',
+        CATALOGID: 'fund_jjgm',
+        TABKEY: 'tab1',
+        txtDm: code,
+        txtStart: from,
+        txtEnd: to,
+        PAGENO: String(page),
+        random: String(Math.random()),
       });
+      const hostErrors = [];
+      for (const url of SZSE_URLS) {
+        try {
+          json = await withRetry(async () => {
+            const res = await fetch(`${url}?${q}`, {
+              headers: { 'User-Agent': UA, Referer: SZSE_REFERER },
+              signal: AbortSignal.timeout(20000),
+            });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const body = await res.json();
+            if (body?.[0]?.error) throw new Error(String(body[0].error));
+            return body;
+          }, 2);
+          break;
+        } catch (error) {
+          hostErrors.push(`${new URL(url).host}: ${error.message}`);
+        }
+      }
+      if (!json) throw new Error(`SZSE fund size all hosts failed — ${hostErrors.join('; ')}`);
     } catch (e) {
       e.partial = out;
       throw e;
@@ -205,6 +221,11 @@ async function szseFundSizeChunk(code, from, to) {
       const size = Number(String(row.current_size ?? '').replace(/,/g, ''));
       if (!/^\d{4}-\d{2}-\d{2}$/.test(day ?? '') || !Number.isFinite(size)) continue;
       out[day] = size;
+    }
+    if (page === 1 && rows.length === 0) {
+      const error = new Error(`SZSE fund size returned no rows for ${code} (${from} → ${to})`);
+      error.partial = out;
+      throw error;
     }
     const pagecount = report?.metadata?.pagecount ?? 1;
     if (page >= pagecount || rows.length === 0) break;

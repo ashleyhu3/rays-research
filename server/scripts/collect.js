@@ -64,7 +64,10 @@ async function main() {
   // to block the runner and leaving every Shenzhen ETF stale. Finish flow
   // first, then start the rest of the collection.
   if (keys.includes('chinaNationalTeamFlow') && keys.length > 1) {
-    await scheduler.refreshAll(['chinaNationalTeamFlow']);
+    const [flowResult] = await scheduler.refreshAll(['chinaNationalTeamFlow']);
+    if (flowResult?.status !== 'fulfilled' || flowResult.value == null) {
+      throw flowResult?.reason ?? new Error('chinaNationalTeamFlow returned no data');
+    }
     keys = keys.filter(key => key !== 'chinaNationalTeamFlow');
   }
 
