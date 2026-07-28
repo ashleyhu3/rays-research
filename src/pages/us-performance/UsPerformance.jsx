@@ -9,6 +9,7 @@ import {
 } from '../../config/usPerformance';
 import { GRID, TICK, BORD } from '../../utils/chartHelpers';
 import { rankChartsByLatestStrength, rankDatasetsByLatestStrength } from '../../utils/chartRanking';
+import { addVolumeBars, formatVolume, isVolumeDataset, volumeAxis } from '../../utils/volumeChart';
 
 const PRESETS = [
   { id: 'ytd', label: 'YTD', getStart: () => `${new Date().getFullYear()}-01-01` },
@@ -168,7 +169,7 @@ function buildOverviewChartData(payload, startDate, endDate) {
 
 // Generalized numerator/denominator ratio chart — used both for the sector
 // ETFs (always vs SPX) and the Tech section's cross pairs (e.g. SOX/IGV).
-function buildPairChartData(payload, numMeta, denMeta, startDate, endDate) {
+function buildPairChartData(payload, numMeta, denMeta, startDate, endDate, includeVolume = false) {
   const numSeries = findSeries(payload, numMeta.ticker);
   const denSeries = findSeries(payload, denMeta.ticker);
   if (!numSeries || !denSeries) return null;
@@ -184,7 +185,7 @@ function buildPairChartData(payload, numMeta, denMeta, startDate, endDate) {
   const rollingAvg = rollingAverage(rebasedRatios, ROLLING_AVG_DAYS);
   const pairLabel = `${numMeta.label}/${denMeta.label}`;
 
-  return {
+  const chartData = {
     labels: sliceBounds(payload.dates, bounds).map(fmtDate),
     datasets: [
       {
@@ -217,39 +218,15 @@ function buildPairChartData(payload, numMeta, denMeta, startDate, endDate) {
       },
     ],
   };
-}
+  if (!includeVolume) return chartData;
 
-function buildEqualWeightChartData(payload, startDate, endDate) {
-  const rspMeta = metaForLabel('RSP');
-  const chartData = rspMeta
-    ? buildPairChartData(payload, rspMeta, SPX_META, startDate, endDate)
-    : null;
-  const rspSeries = rspMeta && findSeries(payload, rspMeta.ticker);
-  const bounds = visibleBounds(payload.dates, startDate, endDate);
-  if (!chartData || !rspSeries?.volumes || !bounds) return chartData;
-
-  const volumes = sliceBounds(rspSeries.volumes, bounds);
-  if (!volumes.some(Number.isFinite)) return chartData;
-
-  return {
-    ...chartData,
-    datasets: [
-      {
-        type: 'bar',
-        label: 'RSP Trading Volume',
-        fullName: 'Invesco S&P 500 Equal Weight ETF trading volume',
-        data: volumes,
-        yAxisID: 'volume',
-        backgroundColor: 'rgba(60,140,221,.38)',
-        borderColor: 'rgba(60,140,221,.72)',
-        borderWidth: 1,
-        barPercentage: 1,
-        categoryPercentage: 1,
-        order: 2,
-      },
-      ...chartData.datasets,
-    ],
-  };
+  const volumeTicker = numMeta.volumeTicker ?? numMeta.ticker;
+  const volumeSeries = findSeries(payload, volumeTicker);
+  return addVolumeBars(
+    chartData,
+    sliceBounds(volumeSeries?.volumes ?? [], bounds),
+    `${numMeta.volumeLabel ?? volumeTicker} Trading Volume`
+  );
 }
 
 function pearsonCorrelation(xs, ys) {
@@ -551,7 +528,8 @@ function putCallChartOptions() {
   };
 }
 
-function chartOptions({ relative = false, compact = false, volume = false } = {}) {
+function chartOptions({ relative = false, compact = false, data = null } = {}) {
+  const volumeScale = volumeAxis(data);
   return {
     responsive: true,
     maintainAspectRatio: false,
@@ -579,8 +557,8 @@ function chartOptions({ relative = false, compact = false, volume = false } = {}
           label: c => {
             const v = c.parsed.y;
             if (v == null) return ` ${c.dataset.label}: —`;
-            if (c.dataset.yAxisID === 'volume') {
-              return ` ${c.dataset.label}: ${new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(v)}`;
+            if (isVolumeDataset(c.dataset)) {
+              return ` ${c.dataset.label}: ${formatVolume(v)}`;
             }
             const pct = v - 100;
             if (relative) {
@@ -600,19 +578,7 @@ function chartOptions({ relative = false, compact = false, volume = false } = {}
         ticks: { ...TICK, maxTicksLimit: compact ? 5 : 8, callback: v => v.toFixed(0) },
         border: BORD,
       },
-      ...(volume ? {
-        volume: {
-          position: 'right',
-          beginAtZero: true,
-          grid: { drawOnChartArea: false },
-          ticks: {
-            ...TICK,
-            maxTicksLimit: 4,
-            callback: value => new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(value),
-          },
-          border: BORD,
-        },
-      } : {}),
+      ...(volumeScale ? { volume: volumeScale } : {}),
     },
   };
 }
@@ -707,12 +673,13 @@ export default function UsPerformance({ section = null }) {
   const relativeCharts = useMemo(() => {
     if (!payload) return [];
     return US_PERFORMANCE_ETFS
-      .map(etf => ({ etf, data: buildPairChartData(payload, etf, SPX_META, startDate, endDate) }))
+      .map(etf => ({ etf, data: buildPairChartData(payload, etf, SPX_META, startDate, endDate, true) }))
       .filter(chart => chart.data);
   }, [payload, startDate, endDate]);
   const equalWeightChart = useMemo(() => {
     if (!payload) return null;
-    return buildEqualWeightChartData(payload, startDate, endDate);
+    const rspMeta = metaForLabel('RSP');
+    return rspMeta ? buildPairChartData(payload, rspMeta, SPX_META, startDate, endDate, true) : null;
   }, [payload, startDate, endDate]);
   const techCharts = useMemo(() => {
     if (!payload) return [];
@@ -720,7 +687,7 @@ export default function UsPerformance({ section = null }) {
       .map(([numLabel, denLabel]) => {
         const numMeta = metaForLabel(numLabel);
         const denMeta = metaForLabel(denLabel);
-        const data = numMeta && denMeta ? buildPairChartData(payload, numMeta, denMeta, startDate, endDate) : null;
+        const data = numMeta && denMeta ? buildPairChartData(payload, numMeta, denMeta, startDate, endDate, true) : null;
         return { id: `${numLabel}-${denLabel}`, title: `${numLabel}/${denLabel}`, data };
       })
       .filter(chart => chart.data);
@@ -730,7 +697,7 @@ export default function UsPerformance({ section = null }) {
     return THEME_TICKERS
       .map(label => {
         const meta = metaForLabel(label);
-        const data = meta ? buildPairChartData(payload, meta, SPX_META, startDate, endDate) : null;
+        const data = meta ? buildPairChartData(payload, meta, SPX_META, startDate, endDate, true) : null;
         return { id: label, title: meta?.name ?? label, data };
       })
       .filter(chart => chart.data);
@@ -740,7 +707,7 @@ export default function UsPerformance({ section = null }) {
     return FACTOR_TICKERS
       .map(label => {
         const meta = metaForLabel(label);
-        const data = meta ? buildPairChartData(payload, meta, SPX_META, startDate, endDate) : null;
+        const data = meta ? buildPairChartData(payload, meta, SPX_META, startDate, endDate, true) : null;
         return { id: label, title: meta?.name ?? label, data };
       })
       .filter(chart => chart.data);
@@ -859,7 +826,7 @@ export default function UsPerformance({ section = null }) {
 
   const ratioGrid = (charts, pinned = []) => (
     <div className="usp-etf-grid">
-      {[...pinned, ...rankChartsByLatestStrength(charts)].map(({ id, title, data, volume = false }) => (
+      {[...pinned, ...rankChartsByLatestStrength(charts)].map(({ id, title, data }) => (
         <ChartCard
           key={id}
           title={title}
@@ -870,7 +837,7 @@ export default function UsPerformance({ section = null }) {
         >
           <Line
             data={data}
-            options={chartOptions({ relative: true, compact: true, volume })}
+            options={chartOptions({ relative: true, compact: true, data })}
             plugins={[BASELINE_100]}
           />
         </ChartCard>
@@ -906,12 +873,7 @@ export default function UsPerformance({ section = null }) {
       {section === 'all' && !error && (relativeCharts.length > 0 || equalWeightChart) &&
         ratioGrid(
           relativeCharts.map(({ etf, data }) => ({ id: etf.ticker, title: etf.name, data })),
-          equalWeightChart ? [{
-            id: 'rsp-spx',
-            title: 'Equal Weight',
-            data: equalWeightChart,
-            volume: equalWeightChart.datasets.some(dataset => dataset.yAxisID === 'volume'),
-          }] : []
+          equalWeightChart ? [{ id: 'rsp-spx', title: 'Equal Weight', data: equalWeightChart }] : []
         )}
 
       {section === 'tech' && !error && techCharts.length > 0 && ratioGrid(techCharts)}

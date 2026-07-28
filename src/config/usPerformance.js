@@ -24,7 +24,7 @@ export const SPX_META = {
 export const EXTRA_TICKERS = {
   RSP:  { ticker: 'RSP',  label: 'RSP',  name: 'Equal Weight', color: '#f2b134' },
 
-  SOX:  { ticker: '^SOX', label: 'SOX',  name: 'Semiconductors', color: '#3c8cdd' },
+  SOX:  { ticker: '^SOX', label: 'SOX',  name: 'Semiconductors', color: '#3c8cdd', volumeTicker: 'SOXX', volumeLabel: 'SOXX' },
   IGV:  { ticker: 'IGV',  label: 'IGV',  name: 'Software', color: '#da5a2f' },
   MAGS: { ticker: 'MAGS', label: 'MAGS', name: 'Magnificent Seven', color: '#198f5e' },
   CIBR: { ticker: 'CIBR', label: 'CIBR', name: 'Cybersecurity', color: '#9c7c1c' },

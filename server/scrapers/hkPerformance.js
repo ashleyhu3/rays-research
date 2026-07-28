@@ -11,6 +11,10 @@ function isoDate(d) {
   return isNaN(dt.getTime()) ? null : dt.toISOString().slice(0, 10);
 }
 
+function yyyymmdd(value) {
+  return value.replace(/-/g, '');
+}
+
 // Bounded-concurrency map, same pattern as hkChinaPerformance.js.
 async function mapLimit(items, limit, fn) {
   const out = new Array(items.length);
@@ -111,6 +115,29 @@ async function fetchHsiIndexSeries(indexCode, days, startIso, tries = 3) {
   throw new Error(`Hang Seng Indexes chart request failed after retries for ${indexCode}`);
 }
 
+async function fetchEastmoneyVolumeSeries(eastmoneyCode, startIso, endIso, tries = 4) {
+  const url = `https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=124.${eastmoneyCode}`
+    + '&fields1=f1,f2,f3,f4,f5,f6&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61'
+    + `&klt=101&fqt=0&beg=${yyyymmdd(startIso)}&end=${yyyymmdd(endIso)}`;
+
+  for (let i = 1; i <= tries; i += 1) {
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      const klines = json?.data?.klines ?? [];
+      if (klines.length) {
+        return klines.map(line => {
+          const [date, , , , , volume] = line.split(',');
+          return { date, volume: Number(volume) };
+        }).filter(point => point.date >= startIso && Number.isFinite(point.volume) && point.volume > 0);
+      }
+    } catch { /* retry below */ }
+    if (i < tries) await sleep(1000 * i);
+  }
+  return [];
+}
+
 // Rebuild the { dates, series } payload from the persisted history blob only —
 // no network calls, so this always succeeds regardless of East Money's
 // reachability from wherever the server happens to run.
@@ -120,7 +147,14 @@ function assemble(history) {
     ticker: meta.ticker,
     label: meta.label,
     name: meta.name,
-    closes: dates.map(d => history[d]?.[meta.ticker] ?? null),
+    closes: dates.map(d => {
+      const value = history[d]?.[meta.ticker];
+      return typeof value === 'number' ? value : value?.close ?? null;
+    }),
+    volumes: dates.map(d => {
+      const value = history[d]?.[meta.ticker];
+      return typeof value === 'object' ? value?.volume ?? null : null;
+    }),
     error: null,
   }));
   return { start: dates[0] ?? null, end: dates[dates.length - 1] ?? null, dates, series };
@@ -136,10 +170,16 @@ async function getHkPerformance(days = 30) {
   const today = new Date();
   const start = new Date(today.getTime() - days * 86400000);
   const startIso = isoDate(start);
+  const endIso = isoDate(today);
 
   const results = await mapLimit(TICKERS, 4, async meta => {
     try {
-      const points = await fetchHsiIndexSeries(HSI_CODES[meta.ticker], days, startIso);
+      const [levels, volumes] = await Promise.all([
+        fetchHsiIndexSeries(HSI_CODES[meta.ticker], days, startIso),
+        fetchEastmoneyVolumeSeries(meta.eastmoneyCode, startIso, endIso),
+      ]);
+      const volumeByDate = new Map(volumes.map(point => [point.date, point.volume]));
+      const points = levels.map(point => ({ ...point, volume: volumeByDate.get(point.date) ?? null }));
       return { ...meta, points, error: null };
     } catch (e) {
       return { ...meta, points: [], error: e.message };
@@ -154,7 +194,16 @@ async function getHkPerformance(days = 30) {
   for (const r of results) {
     for (const p of r.points) {
       if (!Number.isFinite(p.close)) continue;
-      history[p.date] = { ...(history[p.date] ?? {}), [r.ticker]: p.close };
+      const existing = history[p.date]?.[r.ticker];
+      const previous = typeof existing === 'number' ? { close: existing } : (existing ?? {});
+      history[p.date] = {
+        ...(history[p.date] ?? {}),
+        [r.ticker]: {
+          ...previous,
+          close: p.close,
+          ...(Number.isFinite(p.volume) && p.volume > 0 ? { volume: p.volume } : {}),
+        },
+      };
     }
   }
   saveHistory(history);

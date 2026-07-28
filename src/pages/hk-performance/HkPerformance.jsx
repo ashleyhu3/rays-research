@@ -5,6 +5,7 @@ import { useResource } from '../../services/resourceCache';
 import { HSCI_META, HK_SECTIONS } from '../../config/hkPerformance';
 import { GRID, TICK, BORD } from '../../utils/chartHelpers';
 import { rankChartsByLatestStrength } from '../../utils/chartRanking';
+import { addVolumeBars, formatVolume, isVolumeDataset, volumeAxis } from '../../utils/volumeChart';
 
 const PRESETS = [
   { id: 'ytd', label: 'YTD', getStart: () => `${new Date().getFullYear()}-01-01` },
@@ -152,7 +153,7 @@ function buildOverviewChartData(payload, startDate, endDate) {
 }
 
 // Ratio chart for a single ticker vs the HSCI baseline.
-function buildPairChartData(payload, numMeta, denMeta, startDate, endDate) {
+function buildPairChartData(payload, numMeta, denMeta, startDate, endDate, includeVolume = false) {
   const numSeries = findSeries(payload, numMeta.ticker);
   const denSeries = findSeries(payload, denMeta.ticker);
   if (!numSeries || !denSeries) return null;
@@ -168,7 +169,7 @@ function buildPairChartData(payload, numMeta, denMeta, startDate, endDate) {
   const rollingAvg = rollingAverage(rebasedRatios, ROLLING_AVG_DAYS);
   const pairLabel = `${numMeta.label}/${denMeta.label}`;
 
-  return {
+  const chartData = {
     labels: sliceBounds(payload.dates, bounds).map(fmtDate),
     datasets: [
       {
@@ -201,9 +202,17 @@ function buildPairChartData(payload, numMeta, denMeta, startDate, endDate) {
       },
     ],
   };
+  return includeVolume
+    ? addVolumeBars(
+      chartData,
+      sliceBounds(numSeries.volumes ?? [], bounds),
+      `${numMeta.label} Trading Volume`
+    )
+    : chartData;
 }
 
-function chartOptions({ relative = false, compact = false } = {}) {
+function chartOptions({ relative = false, compact = false, data = null } = {}) {
+  const volumeScale = volumeAxis(data);
   return {
     responsive: true,
     maintainAspectRatio: false,
@@ -231,6 +240,9 @@ function chartOptions({ relative = false, compact = false } = {}) {
           label: c => {
             const v = c.parsed.y;
             if (v == null) return ` ${c.dataset.label}: —`;
+            if (isVolumeDataset(c.dataset)) {
+              return ` ${c.dataset.label}: ${formatVolume(v)}`;
+            }
             const pct = v - 100;
             if (relative) {
               const ratio = c.dataset.ratios?.[c.dataIndex];
@@ -249,6 +261,7 @@ function chartOptions({ relative = false, compact = false } = {}) {
         ticks: { ...TICK, maxTicksLimit: compact ? 5 : 8, callback: v => v.toFixed(0) },
         border: BORD,
       },
+      ...(volumeScale ? { volume: volumeScale } : {}),
     },
   };
 }
@@ -278,7 +291,11 @@ export default function HkPerformance({ section = null }) {
     return HK_SECTIONS.map(section => ({
       title: section.title,
       charts: section.tickers
-        .map(meta => ({ id: meta.ticker, title: meta.name, data: buildPairChartData(payload, meta, HSCI_META, startDate, endDate) }))
+        .map(meta => ({
+          id: meta.ticker,
+          title: meta.name,
+          data: buildPairChartData(payload, meta, HSCI_META, startDate, endDate, section.title === 'Sector'),
+        }))
         .filter(chart => chart.data),
     })).filter(section => section.charts.length > 0);
   }, [payload, startDate, endDate]);
@@ -329,11 +346,11 @@ export default function HkPerformance({ section = null }) {
         <ChartCard
           key={id}
           title={title}
-          src="East Money"
+          src="Hang Seng Indexes · East Money"
           freq="Daily"
           height={255}
         >
-          <Line data={data} options={chartOptions({ relative: true, compact: true })} plugins={[BASELINE_100]} />
+          <Line data={data} options={chartOptions({ relative: true, compact: true, data })} plugins={[BASELINE_100]} />
         </ChartCard>
       ))}
     </div>

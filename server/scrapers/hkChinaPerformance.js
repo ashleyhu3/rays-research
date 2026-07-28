@@ -126,7 +126,7 @@ const HISTORY = createPersistedSeries({
   blob: 'hkChinaPerformanceHistory',
   file: path.join(__dirname, '..', 'data', 'hkChinaPerformanceHistory.json'),
   tickers: TICKERS,
-  fields: ['closes'],
+  fields: ['closes', 'volumes'],
 });
 
 // Many China A-share fund tickers here (leveraged/thematic ETFs — 512480,
@@ -222,11 +222,13 @@ async function getHkChinaPerformance(startDate, endDate = new Date()) {
 
   const series = results.map(r => {
     const byDate = new Map(r.points.map(p => [p.date, p.close]));
+    const byDateVolume = new Map(r.points.map(p => [p.date, p.volume]));
     return {
       ticker: r.ticker,
       label: r.label,
       name: r.name,
       closes: dates.map(d => byDate.get(d) ?? null),
+      volumes: dates.map(d => byDateVolume.get(d) ?? null),
       error: r.error,
     };
   });

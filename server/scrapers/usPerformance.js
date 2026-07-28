@@ -75,6 +75,7 @@ const TICKERS = [
 
   // Tech ratio pairs (SOX/SPX, SOX/IGV, SOX/MAGS, MAGS/SPX, IGV/SPX, CIBR/IGV)
   { ticker: '^SOX', label: 'SOX',  name: 'Semiconductors' },
+  { ticker: 'SOXX', label: 'SOXX', name: 'Semiconductors Volume Proxy' },
   { ticker: 'IGV',  label: 'IGV',  name: 'Software' },
   { ticker: 'MAGS', label: 'MAGS', name: 'Magnificent Seven' },
   { ticker: 'CIBR', label: 'CIBR', name: 'Cybersecurity' },
