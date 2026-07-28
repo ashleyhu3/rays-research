@@ -28,3 +28,12 @@ export const fa = (hex, alpha) => {
   const b = parseInt(hex.slice(5, 7), 16);
   return `rgba(${r},${g},${b},${alpha})`;
 };
+
+/** Mix a hex colour toward white while preserving its hue. */
+export const lighten = (hex, amount = 0.45) => {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  const mix = channel => Math.round(channel + (255 - channel) * amount);
+  return `rgb(${mix(r)},${mix(g)},${mix(b)})`;
+};

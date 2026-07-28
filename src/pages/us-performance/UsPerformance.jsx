@@ -10,6 +10,7 @@ import {
 import { GRID, TICK, BORD } from '../../utils/chartHelpers';
 import { rankChartsByLatestStrength, rankDatasetsByLatestStrength } from '../../utils/chartRanking';
 import { addVolumeBars, formatVolume, isVolumeDataset, rawVolumeAt, volumeAxis } from '../../utils/volumeChart';
+import { lighten } from '../../config/colors';
 
 const PRESETS = [
   { id: 'ytd', label: 'YTD', getStart: () => `${new Date().getFullYear()}-01-01` },
@@ -206,7 +207,7 @@ function buildPairChartData(payload, numMeta, denMeta, startDate, endDate, inclu
         label: '50D avg',
         fullName: `${pairLabel} rolling 50-day average`,
         data: sliceBounds(rollingAvg, bounds),
-        borderColor: 'rgba(234,234,224,.78)',
+        borderColor: lighten(numMeta.color),
         backgroundColor: 'transparent',
         borderWidth: 1.5,
         borderDash: [5, 4],
