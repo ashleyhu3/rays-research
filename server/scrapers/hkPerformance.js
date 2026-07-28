@@ -173,35 +173,41 @@ async function getHkPerformance(days = 30) {
   const endIso = isoDate(today);
 
   const results = await mapLimit(TICKERS, 4, async meta => {
-    try {
-      const [levels, volumes] = await Promise.all([
-        fetchHsiIndexSeries(HSI_CODES[meta.ticker], days, startIso),
-        fetchEastmoneyVolumeSeries(meta.eastmoneyCode, startIso, endIso),
-      ]);
-      const volumeByDate = new Map(volumes.map(point => [point.date, point.volume]));
-      const points = levels.map(point => ({ ...point, volume: volumeByDate.get(point.date) ?? null }));
-      return { ...meta, points, error: null };
-    } catch (e) {
-      return { ...meta, points: [], error: e.message };
-    }
+    const [levelsResult, volumes] = await Promise.all([
+      fetchHsiIndexSeries(HSI_CODES[meta.ticker], days, startIso)
+        .then(levels => ({ levels, error: null }))
+        .catch(error => ({ levels: [], error: error.message })),
+      fetchEastmoneyVolumeSeries(meta.eastmoneyCode, startIso, endIso),
+    ]);
+    const levelByDate = new Map(levelsResult.levels.map(point => [point.date, point.close]));
+    const volumeByDate = new Map(volumes.map(point => [point.date, point.volume]));
+    const dates = [...new Set([...levelByDate.keys(), ...volumeByDate.keys()])].sort();
+    const points = dates.map(date => ({
+      date,
+      close: levelByDate.get(date) ?? null,
+      volume: volumeByDate.get(date) ?? null,
+    }));
+    return { ...meta, points, error: levelsResult.error };
   });
 
-  if (!results.some(result => result.points.length > 0)) {
-    throw new Error('Hang Seng Indexes returned no HK Rotation history');
+  if (!results.some(result => result.points.some(point => Number.isFinite(point.close)))) {
+    throw new Error('Hang Seng Indexes returned no HK Rotation price history');
   }
 
   const history = loadHistory();
   for (const r of results) {
     for (const p of r.points) {
-      if (!Number.isFinite(p.close)) continue;
+      const hasClose = Number.isFinite(p.close);
+      const hasVolume = Number.isFinite(p.volume) && p.volume > 0;
+      if (!hasClose && !hasVolume) continue;
       const existing = history[p.date]?.[r.ticker];
       const previous = typeof existing === 'number' ? { close: existing } : (existing ?? {});
       history[p.date] = {
         ...(history[p.date] ?? {}),
         [r.ticker]: {
           ...previous,
-          close: p.close,
-          ...(Number.isFinite(p.volume) && p.volume > 0 ? { volume: p.volume } : {}),
+          ...(hasClose ? { close: p.close } : {}),
+          ...(hasVolume ? { volume: p.volume } : {}),
         },
       };
     }
