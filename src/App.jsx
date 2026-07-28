@@ -62,6 +62,7 @@ import UsLiquidity from './pages/liquidity/UsLiquidity';
 import CarryTrade from './pages/liquidity/CarryTrade';
 import Transcripts from './pages/transcripts/Transcripts';
 import Macro from './pages/macro/Macro';
+import EquityRiskPremium from './pages/macro/EquityRiskPremium';
 import Commodity from './pages/macro/Commodity';
 import FedWatch from './pages/macro/FedWatch';
 // Source-specific signal pages
@@ -150,6 +151,7 @@ const VIEW_COMPONENTS = {
   'transcripts':      Transcripts,
   'macro-us-inflation': Macro,
   'macro-yield':        Macro,
+  'macro-equity-risk-premium': EquityRiskPremium,
   'macro-fed-watch':    FedWatch,
   'macro-commodity':    Commodity,
   'macro-us-labor':     Macro,

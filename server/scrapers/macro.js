@@ -4,12 +4,33 @@ const BASE = 'https://tradingeconomics.com';
 const DEFAULT_DATA_SOURCE = 'https://d3ii0wo49og5mi.cloudfront.net';
 const OBFUSCATION_KEY = 'tradingeconomics-charts-core-api-key';
 const FRED_CSV_URL = 'https://fred.stlouisfed.org/graph/fredgraph.csv';
+const MACROMICRO_API_BASE = process.env.MACROMICRO_API_BASE_URL || 'https://api.macromicro.me';
 
 // Series pulled straight from FRED (fredgraph.csv, no API key) instead of
 // Trading Economics — TE has no breakeven-inflation or TIPS real-yield pages.
 const FRED_SERIES = {
   us10yBreakeven: { fredId: 'T10YIE', name: '10-Year Breakeven Inflation Rate' },
   us10yRealYield: { fredId: 'DFII10', name: '10-Year Treasury Inflation-Indexed Security, Constant Maturity' },
+};
+
+// Valuation series used by the Equity Risk Premium sub-page. MacroMicro's
+// public pages identify the US and HK stats, while raw time-series access is
+// available through its authenticated Access API. There is no confirmed
+// public CSI 300 forward-P/E stat: callers can provide the ID after licensing
+// one rather than silently substituting a trailing-P/E series.
+const VALUATION_SERIES = {
+  usForwardPe: {
+    statId: '20052',
+    name: 'S&P 500 forward P/E',
+    peBasis: 'NTM',
+    sourceUrl: 'https://en.macromicro.me/series/20052/sp500-forward-pe-ratio',
+  },
+  hkPe: {
+    statId: '31679',
+    name: 'Hang Seng Index P/E',
+    peBasis: 'Trailing',
+    sourceUrl: 'https://en.macromicro.me/series/31679/hong-kong-hang-seng-index-pe-ratio',
+  },
 };
 
 // Trading Economics page slugs are kept here (instead of opaque API symbols)
@@ -173,6 +194,35 @@ async function fetchFredSeries(id, { fredId, name }) {
   };
 }
 
+async function fetchMacroMicroSeries(id, definition, apiKey = process.env.MACROMICRO_API_KEY) {
+  if (!apiKey) throw new Error('MACROMICRO_API_KEY is not set');
+  const statId = definition.statId;
+  if (!statId) throw new Error(`No MacroMicro stat ID configured for ${id}`);
+  const text = await fetchText(`${MACROMICRO_API_BASE}/v1/stats/series/${encodeURIComponent(statId)}`, {
+    headers: { authorization: `Bearer ${apiKey}`, accept: 'application/json' },
+  });
+  const payload = JSON.parse(text);
+  const rows = payload?.series;
+  const data = Array.isArray(rows) ? rows.flatMap(row => {
+    const date = String(row.date || '').slice(0, 10);
+    const value = Number(row.val);
+    return /^\d{4}-\d{2}-\d{2}$/.test(date) && Number.isFinite(value) && value > 0
+      ? [{ date, value }]
+      : [];
+  }) : [];
+  if (!data.length) throw new Error(`MacroMicro returned no data for stat ${statId}`);
+  return {
+    id,
+    name: definition.name,
+    unit: 'ratio',
+    frequency: 'Daily',
+    source: 'MacroMicro',
+    sourceUrl: definition.sourceUrl,
+    peBasis: definition.peBasis,
+    data,
+  };
+}
+
 async function mapLimited(entries, limit, worker) {
   const results = new Array(entries.length);
   let cursor = 0;
@@ -240,6 +290,28 @@ async function getMacroData() {
     if (result.status === 'fulfilled') series[id] = result.value;
     else errors[id] = result.reason?.message || 'FRED fetch failed';
   });
+  const valuationEntries = Object.entries({
+    ...VALUATION_SERIES,
+    ...(process.env.MACROMICRO_CHINA_FORWARD_PE_ID ? {
+      cnForwardPe: {
+        statId: process.env.MACROMICRO_CHINA_FORWARD_PE_ID,
+        name: 'CSI 300 forward P/E',
+        peBasis: 'NTM',
+        sourceUrl: process.env.MACROMICRO_CHINA_FORWARD_PE_URL || 'https://en.macromicro.me',
+      },
+    } : {}),
+  });
+  const valuationSettled = await Promise.allSettled(
+    valuationEntries.map(([id, definition]) => fetchMacroMicroSeries(id, definition)),
+  );
+  valuationSettled.forEach((result, index) => {
+    const id = valuationEntries[index][0];
+    if (result.status === 'fulfilled') series[id] = result.value;
+    else errors[id] = result.reason?.message || 'MacroMicro fetch failed';
+  });
+  if (!process.env.MACROMICRO_CHINA_FORWARD_PE_ID) {
+    errors.cnForwardPe = 'No verified CSI 300 forward-P/E series is configured';
+  }
   SPREADS.forEach(({ id, name, minuend, subtrahend }) => {
     const spread = calculateSpread(series[minuend], series[subtrahend], { id, name });
     if (spread) series[id] = spread;
@@ -269,5 +341,5 @@ function mergeMacroData(fresh, previous) {
 
 module.exports = {
   getMacroData, fetchSeries, SERIES, SPREADS, FRED_SERIES, decodeChartPayload,
-  calculateSpread, fetchFredSeries, mergeMacroData,
+  VALUATION_SERIES, calculateSpread, fetchFredSeries, fetchMacroMicroSeries, mergeMacroData,
 };
