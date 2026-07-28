@@ -5,7 +5,7 @@ import { useResource } from '../../services/resourceCache';
 import { HSCI_META, HK_SECTIONS } from '../../config/hkPerformance';
 import { GRID, TICK, BORD } from '../../utils/chartHelpers';
 import { rankChartsByLatestStrength } from '../../utils/chartRanking';
-import { addVolumeBars, formatVolume, isVolumeDataset, volumeAxis } from '../../utils/volumeChart';
+import { addVolumeBars, formatVolume, isVolumeDataset, rawVolumeAt, volumeAxis } from '../../utils/volumeChart';
 
 const PRESETS = [
   { id: 'ytd', label: 'YTD', getStart: () => `${new Date().getFullYear()}-01-01` },
@@ -241,7 +241,7 @@ function chartOptions({ relative = false, compact = false, data = null } = {}) {
             const v = c.parsed.y;
             if (v == null) return ` ${c.dataset.label}: —`;
             if (isVolumeDataset(c.dataset)) {
-              return ` ${c.dataset.label}: ${formatVolume(v)}`;
+              return ` ${c.dataset.label}: ${formatVolume(rawVolumeAt(c))}`;
             }
             const pct = v - 100;
             if (relative) {

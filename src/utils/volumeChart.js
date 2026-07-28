@@ -12,9 +12,16 @@ export function formatVolume(value) {
 }
 
 export function addVolumeBars(chartData, volumes, label) {
-  if (!chartData || !volumes?.some(value => Number.isFinite(value) && value > 0)) {
+  const positive = volumes
+    ?.filter(value => Number.isFinite(value) && value > 0)
+    .sort((a, b) => a - b) ?? [];
+  if (!chartData || !positive.length) {
     return chartData;
   }
+  const ceilingIndex = positive.length < 20
+    ? positive.length - 1
+    : Math.floor((positive.length - 1) * 0.98);
+  const volumeCeiling = positive[ceilingIndex];
 
   return {
     ...chartData,
@@ -23,7 +30,14 @@ export function addVolumeBars(chartData, volumes, label) {
         type: 'bar',
         label,
         fullName: label,
-        data: volumes,
+        // Keep one abnormal print from flattening every normal bar. Values
+        // above the 98th-percentile ceiling saturate visually, while tooltips
+        // continue to display the untouched observation from `rawVolumes`.
+        data: volumes.map(value => (
+          Number.isFinite(value) && value > 0 ? Math.min(value, volumeCeiling) : value
+        )),
+        rawVolumes: volumes,
+        volumeCeiling,
         yAxisID: VOLUME_AXIS_ID,
         backgroundColor: 'rgba(56,189,248,.42)',
         borderColor: 'rgba(125,211,252,.78)',
@@ -42,10 +56,14 @@ export function isVolumeDataset(dataset) {
   return dataset?.yAxisID === VOLUME_AXIS_ID;
 }
 
+export function rawVolumeAt(context) {
+  return context.dataset?.rawVolumes?.[context.dataIndex] ?? context.parsed.y;
+}
+
 export function volumeAxis(chartData) {
   const dataset = chartData?.datasets?.find(isVolumeDataset);
   if (!dataset) return null;
-  const maxVolume = Math.max(
+  const maxVolume = dataset.volumeCeiling ?? Math.max(
     0,
     ...dataset.data.filter(value => Number.isFinite(value) && value > 0)
   );
