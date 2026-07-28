@@ -1,7 +1,7 @@
 import { BORD, TICK } from './chartHelpers';
 
 export const VOLUME_AXIS_ID = 'volume';
-const VOLUME_HEIGHT_RATIO = 0.75;
+const VOLUME_HEIGHT_RATIO = 0.60;
 const VOLUME_FORMATTER = new Intl.NumberFormat('en-US', {
   notation: 'compact',
   maximumFractionDigits: 1,
@@ -39,8 +39,8 @@ export function addVolumeBars(chartData, volumes, label) {
         rawVolumes: volumes,
         volumeCeiling,
         yAxisID: VOLUME_AXIS_ID,
-        backgroundColor: 'rgba(56,189,248,.42)',
-        borderColor: 'rgba(125,211,252,.78)',
+        backgroundColor: 'rgba(71,85,105,.30)',
+        borderColor: 'rgba(100,116,139,.46)',
         borderWidth: 1,
         barPercentage: 1,
         categoryPercentage: 1,
@@ -73,8 +73,8 @@ export function volumeAxis(chartData) {
     position: 'right',
     beginAtZero: true,
     min: 0,
-    // Make the largest visible bar exactly 75% of the plotting height, leaving
-    // the upper quarter clear for the relative-performance lines.
+    // Make the largest visible bar exactly 60% of the plotting height, leaving
+    // the upper 40% clear for the relative-performance lines.
     max: maxVolume / VOLUME_HEIGHT_RATIO,
     grid: { drawOnChartArea: false },
     ticks: {
