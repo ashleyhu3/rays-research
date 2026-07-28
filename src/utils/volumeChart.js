@@ -39,7 +39,7 @@ export function addVolumeBars(chartData, volumes, label) {
         rawVolumes: volumes,
         volumeCeiling,
         yAxisID: VOLUME_AXIS_ID,
-        backgroundColor: 'rgba(255, 255, 255, 0.6)',
+        backgroundColor: 'rgba(255, 255, 255, 0.45)',
         borderColor: 'rgba(255,255,255,.28)',
         borderWidth: 1,
         barPercentage: 1,

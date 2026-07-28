@@ -4,6 +4,10 @@ import ChartCard from '../../components/chart/ChartCard';
 import { useResource } from '../../services/resourceCache';
 import ChinaFlowNationalTeam from './ChinaFlowNationalTeam';
 import ChinaStockConnect from './ChinaStockConnect';
+import LiquidityDateControls, {
+  filterDateRange,
+  useLiquidityDateRange,
+} from './LiquidityDateControls';
 
 const BLUE = '#4577b4';
 const GOLD = '#c9a227';
@@ -19,9 +23,8 @@ const SERIES = {
   },
   turnoverRate: {
     color: GREEN, percent: true, monthly: false, lag: 'End of trading day',
-    note: 'Daily A-share turnover (成交额) divided by whole-market free-float market cap '
-      + '(自由流通市值). The denominator is summed across the A-share universe from Tushare '
-      + 'daily_basic as Σ(free_share × close) for each trade date.',
+    note: 'Daily turnover rate (换手率) for the East Money All-A (Shanghai, Shenzhen, and '
+      + 'Beijing) market index, persisted alongside the total-market turnover history.',
   },
   m2Yoy: {
     color: GOLD, percent: true, monthly: true, lag: 'Published monthly',
@@ -42,28 +45,12 @@ function dateLabel(date, monthly) {
   });
 }
 
-function LiquiditySeries({ kind }) {
-  // Loads once on first visit, then served from the shared cache on every
-  // subsequent mount (stays loaded across navigation and refresh).
-  const { data: payload, error } = useResource('/api/china-liquidity');
-
-  const series = payload?.[kind];
+function SeriesCard({ kind, series, points, span2 }) {
   const { color, percent, monthly, lag, note } = SERIES[kind];
-  const points = useMemo(() => {
-    const all = series?.data ?? [];
-    if (monthly) return all;
-    const cutoff = new Date();
-    cutoff.setUTCFullYear(cutoff.getUTCFullYear() - 1);
-    const day = cutoff.toISOString().slice(0, 10);
-    return all.filter(point => point.date >= day);
-  }, [series, monthly]);
 
-  if (error) return <div className="empty">China liquidity data unavailable: {error}</div>;
-  if (!series) return <div className="empty">Loading stored China liquidity history…</div>;
-  if (!points.length) return <div className="empty">No stored {series.name} history yet. The daily collector will populate it.</div>;
+  if (!series) return <div className={`cbox${span2 ? ' span2' : ''}`}><div className="empty">Loading stored China liquidity history…</div></div>;
+  if (!points.length) return <div className={`cbox${span2 ? ' span2' : ''}`}><div className="empty">No {series.name} history in the selected timeframe.</div></div>;
 
-  const latest = points.at(-1);
-  const display = percent ? `${latest.value.toFixed(2)}%` : compactCny(latest.value);
   const data = {
     labels: points.map(point => dateLabel(point.date, monthly)),
     datasets: [{
@@ -93,32 +80,80 @@ function LiquiditySeries({ kind }) {
   };
 
   return (
+    <ChartCard
+      chartId={`china-liquidity-${kind}`} title={`China · ${series.name}`}
+      src={<a className="ch-src" href={series.sourceUrl} target="_blank" rel="noopener noreferrer">{series.source}</a>}
+      freq={series.frequency} lag={lag}
+      span2={span2} height={360}
+      srcNote={note}
+    >
+      <Line data={data} options={options} />
+    </ChartCard>
+  );
+}
+
+function LiquiditySeries({ kinds, startDate, endDate }) {
+  // Loads once on first visit, then served from the shared cache on every
+  // subsequent mount (stays loaded across navigation and refresh).
+  const { data: payload, error } = useResource('/api/china-liquidity');
+  const selectedKinds = Array.isArray(kinds) ? kinds : [kinds];
+  const selected = useMemo(
+    () => selectedKinds.map(kind => {
+      const series = payload?.[kind];
+      return { kind, series, points: filterDateRange(series?.data, startDate, endDate) };
+    }),
+    [payload, startDate, endDate, kinds],
+  );
+
+  if (error) return <div className="empty">China liquidity data unavailable: {error}</div>;
+
+  return (
     <>
       <div className="lev-head">
-        <div className="lev-stats"><div className="lev-tile">
-          <div className="lev-tile-label"><span className="lev-dot" style={{ background: color }} />Latest</div>
-          <div className="lev-tile-value">{display}</div>
-        </div></div>
+        <div className="lev-stats">
+          {selected.map(({ kind, series, points }) => {
+            const latest = points.at(-1);
+            if (!series || !latest) return null;
+            const { color, percent } = SERIES[kind];
+            return (
+              <div className="lev-tile" key={kind}>
+                <div className="lev-tile-label">
+                  <span className="lev-dot" style={{ background: color }} />
+                  {selected.length > 1 ? series.name : 'Latest'}
+                </div>
+                <div className="lev-tile-value">
+                  {percent ? `${latest.value.toFixed(2)}%` : compactCny(latest.value)}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
       <div className="cgrid">
-        <ChartCard
-          chartId={`china-liquidity-${kind}`} title={`China · ${series.name}`}
-          src={<a className="ch-src" href={series.sourceUrl} target="_blank" rel="noopener noreferrer">{series.source}</a>}
-          freq={series.frequency} lag={lag}
-          span2 height={360}
-          srcNote={note}
-        >
-          <Line data={data} options={options} />
-        </ChartCard>
+        {selected.map(({ kind, series, points }) => (
+          <SeriesCard
+            key={kind} kind={kind} series={series} points={points}
+            span2={selected.length === 1}
+          />
+        ))}
       </div>
     </>
   );
 }
 
 export default function ChinaLiquidity({ section }) {
-  if (section === 'stock-connect') return <ChinaStockConnect />;
-  if (section === 'turnover') return <LiquiditySeries kind="turnover" />;
-  if (section === 'turnover-rate') return <LiquiditySeries kind="turnoverRate" />;
-  if (section === 'money-supply') return <LiquiditySeries kind="m2Yoy" />;
-  return <ChinaFlowNationalTeam />;
+  const dateRange = useLiquidityDateRange();
+  let content;
+  if (section === 'stock-connect') content = <ChinaStockConnect {...dateRange} />;
+  else if (section === 'turnover' || section === 'turnover-rate') {
+    content = <LiquiditySeries kinds={['turnover', 'turnoverRate']} {...dateRange} />;
+  } else if (section === 'money-supply') content = <LiquiditySeries kinds="m2Yoy" {...dateRange} />;
+  else content = <ChinaFlowNationalTeam {...dateRange} />;
+
+  return (
+    <>
+      <LiquidityDateControls {...dateRange} />
+      {content}
+    </>
+  );
 }

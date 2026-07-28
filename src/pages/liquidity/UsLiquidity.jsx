@@ -1,8 +1,12 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Line } from 'react-chartjs-2';
 import ChartCard from '../../components/chart/ChartCard';
 import { useResource } from '../../services/resourceCache';
 import { baseOpts, mkDs, GRID } from '../../utils/chartHelpers';
+import LiquidityDateControls, {
+  filterDateRange,
+  useLiquidityDateRange,
+} from './LiquidityDateControls';
 
 const BLUE = '#4577b4';
 const GOLD = '#c9a227';
@@ -35,14 +39,6 @@ function dateLabel(date) {
   return `${month} '${String(parsed.getUTCFullYear()).slice(-2)}`;
 }
 
-function windowed(points, years) {
-  if (!points?.length || !years) return points ?? [];
-  const cutoff = new Date(`${points.at(-1).date}T00:00:00Z`);
-  cutoff.setUTCFullYear(cutoff.getUTCFullYear() - years);
-  const start = cutoff.toISOString().slice(0, 10);
-  return points.filter(point => point.date >= start);
-}
-
 function Tile({ label, value, color, fmt }) {
   return (
     <div className="lev-tile">
@@ -52,13 +48,16 @@ function Tile({ label, value, color, fmt }) {
   );
 }
 
-function SeriesChart({ payload, seriesKey, color, fmt, chartId, srcNote, height = 320, years = 0, span2 = false }) {
+function SeriesChart({ payload, seriesKey, color, fmt, chartId, srcNote, height = 320, startDate, endDate, span2 = false }) {
   const meta = payload?.series?.[seriesKey];
   const error = payload?.errors?.[seriesKey];
-  const points = useMemo(() => windowed(meta?.data, years), [meta, years]);
+  const points = useMemo(
+    () => filterDateRange(meta?.data, startDate, endDate),
+    [meta, startDate, endDate],
+  );
 
   if (!meta && error) return <ChartCard chartId={chartId} title={seriesKey} height={height}><div className="empty">Data unavailable: {error}</div></ChartCard>;
-  if (!points.length) return <ChartCard chartId={chartId} title={meta?.name ?? seriesKey} height={height}><div className="empty">No stored history yet. The daily collector will populate it.</div></ChartCard>;
+  if (!points.length) return <ChartCard chartId={chartId} title={meta?.name ?? seriesKey} height={height}><div className="empty">No history in the selected timeframe.</div></ChartCard>;
 
   const data = {
     labels: points.map(point => dateLabel(point.date)),
@@ -84,8 +83,8 @@ function SeriesChart({ payload, seriesKey, color, fmt, chartId, srcNote, height 
   );
 }
 
-function FedBalance({ payload }) {
-  const latest = payload.series?.netAssets?.data?.at(-1)?.value;
+function FedBalance({ payload, startDate, endDate }) {
+  const latest = filterDateRange(payload.series?.netAssets?.data, startDate, endDate).at(-1)?.value;
   return (
     <>
       <div className="lev-head">
@@ -94,21 +93,25 @@ function FedBalance({ payload }) {
       <div className="cgrid">
         <SeriesChart
           payload={payload} seriesKey="netAssets" color={BLUE} fmt={fmtUsdM}
+          startDate={startDate} endDate={endDate}
           chartId="us-liquidity-net-assets"
           srcNote="Net Assets = Fed Total Assets − Treasury General Account − ON RRP award volume. Rising = reserves flowing into the banking system; falling = liquidity draining out."
         />
         <SeriesChart
           payload={payload} seriesKey="totalAssets" color={GOLD} fmt={fmtUsdM}
+          startDate={startDate} endDate={endDate}
           chartId="us-liquidity-total-assets"
           srcNote="Federal Reserve total balance sheet assets — Wednesday level, published weekly."
         />
         <SeriesChart
           payload={payload} seriesKey="tga" color={PURPLE} fmt={fmtUsdM}
+          startDate={startDate} endDate={endDate}
           chartId="us-liquidity-tga"
           srcNote="Treasury General Account balance held at the Fed. A falling TGA (e.g. after a debt-ceiling deal) injects reserves into the banking system; a rising TGA drains them."
         />
         <SeriesChart
           payload={payload} seriesKey="onRrp" color={GREEN} fmt={fmtUsdB}
+          startDate={startDate} endDate={endDate}
           chartId="us-liquidity-onrrp"
           srcNote="Overnight Reverse Repurchase Agreement award volume — cash money-market funds park at the Fed overnight, withdrawn from the banking system."
         />
@@ -116,13 +119,6 @@ function FedBalance({ payload }) {
     </>
   );
 }
-
-const PRICE_RANGES = [
-  { id: '1y', label: '1Y', years: 1 },
-  { id: '3y', label: '3Y', years: 3 },
-  { id: '5y', label: '5Y', years: 5 },
-  { id: 'all', label: 'All', years: 0 },
-];
 
 // Three price scales ($79 vs 4,800 vs 7,400) cannot share an axis, and simply
 // rebasing them to 100 does not help either: HYG is a coupon-bearing bond ETF
@@ -158,7 +154,7 @@ function standardize(values) {
   return values.map(value => (value - mean) / deviation);
 }
 
-function PriceComparisonChart({ payload, years = 0 }) {
+function PriceComparisonChart({ payload, startDate, endDate }) {
   const { dates, series } = useMemo(() => {
     const byKey = Object.fromEntries(PRICE_SERIES.map(entry => [
       entry.key,
@@ -168,12 +164,7 @@ function PriceComparisonChart({ payload, years = 0 }) {
     // different calendars, and a standardized line must not step over a gap.
     const first = byKey[PRICE_SERIES[0].key];
     let common = [...first.keys()].filter(date => PRICE_SERIES.every(entry => byKey[entry.key].has(date))).sort();
-    if (years && common.length) {
-      const cutoff = new Date(`${common.at(-1)}T00:00:00Z`);
-      cutoff.setUTCFullYear(cutoff.getUTCFullYear() - years);
-      const start = cutoff.toISOString().slice(0, 10);
-      common = common.filter(date => date >= start);
-    }
+    common = common.filter(date => date >= startDate && date <= endDate);
     return {
       dates: common,
       series: PRICE_SERIES.map(entry => ({
@@ -181,7 +172,7 @@ function PriceComparisonChart({ payload, years = 0 }) {
         raw: common.map(date => byKey[entry.key].get(date)),
       })),
     };
-  }, [payload, years]);
+  }, [payload, startDate, endDate]);
 
   const legend = PRICE_SERIES.map(entry => [entry.label, entry.color]);
   const title = 'HYG vs MSCI World vs S&P 500 — volatility-normalized';
@@ -238,11 +229,9 @@ function PriceComparisonChart({ payload, years = 0 }) {
   );
 }
 
-function Credit({ payload }) {
-  const hy = payload.series?.hySpread?.data?.at(-1)?.value;
-  const ig = payload.series?.igSpread?.data?.at(-1)?.value;
-  const [rangeId, setRangeId] = useState('5y');
-  const range = PRICE_RANGES.find(item => item.id === rangeId) ?? PRICE_RANGES[0];
+function Credit({ payload, startDate, endDate }) {
+  const hy = filterDateRange(payload.series?.hySpread?.data, startDate, endDate).at(-1)?.value;
+  const ig = filterDateRange(payload.series?.igSpread?.data, startDate, endDate).at(-1)?.value;
   return (
     <>
       <div className="lev-head">
@@ -250,27 +239,18 @@ function Credit({ payload }) {
           <Tile label="High Yield spread" value={hy} color={RED} fmt={fmtPct} />
           <Tile label="Investment Grade spread" value={ig} color={BLUE} fmt={fmtPct} />
         </div>
-        <div className="lev-toggles"><div className="view-toggle">
-          {PRICE_RANGES.map(item => (
-            <button
-              key={item.id}
-              className={`vt-btn${item.id === rangeId ? ' active' : ''}`}
-              onClick={() => setRangeId(item.id)}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div></div>
       </div>
       <div className="cgrid">
-        <PriceComparisonChart payload={payload} years={range.years} />
+        <PriceComparisonChart payload={payload} startDate={startDate} endDate={endDate} />
         <SeriesChart
-          payload={payload} seriesKey="hySpread" color={RED} fmt={fmtPct} years={range.years}
+          payload={payload} seriesKey="hySpread" color={RED} fmt={fmtPct}
+          startDate={startDate} endDate={endDate}
           chartId="us-liquidity-hy-spread"
           srcNote="ICE BofA US High Yield Index Option-Adjusted Spread — the extra yield high-yield corporate bonds pay over Treasuries. Widening signals rising credit stress. FRED's public download of this ICE-licensed series is limited to roughly the trailing three years."
         />
         <SeriesChart
-          payload={payload} seriesKey="igSpread" color={BLUE} fmt={fmtPct} years={range.years}
+          payload={payload} seriesKey="igSpread" color={BLUE} fmt={fmtPct}
+          startDate={startDate} endDate={endDate}
           chartId="us-liquidity-ig-spread"
           srcNote="ICE BofA US Corporate Index Option-Adjusted Spread — the investment-grade counterpart to the high-yield spread above."
         />
@@ -279,9 +259,9 @@ function Credit({ payload }) {
   );
 }
 
-function Interbank({ payload }) {
-  const sofrIorb = payload.series?.sofrIorbSpread?.data?.at(-1)?.value;
-  const effrIorb = payload.series?.effrIorbSpread?.data?.at(-1)?.value;
+function Interbank({ payload, startDate, endDate }) {
+  const sofrIorb = filterDateRange(payload.series?.sofrIorbSpread?.data, startDate, endDate).at(-1)?.value;
+  const effrIorb = filterDateRange(payload.series?.effrIorbSpread?.data, startDate, endDate).at(-1)?.value;
   return (
     <>
       <div className="lev-head">
@@ -293,11 +273,13 @@ function Interbank({ payload }) {
       <div className="cgrid">
         <SeriesChart
           payload={payload} seriesKey="sofrIorbSpread" color={GOLD} fmt={fmtBps}
+          startDate={startDate} endDate={endDate}
           chartId="us-liquidity-sofr-iorb"
           srcNote="SOFR minus IORB, in basis points. A rising/positive spread signals repo-market funding pressure relative to the rate the Fed pays banks on reserves — a classic sign of reserve scarcity."
         />
         <SeriesChart
           payload={payload} seriesKey="effrIorbSpread" color={RED} fmt={fmtBps}
+          startDate={startDate} endDate={endDate}
           chartId="us-liquidity-effr-iorb"
           srcNote="EFFR minus IORB, in basis points. Tracks where fed funds actually trade relative to the administered IORB rate."
         />
@@ -307,14 +289,22 @@ function Interbank({ payload }) {
 }
 
 export default function UsLiquidity({ section }) {
+  const dateRange = useLiquidityDateRange();
   // Loads once on first visit, then served from the shared cache on every
   // subsequent mount (stays loaded across navigation and refresh).
   const { data: payload, error } = useResource('/api/us-liquidity');
 
-  if (error) return <div className="empty">US liquidity data unavailable: {error}</div>;
-  if (!payload) return <div className="empty">Loading stored US liquidity history…</div>;
+  let content;
+  if (error) content = <div className="empty">US liquidity data unavailable: {error}</div>;
+  else if (!payload) content = <div className="empty">Loading stored US liquidity history…</div>;
+  else if (section === 'credit') content = <Credit payload={payload} {...dateRange} />;
+  else if (section === 'interbank') content = <Interbank payload={payload} {...dateRange} />;
+  else content = <FedBalance payload={payload} {...dateRange} />;
 
-  if (section === 'credit') return <Credit payload={payload} />;
-  if (section === 'interbank') return <Interbank payload={payload} />;
-  return <FedBalance payload={payload} />;
+  return (
+    <>
+      <LiquidityDateControls {...dateRange} />
+      {content}
+    </>
+  );
 }

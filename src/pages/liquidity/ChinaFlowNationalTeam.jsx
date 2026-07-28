@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Bar } from 'react-chartjs-2';
 import ChartCard from '../../components/chart/ChartCard';
 import { useResource } from '../../services/resourceCache';
@@ -43,13 +43,6 @@ function tickerColors(count) {
   return Array.from({ length: count }, (_, i) => PALETTE[i % PALETTE.length]);
 }
 
-const RANGES = [
-  { id: '1m', label: '1M', days: 31 },
-  { id: '3m', label: '3M', days: 92 },
-  { id: 'ytd', label: 'YTD', days: null },
-  { id: '12m', label: '12M', days: 366 },
-];
-
 const fmtYi = v => (v == null ? '—' : `${v >= 0 ? '+' : ''}${v.toFixed(2)}亿`);
 
 function dayLabel(iso) {
@@ -64,28 +57,19 @@ function monthLabel(iso) {
   return `${month} '${String(d.getUTCFullYear()).slice(-2)}`;
 }
 
-function rangeFrom(dates, range) {
+function rangeFrom(dates, startDate) {
   if (!dates.length) return 0;
-  if (range.id === 'ytd') {
-    const year = dates.at(-1).slice(0, 4);
-    const idx = dates.findIndex(d => d >= `${year}-01-01`);
-    return idx < 0 ? 0 : idx;
-  }
-  if (range.days) {
-    const cutoff = new Date(
-      new Date(`${dates.at(-1)}T00:00:00Z`).getTime() - range.days * 86400000,
-    ).toISOString().slice(0, 10);
-    const idx = dates.findIndex(d => d >= cutoff);
-    return idx < 0 ? 0 : idx;
-  }
-  return 0;
+  const idx = dates.findIndex(date => date >= startDate);
+  return idx < 0 ? dates.length : idx;
 }
 
 /** Slice every group total and every ticker's series to the selected trailing window. */
-function windowed(dates, groups, tickerSeries, range) {
+function windowed(dates, groups, tickerSeries, startDate, endDate) {
   if (!dates?.length) return null;
-  const from = rangeFrom(dates, range);
-  const cut = arr => (arr ?? []).slice(from);
+  const from = rangeFrom(dates, startDate);
+  let to = dates.findIndex((date, index) => index >= from && date > endDate);
+  if (to < 0) to = dates.length;
+  const cut = arr => (arr ?? []).slice(from, to);
   return {
     dates: cut(dates),
     groups: Object.fromEntries(Object.entries(groups ?? {}).map(([key, arr]) => [key, cut(arr)])),
@@ -281,42 +265,22 @@ function GroupPanel({ group, tickers, win }) {
   );
 }
 
-export default function ChinaFlowNationalTeam() {
-  const [rangeId, setRangeId] = useState('3m');
+export default function ChinaFlowNationalTeam({ startDate, endDate }) {
   // Paint the shared cached series immediately, but always revalidate because
   // the external scheduled collector can update it while this browser session
   // (and its two-hour localStorage cache) remains open.
   const { data, error } = useResource('/api/china-national-team-flow', { revalidate: true });
 
-  const range = RANGES.find(item => item.id === rangeId) ?? RANGES.find(item => item.id === '3m');
-
   const win = useMemo(
-    () => (data ? windowed(data.dates, data.groups, data.tickerSeries, range) : null),
-    [data, range],
+    () => (data ? windowed(data.dates, data.groups, data.tickerSeries, startDate, endDate) : null),
+    [data, startDate, endDate],
   );
 
   const tickerGroups = data?.tickerGroups ?? {};
 
-  const toggles = (
-    <div className="lev-toggles">
-      <div className="view-toggle">
-        {RANGES.map(item => (
-          <button
-            key={item.id}
-            className={`vt-btn${item.id === rangeId ? ' active' : ''}`}
-            onClick={() => setRangeId(item.id)}
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-
   if (error || !data || !win) {
     return (
       <>
-        <div className="lev-head"><div />{toggles}</div>
         <div className="empty">
           {error
             ? `China national-team flow data unavailable: ${error}`
@@ -326,8 +290,12 @@ export default function ChinaFlowNationalTeam() {
     );
   }
 
+  if (!win.dates.length) {
+    return <div className="empty">No China flow history in the selected timeframe.</div>;
+  }
+
   const latestByGroup = GROUP_KEYS.map(group => {
-    const series = data.groups[group] ?? [];
+    const series = win.groups[group] ?? [];
     const idx = [...series].reverse().findIndex(Number.isFinite);
     const value = idx < 0 ? null : series[series.length - 1 - idx];
     return { group, value };
@@ -341,7 +309,6 @@ export default function ChinaFlowNationalTeam() {
             <Tile key={group} label={group} value={fmtYi(value)} color={GROUP_COLOR[group]} />
           ))}
         </div>
-        {toggles}
       </div>
 
       <div className="cgrid">

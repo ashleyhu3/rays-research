@@ -9,6 +9,12 @@ test('parses East Money amount (f57) as A-share turnover', () => {
   ]), { '2026-07-17': 1450000000000 });
 });
 
+test('parses East Money turnover rate (f61) as percent', () => {
+  assert.deepEqual(_test.parseTurnoverRateKlines([
+    '2026-07-17,1,2,3,0.5,123,1450000000000,1.2,0.2,0.1,2.3',
+  ]), { '2026-07-17': 2.3 });
+});
+
 test('derives monthly M2 year-over-year growth from levels', () => {
   assert.deepEqual(_test.deriveM2Yoy([
     { date: '2024-05-31', value: 300 }, { date: '2025-05-31', value: 324 },
@@ -54,6 +60,16 @@ test('assemble exposes the turnover-rate series alongside raw turnover', () => {
   });
   assert.equal(payload.turnoverRate.unit, '%');
   assert.deepEqual(payload.turnoverRate.data, [{ date: '2026-07-24', value: 2 }]);
+});
+
+test('assemble prefers the directly reported East Money turnover rate', () => {
+  const payload = _test.assemble({
+    turnover: { '2026-07-24': 1.944e12 },
+    turnoverRate: { '2026-07-24': 1.49 },
+    freeFloatCap: { '2026-07-24': 9.72e13 },
+    m2Yoy: {}, southboundNetFlow: {}, northboundTurnover: {},
+  });
+  assert.deepEqual(payload.turnoverRate.data, [{ date: '2026-07-24', value: 1.49 }]);
 });
 
 /** Stands in for Tushare's daily_basic: `rows` A-shares split into 5000-row pages,

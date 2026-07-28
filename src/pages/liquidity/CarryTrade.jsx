@@ -1,22 +1,19 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Bar, Line } from 'react-chartjs-2';
 import ChartCard from '../../components/chart/ChartCard';
 import { useResource } from '../../services/resourceCache';
 import { useData } from '../../context/DataContext';
 import { baseOpts } from '../../utils/chartHelpers';
+import LiquidityDateControls, {
+  filterDateRange,
+  useLiquidityDateRange,
+} from './LiquidityDateControls';
 
 const BLUE = '#4577b4';
 const PURPLE = '#7864b4';
 const GREEN = '#5a9f6b';
 const RED = '#c65d57';
 const MUTED = '#8a8a84';
-
-const RANGES = [
-  { id: '1y', label: '1Y', years: 1 },
-  { id: '3y', label: '3Y', years: 3 },
-  { id: '5y', label: '5Y', years: 5 },
-  { id: 'all', label: 'All' },
-];
 
 const SERIES = [
   { key: 'jpy', short: 'JPY', color: BLUE },
@@ -41,14 +38,6 @@ function monthLabel(date) {
   const parsed = new Date(`${date}T00:00:00Z`);
   const month = parsed.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' });
   return `${month} '${String(parsed.getUTCFullYear()).slice(-2)}`;
-}
-
-function windowed(points, range) {
-  if (!points?.length || !range.years) return points ?? [];
-  const cutoff = new Date(`${points.at(-1).date}T00:00:00Z`);
-  cutoff.setUTCFullYear(cutoff.getUTCFullYear() - range.years);
-  const start = cutoff.toISOString().slice(0, 10);
-  return points.filter(point => point.date >= start);
 }
 
 function chartData(points, color) {
@@ -131,38 +120,28 @@ function Tile({ label, point, color }) {
 }
 
 export default function CarryTrade() {
-  const [rangeId, setRangeId] = useState('3y');
+  const dateRange = useLiquidityDateRange();
+  const { startDate, endDate } = dateRange;
   // Loads once on first visit, then served from the shared cache on every
   // subsequent mount (stays loaded across navigation and refresh).
   const { data: payload, error } = useResource('/api/carry-trade');
   const { liveData } = useData();
   const macro = liveData?.macro;
-  const range = RANGES.find(item => item.id === rangeId) ?? RANGES[1];
 
   const visible = useMemo(() => Object.fromEntries(SERIES.map(series => [
     series.key,
-    windowed(payload?.series?.[series.key]?.data, range),
-  ])), [payload, range]);
+    filterDateRange(payload?.series?.[series.key]?.data, startDate, endDate),
+  ])), [payload, startDate, endDate]);
 
   const spreadVisible = useMemo(() => Object.fromEntries(SPREADS.map(spread => [
     spread.key,
-    windowed(macro?.series?.[spread.key]?.data, range),
-  ])), [macro, range]);
-
-  const toggles = (
-    <div className="lev-toggles"><div className="view-toggle">
-      {RANGES.map(item => (
-        <button key={item.id} className={`vt-btn${item.id === rangeId ? ' active' : ''}`} onClick={() => setRangeId(item.id)}>
-          {item.label}
-        </button>
-      ))}
-    </div></div>
-  );
+    filterDateRange(macro?.series?.[spread.key]?.data, startDate, endDate),
+  ])), [macro, startDate, endDate]);
 
   if (error || !payload) {
     return (
       <>
-        <div className="lev-head"><div />{toggles}</div>
+        <LiquidityDateControls {...dateRange} />
         <div className="empty">{error ? `Carry Trade data unavailable: ${error}` : 'Loading CFTC carry-trade positioning…'}</div>
       </>
     );
@@ -171,14 +150,15 @@ export default function CarryTrade() {
   if (SERIES.some(series => !visible[series.key]?.length)) {
     return (
       <>
-        <div className="lev-head"><div />{toggles}</div>
-        <div className="empty">No stored carry-trade history yet. The daily collector will populate it.</div>
+        <LiquidityDateControls {...dateRange} />
+        <div className="empty">No carry-trade history in the selected timeframe.</div>
       </>
     );
   }
 
   return (
     <>
+      <LiquidityDateControls {...dateRange} />
       <div className="lev-head">
         <div className="lev-stats">
           {SERIES.map(series => {
@@ -186,7 +166,6 @@ export default function CarryTrade() {
             return <Tile key={series.key} label={`${series.short} net position`} point={point} color={point.value >= 0 ? GREEN : RED} />;
           })}
         </div>
-        {toggles}
       </div>
       <div className="cgrid">
         {SERIES.map(series => {

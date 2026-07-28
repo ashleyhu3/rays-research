@@ -29,6 +29,7 @@ const yyyymmdd = date => date.toISOString().slice(0, 10).replace(/-/g, '');
 function loadHistory() {
   const history = storage.read(BLOB, HISTORY_FILE);
   history.turnover = history.turnover ?? {};
+  history.turnoverRate = history.turnoverRate ?? {};
   history.m2Yoy = history.m2Yoy ?? {};
   history.southboundNetFlow = history.southboundNetFlow ?? {};
   history.northboundTurnover = history.northboundTurnover ?? {};
@@ -91,6 +92,18 @@ function parseTurnoverKlines(klines) {
   return out;
 }
 
+function parseTurnoverRateKlines(klines) {
+  const out = {};
+  for (const line of klines ?? []) {
+    const [date, , , , , , , , , , turnoverRate] = String(line).split(',');
+    const value = Number(turnoverRate);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(date) && Number.isFinite(value) && value >= 0) {
+      out[date] = value;
+    }
+  }
+  return out;
+}
+
 async function fetchTurnover(startDate, endDate, tries = 4) {
   const params = new URLSearchParams({
     secid: '47.800004', ut: '7eea3edcaed734bea9cbfc24409ed989',
@@ -107,9 +120,11 @@ async function fetchTurnover(startDate, endDate, tries = 4) {
       });
       if (!response.ok) throw new Error(`East Money HTTP ${response.status}`);
       const json = await response.json();
-      const parsed = parseTurnoverKlines(json?.data?.klines);
-      if (!Object.keys(parsed).length) throw new Error('East Money returned no turnover history');
-      return parsed;
+      const klines = json?.data?.klines;
+      const turnover = parseTurnoverKlines(klines);
+      const turnoverRate = parseTurnoverRateKlines(klines);
+      if (!Object.keys(turnover).length) throw new Error('East Money returned no turnover history');
+      return { turnover, turnoverRate };
     } catch (error) {
       lastError = error;
       if (attempt < tries) await sleep(attempt * 2500);
@@ -254,6 +269,10 @@ async function fetchM2Yoy() {
 
 function assemble(history) {
   const toPoints = values => Object.keys(values ?? {}).sort().map(date => ({ date, value: values[date] }));
+  const turnoverRate = {
+    ...deriveTurnoverRate(history.turnover, history.freeFloatCap),
+    ...(history.turnoverRate ?? {}),
+  };
   return {
     turnover: {
       name: 'A-share turnover – 成交额', unit: 'CNY', frequency: 'Daily',
@@ -261,8 +280,8 @@ function assemble(history) {
     },
     turnoverRate: {
       name: 'A-share turnover rate – 自由流通换手率', unit: '%', frequency: 'Daily',
-      source: 'East Money · Tushare', sourceUrl: TUSHARE_SOURCE,
-      data: toPoints(deriveTurnoverRate(history.turnover, history.freeFloatCap)),
+      source: 'East Money', sourceUrl: EASTMONEY_SOURCE,
+      data: toPoints(turnoverRate),
     },
     m2Yoy: {
       name: 'M2 Money Supply YoY', unit: '%', frequency: 'Monthly',
@@ -297,7 +316,10 @@ async function updateChinaLiquidity(days = 730, freeFloatDays = FREE_FLOAT_DAYS_
     fetchStockConnect('005', 'DEAL_AMT', start),
   ]);
   const errors = {};
-  if (settled[0].status === 'fulfilled') Object.assign(history.turnover, settled[0].value);
+  if (settled[0].status === 'fulfilled') {
+    Object.assign(history.turnover, settled[0].value.turnover);
+    Object.assign(history.turnoverRate, settled[0].value.turnoverRate);
+  }
   else errors.turnover = settled[0].reason?.message || 'Turnover fetch failed';
   if (settled[1].status === 'fulfilled') {
     Object.assign(history.m2Yoy, settled[1].value.values);
@@ -311,13 +333,16 @@ async function updateChinaLiquidity(days = 730, freeFloatDays = FREE_FLOAT_DAYS_
   if (settled.every(result => result.status === 'rejected')) {
     throw new Error(`China liquidity refresh failed: ${Object.values(errors).join('; ')}`);
   }
-  // Runs after the merge above because it prices exactly the trade dates East Money
-  // reported turnover for. A missing token or exhausted Tushare quota only costs us
-  // the derived turnover-rate series — the rest of the payload still refreshes.
-  try {
-    await updateFreeFloatCap(history, freeFloatDays);
-  } catch (error) {
-    errors.turnoverRate = error?.message || 'Free-float market cap fetch failed';
+  // East Money normally supplies the rate directly. Retain the older Tushare
+  // calculation only as a fallback for any dates whose f61 value is absent.
+  const missingTurnoverRate = Object.keys(history.turnover)
+    .some(date => !Number.isFinite(history.turnoverRate[date]));
+  if (missingTurnoverRate) {
+    try {
+      await updateFreeFloatCap(history, freeFloatDays);
+    } catch (error) {
+      errors.turnoverRate = error?.message || 'Free-float market cap fetch failed';
+    }
   }
   history.updatedAt = new Date().toISOString();
   history.errors = errors;
@@ -331,7 +356,7 @@ module.exports = {
   updateChinaLiquidity,
   readChinaLiquidity,
   _test: {
-    parseTurnoverKlines, parseStockConnectRows, deriveM2Yoy, assemble,
+    parseTurnoverKlines, parseTurnoverRateKlines, parseStockConnectRows, deriveM2Yoy, assemble,
     sumFreeFloatCap, deriveTurnoverRate, updateFreeFloatCap,
   },
 };

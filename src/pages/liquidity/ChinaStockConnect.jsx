@@ -1,20 +1,14 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Bar } from 'react-chartjs-2';
 import ChartCard from '../../components/chart/ChartCard';
 import { useResource } from '../../services/resourceCache';
+import { filterDateRange } from './LiquidityDateControls';
 
 const BLUE = '#4577b4';
 const GREEN = '#5a9f6b';
 const RED = '#c65d57';
 const MUTED = '#8a8a84';
 const SOURCE_URL = 'https://data.eastmoney.com/hsgt/hsgtV2.html';
-
-const RANGES = [
-  { id: '1m', label: '1M', days: 31 },
-  { id: '3m', label: '3M', days: 92 },
-  { id: 'ytd', label: 'YTD' },
-  { id: '12m', label: '12M', days: 366 },
-];
 
 function fmtYi(value, signed = false) {
   if (!Number.isFinite(value)) return '—';
@@ -26,16 +20,6 @@ function dateLabel(date, long) {
     month: 'short', day: long ? undefined : 'numeric', year: long ? '2-digit' : undefined,
     timeZone: 'UTC',
   });
-}
-
-function windowed(points, range) {
-  if (!points?.length) return [];
-  const last = points.at(-1).date;
-  let cutoff;
-  if (range.id === 'ytd') cutoff = `${last.slice(0, 4)}-01-01`;
-  else cutoff = new Date(new Date(`${last}T00:00:00Z`).getTime() - range.days * 86400000)
-    .toISOString().slice(0, 10);
-  return points.filter(point => point.date >= cutoff);
 }
 
 function barData(points, color, signed) {
@@ -89,49 +73,27 @@ function Tile({ label, value, color }) {
   );
 }
 
-export default function ChinaStockConnect() {
-  const [rangeId, setRangeId] = useState('3m');
+export default function ChinaStockConnect({ startDate, endDate }) {
   // Shares the /api/china-liquidity cache with the other liquidity views —
   // loads once on first visit, then served from cache on every mount.
   const { data: liquidity, error } = useResource('/api/china-liquidity');
   const payload = liquidity?.stockConnect ?? null;
-  const range = RANGES.find(item => item.id === rangeId) ?? RANGES[1];
 
   const southbound = useMemo(
-    () => windowed(payload?.southboundNetFlow?.data, range),
-    [payload, range],
+    () => filterDateRange(payload?.southboundNetFlow?.data, startDate, endDate),
+    [payload, startDate, endDate],
   );
   const northbound = useMemo(
-    () => windowed(payload?.northboundTurnover?.data, range),
-    [payload, range],
-  );
-
-  const toggles = (
-    <div className="lev-toggles"><div className="view-toggle">
-      {RANGES.map(item => (
-        <button key={item.id} className={`vt-btn${item.id === rangeId ? ' active' : ''}`} onClick={() => setRangeId(item.id)}>
-          {item.label}
-        </button>
-      ))}
-    </div></div>
+    () => filterDateRange(payload?.northboundTurnover?.data, startDate, endDate),
+    [payload, startDate, endDate],
   );
 
   if (error || !payload) {
-    return (
-      <>
-        <div className="lev-head"><div />{toggles}</div>
-        <div className="empty">{error ? `Stock Connect data unavailable: ${error}` : 'Loading Stock Connect history…'}</div>
-      </>
-    );
+    return <div className="empty">{error ? `Stock Connect data unavailable: ${error}` : 'Loading Stock Connect history…'}</div>;
   }
 
   if (!southbound.length || !northbound.length) {
-    return (
-      <>
-        <div className="lev-head"><div />{toggles}</div>
-        <div className="empty">No stored Stock Connect history yet. The daily collector will populate it.</div>
-      </>
-    );
+    return <div className="empty">No Stock Connect history in the selected timeframe.</div>;
   }
 
   const source = <a className="ch-src" href={SOURCE_URL} target="_blank" rel="noopener noreferrer">East Money</a>;
@@ -145,7 +107,6 @@ export default function ChinaStockConnect() {
           <Tile label="Southbound Net Flow" value={fmtYi(southLatest.value, true)} color={southLatest.value >= 0 ? GREEN : RED} />
           <Tile label="Northbound Turnover" value={fmtYi(northLatest.value)} color={BLUE} />
         </div>
-        {toggles}
       </div>
       <div className="cgrid">
         <ChartCard
