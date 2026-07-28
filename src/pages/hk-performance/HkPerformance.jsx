@@ -206,7 +206,7 @@ function buildPairChartData(payload, numMeta, denMeta, startDate, endDate, inclu
     ? addVolumeBars(
       chartData,
       sliceBounds(numSeries.volumes ?? [], bounds),
-      `${numMeta.label} Trading Volume`
+      `${numMeta.label} Trading Turnover (HKD)`
     )
     : chartData;
 }

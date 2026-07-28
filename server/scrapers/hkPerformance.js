@@ -117,6 +117,7 @@ async function fetchHsiIndexSeries(indexCode, days, startIso, tries = 3) {
 
 async function fetchEastmoneyVolumeSeries(eastmoneyCode, startIso, endIso, tries = 4) {
   const url = `https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=124.${eastmoneyCode}`
+    + '&ut=fa5fd1943c7b386f172d6893dbfba10b'
     + '&fields1=f1,f2,f3,f4,f5,f6&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61'
     + `&klt=101&fqt=0&beg=${yyyymmdd(startIso)}&end=${yyyymmdd(endIso)}`;
 
@@ -128,8 +129,11 @@ async function fetchEastmoneyVolumeSeries(eastmoneyCode, startIso, endIso, tries
       const klines = json?.data?.klines ?? [];
       if (klines.length) {
         return klines.map(line => {
-          const [date, , , , , volume] = line.split(',');
-          return { date, volume: Number(volume) };
+          // Some HSCI sectors publish aggregate share volume as zero while
+          // still reporting traded amount. Use HKD turnover consistently for
+          // every HK sector so all cards have the same activity measure.
+          const [date, , , , , , amount] = line.split(',');
+          return { date, volume: Number(amount) };
         }).filter(point => point.date >= startIso && Number.isFinite(point.volume) && point.volume > 0);
       }
     } catch { /* retry below */ }
