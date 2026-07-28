@@ -17,9 +17,10 @@ name: Collect dashboard data
 
 on:
   schedule:
-    # Every six hours, offset from the top of the hour to reduce congestion.
-    # Same-day snapshots overwrite, so duplicate collection is safe.
-    - cron: '17 */6 * * *'
+    # Run after SZSE's T+1 morning fund-size publication. 00:17 UTC was often
+    # earlier than the confirmed Shenzhen ETF figures, leaving the day's .SZ
+    # bars absent until the following cycle.
+    - cron: '17 1,7,13,19 * * *'
   workflow_dispatch: {}   # allow manual runs from the Actions tab
 
 concurrency:
