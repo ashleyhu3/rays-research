@@ -156,6 +156,7 @@ export const NAV_SECTIONS = [
     mode: 'leverage',
     items: [
       { id: 'leverage-korea',    label: 'Korea'  },
+      { id: 'korea-investor-flow', label: 'Korea investor flow' },
       { id: 'leverage-taiwan',   label: 'Taiwan' },
       { id: 'taiwan-individual', label: 'Taiwan individual' },
       { id: 'leverage-china',    label: 'A shares' },
@@ -300,6 +301,7 @@ export const VIEW_META = {
   'macro-cn-trade':     { title: 'CHINA · TRADE' },
   'macro-cn-activity':  { title: 'CHINA · ACTIVITY' },
   'leverage-korea':   { title: 'LEVERAGE — KOREAN RETAIL FIREPOWER' },
+  'korea-investor-flow': { title: 'KOREA — KOSPI NET BUYING BY INVESTOR' },
   'leverage-taiwan':  { title: 'LEVERAGE — TAIWAN RETAIL FIREPOWER' },
   'taiwan-individual': { title: 'TAIWAN — INDIVIDUAL STOCK MARGIN' },
   'leverage-china':   { title: 'LEVERAGE — CHINA A-SHARES' },

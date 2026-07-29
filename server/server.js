@@ -24,6 +24,7 @@ const { readUsLiquidity }            = require('./scrapers/usLiquidity');
 const { readCarryTrade }             = require('./scrapers/carryTrade');
 const { readBuybacks }               = require('./scrapers/buybacks');
 const { readKoreaLeverage }          = require('./scrapers/koreaLeverage');
+const { readKoreaInvestorFlow }      = require('./scrapers/koreaInvestorFlow');
 const { keywordRolling }             = require('./stocktwitsStore');
 
 const app   = express();
@@ -94,6 +95,7 @@ app.use('/api/us-liquidity', requireStorageBlobs('usLiquidityHistory'));
 app.use('/api/carry-trade', requireStorageBlobs('carryTradeHistory'));
 app.use('/api/buybacks', requireStorageBlobs('buybackHistory'));
 app.use('/api/korea-leverage', requireStorageBlobs('koreaLeverageHistory'));
+app.use('/api/korea-investor-flow', requireStorageBlobs('koreaInvestorFlowHistory'));
 app.use('/api/us-performance', requireStorageBlobs('usPerformanceHistory'));
 app.use('/api/hk-china-performance', requireStorageBlobs('hkChinaPerformanceHistory'));
 app.use('/api/china-etf-premium', requireStorageBlobs('chinaEtfPremiumHistory'));
@@ -220,6 +222,9 @@ app.get('/api/customs-drones',    cachedRoute('customsDrones',    s.customsDrone
 // partial latestSnapshot can never truncate the chart to the scraper's normal
 // 30-day refresh window.
 app.get('/api/korea-leverage', (_req, res) => res.json(readKoreaLeverage()));
+// Same reasoning as korea-leverage: the canonical multi-year history lives in
+// its own blob, so read it directly rather than through the 30-day poll cache.
+app.get('/api/korea-investor-flow', (_req, res) => res.json(readKoreaInvestorFlow()));
 app.get('/api/taiwan-leverage',   cachedRoute('taiwanLeverage',   s.taiwanLeverage));
 app.get('/api/china-leverage',    cachedRoute('chinaLeverage',    s.chinaLeverage, null, { preferPersisted: true }));
 app.get('/api/macro',             cachedRoute('macro',            s.macro, null, { preferPersisted: true }));

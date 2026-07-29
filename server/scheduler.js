@@ -29,6 +29,7 @@ const scrapers = {
   webTraffic:       () => require('./scrapers/webTraffic').getWebTrafficData(),
   customsDrones:    () => require('./scrapers/customsTrade').getDroneExports(),
   koreaLeverage:    () => require('./scrapers/koreaLeverage').getKoreaLeverage(),
+  koreaInvestorFlow: () => require('./scrapers/koreaInvestorFlow').getKoreaInvestorFlow(),
   taiwanLeverage:   () => require('./scrapers/taiwanLeverage').getTaiwanLeverage(),
   chinaLeverage:    () => require('./scrapers/chinaLeverage').getChinaLeverage(),
   chinaNationalTeamFlow: () => require('./scrapers/chinaNationalTeamFlow').getChinaNationalTeamFlow(),
@@ -91,6 +92,7 @@ const TTL = {
   webTraffic:    24 * 3600000,  // daily   — SimilarWeb monthly visit estimates via Apify; one snapshot per day
   customsDrones: 24 * 3600000,  // daily   — Taiwan customs UAV exports publish monthly; daily poll picks up new months
   koreaLeverage:  6 * 3600000,  // 6-hourly — ETF net assets move with the KRX session; KOFIA publishes once, 1–3 days late
+  koreaInvestorFlow: 6 * 3600000,  // 6-hourly — Naver posts the session's investor net buying after the KRX close
   taiwanLeverage: 6 * 3600000,  // 6-hourly — TWSE posts the margin balance late evening; the ETF feed is a live snapshot
   chinaLeverage:  6 * 3600000,  // 6-hourly — SSE/SZSE post margin balances after the close; the HK 2× ETF ticks live
   chinaNationalTeamFlow: 6 * 3600000,  // 6-hourly — same SSE/SZSE post-close settlement cadence as chinaLeverage
@@ -206,7 +208,7 @@ function setup() {
   // 12:00 UTC (21:00 KST) is the run that lands after the KRX close, so the
   // day's ETF net assets settle on the closing price rather than an intraday one.
   cron.schedule('0 */6 * * *', async () => {
-    await refreshAll(['docker', 'openrouterRanks', 'dram', 'nand', 'aws', 'cpu', 'koreaLeverage', 'taiwanLeverage', 'chinaLeverage', 'chinaNationalTeamFlow', 'usLeverage']);
+    await refreshAll(['docker', 'openrouterRanks', 'dram', 'nand', 'aws', 'cpu', 'koreaLeverage', 'koreaInvestorFlow', 'taiwanLeverage', 'chinaLeverage', 'chinaNationalTeamFlow', 'usLeverage']);
     await refreshRotation().catch(error => console.warn('[rotation] scheduled refresh failed:', error.message));
   });
 

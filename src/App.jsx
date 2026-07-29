@@ -53,6 +53,7 @@ import GlobalPerformance from './pages/global-performance/GlobalPerformance';
 import { OptionsReportProvider } from './context/OptionsReportContext';
 import DataValidity from './pages/data-validity/DataValidity';
 import { LeverageKorea, LeverageTaiwan } from './pages/leverage/Leverage';
+import KoreaInvestorFlow from './pages/korea-investor-flow/KoreaInvestorFlow';
 import TaiwanIndividual from './pages/taiwan-individual/TaiwanIndividual';
 import ChinaLeverage from './pages/china-leverage/ChinaLeverage';
 import JapanLeverage from './pages/japan-leverage/JapanLeverage';
@@ -140,6 +141,7 @@ const VIEW_COMPONENTS = {
   'sentiment':        Sentiment,
   'sources':          DataValidity,
   'leverage-korea':   LeverageKorea,
+  'korea-investor-flow': KoreaInvestorFlow,
   'leverage-taiwan':  LeverageTaiwan,
   'taiwan-individual': TaiwanIndividual,
   'leverage-china':   ChinaLeverage,
