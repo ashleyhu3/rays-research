@@ -15,11 +15,18 @@ test('parses East Money turnover rate (f61) as percent', () => {
   ]), { '2026-07-17': 2.3 });
 });
 
-test('derives monthly M2 year-over-year growth from levels', () => {
-  assert.deepEqual(_test.deriveM2Yoy([
+test('derives monthly year-over-year growth from levels', () => {
+  assert.deepEqual(_test.deriveYoy([
     { date: '2024-05-31', value: 300 }, { date: '2025-05-31', value: 324 },
     { date: '2026-05-31', value: 351.54 },
   ]), { '2025-05-31': 8, '2026-05-31': 8.5 });
+});
+
+test('derives the M1–M2 spread only for months carrying both aggregates', () => {
+  assert.deepEqual(_test.deriveM1M2Spread(
+    { '2026-04-01': 2.3, '2026-05-01': 4.8, '2026-06-01': 6.1 },
+    { '2026-04-01': 8.1, '2026-05-01': 8.3 },
+  ), { '2026-04-01': -5.8, '2026-05-01': -3.5 });
 });
 
 test('sums Tushare free_share × close into CNY, skipping unpriced rows', () => {

@@ -30,6 +30,7 @@ function loadHistory() {
   const history = storage.read(BLOB, HISTORY_FILE);
   history.turnover = history.turnover ?? {};
   history.turnoverRate = history.turnoverRate ?? {};
+  history.m1Yoy = history.m1Yoy ?? {};
   history.m2Yoy = history.m2Yoy ?? {};
   history.southboundNetFlow = history.southboundNetFlow ?? {};
   history.northboundTurnover = history.northboundTurnover ?? {};
@@ -241,7 +242,7 @@ function deriveTurnoverRate(turnover, freeFloatCap) {
   return out;
 }
 
-function deriveM2Yoy(points) {
+function deriveYoy(points) {
   const levels = new Map();
   for (const point of points ?? []) {
     const value = Number(point.value);
@@ -260,10 +261,24 @@ function deriveM2Yoy(points) {
   return out;
 }
 
-async function fetchM2Yoy() {
-  const series = await fetchSeries('cnM2', ['china', 'money-supply-m2']);
-  const values = deriveM2Yoy(series.data);
-  if (!Object.keys(values).length) throw new Error('Could not derive China M2 YoY history');
+/** M1 − M2 year-over-year growth, in percentage points (剪刀差). Both aggregates
+ * are published together for the same reference month, so a month that carries
+ * only one of them is a partial release rather than a real spread. */
+function deriveM1M2Spread(m1Yoy, m2Yoy) {
+  const out = {};
+  for (const [date, m1] of Object.entries(m1Yoy ?? {})) {
+    const m2 = Number(m2Yoy?.[date]);
+    if (Number.isFinite(m2) && Number.isFinite(Number(m1))) {
+      out[date] = Math.round((Number(m1) - m2) * 100) / 100;
+    }
+  }
+  return out;
+}
+
+async function fetchMoneySupplyYoy(id, slug, label) {
+  const series = await fetchSeries(id, ['china', slug]);
+  const values = deriveYoy(series.data);
+  if (!Object.keys(values).length) throw new Error(`Could not derive China ${label} YoY history`);
   return { values, sourceUrl: series.sourceUrl, source: series.source, frequency: series.frequency };
 }
 
@@ -283,11 +298,23 @@ function assemble(history) {
       source: 'East Money', sourceUrl: EASTMONEY_SOURCE,
       data: toPoints(turnoverRate),
     },
+    m1Yoy: {
+      name: 'M1 Money Supply YoY', unit: '%', frequency: 'Monthly',
+      source: history.m1Meta?.source || 'People’s Bank of China via Trading Economics',
+      sourceUrl: history.m1Meta?.sourceUrl || 'https://tradingeconomics.com/china/money-supply-m1',
+      data: toPoints(history.m1Yoy),
+    },
     m2Yoy: {
       name: 'M2 Money Supply YoY', unit: '%', frequency: 'Monthly',
       source: history.m2Meta?.source || 'People’s Bank of China via Trading Economics',
       sourceUrl: history.m2Meta?.sourceUrl || 'https://tradingeconomics.com/china/money-supply-m2',
       data: toPoints(history.m2Yoy),
+    },
+    m1M2Spread: {
+      name: 'M1–M2 Spread – 剪刀差', unit: 'pp', frequency: 'Monthly',
+      source: history.m2Meta?.source || 'People’s Bank of China via Trading Economics',
+      sourceUrl: history.m2Meta?.sourceUrl || 'https://tradingeconomics.com/china/money-supply-m2',
+      data: toPoints(deriveM1M2Spread(history.m1Yoy, history.m2Yoy)),
     },
     stockConnect: {
       source: 'East Money', sourceUrl: STOCK_CONNECT_SOURCE, frequency: 'Daily',
@@ -311,9 +338,10 @@ async function updateChinaLiquidity(days = 730, freeFloatDays = FREE_FLOAT_DAYS_
   const start = new Date(end.getTime() - Math.max(366, days) * 86400000);
   const settled = await Promise.allSettled([
     fetchTurnover(start, end),
-    fetchM2Yoy(),
+    fetchMoneySupplyYoy('cnM2', 'money-supply-m2', 'M2'),
     fetchStockConnect('006', 'NET_DEAL_AMT', start),
     fetchStockConnect('005', 'DEAL_AMT', start),
+    fetchMoneySupplyYoy('cnM1', 'money-supply-m1', 'M1'),
   ]);
   const errors = {};
   if (settled[0].status === 'fulfilled') {
@@ -330,6 +358,11 @@ async function updateChinaLiquidity(days = 730, freeFloatDays = FREE_FLOAT_DAYS_
   else errors.southboundNetFlow = settled[2].reason?.message || 'Southbound net flow fetch failed';
   if (settled[3].status === 'fulfilled') Object.assign(history.northboundTurnover, settled[3].value);
   else errors.northboundTurnover = settled[3].reason?.message || 'Northbound turnover fetch failed';
+  if (settled[4].status === 'fulfilled') {
+    Object.assign(history.m1Yoy, settled[4].value.values);
+    const { values: _values, ...meta } = settled[4].value;
+    history.m1Meta = meta;
+  } else errors.m1Yoy = settled[4].reason?.message || 'M1 fetch failed';
   if (settled.every(result => result.status === 'rejected')) {
     throw new Error(`China liquidity refresh failed: ${Object.values(errors).join('; ')}`);
   }
@@ -356,7 +389,7 @@ module.exports = {
   updateChinaLiquidity,
   readChinaLiquidity,
   _test: {
-    parseTurnoverKlines, parseTurnoverRateKlines, parseStockConnectRows, deriveM2Yoy, assemble,
-    sumFreeFloatCap, deriveTurnoverRate, updateFreeFloatCap,
+    parseTurnoverKlines, parseTurnoverRateKlines, parseStockConnectRows, deriveYoy, assemble,
+    sumFreeFloatCap, deriveTurnoverRate, updateFreeFloatCap, deriveM1M2Spread,
   },
 };

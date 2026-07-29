@@ -87,14 +87,34 @@ export default function KoreaInvestorFlow() {
 
   const maxDate = todayIso();
 
+  // An empty series is a real, recoverable state, not a slow one: a warm
+  // serverless instance that first served this route before the history blob
+  // was populated caches that emptiness for its own lifetime, so one instance
+  // can answer 200-with-no-dates while its siblings answer normally. Retrying
+  // usually lands on a different instance; after that, say so plainly rather
+  // than leaving a spinner that is indistinguishable from a hung request.
   useEffect(() => {
     let live = true;
-    fetch('/api/korea-investor-flow')
-      .then(response => (response.ok
-        ? response.json()
-        : Promise.reject(new Error(`HTTP ${response.status}`))))
-      .then(payload => { if (live) setData(payload); })
-      .catch(fetchError => { if (live) setError(fetchError.message); });
+    let attempt = 0;
+
+    const load = () => {
+      fetch('/api/korea-investor-flow')
+        .then(response => (response.ok
+          ? response.json()
+          : Promise.reject(new Error(`HTTP ${response.status}`))))
+        .then(payload => {
+          if (!live) return;
+          if (!payload?.dates?.length && attempt < 2) {
+            attempt += 1;
+            setTimeout(load, 1500);
+            return;
+          }
+          setData(payload);
+        })
+        .catch(fetchError => { if (live) setError(fetchError.message); });
+    };
+
+    load();
     return () => { live = false; };
   }, []);
 
@@ -146,6 +166,8 @@ export default function KoreaInvestorFlow() {
         <div className="empty">
           {error
             ? `KOSPI investor flow unavailable: ${error}`
+            : data
+            ? 'KOSPI investor flow returned no data — the history blob is empty. Run npm run backfill:korea-investor-flow, then reload.'
             : 'Loading KOSPI investor flow...'}
         </div>
       </>

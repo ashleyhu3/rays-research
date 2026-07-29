@@ -21,7 +21,9 @@ async function main() {
   const series = {
     turnover: data.turnover.data,
     turnoverRate: data.turnoverRate.data,
+    m1Yoy: data.m1Yoy.data,
     m2Yoy: data.m2Yoy.data,
+    m1M2Spread: data.m1M2Spread.data,
     southboundNetFlow: data.stockConnect.southboundNetFlow.data,
     northboundTurnover: data.stockConnect.northboundTurnover.data,
   };
