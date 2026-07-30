@@ -43,6 +43,27 @@ test('parses the rolling session table on a StockQ index page', () => {
   });
 });
 
+test('takes the longest range table out of a StockQ chart data file', () => {
+  const table = (name, rows) => `var ${name} = google.visualization.arrayToDataTable([\n`
+    + `['Time', 'Price', 'MA20'],\n${rows}\n]);`;
+  const parsed = _test.parseStockqChartJs([
+    table('data1M', "[new Date('Jul 28, 2026'), 2601.00, 1.0],\n[new Date('Jul 29, 2026'), 2607.00, 1.0],"),
+    table('data5Y', "[new Date('Oct 4, 2021'), 727.00, 1.0],\n[new Date('Sep 1, 2023'), 1234.50, 1.0],\n"
+      + "[new Date('Jul 28, 2026'), 2601.00, 1.0],\n[new Date('Jul 29, 2026'), 2607.00, 1.0],"),
+  ].join('\n'));
+  assert.deepEqual(parsed, {
+    '2021-10-04': 727,
+    '2023-09-01': 1234.5,
+    '2026-07-28': 2601,
+    '2026-07-29': 2607,
+  });
+});
+
+test('ignores a chart file with no usable rows', () => {
+  assert.deepEqual(_test.parseStockqChartJs('google.charts.load("current");'), {});
+  assert.deepEqual(_test.parseStockqChartJs(''), {});
+});
+
 test('maps a StockQ daily snapshot onto each index by its own as-of date', () => {
   const row = (code, value, date) =>
     `<td align='left' nowrap><a href="/index/${code}.php">x</a></td>\n<td nowrap>${value}</td>\n`

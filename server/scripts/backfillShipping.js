@@ -1,17 +1,21 @@
 /**
- * One-off history seed for the Shipping page's StockQ-sourced indices.
+ * Deep-history seed for the Shipping page's StockQ-sourced indices.
  *
- * The Baltic Capesize/Panamax/Supramax and dirty/clean tanker indices have no
- * free multi-year feed: StockQ's per-index pages only carry the last ~20
- * sessions. Its daily market snapshots (one page per session, back to 2007) do
- * list every index with its own as-of date, so this walks those pages backwards
- * and merges what it finds into the same blob the scraper tops up.
+ * NOT needed for the normal ~5-year window: the scraper reads StockQ's chart
+ * data files, which carry roughly five years of daily closes per index, so an
+ * ordinary refresh already keeps that whole span current in seven requests.
  *
- *   npm run backfill:shipping           # default 730 calendar days
- *   npm run backfill:shipping -- 1825   # five years
+ * This exists only to reach back further than those charts go (they start
+ * around Oct 2021). StockQ's daily market snapshots — one page per session,
+ * back to 2007 — list every index with its own as-of date, so this walks them
+ * backwards and merges what it finds into the same blob. It costs one request
+ * per trading day, so only run it when that extra depth is actually wanted.
+ *
+ *   npm run backfill:shipping -- 2600   # reach back past the charts' 2021 start
+ *   npm run backfill:shipping           # default 730 days (already charted)
  *
  * Requests are paced and sequential — StockQ is a small site and this is a
- * one-time job, so there is no reason to hammer it.
+ * one-off job, so there is no reason to hammer it.
  */
 'use strict';
 

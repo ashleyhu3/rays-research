@@ -7,10 +7,10 @@
  *   • BDI / SCFI / WCI   — Trading Economics market charts (already used by the
  *                          Commodity page), which carry multi-year history.
  *   • Capesize, Panamax, Supramax, dirty & clean tanker — StockQ, which
- *                          republishes the Baltic Exchange settlements. Each
- *                          index page carries a rolling ~20-session table, so
- *                          the long history comes from the persisted blob (see
- *                          scripts/backfillShipping.js for the one-off seed).
+ *                          republishes the Baltic Exchange settlements. The
+ *                          English site's chart data file carries ~5 years of
+ *                          daily closes per index, so a normal refresh keeps
+ *                          the whole window current on its own.
  *   • CCFI               — Shanghai Shipping Exchange. It is the only publisher
  *                          of CCFI that does not sit behind a subscription, and
  *                          it refuses connections from outside mainland China,
@@ -41,6 +41,10 @@ const TE_TOKEN_PAGE = 'https://tradingeconomics.com/commodity/baltic';
 const TE_DATA = 'https://d3ii0wo49og5mi.cloudfront.net';
 const TE_KEY = 'tradingeconomics-charts-core-api-key';
 const STOCKQ_INDEX = code => `https://www.stockq.org/index/${code}.php`;
+// StockQ's English pages hand their Google Charts data to the browser as a
+// static JS file holding the full plotted series — ~5 years of daily closes in
+// one request, versus the ~20 sessions the HTML table shows.
+const STOCKQ_CHART = code => `https://en.stockq.org/index/js/${code}_sma.js`;
 const SSE_INDEX = type => `https://www.sse.net.cn/index/singleIndex?indexType=${type}`;
 const UA = 'Mozilla/5.0 Signal Shipping Dashboard';
 
@@ -293,7 +297,40 @@ function parseStockqIndexPage(html) {
   return values;
 }
 
+const MONTHS = {
+  jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06',
+  jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12',
+};
+
+/** `[new Date('Jul 2, 2026'), 1850.00, …]` rows out of the chart's JS. The file
+ *  declares one table per range button (1M…5Y); the longest one is the history
+ *  worth keeping. Dates are parsed by month name rather than handed to `Date`,
+ *  so the result cannot shift with the host's locale or timezone. */
+function parseStockqChartJs(source) {
+  const tables = [...String(source ?? '').matchAll(
+    /var\s+\w+\s*=\s*google\.visualization\.arrayToDataTable\(\[([\s\S]*?)\]\s*\)\s*;/g,
+  )];
+  let best = {};
+  for (const [, body] of tables) {
+    const values = {};
+    for (const match of body.matchAll(/new Date\('([A-Za-z]{3})[a-z]*\s+(\d{1,2}),\s*(\d{4})'\)\s*,\s*([\d.]+)/g)) {
+      const month = MONTHS[match[1].toLowerCase()];
+      const value = finite(match[4]);
+      if (!month || value == null) continue;
+      values[`${match[3]}-${month}-${match[2].padStart(2, '0')}`] = value;
+    }
+    if (Object.keys(values).length > Object.keys(best).length) best = values;
+  }
+  return best;
+}
+
 async function fetchStockq(meta) {
+  // Prefer the chart series; the rolling HTML table is the fallback for an
+  // index whose chart file is missing or renamed.
+  try {
+    const charted = parseStockqChartJs(await fetchText(STOCKQ_CHART(meta.code), { timeout: 40000 }));
+    if (Object.keys(charted).length) return charted;
+  } catch { /* fall through to the index page */ }
   const values = parseStockqIndexPage(await fetchText(STOCKQ_INDEX(meta.code)));
   if (!Object.keys(values).length) throw new Error(`no rows parsed from StockQ ${meta.code}`);
   return values;
@@ -491,7 +528,7 @@ module.exports = {
   BLOB,
   HISTORY_FILE,
   _test: {
-    parseHormuz, parseTeSeries, parseStockqIndexPage, parseStockqDailyPage,
+    parseHormuz, parseTeSeries, parseStockqIndexPage, parseStockqChartJs, parseStockqDailyPage,
     parseSseIndexPage, toPatches, assemble,
     SERIES_ORDER, GROUPS, SERIES_META, STOCKQ_SERIES, TE_SERIES,
   },
