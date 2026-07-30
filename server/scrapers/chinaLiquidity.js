@@ -82,23 +82,52 @@ async function fetchStockConnect(mutualType, field, startDate, tries = 4) {
   throw lastError ?? new Error('East Money Stock Connect request failed');
 }
 
-function parseTurnoverKlines(klines) {
+/** A-share sessions close at 15:00 China Standard Time, which is UTC+8 year-round
+ * (no DST), so a session's close is 07:00 UTC on its own date. */
+const SESSION_CLOSE_MS_AFTER_UTC_MIDNIGHT = (15 - 8) * 3600000;
+// East Money settles the closing print a few minutes after the bell; wait it out
+// rather than race it.
+const SESSION_SETTLE_MS = 30 * 60000;
+
+/** True once `date`'s session has closed and settled.
+ *
+ * The kline endpoint publishes a row for the *in-progress* session, carrying only
+ * the turnover accumulated so far. Persisting it writes a fraction of the real
+ * day — mid-morning it runs ~40-50% of the full print — which lands as a false
+ * cliff on the end of the turnover charts and drags the y-axis floor below the
+ * series' real range. The scheduled refresh fires at 03:00 plus a rolling 24h
+ * interval, so it regularly lands inside Beijing trading hours; a later run would
+ * overwrite the partial value, but only after the charts had already shown it.
+ * Dropping the unfinished session costs at most a day of lag and is always right. */
+function isSessionFinal(date, now = Date.now()) {
+  const utcMidnight = Date.parse(`${date}T00:00:00Z`);
+  if (!Number.isFinite(utcMidnight)) return false;
+  return now >= utcMidnight + SESSION_CLOSE_MS_AFTER_UTC_MIDNIGHT + SESSION_SETTLE_MS;
+}
+
+function parseTurnoverKlines(klines, now = Date.now()) {
   const out = {};
   for (const line of klines ?? []) {
     // date,open,close,high,low,volume,amount,amplitude,pctChange,change,turnoverRate
     const [date, , , , , , amount] = String(line).split(',');
     const value = Number(amount);
-    if (/^\d{4}-\d{2}-\d{2}$/.test(date) && Number.isFinite(value)) out[date] = value;
+    // Whole-market turnover is never zero on a session East Money reports, so a
+    // non-positive amount means an empty or in-progress print, not a quiet day.
+    if (/^\d{4}-\d{2}-\d{2}$/.test(date) && Number.isFinite(value) && value > 0
+      && isSessionFinal(date, now)) {
+      out[date] = value;
+    }
   }
   return out;
 }
 
-function parseTurnoverRateKlines(klines) {
+function parseTurnoverRateKlines(klines, now = Date.now()) {
   const out = {};
   for (const line of klines ?? []) {
     const [date, , , , , , , , , , turnoverRate] = String(line).split(',');
     const value = Number(turnoverRate);
-    if (/^\d{4}-\d{2}-\d{2}$/.test(date) && Number.isFinite(value) && value >= 0) {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(date) && Number.isFinite(value) && value > 0
+      && isSessionFinal(date, now)) {
       out[date] = value;
     }
   }
@@ -390,6 +419,6 @@ module.exports = {
   readChinaLiquidity,
   _test: {
     parseTurnoverKlines, parseTurnoverRateKlines, parseStockConnectRows, deriveYoy, assemble,
-    sumFreeFloatCap, deriveTurnoverRate, updateFreeFloatCap, deriveM1M2Spread,
+    sumFreeFloatCap, deriveTurnoverRate, updateFreeFloatCap, deriveM1M2Spread, isSessionFinal,
   },
 };

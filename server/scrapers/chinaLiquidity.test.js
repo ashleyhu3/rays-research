@@ -15,6 +15,46 @@ test('parses East Money turnover rate (f61) as percent', () => {
   ]), { '2026-07-17': 2.3 });
 });
 
+// 2026-07-30 in Beijing: 09:30 open is 01:30 UTC, 15:00 close is 07:00 UTC.
+const OPEN = Date.parse('2026-07-30T01:30:00Z');
+const MID_SESSION = Date.parse('2026-07-30T03:00:00Z');   // 11:00 Beijing — the 03:00 UTC cron
+const JUST_CLOSED = Date.parse('2026-07-30T07:05:00Z');   // bell rung, print not settled
+const AFTER_CLOSE = Date.parse('2026-07-30T08:00:00Z');   // 16:00 Beijing — the post-close cron
+
+test('treats a session as final only after its close has settled', () => {
+  assert.equal(_test.isSessionFinal('2026-07-30', OPEN), false);
+  assert.equal(_test.isSessionFinal('2026-07-30', MID_SESSION), false);
+  assert.equal(_test.isSessionFinal('2026-07-30', JUST_CLOSED), false);
+  assert.equal(_test.isSessionFinal('2026-07-30', AFTER_CLOSE), true);
+  // Prior sessions are always final, and a malformed date never is.
+  assert.equal(_test.isSessionFinal('2026-07-29', OPEN), true);
+  assert.equal(_test.isSessionFinal('not-a-date', AFTER_CLOSE), false);
+});
+
+test('drops the in-progress session so a mid-session run cannot persist a partial day', () => {
+  // Real East Money rows: 07-29 settled at ¥2.312tn/1.72%, 07-30 mid-morning at
+  // ¥1.017tn/0.78% — under half the day, which is what put a false cliff on the chart.
+  const klines = [
+    '2026-07-29,6283.31,6315.44,6346.44,6210.01,1253373010,2311727087616.00,2.17,0.65,40.93,1.72',
+    '2026-07-30,6320.00,6350.00,6355.00,6300.00,550000000,1017000000000.00,0.9,0.55,34.56,0.78',
+  ];
+  assert.deepEqual(_test.parseTurnoverKlines(klines, MID_SESSION), { '2026-07-29': 2311727087616 });
+  assert.deepEqual(_test.parseTurnoverRateKlines(klines, MID_SESSION), { '2026-07-29': 1.72 });
+  // Once the session settles, the same row is accepted.
+  assert.deepEqual(_test.parseTurnoverKlines(klines, AFTER_CLOSE), {
+    '2026-07-29': 2311727087616, '2026-07-30': 1017000000000,
+  });
+  assert.deepEqual(_test.parseTurnoverRateKlines(klines, AFTER_CLOSE), {
+    '2026-07-29': 1.72, '2026-07-30': 0.78,
+  });
+});
+
+test('rejects a non-positive turnover print from an empty or unstarted session', () => {
+  const klines = ['2026-07-29,6283.31,6315.44,6346.44,6210.01,0,0.00,0,0,0,0'];
+  assert.deepEqual(_test.parseTurnoverKlines(klines, AFTER_CLOSE), {});
+  assert.deepEqual(_test.parseTurnoverRateKlines(klines, AFTER_CLOSE), {});
+});
+
 test('derives monthly year-over-year growth from levels', () => {
   assert.deepEqual(_test.deriveYoy([
     { date: '2024-05-31', value: 300 }, { date: '2025-05-31', value: 324 },

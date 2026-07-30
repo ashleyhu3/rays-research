@@ -218,6 +218,13 @@ function setup() {
   // Daily at 03:00 UTC: aggregate stats whose sources only publish once per day
   cron.schedule('0 3 * * *', () => refreshAll(['gpu', 'tftLcd', 'tpu', 'epochRevenue', 'sentiment', 'pypi', 'github', 'eia', 'mops', 'githubCommits', 'npm', 'huggingface', 'mcp', 'sec', 'webTraffic', 'customsDrones', 'japanLeverage', 'macro', 'commodities', 'chinaLiquidity', 'usLiquidity', 'carryTrade', 'fedWatch', 'buybacks']));
 
+  // 08:00 UTC (16:00 China) is the run that lands after the A-share close, so the
+  // session's turnover is the settled full-day print. The 03:00 run above falls
+  // inside Beijing trading hours, where East Money's kline endpoint only has a
+  // partial day; chinaLiquidity.js drops the unfinished session, and this run is
+  // what fills it in the same day.
+  cron.schedule('0 8 * * *', () => refreshAll(['chinaLiquidity']));
+
   // Options: warm every 6h, plus once shortly after boot so the RAG has data fast
   cron.schedule('30 */6 * * *', () => warmOptions());
   setTimeout(() => warmOptions().catch(e => console.warn('[warmOptions] startup warm failed:', e.message)), 20000);
