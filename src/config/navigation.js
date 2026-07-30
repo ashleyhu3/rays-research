@@ -174,6 +174,7 @@ export const NAV_SECTIONS = [
         { key: 'fed-balance', label: 'Fed Balance' },
         { key: 'credit', label: 'Credit' },
         { key: 'interbank', label: 'Interbank' },
+        { key: 'financial-condition', label: 'Financial Condition' },
       ] },
       { id: 'liquidity-china-flow', label: 'China', subitems: [
         { key: 'flow', label: 'Flow' },

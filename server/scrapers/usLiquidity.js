@@ -26,6 +26,7 @@ const SERIES_META = {
   sofr: { fredId: 'SOFR', name: 'Secured Overnight Financing Rate', unit: '%', frequency: 'Daily' },
   iorb: { fredId: 'IORB', name: 'Interest on Reserve Balances Rate', unit: '%', frequency: 'Daily' },
   effr: { fredId: 'EFFR', name: 'Effective Federal Funds Rate', unit: '%', frequency: 'Daily' },
+  nfci: { fredId: 'NFCI', name: 'Chicago Fed National Financial Conditions Index', unit: 'Index', frequency: 'Weekly' },
 };
 
 // Daily closes that give the credit spreads a price counterpart: the

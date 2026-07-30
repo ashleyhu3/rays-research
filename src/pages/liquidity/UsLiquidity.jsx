@@ -32,6 +32,10 @@ function fmtBps(value) {
   if (!Number.isFinite(value)) return '—';
   return `${value >= 0 ? '+' : ''}${value.toFixed(1)}bp`;
 }
+function fmtNfci(value) {
+  if (!Number.isFinite(value)) return '—';
+  return `${value >= 0 ? '+' : ''}${value.toFixed(2)}`;
+}
 
 function dateLabel(date) {
   const parsed = new Date(`${date}T00:00:00Z`);
@@ -288,6 +292,26 @@ function Interbank({ payload, startDate, endDate }) {
   );
 }
 
+function FinancialCondition({ payload, startDate, endDate }) {
+  const latest = filterDateRange(payload.series?.nfci?.data, startDate, endDate).at(-1)?.value;
+  return (
+    <>
+      <div className="lev-head">
+        <div className="lev-stats"><Tile label="NFCI" value={latest} color={GOLD} fmt={fmtNfci} /></div>
+      </div>
+      <div className="cgrid">
+        <SeriesChart
+          payload={payload} seriesKey="nfci" color={GOLD} fmt={fmtNfci}
+          startDate={startDate} endDate={endDate}
+          chartId="us-liquidity-nfci"
+          span2
+          srcNote="Chicago Fed National Financial Conditions Index — a weekly z-score summary of over 100 measures of money markets, debt/equity markets and shadow banking. Zero is the historical average; positive values mean financial conditions are tighter than average, negative values looser."
+        />
+      </div>
+    </>
+  );
+}
+
 export default function UsLiquidity({ section }) {
   const dateRange = useLiquidityDateRange();
   // Loads once on first visit, then served from the shared cache on every
@@ -299,6 +323,7 @@ export default function UsLiquidity({ section }) {
   else if (!payload) content = <div className="empty">Loading stored US liquidity history…</div>;
   else if (section === 'credit') content = <Credit payload={payload} {...dateRange} />;
   else if (section === 'interbank') content = <Interbank payload={payload} {...dateRange} />;
+  else if (section === 'financial-condition') content = <FinancialCondition payload={payload} {...dateRange} />;
   else content = <FedBalance payload={payload} {...dateRange} />;
 
   return (
