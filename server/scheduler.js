@@ -36,6 +36,7 @@ const scrapers = {
   chinaLiquidity: () => require('./scrapers/chinaLiquidity').updateChinaLiquidity(),
   usLiquidity: () => require('./scrapers/usLiquidity').updateUsLiquidity(),
   carryTrade: () => require('./scrapers/carryTrade').updateCarryTrade(),
+  shipping: () => require('./scrapers/shipping').updateShipping(),
   japanLeverage:    () => require('./scrapers/japanLeverage').getJapanLeverage(),
   usLeverage:       () => require('./scrapers/usLeverage').getUsLeverage(),
   buybacks:         () => require('./scrapers/buybacks').getBuybacks(),
@@ -99,6 +100,7 @@ const TTL = {
   chinaLiquidity: 24 * 3600000,  // daily — A-share turnover plus monthly PBOC M2 YoY
   usLiquidity:    24 * 3600000,  // daily — FRED weekly (Fed balance sheet) and daily (rates/spreads) releases
   carryTrade:     24 * 3600000,  // daily — weekly CFTC release, Friday after the close
+  shipping:       6 * 3600000,  // 6-hourly — Baltic settles once a day London time, Hormuz transits update hourly
   japanLeverage:  24 * 3600000,  // daily — JPX only republishes this workbook once a week; a daily poll picks up the new week
   usLeverage:      6 * 3600000,  // 6-hourly — ETF net assets move daily; CFTC is weekly and FINRA is monthly
   buybacks:       24 * 3600000,  // daily — announcements land through the session but the series is monthly
@@ -123,6 +125,7 @@ PERSISTED_ONLY.add('chinaNationalTeamFlow');
 PERSISTED_ONLY.add('chinaLiquidity');
 PERSISTED_ONLY.add('usLiquidity');
 PERSISTED_ONLY.add('carryTrade');
+PERSISTED_ONLY.add('shipping');
 PERSISTED_ONLY.add('buybacks');
 
 // Hard cap per scraper so one hung source can never wedge a refresh
@@ -208,7 +211,7 @@ function setup() {
   // 12:00 UTC (21:00 KST) is the run that lands after the KRX close, so the
   // day's ETF net assets settle on the closing price rather than an intraday one.
   cron.schedule('0 */6 * * *', async () => {
-    await refreshAll(['docker', 'openrouterRanks', 'dram', 'nand', 'aws', 'cpu', 'koreaLeverage', 'koreaInvestorFlow', 'taiwanLeverage', 'chinaLeverage', 'chinaNationalTeamFlow', 'usLeverage']);
+    await refreshAll(['docker', 'openrouterRanks', 'dram', 'nand', 'aws', 'cpu', 'koreaLeverage', 'koreaInvestorFlow', 'taiwanLeverage', 'chinaLeverage', 'chinaNationalTeamFlow', 'usLeverage', 'shipping']);
     await refreshRotation().catch(error => console.warn('[rotation] scheduled refresh failed:', error.message));
   });
 

@@ -22,6 +22,7 @@ const { readChinaNationalTeamFlow }  = require('./scrapers/chinaNationalTeamFlow
 const { readChinaLiquidity }         = require('./scrapers/chinaLiquidity');
 const { readUsLiquidity }            = require('./scrapers/usLiquidity');
 const { readCarryTrade }             = require('./scrapers/carryTrade');
+const { readShipping }               = require('./scrapers/shipping');
 const { readBuybacks }               = require('./scrapers/buybacks');
 const { readKoreaLeverage }          = require('./scrapers/koreaLeverage');
 const { readKoreaInvestorFlow }      = require('./scrapers/koreaInvestorFlow');
@@ -93,6 +94,7 @@ app.use('/api/metrics-history', requireStorageBlobs('metricsHistory'));
 app.use('/api/china-liquidity', requireStorageBlobs('chinaLiquidityHistory'));
 app.use('/api/us-liquidity', requireStorageBlobs('usLiquidityHistory'));
 app.use('/api/carry-trade', requireStorageBlobs('carryTradeHistory'));
+app.use('/api/shipping', requireStorageBlobs('shippingHistory'));
 app.use('/api/buybacks', requireStorageBlobs('buybackHistory'));
 app.use('/api/korea-leverage', requireStorageBlobs('koreaLeverageHistory'));
 app.use('/api/korea-investor-flow', requireStorageBlobs('koreaInvestorFlowHistory'));
@@ -291,6 +293,9 @@ app.get('/api/china-national-team-flow', async (_req, res) => {
 app.get('/api/china-liquidity', (_req, res) => res.json(readChinaLiquidity()));
 app.get('/api/us-liquidity', (_req, res) => res.json(readUsLiquidity()));
 app.get('/api/carry-trade', (_req, res) => res.json(readCarryTrade()));
+// Shipping keeps its whole multi-year series in a dedicated blob that the
+// scheduled collector tops up, so reads never scrape upstream.
+app.get('/api/shipping', (_req, res) => res.json(readShipping()));
 app.get('/api/buybacks', (_req, res) => res.json(readBuybacks()));
 app.get('/api/japan-leverage',    cachedRoute('japanLeverage',    s.japanLeverage));
 app.get('/api/us-leverage',       cachedRoute('usLeverage',       s.usLeverage));

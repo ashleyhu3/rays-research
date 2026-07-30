@@ -115,6 +115,7 @@ const BACKEND_SOURCES = [
   ['macro',           'macro'],
   ['commodities',     'commodities'],
   ['fedWatch',        'fed-watch'],
+  ['shipping',        'shipping'],
 ];
 
 // The shape fetchAll resolves to, with every field empty. Used to seed a fresh

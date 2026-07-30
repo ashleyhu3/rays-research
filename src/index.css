@@ -312,6 +312,14 @@ body { font-family: var(--font-b); background: var(--bg); color: var(--text); }
   height: 100%; display: flex; align-items: center; justify-content: center;
   color: var(--ter); font-size: 11px; font-family: var(--font-m); text-align: center;
 }
+/* Section heading above a .cgrid — used by pages that group charts (Shipping) */
+.macro-section {
+  display: flex; align-items: center; gap: 10px; margin: 2px 0 10px;
+  color: var(--sec); font-family: var(--font-m); font-size: 10px;
+  letter-spacing: .09em; text-transform: uppercase;
+}
+.macro-section::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
 .erp-toolbar {
   display: flex; align-items: flex-start; justify-content: space-between; gap: 14px;
 }

@@ -135,6 +135,7 @@ export const NAV_SECTIONS = [
       { id: 'macro-yield', label: 'Yield' },
       { id: 'macro-equity-risk-premium', label: 'Equity Risk Premium' },
       { id: 'macro-fed-watch', label: 'Fed Watch' },
+      { id: 'macro-shipping', label: 'Shipping' },
       { id: 'macro-commodity', label: 'Commodity', subitems: COMMODITY_SUBTABS },
       { id: 'macro-us-inflation', label: 'US', subitems: [
         { id: 'macro-us-inflation', label: 'Inflation' },
@@ -292,6 +293,7 @@ export const VIEW_META = {
   'macro-yield':        { title: 'GOVERNMENT BOND YIELDS' },
   'macro-equity-risk-premium': { title: 'EQUITY RISK PREMIUM' },
   'macro-fed-watch':    { title: 'FED WATCH — TARGET RATE PROBABILITIES' },
+  'macro-shipping':     { title: 'SHIPPING' },
   'macro-commodity':    { title: 'COMMODITY' },
   'macro-us-labor':     { title: 'US · LABOR' },
   'macro-us-pmi':       { title: 'US · PMI' },

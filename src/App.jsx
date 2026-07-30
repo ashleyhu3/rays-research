@@ -66,6 +66,7 @@ import Macro from './pages/macro/Macro';
 import EquityRiskPremium from './pages/macro/EquityRiskPremium';
 import Commodity from './pages/macro/Commodity';
 import FedWatch from './pages/macro/FedWatch';
+import Shipping from './pages/macro/Shipping';
 // Source-specific signal pages
 import PyPI          from './pages/sources/PyPI';
 import GitHub        from './pages/sources/GitHub';
@@ -155,6 +156,7 @@ const VIEW_COMPONENTS = {
   'macro-yield':        Macro,
   'macro-equity-risk-premium': EquityRiskPremium,
   'macro-fed-watch':    FedWatch,
+  'macro-shipping':     Shipping,
   'macro-commodity':    Commodity,
   'macro-us-labor':     Macro,
   'macro-us-pmi':       Macro,
