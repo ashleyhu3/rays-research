@@ -99,6 +99,20 @@ const SERIES = {
   cnNewLoans: ['china', 'new-bank-loans'],
 };
 
+// Trading Economics silently resamples its market-chart payload to one point
+// per week once the requested span exceeds ~4y (verified: span=4y still
+// returns a point per trading day, span=5y collapses to 261 points/5y i.e.
+// weekly). The macro-yield tab needs genuinely daily readings, so its bond
+// series request a shorter span than every other TE-backed series here.
+const YIELD_SPAN = '4y';
+const YIELD_SPAN_IDS = new Set([
+  'us2yYield', 'us10yYield', 'us30yYield',
+  'cn10yYield', 'cn30yYield',
+  'jp10yYield', 'jp30yYield',
+  'uk10yYield', 'uk30yYield',
+  'de10yYield', 'de30yYield',
+]);
+
 function match(html, pattern, fallback = '') {
   return html.match(pattern)?.[1]?.replace(/&amp;/g, '&') ?? fallback;
 }
@@ -126,7 +140,7 @@ async function fetchText(url, options = {}, timeout = 20000) {
   }
 }
 
-async function fetchSeries(id, [country, slug]) {
+async function fetchSeries(id, [country, slug], span = '10y') {
   const sourceUrl = `${BASE}/${country}/${slug}`;
   const html = await fetchText(sourceUrl);
   const symbol = match(html, /var TESymbol = '([^']+)'/);
@@ -138,7 +152,7 @@ async function fetchSeries(id, [country, slug]) {
   const lastUpdate = match(html, /TELastUpdate\s*=\s*'([^']+)'/);
   const chartType = match(html, /TEChart\s*=\s*'([^']+)'/);
   const marketTicker = match(html, /symbol\s*=\s*'([^']+:[^']+)'/);
-  const params = new URLSearchParams({ span: '10y' });
+  const params = new URLSearchParams({ span });
   if (lastUpdate) params.set('v', `${lastUpdate}00`);
   const isMarketChart = chartType === 'MK';
   if (isMarketChart) params.set('ohlc', '0');
@@ -275,7 +289,7 @@ async function getMacroData() {
   // Trading Economics becomes unreliable when a cold worker opens a large
   // burst of chart requests. Keep concurrency conservative so the first group
   // (CPI/PPI) is not the group that consistently hits the 20-second timeout.
-  const settled = await mapLimited(entries, 3, ([id, path]) => fetchSeries(id, path));
+  const settled = await mapLimited(entries, 3, ([id, path]) => fetchSeries(id, path, YIELD_SPAN_IDS.has(id) ? YIELD_SPAN : '10y'));
   const series = {};
   const errors = {};
   settled.forEach((result, index) => {

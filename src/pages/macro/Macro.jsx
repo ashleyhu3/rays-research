@@ -13,13 +13,13 @@ const COUNTRY_SHORT = { 'United States': 'US', China: 'CN', Japan: 'JP', 'United
 
 const PAGE_CHARTS = {
   'macro-yield': [
-    ['United States', ['us2yYield', 'us10yYield', 'us30yYield'], ['2Y', '10Y', '30Y']],
-    ['10Y breakeven inflation & real yield', ['us10yBreakeven', 'us10yRealYield'], ['10Y breakeven inflation', '10Y real yield']],
+    ['United States', ['us2yYield', 'us10yYield', 'us30yYield'], ['2Y', '10Y', '30Y'], 'line', 2],
+    ['10Y breakeven inflation & real yield', ['us10yBreakeven', 'us10yRealYield'], ['10Y breakeven inflation', '10Y real yield'], 'line', 2],
     ['10Y–2Y yield spread', ['us2y10ySpread'], ['10Y–2Y spread'], 'bar', 2],
-    ['China', ['cn10yYield', 'cn30yYield'], ['10Y', '30Y']],
-    ['Japan', ['jp10yYield', 'jp30yYield'], ['10Y', '30Y']],
-    ['United Kingdom', ['uk10yYield', 'uk30yYield'], ['10Y', '30Y']],
-    ['Germany', ['de10yYield', 'de30yYield'], ['10Y', '30Y']],
+    ['China', ['cn10yYield', 'cn30yYield'], ['10Y', '30Y'], 'line', 2],
+    ['Japan', ['jp10yYield', 'jp30yYield'], ['10Y', '30Y'], 'line', 2],
+    ['United Kingdom', ['uk10yYield', 'uk30yYield'], ['10Y', '30Y'], 'line', 2],
+    ['Germany', ['de10yYield', 'de30yYield'], ['10Y', '30Y'], 'line', 2],
   ],
   'macro-us-inflation': [
     ['CPI', ['usCpiYoy', 'usCoreCpiYoy'], ['Headline CPI', 'Core CPI']],
