@@ -55,11 +55,29 @@ test('rejects a non-positive turnover print from an empty or unstarted session',
   assert.deepEqual(_test.parseTurnoverRateKlines(klines, AFTER_CLOSE), {});
 });
 
-test('derives monthly year-over-year growth from levels', () => {
-  assert.deepEqual(_test.deriveYoy([
-    { date: '2024-05-31', value: 300 }, { date: '2025-05-31', value: 324 },
-    { date: '2026-05-31', value: 351.54 },
-  ]), { '2025-05-31': 8, '2026-05-31': 8.5 });
+test('takes East Money money-supply growth as reported rather than from levels', () => {
+  // Real rows. Recomputing 2025-01 M1 from the levels would give ~+62% because the
+  // PBoC widened the M1 definition that month without restating 2024 — the reported
+  // 同比 of 0.4% is the comparable-basis figure.
+  assert.deepEqual(_test.parseMoneySupplyRows([
+    {
+      REPORT_DATE: '2026-06-01 00:00:00',
+      CURRENCY: 1184775.53, CURRENCY_SAME: 4,
+      BASIC_CURRENCY: 3567108.43, BASIC_CURRENCY_SAME: 8,
+    },
+    {
+      REPORT_DATE: '2025-01-01 00:00:00',
+      CURRENCY: 1122100, CURRENCY_SAME: 0.4,
+      BASIC_CURRENCY: 3145700, BASIC_CURRENCY_SAME: 7,
+    },
+    // Older rows carry float noise; the release only resolves to one decimal.
+    { REPORT_DATE: '2017-08-01 00:00:00', CURRENCY_SAME: 14, BASIC_CURRENCY_SAME: 8.5633 },
+    { REPORT_DATE: 'not-a-date', CURRENCY_SAME: 9, BASIC_CURRENCY_SAME: 9 },
+    { REPORT_DATE: '2026-07-01 00:00:00', CURRENCY_SAME: null, BASIC_CURRENCY_SAME: null },
+  ]), {
+    m1Yoy: { '2026-06-01': 4, '2025-01-01': 0.4, '2017-08-01': 14 },
+    m2Yoy: { '2026-06-01': 8, '2025-01-01': 7, '2017-08-01': 8.56 },
+  });
 });
 
 test('derives the M1–M2 spread only for months carrying both aggregates', () => {

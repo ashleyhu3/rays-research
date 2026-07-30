@@ -4,7 +4,6 @@
 
 const path = require('path');
 const storage = require('../storage');
-const { fetchSeries } = require('./macro');
 
 const BLOB = 'chinaLiquidityHistory';
 const HISTORY_FILE = path.join(__dirname, '..', 'data', 'chinaLiquidityHistory.json');
@@ -12,6 +11,7 @@ const EASTMONEY_URL = 'https://push2his.eastmoney.com/api/qt/stock/kline/get';
 const EASTMONEY_SOURCE = 'https://quote.eastmoney.com/choicezs/47.800004.html?jump_to_web=true';
 const STOCK_CONNECT_URL = 'https://datacenter-web.eastmoney.com/api/data/v1/get';
 const STOCK_CONNECT_SOURCE = 'https://data.eastmoney.com/hsgt/hsgtV2.html';
+const MONEY_SUPPLY_SOURCE = 'https://data.eastmoney.com/cjsj/hbgyl.html';
 const TUSHARE_URL = 'https://api.tushare.pro';
 const TUSHARE_SOURCE = 'https://tushare.pro/document/2?doc_id=32';
 // daily_basic caps a single response at 6000 rows and the A-share universe is
@@ -271,25 +271,6 @@ function deriveTurnoverRate(turnover, freeFloatCap) {
   return out;
 }
 
-function deriveYoy(points) {
-  const levels = new Map();
-  for (const point of points ?? []) {
-    const value = Number(point.value);
-    if (/^\d{4}-\d{2}/.test(point.date ?? '') && Number.isFinite(value)) {
-      levels.set(String(point.date).slice(0, 7), { date: point.date, value });
-    }
-  }
-  const out = {};
-  for (const [month, current] of levels) {
-    const yearAgo = `${Number(month.slice(0, 4)) - 1}-${month.slice(5)}`;
-    const prior = levels.get(yearAgo)?.value;
-    if (Number.isFinite(prior) && prior !== 0) {
-      out[current.date] = Math.round(((current.value / prior) - 1) * 10000) / 100;
-    }
-  }
-  return out;
-}
-
 /** M1 − M2 year-over-year growth, in percentage points (剪刀差). Both aggregates
  * are published together for the same reference month, so a month that carries
  * only one of them is a partial release rather than a real spread. */
@@ -304,11 +285,59 @@ function deriveM1M2Spread(m1Yoy, m2Yoy) {
   return out;
 }
 
-async function fetchMoneySupplyYoy(id, slug, label) {
-  const series = await fetchSeries(id, ['china', slug]);
-  const values = deriveYoy(series.data);
-  if (!Object.keys(values).length) throw new Error(`Could not derive China ${label} YoY history`);
-  return { values, sourceUrl: series.sourceUrl, source: series.source, frequency: series.frequency };
+/** East Money's 货币供应量 table reports the PBoC's own 同比 growth rates:
+ * `CURRENCY_SAME` for M1, `BASIC_CURRENCY_SAME` for M2.
+ *
+ * These have to be taken as reported rather than recomputed from the level
+ * columns. The PBoC widened the M1 definition in January 2025 (adding personal
+ * demand deposits and non-bank payment reserves), so dividing a 2025 level by
+ * the un-restated 2024 level yields ~+62% instead of the true ~+0.4% — a break
+ * that dwarfs the whole series. The published rate is on a comparable basis. */
+function parseMoneySupplyRows(rows) {
+  const m1Yoy = {};
+  const m2Yoy = {};
+  for (const row of rows ?? []) {
+    const date = String(row?.REPORT_DATE ?? '').slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
+    const m1 = row?.CURRENCY_SAME == null ? NaN : Number(row.CURRENCY_SAME);
+    const m2 = row?.BASIC_CURRENCY_SAME == null ? NaN : Number(row.BASIC_CURRENCY_SAME);
+    // Some older rows carry full float precision (8.5633); the release is quoted
+    // to one decimal, so two is already more than the source resolves.
+    if (Number.isFinite(m1)) m1Yoy[date] = Math.round(m1 * 100) / 100;
+    if (Number.isFinite(m2)) m2Yoy[date] = Math.round(m2 * 100) / 100;
+  }
+  return { m1Yoy, m2Yoy };
+}
+
+async function fetchMoneySupply(tries = 4) {
+  const params = new URLSearchParams({
+    reportName: 'RPT_ECONOMY_CURRENCY_SUPPLY', columns: 'ALL',
+    sortColumns: 'REPORT_DATE', sortTypes: '-1', pageNumber: '1', pageSize: '500',
+    source: 'WEB', client: 'WEB',
+  });
+  let lastError;
+  for (let attempt = 1; attempt <= tries; attempt += 1) {
+    try {
+      const response = await fetch(`${STOCK_CONNECT_URL}?${params}`, {
+        headers: {
+          referer: MONEY_SUPPLY_SOURCE,
+          'user-agent': 'Mozilla/5.0 Signal Liquidity Dashboard',
+        },
+        signal: AbortSignal.timeout(15000),
+      });
+      if (!response.ok) throw new Error(`East Money HTTP ${response.status}`);
+      const json = await response.json();
+      const parsed = parseMoneySupplyRows(json?.result?.data);
+      if (!Object.keys(parsed.m1Yoy).length || !Object.keys(parsed.m2Yoy).length) {
+        throw new Error('East Money returned no money-supply history');
+      }
+      return parsed;
+    } catch (error) {
+      lastError = error;
+      if (attempt < tries) await sleep(attempt * 2500);
+    }
+  }
+  throw lastError ?? new Error('East Money money-supply request failed');
 }
 
 function assemble(history) {
@@ -329,20 +358,15 @@ function assemble(history) {
     },
     m1Yoy: {
       name: 'M1 Money Supply YoY', unit: '%', frequency: 'Monthly',
-      source: history.m1Meta?.source || 'People’s Bank of China via Trading Economics',
-      sourceUrl: history.m1Meta?.sourceUrl || 'https://tradingeconomics.com/china/money-supply-m1',
-      data: toPoints(history.m1Yoy),
+      source: 'East Money', sourceUrl: MONEY_SUPPLY_SOURCE, data: toPoints(history.m1Yoy),
     },
     m2Yoy: {
       name: 'M2 Money Supply YoY', unit: '%', frequency: 'Monthly',
-      source: history.m2Meta?.source || 'People’s Bank of China via Trading Economics',
-      sourceUrl: history.m2Meta?.sourceUrl || 'https://tradingeconomics.com/china/money-supply-m2',
-      data: toPoints(history.m2Yoy),
+      source: 'East Money', sourceUrl: MONEY_SUPPLY_SOURCE, data: toPoints(history.m2Yoy),
     },
     m1M2Spread: {
       name: 'M1–M2 Spread – 剪刀差', unit: 'pp', frequency: 'Monthly',
-      source: history.m2Meta?.source || 'People’s Bank of China via Trading Economics',
-      sourceUrl: history.m2Meta?.sourceUrl || 'https://tradingeconomics.com/china/money-supply-m2',
+      source: 'East Money', sourceUrl: MONEY_SUPPLY_SOURCE,
       data: toPoints(deriveM1M2Spread(history.m1Yoy, history.m2Yoy)),
     },
     stockConnect: {
@@ -367,10 +391,9 @@ async function updateChinaLiquidity(days = 730, freeFloatDays = FREE_FLOAT_DAYS_
   const start = new Date(end.getTime() - Math.max(366, days) * 86400000);
   const settled = await Promise.allSettled([
     fetchTurnover(start, end),
-    fetchMoneySupplyYoy('cnM2', 'money-supply-m2', 'M2'),
+    fetchMoneySupply(),
     fetchStockConnect('006', 'NET_DEAL_AMT', start),
     fetchStockConnect('005', 'DEAL_AMT', start),
-    fetchMoneySupplyYoy('cnM1', 'money-supply-m1', 'M1'),
   ]);
   const errors = {};
   if (settled[0].status === 'fulfilled') {
@@ -379,19 +402,14 @@ async function updateChinaLiquidity(days = 730, freeFloatDays = FREE_FLOAT_DAYS_
   }
   else errors.turnover = settled[0].reason?.message || 'Turnover fetch failed';
   if (settled[1].status === 'fulfilled') {
-    Object.assign(history.m2Yoy, settled[1].value.values);
-    const { values: _values, ...meta } = settled[1].value;
-    history.m2Meta = meta;
-  } else errors.m2Yoy = settled[1].reason?.message || 'M2 fetch failed';
+    // M1 and M2 come from the same monthly release, so one fetch owns both.
+    Object.assign(history.m1Yoy, settled[1].value.m1Yoy);
+    Object.assign(history.m2Yoy, settled[1].value.m2Yoy);
+  } else errors.moneySupply = settled[1].reason?.message || 'Money supply fetch failed';
   if (settled[2].status === 'fulfilled') Object.assign(history.southboundNetFlow, settled[2].value);
   else errors.southboundNetFlow = settled[2].reason?.message || 'Southbound net flow fetch failed';
   if (settled[3].status === 'fulfilled') Object.assign(history.northboundTurnover, settled[3].value);
   else errors.northboundTurnover = settled[3].reason?.message || 'Northbound turnover fetch failed';
-  if (settled[4].status === 'fulfilled') {
-    Object.assign(history.m1Yoy, settled[4].value.values);
-    const { values: _values, ...meta } = settled[4].value;
-    history.m1Meta = meta;
-  } else errors.m1Yoy = settled[4].reason?.message || 'M1 fetch failed';
   if (settled.every(result => result.status === 'rejected')) {
     throw new Error(`China liquidity refresh failed: ${Object.values(errors).join('; ')}`);
   }
@@ -418,7 +436,8 @@ module.exports = {
   updateChinaLiquidity,
   readChinaLiquidity,
   _test: {
-    parseTurnoverKlines, parseTurnoverRateKlines, parseStockConnectRows, deriveYoy, assemble,
+    parseTurnoverKlines, parseTurnoverRateKlines, parseStockConnectRows, assemble,
     sumFreeFloatCap, deriveTurnoverRate, updateFreeFloatCap, deriveM1M2Spread, isSessionFinal,
+    parseMoneySupplyRows,
   },
 };
