@@ -164,7 +164,6 @@ async function fetchCboeIndexHistory(symbol, ticker) {
 }
 
 const VIXEQ_TICKER = '^VIXEQ';
-const RSP_TICKER = 'RSP';
 const VOLUME_HISTORY_DAYS = 1825;
 
 function inclusiveEndDate(endDate) {
@@ -218,36 +217,66 @@ async function getUsPerformance(startDate, endDate = new Date()) {
   return { start: dates[0] ?? isoDate(start), end: dates[dates.length - 1] ?? isoDate(endDate), dates, series };
 }
 
-async function backfillRspVolumeIfNeeded(endDate) {
-  const stored = HISTORY.assemble();
-  const rsp = stored.series.find(series => series.ticker === RSP_TICKER);
-  const historicalCutoff = isoDaysAgo(60);
-  const hasHistoricalVolume = rsp?.volumes?.some(
-    (volume, index) => volume != null && stored.dates[index] < historicalCutoff
-  );
-  if (hasHistoricalVolume) return;
+// Indices (^GSPC, ^SOX, ^VIX, ...) carry no real per-share volume — Yahoo
+// returns 0/absent for them, which fetchSeries already nulls out. Excluding
+// them here keeps this from re-attempting an unbackfillable fetch every cycle.
+function hasRealVolume(ticker) {
+  return !ticker.startsWith('^');
+}
 
-  const points = await fetchSeries(
-    getYF(),
-    RSP_TICKER,
-    new Date(isoDaysAgo(VOLUME_HISTORY_DAYS)),
-    inclusiveEndDate(endDate)
-  );
-  HISTORY.merge({
-    dates: points.map(point => point.date),
-    series: [{ ticker: RSP_TICKER, volumes: points.map(point => point.volume) }],
+// The routine 45-day merge (see updateUsPerformance) only ever fills a
+// rolling recent window, so any ticker added (or any ticker whose volume
+// field predates 'volumes' being tracked) is permanently missing bars beyond
+// that window unless it's deep-backfilled once. This checks every ETF ticker
+// for pre-existing historical volume and backfills whichever are missing it,
+// so it self-heals on each scheduled run instead of needing a one-off script
+// per ticker (as the old RSP-only version did).
+async function backfillHistoricalVolumeIfNeeded(endDate) {
+  const stored = HISTORY.assemble();
+  const historicalCutoff = isoDaysAgo(60);
+  const needsBackfill = TICKERS.filter(meta => {
+    if (!hasRealVolume(meta.ticker)) return false;
+    const series = stored.series.find(s => s.ticker === meta.ticker);
+    return !series?.volumes?.some(
+      (volume, index) => volume != null && stored.dates[index] < historicalCutoff
+    );
   });
+  if (!needsBackfill.length) return;
+
+  const yf = getYF();
+  const start = new Date(isoDaysAgo(VOLUME_HISTORY_DAYS));
+  const end = inclusiveEndDate(endDate);
+  const results = await mapLimit(needsBackfill, 4, async meta => {
+    try {
+      return { ticker: meta.ticker, points: await fetchSeries(yf, meta.ticker, start, end) };
+    } catch (e) {
+      console.warn(`[usPerformance] volume backfill ${meta.ticker}: ${e.message}`);
+      return { ticker: meta.ticker, points: [] };
+    }
+  });
+
+  const dateSet = new Set();
+  for (const r of results) for (const p of r.points) dateSet.add(p.date);
+  const dates = [...dateSet].sort();
+  if (!dates.length) return;
+
+  const series = results.map(r => {
+    const byVolume = new Map(r.points.map(p => [p.date, p.volume]));
+    return { ticker: r.ticker, volumes: dates.map(d => byVolume.get(d) ?? null) };
+  });
+  HISTORY.merge({ dates, series });
 }
 
 async function updateUsPerformance(days = 45) {
   const end = new Date().toISOString().slice(0, 10);
   HISTORY.merge(await getUsPerformance(isoDaysAgo(days), end));
   try {
-    // Existing stores predate volume persistence. Fill five years of RSP
-    // volume once so every date preset gets bars immediately after refresh.
-    await backfillRspVolumeIfNeeded(end);
+    // Existing stores predate volume persistence (or gained a ticker after
+    // the fact) — fill five years of history once per ticker so every date
+    // preset gets bars immediately after refresh.
+    await backfillHistoricalVolumeIfNeeded(end);
   } catch (e) {
-    console.warn(`[usPerformance] RSP volume backfill: ${e.message}`);
+    console.warn(`[usPerformance] historical volume backfill: ${e.message}`);
   }
   try {
     HISTORY.merge(await fetchCboeIndexHistory('VIXEQ', VIXEQ_TICKER));
