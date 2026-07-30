@@ -45,6 +45,8 @@ const STOCKQ_INDEX = code => `https://www.stockq.org/index/${code}.php`;
 // static JS file holding the full plotted series — ~5 years of daily closes in
 // one request, versus the ~20 sessions the HTML table shows.
 const STOCKQ_CHART = code => `https://en.stockq.org/index/js/${code}_sma.js`;
+// One board carrying the latest close for every index on this page.
+const STOCKQ_BOARD = 'https://www.stockq.org/market/freight.php';
 const SSE_INDEX = type => `https://www.sse.net.cn/index/singleIndex?indexType=${type}`;
 const UA = 'Mozilla/5.0 Signal Shipping Dashboard';
 
@@ -58,25 +60,30 @@ const HORMUZ = {
   sourceUrl: 'https://hormuzstraitmonitor.com/',
 };
 
-/** Trading Economics market tickers. `spans` are queried oldest-first so the
- *  daily window overwrites the coarser weekly one where the two overlap. */
+/** Trading Economics market tickers. `deepSpans` seeds an empty blob and is
+ *  queried oldest-first, so the daily window overwrites the coarser weekly one
+ *  where the two overlap. Routine refreshes use the ladder below instead. */
 const TE_SERIES = [
   {
-    id: 'bdi', group: 'dry-bulk', ticker: 'bdiy:ind', spans: ['10y', '3y'],
+    id: 'bdi', group: 'dry-bulk', ticker: 'bdiy:ind', deepSpans: ['10y', '3y'],
     name: 'Baltic Dry Index', unit: 'index points', frequency: 'Daily',
     source: 'Baltic Exchange via Trading Economics',
     sourceUrl: 'https://tradingeconomics.com/commodity/baltic',
     referenceUrl: 'https://www.investing.com/indices/baltic-dry',
   },
   {
-    id: 'scfi', group: 'container', ticker: 'spscfi:com', spans: ['10y'],
+    // TE resamples every span shorter than 10y to one point per calendar day.
+    // SCFI prints weekly, so a short span repeats the last reading across the
+    // days between publications — invented data. This series is therefore only
+    // read at its native 10y span; routine top-ups come from StockQ.
+    id: 'scfi', group: 'container', ticker: 'spscfi:com', deepSpans: ['10y'], resampledByTe: true,
     name: 'SCFI — Shanghai Containerized Freight Index', unit: 'index points', frequency: 'Weekly',
     source: 'Shanghai Shipping Exchange via Trading Economics',
     sourceUrl: 'https://www.sse.net.cn/index/singleIndex?indexType=scfi',
     referenceUrl: 'https://www.sse.net.cn/index/singleIndex?indexType=scfi',
   },
   {
-    id: 'wci', group: 'container', ticker: 'wci:com', spans: ['3y'],
+    id: 'wci', group: 'container', ticker: 'wci:com', deepSpans: ['3y'],
     name: 'Drewry World Container Index', unit: 'USD per 40ft container', frequency: 'Weekly',
     source: 'Drewry via Trading Economics',
     sourceUrl: 'https://www.drewry.co.uk/supply-chain-advisors/supply-chain-expertise/world-container-index-assessed-by-drewry',
@@ -88,37 +95,37 @@ const TE_SERIES = [
  *  Economics history is longer, but StockQ settles a day or two earlier. */
 const STOCKQ_SERIES = [
   {
-    id: 'bdti', group: 'tankers', code: 'BDTI',
+    id: 'bdti', group: 'tankers', code: 'BDTI', cadenceDays: 1,
     name: 'Baltic Dirty Tanker Index', unit: 'index points', frequency: 'Daily',
     referenceUrl: 'https://www.investing.com/indices/baltic-dirty-tanker',
   },
   {
-    id: 'bcti', group: 'tankers', code: 'BCTI',
+    id: 'bcti', group: 'tankers', code: 'BCTI', cadenceDays: 1,
     name: 'Baltic Clean Tanker Index', unit: 'index points', frequency: 'Daily',
     referenceUrl: 'https://www.investing.com/indices/baltic-clean-tanker',
   },
   {
-    id: 'bdi', group: 'dry-bulk', code: 'BDI',
+    id: 'bdi', group: 'dry-bulk', code: 'BDI', cadenceDays: 1,
     name: 'Baltic Dry Index', unit: 'index points', frequency: 'Daily',
     referenceUrl: 'https://www.investing.com/indices/baltic-dry',
   },
   {
-    id: 'bci', group: 'dry-bulk', code: 'BCI',
+    id: 'bci', group: 'dry-bulk', code: 'BCI', cadenceDays: 1,
     name: 'Baltic Capesize Index', unit: 'index points', frequency: 'Daily',
     referenceUrl: 'https://www.investing.com/indices/baltic-capesize',
   },
   {
-    id: 'bpi', group: 'dry-bulk', code: 'BPI',
+    id: 'bpi', group: 'dry-bulk', code: 'BPI', cadenceDays: 1,
     name: 'Baltic Panamax Index', unit: 'index points', frequency: 'Daily',
     referenceUrl: 'https://www.investing.com/indices/baltic-panamax',
   },
   {
-    id: 'bsi', group: 'dry-bulk', code: 'BSI',
+    id: 'bsi', group: 'dry-bulk', code: 'BSI', cadenceDays: 1,
     name: 'Baltic Supramax Index', unit: 'index points', frequency: 'Daily',
     referenceUrl: 'https://www.investing.com/indices/baltic-supramax',
   },
   {
-    id: 'scfi', group: 'container', code: 'SCFI',
+    id: 'scfi', group: 'container', code: 'SCFI', cadenceDays: 7,
     name: 'SCFI — Shanghai Containerized Freight Index', unit: 'index points', frequency: 'Weekly',
     referenceUrl: 'https://www.sse.net.cn/index/singleIndex?indexType=scfi',
   },
@@ -202,6 +209,93 @@ function isIsoDate(value) {
   return /^\d{4}-\d{2}-\d{2}$/.test(value);
 }
 
+/* ── incremental refresh ──────────────────────────────────────────────
+   Every upstream here publishes a fixed window rather than a "since" query,
+   so the only lever is which window to ask for. A routine refresh already
+   holds all but the last session or two, so it asks for the shortest window
+   that still overlaps what is stored; a blob with no usable history (a fresh
+   deploy) falls back to the deep seed. Overlap matters — a window that merely
+   reached the stored end date would drop anything published in between. */
+
+// Trading Economics span → the calendar days it covers, shortest first.
+const TE_SPAN_LADDER = [
+  ['1w', 7], ['1m', 31], ['3m', 92], ['6m', 183], ['1y', 365], ['3y', 1095], ['10y', 3650],
+];
+// StockQ's rolling index table lists ~20 trading sessions; past that the blob
+// would gap, so the refresh has to pay for the full chart file instead.
+const STOCKQ_TABLE_DAYS = 25;
+// Slack added to every gap so a long weekend, a holiday, or a source that
+// publishes a few days late can never land outside the requested window.
+const WINDOW_MARGIN_DAYS = 7;
+// How far back StockQ's rolling table reaches for a weekly index: ~20 rows at
+// one per week, kept conservative. Past this a resampled series has to come
+// from Trading Economics' native span instead.
+const RESAMPLED_STOCKQ_REACH_DAYS = 100;
+
+function todayIso() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function daysSince(iso) {
+  if (!isIsoDate(iso)) return Infinity;
+  const elapsed = Math.floor((Date.now() - Date.parse(`${iso}T00:00:00Z`)) / 86400000);
+  return Number.isFinite(elapsed) ? Math.max(elapsed, 0) : Infinity;
+}
+
+/** Most recent stored date carrying a real value for one series. */
+function latestDateFor(history, id) {
+  let latest = null;
+  for (const date of Object.keys(history)) {
+    if (!isIsoDate(date) || !Number.isFinite(history[date]?.[id])) continue;
+    if (!latest || date > latest) latest = date;
+  }
+  return latest;
+}
+
+/** The board carries exactly one close per index, so it can only close a gap
+ *  of at most one publication. A daily index is measured in weekday sessions
+ *  (so a normal Monday refresh stays on the cheap path); a weekly one is
+ *  measured against its own cadence. */
+function boardCoversGap(meta, iso) {
+  if (!isIsoDate(iso)) return false;
+  return (meta.cadenceDays ?? 1) >= 7
+    ? daysSince(iso) <= (meta.cadenceDays ?? 7) * 2 - 1
+    : pendingSessions(iso) <= 1;
+}
+
+/** Weekday sessions that could have printed since `iso`. Counting weekdays
+ *  rather than calendar days keeps a normal Monday refresh cheap. Holidays
+ *  only ever make this over-count, which errs toward fetching more. */
+function pendingSessions(iso) {
+  if (!isIsoDate(iso)) return Infinity;
+  const cursor = new Date(`${iso}T00:00:00Z`);
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+  let count = 0;
+  while (cursor < today && count <= 32) {
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+    const weekday = cursor.getUTCDay();
+    if (weekday !== 0 && weekday !== 6) count += 1;
+  }
+  return count;
+}
+
+/** Spans to request for one series, or `null` to skip Trading Economics this
+ *  run. Returns the shortest window that still overlaps stored history. */
+function teSpansFor(meta, staleDays) {
+  if (!Number.isFinite(staleDays)) return meta.deepSpans;
+  const needed = staleDays + WINDOW_MARGIN_DAYS;
+  const match = TE_SPAN_LADDER.find(([, covers]) => covers >= needed);
+  if (!match) return meta.deepSpans;
+  if (meta.resampledByTe) {
+    // Short spans would invent daily points for this weekly series, so skip TE
+    // while StockQ's ~20 weekly rows can still close the gap, and pay for the
+    // native span only once it cannot.
+    return staleDays > RESAMPLED_STOCKQ_REACH_DAYS ? meta.deepSpans : null;
+  }
+  return [match[0]];
+}
+
 async function fetchText(url, { headers = {}, timeout = 25000 } = {}) {
   const response = await fetch(url, {
     headers: { 'user-agent': UA, ...headers },
@@ -248,6 +342,22 @@ async function fetchTeChartContext() {
   };
 }
 
+/** The chart host currently serves these tickers unauthenticated, so start
+ *  without a key and skip TE's ~380 KB commodity page entirely. If a request
+ *  ever fails, scrape that page once per run for a real token and retry. */
+function createTeContext() {
+  let context = { token: null, key: TE_KEY, dataSource: TE_DATA };
+  let upgrading = null;
+  return {
+    current: () => context,
+    upgraded: () => Boolean(upgrading),
+    upgrade() {
+      upgrading = upgrading ?? fetchTeChartContext().then(fresh => { context = fresh; return fresh; });
+      return upgrading;
+    },
+  };
+}
+
 /** TE returns `[epochSeconds, close, …]` rows; only the close is charted. */
 function parseTeSeries(rows = []) {
   const out = {};
@@ -269,14 +379,24 @@ async function fetchTeSpan(context, ticker, span) {
   return values;
 }
 
-async function fetchTe(context, meta) {
+async function fetchTe(teContext, meta, spans) {
   const values = {};
   const failures = [];
   // Longer spans come back weekly; the shorter daily span is applied last so it
   // wins wherever the two overlap.
-  for (const span of meta.spans) {
-    try { Object.assign(values, await fetchTeSpan(context, meta.ticker, span)); }
-    catch (error) { failures.push(`${span}: ${error.message}`); }
+  for (const span of spans) {
+    try {
+      Object.assign(values, await fetchTeSpan(teContext.current(), meta.ticker, span));
+    } catch (error) {
+      // A tokenless request is the normal path; a failure is the cue to fetch
+      // a real token (once) and try that span again before giving up on it.
+      try {
+        await teContext.upgrade();
+        Object.assign(values, await fetchTeSpan(teContext.current(), meta.ticker, span));
+      } catch (retry) {
+        failures.push(`${span}: ${retry.message}`);
+      }
+    }
   }
   if (!Object.keys(values).length) throw new Error(failures.join('; ') || 'no history returned');
   return values;
@@ -324,9 +444,16 @@ function parseStockqChartJs(source) {
   return best;
 }
 
-async function fetchStockq(meta) {
-  // Prefer the chart series; the rolling HTML table is the fallback for an
-  // index whose chart file is missing or renamed.
+/** `deep` pulls the ~5-year chart file (~125 KB); otherwise the rolling
+ *  ~20-session table (~27 KB) is enough to close a routine gap. The chart file
+ *  also stands in as the fallback whenever the table yields nothing. */
+async function fetchStockq(meta, { deep = false } = {}) {
+  if (!deep) {
+    try {
+      const recent = parseStockqIndexPage(await fetchText(STOCKQ_INDEX(meta.code)));
+      if (Object.keys(recent).length) return recent;
+    } catch { /* fall through to the chart file */ }
+  }
   try {
     const charted = parseStockqChartJs(await fetchText(STOCKQ_CHART(meta.code), { timeout: 40000 }));
     if (Object.keys(charted).length) return charted;
@@ -336,26 +463,47 @@ async function fetchStockq(meta) {
   return values;
 }
 
-/** StockQ's daily market snapshots (one page per session, back to 2007) list
- *  every index with its own as-of date, which is what the backfill walks. */
-function parseStockqDailyPage(html, pageDate) {
-  const pattern = /href="\/index\/([A-Z]+)\.php"[^>]*>[^<]*<\/a>\s*<\/td>\s*<td[^>]*>\s*([\d,.]+)\s*<\/td>(?:\s*<td[^>]*>[^<]*<\/td>){2}\s*<td[^>]*>\s*(\d{2})\/(\d{2})\s*<\/td>/g;
+/** Rows on StockQ's multi-index listings — the per-session archive pages and
+ *  the live "freight & currency" board — share a shape: a link naming the
+ *  index, its close in the first cell after it, then a varying number of
+ *  change/range columns, and the row's own as-of date as the last MM/DD cell.
+ *  Matching that shape rather than a fixed column count lets one parser read
+ *  both boards, which carry different column sets.
+ *
+ *  `asOf` is the newest date the page can legitimately describe; rows carry
+ *  only MM/DD, so it also supplies the year. */
+function parseStockqBoard(html, asOf) {
   const out = {};
-  const pageYear = Number(pageDate.slice(0, 4));
-  const pageMonth = Number(pageDate.slice(5, 7));
-  for (const match of html.matchAll(pattern)) {
-    const meta = STOCKQ_SERIES.find(series => series.code === match[1]);
-    const value = finite(match[2]);
-    if (!meta || value == null) continue;
-    const month = Number(match[3]);
-    // Rows carry only MM/DD. A December row on a January page belongs to the
-    // previous year — nothing else can move the row past its own page date.
-    const year = pageMonth === 1 && month === 12 ? pageYear - 1 : pageYear;
-    const date = `${year}-${match[3]}-${match[4]}`;
-    if (!isIsoDate(date) || date > pageDate) continue;
+  const asOfYear = Number(asOf.slice(0, 4));
+  const asOfMonth = Number(asOf.slice(5, 7));
+  for (const row of String(html ?? '').split(/<tr[^>]*>/i)) {
+    const code = row.match(/href="\/index\/([A-Z]+)\.php"/)?.[1];
+    const meta = STOCKQ_SERIES.find(series => series.code === code);
+    if (!meta) continue;
+    const value = finite(row.match(/<\/a>\s*<\/td>\s*<td[^>]*>\s*([\d,.]+)\s*<\/td>/)?.[1]);
+    const stamps = [...row.matchAll(/<td[^>]*>\s*(\d{2})\/(\d{2})\s*<\/td>/g)];
+    const stamp = stamps[stamps.length - 1];
+    if (value == null || !stamp) continue;
+    // A December row on a January board belongs to the previous year; nothing
+    // else can push a row past the board's own date.
+    const year = asOfMonth === 1 && Number(stamp[1]) === 12 ? asOfYear - 1 : asOfYear;
+    const date = `${year}-${stamp[1]}-${stamp[2]}`;
+    if (!isIsoDate(date) || date > asOf) continue;
     out[date] = { ...(out[date] ?? {}), [meta.id]: value };
   }
   return out;
+}
+
+// Retained name for the per-session archive pages the deep backfill walks.
+const parseStockqDailyPage = parseStockqBoard;
+
+/** One request covering every StockQ-sourced index at its latest close — the
+ *  cheapest possible top-up when the blob is only missing today's print. */
+async function fetchStockqBoard() {
+  const html = await fetchText(STOCKQ_BOARD);
+  const rows = parseStockqBoard(html, todayIso());
+  if (!Object.keys(rows).length) throw new Error('no rows parsed from the StockQ freight board');
+  return rows;
 }
 
 async function fetchStockqDay(pageDate) {
@@ -456,38 +604,73 @@ function assemble(history, meta = {}) {
 
 /* ── entry points ─────────────────────────────────────────────────────── */
 
-async function updateShipping() {
+/** `deep` forces every source's full window — used to seed an empty blob or to
+ *  repair one, and taken automatically per series whose stored history is too
+ *  stale for the short window to overlap it. */
+async function updateShipping({ deep = false } = {}) {
   const bySeries = {};
   const errors = {};
-  let annotations = loadHistory()._annotations ?? [];
+  const history = loadHistory();
+  let annotations = history._annotations ?? [];
+  // Snapshot coverage before any merging, so each source's window is chosen
+  // against what was actually stored at the start of this run.
+  const latest = Object.fromEntries(
+    SERIES_ORDER.map(id => [id, deep ? null : latestDateFor(history, id)]),
+  );
+  const staleness = Object.fromEntries(
+    SERIES_ORDER.map(id => [id, daysSince(latest[id])]),
+  );
 
   try {
     const hormuz = await fetchHormuz();
     // The monitor's payload is already date-keyed with extra per-day fields, so
-    // it is merged straight in rather than through toPatches.
+    // it is merged straight in rather than through toPatches. It publishes the
+    // whole timeline in ~2 KB, so there is no shorter window worth asking for.
     bySeries.__hormuz = hormuz.rows;
     annotations = hormuz.annotations.length ? hormuz.annotations : annotations;
   } catch (error) {
     errors.hormuz = `Hormuz Strait Monitor: ${error.message}`;
   }
 
-  let teContext = null;
-  try {
-    teContext = await fetchTeChartContext();
-  } catch (error) {
-    for (const meta of TE_SERIES) errors[meta.id] = `Trading Economics: ${error.message}`;
+  const teContext = createTeContext();
+  for (const meta of TE_SERIES) {
+    const spans = teSpansFor(meta, staleness[meta.id]);
+    if (!spans) continue;  // StockQ covers this series' routine top-up
+    try { bySeries[meta.id] = { ...(bySeries[meta.id] ?? {}), ...await fetchTe(teContext, meta, spans) }; }
+    catch (error) { errors[meta.id] = `Trading Economics: ${error.message}`; }
   }
-  if (teContext) {
-    for (const meta of TE_SERIES) {
-      try { bySeries[meta.id] = { ...(bySeries[meta.id] ?? {}), ...await fetchTe(teContext, meta) }; }
-      catch (error) { errors[meta.id] = `Trading Economics: ${error.message}`; }
+
+  // Cheapest StockQ tier first: while every index is at most one session
+  // behind, a single board request tops all of them up. Anything still short
+  // after that falls back to its own page (~20 sessions) or chart file (~5y).
+  const boardCovers = STOCKQ_SERIES.filter(meta => !deep && boardCoversGap(meta, latest[meta.id]));
+  if (boardCovers.length) {
+    try {
+      const board = await fetchStockqBoard();
+      for (const meta of boardCovers) {
+        const values = {};
+        for (const [date, row] of Object.entries(board)) {
+          if (row[meta.id] != null) values[date] = row[meta.id];
+        }
+        if (Object.keys(values).length) {
+          bySeries[meta.id] = { ...(bySeries[meta.id] ?? {}), ...values };
+          delete errors[meta.id];
+        }
+      }
+    } catch (error) {
+      // Not fatal: every series the board would have covered is re-fetched
+      // individually below.
+      errors.stockqBoard = `StockQ board: ${error.message}`;
     }
   }
 
   for (const meta of STOCKQ_SERIES) {
+    if (bySeries[meta.id] && boardCovers.includes(meta)) continue;
     try {
-      bySeries[meta.id] = { ...(bySeries[meta.id] ?? {}), ...await fetchStockq(meta) };
+      const useChart = staleness[meta.id] > STOCKQ_TABLE_DAYS;
+      bySeries[meta.id] = { ...(bySeries[meta.id] ?? {}), ...await fetchStockq(meta, { deep: useChart }) };
       delete errors[meta.id];
+      delete errors.stockqBoard;
     } catch (error) {
       if (!bySeries[meta.id]) errors[meta.id] = `StockQ: ${error.message}`;
     }
@@ -504,17 +687,17 @@ async function updateShipping() {
     patches[date] = { ...(patches[date] ?? {}), ...row };
   }
 
-  const history = storage.mergeDatedRows(BLOB, HISTORY_FILE, patches);
+  const merged = storage.mergeDatedRows(BLOB, HISTORY_FILE, patches);
   // Field writes rather than a whole-blob write: a collector run can overlap a
   // warm web process, and replacing the document would erase the other's rows.
   storage.writeField(BLOB, HISTORY_FILE, '_updatedAt', new Date().toISOString());
   storage.writeField(BLOB, HISTORY_FILE, '_errors', errors);
   storage.writeField(BLOB, HISTORY_FILE, '_annotations', annotations);
 
-  if (!Object.keys(patches).length && !Object.keys(history).filter(isIsoDate).length) {
+  if (!Object.keys(patches).length && !Object.keys(merged).filter(isIsoDate).length) {
     throw new Error(`Shipping refresh returned nothing: ${Object.values(errors).join('; ')}`);
   }
-  return assemble(history);
+  return assemble(merged);
 }
 
 function readShipping() {
@@ -530,6 +713,7 @@ module.exports = {
   _test: {
     parseHormuz, parseTeSeries, parseStockqIndexPage, parseStockqChartJs, parseStockqDailyPage,
     parseSseIndexPage, toPatches, assemble,
+    latestDateFor, daysSince, pendingSessions, teSpansFor, parseStockqBoard, STOCKQ_TABLE_DAYS,
     SERIES_ORDER, GROUPS, SERIES_META, STOCKQ_SERIES, TE_SERIES,
   },
 };

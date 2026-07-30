@@ -66,8 +66,8 @@ test('ignores a chart file with no usable rows', () => {
 
 test('maps a StockQ daily snapshot onto each index by its own as-of date', () => {
   const row = (code, value, date) =>
-    `<td align='left' nowrap><a href="/index/${code}.php">x</a></td>\n<td nowrap>${value}</td>\n`
-    + `<td nowrap>-1.00</td>\n<td nowrap>-0.1%</td>\n<td nowrap align=center>${date}</td>`;
+    `<tr class='row1'>\n<td align='left' nowrap><a href="/index/${code}.php">x</a></td>\n<td nowrap>${value}</td>\n`
+    + `<td nowrap>-1.00</td>\n<td nowrap>-0.1%</td>\n<td nowrap align=center>${date}</td>\n</tr>`;
   const parsed = _test.parseStockqDailyPage(
     [row('BDI', '2664.00', '07/28'), row('BCI', '4140.00', '07/28'), row('SCFI', '3080.31', '07/17'),
       row('VIX', '18.21', '07/28')].join('\n'),
@@ -80,9 +80,49 @@ test('maps a StockQ daily snapshot onto each index by its own as-of date', () =>
 });
 
 test('rolls a December row on a January snapshot back to the previous year', () => {
-  const html = `<td align='left' nowrap><a href="/index/BDI.php">x</a></td>\n<td nowrap>1900.00</td>\n`
-    + `<td nowrap>1.00</td>\n<td nowrap>0.1%</td>\n<td nowrap align=center>12/31</td>`;
+  const html = `<tr class='row1'>\n<td align='left' nowrap><a href="/index/BDI.php">x</a></td>\n<td nowrap>1900.00</td>\n`
+    + `<td nowrap>1.00</td>\n<td nowrap>0.1%</td>\n<td nowrap align=center>12/31</td>\n</tr>`;
   assert.deepEqual(_test.parseStockqDailyPage(html, '2026-01-05'), { '2025-12-31': { bdi: 1900 } });
+});
+
+test('reads the freight board despite its extra range columns', () => {
+  // The live board carries 8 columns between the close and the as-of date,
+  // where the per-session archive pages carry 2.
+  const html = `<tr class='row2'>
+<td align='left' nowrap><a href="/index/BCTI.php">波羅的海-成品油油輪</a></td>
+<td nowrap>1453.00</td>
+<td nowrap class="changeup">22.00</td>
+<td nowrap class="changeup">1.54%</td>
+<td nowrap>-</td>
+<td nowrap>-</td>
+<td nowrap>-</td>
+<td nowrap class="changeup">91.94%</td>
+<td nowrap align=center>07/29</td>
+</tr>
+<tr class='row1'>
+<td align='left' nowrap><a href="/index/VIX.php">VIX波動率</a></td>
+<td nowrap>20.66</td>
+<td nowrap align=center>07/29</td>
+</tr>`;
+  // VIX is on the same board but is not one of ours, so it must be ignored.
+  assert.deepEqual(_test.parseStockqBoard(html, '2026-07-29'), {
+    '2026-07-29': { bcti: 1453 },
+  });
+});
+
+test('counts pending weekday sessions so a weekend does not force a bigger fetch', () => {
+  const iso = offsetDays => {
+    const date = new Date();
+    date.setUTCHours(0, 0, 0, 0);
+    date.setUTCDate(date.getUTCDate() - offsetDays);
+    return date.toISOString().slice(0, 10);
+  };
+  assert.equal(_test.pendingSessions(iso(0)), 0);
+  assert.equal(_test.pendingSessions(null), Infinity);
+  // Whatever today is, yesterday leaves at most one weekday outstanding.
+  assert.ok(_test.pendingSessions(iso(1)) <= 1);
+  // A fortnight back always leaves more than one session pending.
+  assert.ok(_test.pendingSessions(iso(14)) > 1);
 });
 
 test('accepts the shapes the Shanghai Shipping Exchange embeds its index in', () => {
@@ -129,6 +169,42 @@ test('assembles per-series history and keeps non-date bookkeeping keys out of it
     assert.ok(assembled.series[id], `missing series ${id}`);
     assert.ok(groups.has(assembled.series[id].group), `series ${id} has no known group`);
   }
+});
+
+test('finds the latest stored date per series, ignoring other series and bookkeeping keys', () => {
+  const history = {
+    '2026-07-27': { bdi: 2696, bdti: 2582 },
+    '2026-07-29': { bdi: 2632 },
+    _updatedAt: '2026-07-30T00:00:00.000Z',
+    'not-a-date': { bdi: 1 },
+  };
+  assert.equal(_test.latestDateFor(history, 'bdi'), '2026-07-29');
+  // bdti stops earlier, so its window must be chosen from its own last print.
+  assert.equal(_test.latestDateFor(history, 'bdti'), '2026-07-27');
+  assert.equal(_test.latestDateFor(history, 'ccfi'), null);
+  assert.equal(_test.latestDateFor({}, 'bdi'), null);
+});
+
+test('treats a missing or unparseable date as infinitely stale', () => {
+  assert.equal(_test.daysSince(null), Infinity);
+  assert.equal(_test.daysSince('nonsense'), Infinity);
+  const today = new Date().toISOString().slice(0, 10);
+  assert.equal(_test.daysSince(today), 0);
+});
+
+test('asks Trading Economics for the shortest span that still overlaps stored history', () => {
+  const meta = { deepSpans: ['10y', '3y'] };
+  // Already holding today's print: a week is the smallest window on offer.
+  assert.deepEqual(_test.teSpansFor(meta, 0), ['1w']);
+  // Any real gap plus the 7-day margin outgrows a week, so it steps up to a
+  // month rather than risk a window that stops short of the stored history.
+  assert.deepEqual(_test.teSpansFor(meta, 1), ['1m']);
+  assert.deepEqual(_test.teSpansFor(meta, 10), ['1m']);
+  assert.deepEqual(_test.teSpansFor(meta, 40), ['3m']);
+  assert.deepEqual(_test.teSpansFor(meta, 300), ['1y']);
+  // Nothing stored, or staler than the ladder reaches → full seed.
+  assert.deepEqual(_test.teSpansFor(meta, Infinity), ['10y', '3y']);
+  assert.deepEqual(_test.teSpansFor(meta, 5000), ['10y', '3y']);
 });
 
 test('folds per-series values into date-keyed patches', () => {
