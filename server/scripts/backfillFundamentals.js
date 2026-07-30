@@ -16,6 +16,9 @@
  * Options:
  *   --tickers A,B,C   Comma list to process (default: every Fundamentals ticker).
  *   --limit N         Process at most N tickers this run.
+ *   --no-metered      Skip every ticker that would spend Alpha Vantage quota,
+ *                     so the run is guaranteed to cost zero of the shared
+ *                     25/day budget. Only the SEC-backed tickers are fetched.
  */
 
 const storage = require('../storage');
@@ -23,15 +26,17 @@ const allBlobs = require('../storageBlobs');
 const {
   BLOB,
   FUNDAMENTALS_TICKERS,
+  METERED_TICKERS,
   backfill,
 } = require('../fundamentalsGrowth');
 
 function parseArgs(argv) {
-  const args = { tickers: null, limit: null };
+  const args = { tickers: null, limit: null, noMetered: false };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg === '--tickers') args.tickers = argv[++i]?.split(',').map(t => t.trim().toUpperCase()).filter(Boolean);
     else if (arg === '--limit') args.limit = Number(argv[++i]);
+    else if (arg === '--no-metered') args.noMetered = true;
   }
   return args;
 }
@@ -39,6 +44,13 @@ function parseArgs(argv) {
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   let tickers = args.tickers ?? FUNDAMENTALS_TICKERS;
+  if (args.noMetered) {
+    const skipped = tickers.filter(t => METERED_TICKERS.includes(t));
+    tickers = tickers.filter(t => !METERED_TICKERS.includes(t));
+    if (skipped.length) {
+      console.log(`[fundamentals-backfill] --no-metered: skipping ${skipped.join(', ')} (would spend Alpha Vantage quota)`);
+    }
+  }
   if (Number.isFinite(args.limit)) tickers = tickers.slice(0, args.limit);
 
   console.log(`[fundamentals-backfill] processing ${tickers.length} ticker(s)`);

@@ -1,0 +1,130 @@
+name: Refresh earnings pages
+
+# Keeps the Alerts > Price Return tab and the Fundamentals page current, writing
+# to the same MongoDB the site reads — the same always-on pattern as
+# collect-data.yml, so nothing depends on a local machine being awake.
+#
+# Runs at 23:40 UTC, after the US close has settled, so an after-close report
+# from the previous session already has the next day's bar to measure against.
+#
+# Alpha Vantage cost: ZERO on a normal run, by construction.
+#   • price return  — API Ninjas earnings dates + Yahoo Finance prices. The few
+#     ADRs whose API Ninjas history has holes carry Alpha Vantage report dates
+#     cached on the blob; settled dates never change, so they are never re-pulled
+#     unless you dispatch this workflow with refresh_av_dates.
+#   • fundamentals  — SEC Company Facts, plus an FMP top-up for quarters that
+#     have been reported but whose 10-Q XBRL has not propagated yet. Run with
+#     --no-metered so the four ADRs that would spend quota are skipped.
+# The only scheduled spend is the Sunday ADR refresh below: 4 requests a week,
+# leaving 21 of that day's 25 for the transcript jobs.
+#
+# Required repo secrets:
+#   MONGODB_URI          — the database the site reads
+#   NINJAS_API_KEY       — earnings report dates; price return CANNOT run without it
+# Recommended:
+#   FMP_API_KEY          — same-day revenue/net income for just-reported mega-caps
+#                          (Meta's Q2 landed here ~24h before SEC had it). Without
+#                          it, a company is simply blank until its 10-Q propagates.
+#   ALPHA_VANTAGE_API_KEY — only for the Sunday ADR refresh (ASML/ASX/UMC/TSM
+#                          quarterly income statements). Without it those four
+#                          rows go stale; everything else is unaffected.
+# Optional:
+#   MONGODB_DB
+#   SEC_USER_AGENT       — contact string for SEC's fair-access policy. Left
+#                          unset, the code default is used, which works.
+#
+#     GOTCHA: data.sec.gov returns 403 for any User-Agent containing the string
+#     "github" — both "github-actions ..." and an "...@users.noreply.github.com"
+#     address are rejected, while the identical string with any other domain
+#     returns 200. Do not put the runner's identity in this value.
+
+on:
+  schedule:
+    - cron: '40 23 * * *'
+  workflow_dispatch:
+    inputs:
+      tickers:
+        description: 'Comma-separated tickers to limit the run to (default: all)'
+        required: false
+      include_adrs:
+        description: 'Also refresh the Alpha Vantage-metered ADRs (4 requests)'
+        type: boolean
+        default: false
+      refresh_av_dates:
+        description: 'Re-pull cached Alpha Vantage report dates for TSM/UMC/ASML (3 requests)'
+        type: boolean
+        default: false
+
+concurrency:
+  group: earnings-pages
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      MONGODB_URI: ${{ secrets.MONGODB_URI }}
+      MONGODB_DB: ${{ secrets.MONGODB_DB }}
+      NINJAS_API_KEY: ${{ secrets.NINJAS_API_KEY }}
+      FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+      ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
+      # Empty when the secret is unset, which is falsy, so the code default
+      # applies. See the "github" gotcha in the header before setting this.
+      SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci --omit=dev
+
+      # Fail loudly rather than writing a half-empty grid: without the API
+      # Ninjas key every ticker errors out and the run would otherwise go green.
+      - name: Check required secrets
+        run: |
+          if [ -z "$MONGODB_URI" ]; then echo "::error::MONGODB_URI is not set"; exit 1; fi
+          if [ -z "$NINJAS_API_KEY" ]; then echo "::error::NINJAS_API_KEY is not set — price return cannot run"; exit 1; fi
+          if [ -z "$FMP_API_KEY" ]; then echo "::warning::FMP_API_KEY not set — just-reported quarters stay blank until the 10-Q propagates"; fi
+
+      # Dispatch inputs go through env rather than being interpolated straight
+      # into the shell, so a crafted value cannot run as a command.
+      - name: Price return
+        env:
+          IN_TICKERS: ${{ inputs.tickers }}
+          IN_REFRESH_AV_DATES: ${{ inputs.refresh_av_dates }}
+        run: |
+          set --
+          if [ -n "$IN_TICKERS" ]; then set -- "$@" --tickers "$IN_TICKERS"; fi
+          if [ "$IN_REFRESH_AV_DATES" = "true" ]; then set -- "$@" --refresh-av-dates; fi
+          node server/scripts/backfillPriceReturn.js "$@"
+
+      - name: Fundamentals (SEC + FMP, no Alpha Vantage)
+        env:
+          IN_TICKERS: ${{ inputs.tickers }}
+        run: |
+          set -- --no-metered
+          if [ -n "$IN_TICKERS" ]; then set -- "$@" --tickers "$IN_TICKERS"; fi
+          node server/scripts/backfillFundamentals.js "$@"
+
+      # ASML/ASX/UMC/TSM have no free quarterly source. They report once a
+      # quarter, so a daily pull would burn 28 requests a week to learn nothing.
+      - name: Fundamentals — Alpha Vantage ADRs (Sundays, or on request)
+        env:
+          IN_INCLUDE_ADRS: ${{ inputs.include_adrs }}
+        run: |
+          if [ "$IN_INCLUDE_ADRS" != "true" ] && [ "$(date -u '+%u')" != "7" ]; then
+            echo "Not Sunday and include_adrs not set — skipping (0 Alpha Vantage requests)."
+            exit 0
+          fi
+          if [ -z "$ALPHA_VANTAGE_API_KEY" ]; then
+            echo "::warning::ALPHA_VANTAGE_API_KEY not set — ASML/ASX/UMC/TSM left stale"
+            exit 0
+          fi
+          node server/scripts/backfillFundamentals.js --tickers ASML,ASX,UMC,TSM

@@ -12,9 +12,20 @@
  * Usage:
  *   node --env-file=.env server/scripts/backfillPriceReturn.js [options]
  *
+ * Costs zero Alpha Vantage quota on a normal run. A handful of ADRs whose API
+ * Ninjas history has holes carry a cached set of Alpha Vantage report dates on
+ * the blob; those are fetched once (or on --refresh-av-dates) and reused.
+ *
+ * Usage:
+ *   node --env-file=.env server/scripts/backfillPriceReturn.js [options]
+ *
  * Options:
- *   --tickers A,B,C   Comma list to process (default: every Price Return tab ticker).
- *   --limit N         Process at most N tickers this run.
+ *   --tickers A,B,C     Comma list to process (default: every Price Return tab ticker).
+ *   --limit N           Process at most N tickers this run.
+ *   --refresh-av-dates  Re-pull the cached Alpha Vantage report dates for the
+ *                       ADRs that need them (one request each against the
+ *                       shared 25/day key). Rarely needed — settled dates do
+ *                       not change.
  */
 
 const storage = require('../storage');
@@ -26,11 +37,12 @@ const {
 } = require('../priceReturnAfterEarnings');
 
 function parseArgs(argv) {
-  const args = { tickers: null, limit: null };
+  const args = { tickers: null, limit: null, refreshAvDates: false };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg === '--tickers') args.tickers = argv[++i]?.split(',').map(t => t.trim().toUpperCase()).filter(Boolean);
     else if (arg === '--limit') args.limit = Number(argv[++i]);
+    else if (arg === '--refresh-av-dates') args.refreshAvDates = true;
   }
   return args;
 }
@@ -44,7 +56,7 @@ async function main() {
 
   try {
     await storage.init(allBlobs.filter(blob => blob.name === BLOB.name));
-    const state = await backfill(tickers);
+    const state = await backfill(tickers, { refreshAvDates: args.refreshAvDates });
     await storage.flush();
     const covered = Object.keys(state.tickers ?? {}).length;
     console.log(`[price-return-backfill] done — ${covered}/${PRICE_RETURN_TICKERS.length} tickers have data`);

@@ -108,9 +108,13 @@ const RESEARCHED_CALENDAR_EVENTS = [
   { ticker: 'VRT',  date: '2026-07-29', status: 'expected', source: 'nasdaq-web-2026-07' },
   { ticker: 'ALAB', date: '2026-08-04', time: 'amc', status: 'expected', source: 'nasdaq-web-2026-07' },
   { ticker: 'CAMT', date: '2026-08-04', status: 'expected', source: 'nasdaq-web-2026-07' },
-  { ticker: 'QRVO', date: '2026-08-04', status: 'expected', source: 'nasdaq-web-2026-07' },
+  // QRVO and SWKS both pulled their calls forward to 2026-07-28 and reported
+  // actuals there; the projected Aug 4 dates researched in mid-July are wrong.
+  // Neither vendor returns them any more (their next call is outside the
+  // window), so nothing overrides these rows — they have to be right here.
+  { ticker: 'QRVO', date: '2026-07-28', status: 'confirmed', source: 'reported-actuals-2026-07-28' },
   { ticker: 'SMCI', date: '2026-08-04', status: 'expected', source: 'nasdaq-web-2026-07' },
-  { ticker: 'SWKS', date: '2026-08-04', status: 'expected', source: 'nasdaq-web-2026-07' },
+  { ticker: 'SWKS', date: '2026-07-28', status: 'confirmed', source: 'reported-actuals-2026-07-28' },
   { ticker: 'APP',  date: '2026-08-05', time: 'amc', status: 'expected', source: 'nasdaq-web-2026-07' },
   { ticker: 'AVT',  date: '2026-08-05', status: 'expected', source: 'nasdaq-web-2026-07' },
   { ticker: 'POWI', date: '2026-08-05', status: 'expected', source: 'nasdaq-web-2026-07' },

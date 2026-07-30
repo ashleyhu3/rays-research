@@ -3,6 +3,7 @@
 const path = require('path');
 const storage = require('./storage');
 const apiNinjas = require('./apiNinjasEarnings');
+const alphaVantageDates = require('./alphaVantageEarningsDates');
 const { DEFAULT_TICKERS } = require('./scripts/generateDailyOptionsReport');
 
 // SOXX is the semiconductor index ETF, not a company — it has no earnings
@@ -29,6 +30,12 @@ const SOXX_CONSTITUENTS = [
 const CSP_TICKERS = [
   'AMZN', 'GOOG', 'MSFT', 'META',
 ].filter(t => PRICE_RETURN_TICKERS.includes(t));
+
+// The foreign private issuers whose API Ninjas history has genuine holes —
+// quarters the vendor never returns, not quarters they failed to report. Their
+// report dates are topped up from Alpha Vantage once and then cached on the
+// blob (see backfill), so the daily refresh never spends quota on them.
+const AV_DATE_TICKERS = ['TSM', 'UMC', 'ASML'].filter(t => PRICE_RETURN_TICKERS.includes(t));
 
 // Trading-session offsets for the tab's three sub-views. "1 week" is 5
 // trading sessions, not 7 calendar days.
@@ -115,6 +122,51 @@ function quarterSortKey(label) {
   return m ? Number(m[1]) * 4 + Number(m[2]) : -Infinity;
 }
 
+function labelFromSortKey(key) {
+  return `${Math.floor((key - 1) / 4)} Q${((key - 1) % 4) + 1}`;
+}
+
+function shiftQuarter(label, delta) {
+  const key = quarterSortKey(label);
+  return Number.isFinite(key) ? labelFromSortKey(key + delta) : null;
+}
+
+function daysApart(from, to) {
+  return (Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000;
+}
+
+// How far apart two consecutive reports can be and still be one business
+// quarter apart. Wider than a literal 91 days because report timing drifts by
+// weeks; narrow enough to exclude a skipped quarter (~180 days) and an ADR's
+// duplicate call/filing rows for one event (days apart).
+const ONE_QUARTER_MIN_DAYS = 60;
+const ONE_QUARTER_MAX_DAYS = 130;
+
+// The column each report date belongs in. quarterLabel() on its own reads the
+// column off the report's own calendar quarter, which quietly breaks for
+// off-cycle reporters: MU's 2020-09-29 and 2021-01-07 calls are one business
+// quarter apart, but their dates sit in calendar quarters two apart — so one
+// column was left empty while the next held two reports, and the collision made
+// computeTicker() discard a real earnings reaction.
+//
+// Anchoring on the newest report (whose calendar-derived label is the most
+// trustworthy, since a just-reported quarter is unambiguous) and stepping back
+// one column per quarter-long gap keeps each ticker's own sequence contiguous.
+// Gaps outside the band keep their calendar-derived label, so a delinquent
+// filer's genuinely skipped quarter (SMCI's 174-day 2019 gap) stays empty
+// rather than being papered over.
+function assignQuarterLabels(datesAscending) {
+  const labels = datesAscending.map(quarterLabel);
+  for (let i = datesAscending.length - 2; i >= 0; i--) {
+    if (!labels[i + 1]) continue;
+    const gap = daysApart(datesAscending[i], datesAscending[i + 1]);
+    if (gap >= ONE_QUARTER_MIN_DAYS && gap <= ONE_QUARTER_MAX_DAYS) {
+      labels[i] = shiftQuarter(labels[i + 1], -1);
+    }
+  }
+  return labels;
+}
+
 async function fetchPriceSeries(ticker, start, end) {
   const chart = await withRetry(() => getYF().chart(ticker, { period1: start, period2: end, interval: '1d' }));
   return (chart?.quotes ?? [])
@@ -186,9 +238,14 @@ function returnFrom(prices, ri, timing, offset) {
   return target / base - 1;
 }
 
-async function computeTicker(ticker) {
+// `extraDates` supplements API Ninjas for the tickers it under-reports. The two
+// lists are unioned rather than one replacing the other: API Ninjas filters to
+// rows carrying actual EPS/revenue, which is the better signal for pinning the
+// exact announcement day, while Alpha Vantage supplies the quarters it omits.
+async function computeTicker(ticker, extraDates = []) {
   const reportDates = await apiNinjas.getEarningsReportDates(ticker);
-  const recent = reportDates.slice(0, QUARTERS_SHOWN);
+  const merged = [...new Set([...reportDates, ...extraDates])].sort((a, b) => b.localeCompare(a));
+  const recent = merged.slice(0, QUARTERS_SHOWN);
   if (!recent.length) return null;
 
   const earliestReport = recent[recent.length - 1];
@@ -197,15 +254,17 @@ async function computeTicker(ticker) {
   const prices = await fetchPriceSeries(ticker, start, end);
 
   // First pass: locate each report and read its timing off the prices.
+  const ascending = [...recent].sort();
+  const labels = assignQuarterLabels(ascending);
   const events = {};
-  for (const reportedDate of recent) {
-    const label = quarterLabel(reportedDate);
+  for (let i = 0; i < ascending.length; i++) {
+    const label = labels[i];
     if (!label) continue;
-    // Two dates mapping to the same fiscal quarter (e.g. an ADR whose earnings
-    // call and later SEC filing both appear) collide on one label; keep the
-    // earliest, which is the actual earnings call the market reacted to rather
-    // than a weeks-later filing. Dates arrive newest-first, so overwrite only
-    // when this one is earlier.
+    const reportedDate = ascending[i];
+    // Two dates still mapping to the same quarter (e.g. an ADR whose earnings
+    // call and later SEC filing both appear, days apart) collide on one label;
+    // keep the earliest, which is the actual earnings call the market reacted
+    // to rather than a weeks-later filing.
     if (events[label] && events[label].date <= reportedDate) continue;
     const reaction = reactionAt(prices, reportedDate);
     if (reaction) events[label] = { date: reportedDate, ...reaction };
@@ -256,9 +315,13 @@ function writeCache(state) {
 // clear of both providers' rate limits without needing a pacer. Writing after
 // every ticker means a crash or a transient provider error partway through a
 // run keeps whatever finished rather than losing the whole batch.
-async function backfill(tickers = PRICE_RETURN_TICKERS) {
+async function backfill(tickers = PRICE_RETURN_TICKERS, { refreshAvDates = false } = {}) {
   const state = readCache();
   state.tickers ??= {};
+  // Cached Alpha Vantage report dates for AV_DATE_TICKERS. Settled dates never
+  // change, so this is fetched once and reused forever; pass refreshAvDates to
+  // re-pull (one request per ticker against the shared 25/day key).
+  state.avDates ??= {};
 
   // Compute the SOXX candlestick first (one pull, shared by the all-tickers and
   // index views) so it's on `state` before the loop's incremental writes —
@@ -273,7 +336,17 @@ async function backfill(tickers = PRICE_RETURN_TICKERS) {
 
   for (const ticker of tickers) {
     try {
-      const quarters = await computeTicker(ticker);
+      if (AV_DATE_TICKERS.includes(ticker) && (refreshAvDates || !state.avDates[ticker]?.length)) {
+        try {
+          state.avDates[ticker] = await alphaVantageDates.getEarningsReportDates(ticker);
+          console.log(`[price-return] ${ticker}: cached ${state.avDates[ticker].length} report dates from Alpha Vantage`);
+        } catch (e) {
+          // Out of quota or symbol unsupported — fall back to API Ninjas alone
+          // rather than failing the ticker outright.
+          console.warn(`[price-return] ${ticker}: Alpha Vantage dates unavailable (${e.message}) — API Ninjas only`);
+        }
+      }
+      const quarters = await computeTicker(ticker, state.avDates[ticker] ?? []);
       if (quarters && Object.keys(quarters).length) {
         state.tickers[ticker] = quarters;
         console.log(`[price-return] ${ticker}: ${Object.keys(quarters).length} quarters`);
@@ -331,6 +404,8 @@ function getTable() {
 }
 
 module.exports = {
+  assignQuarterLabels,
+  AV_DATE_TICKERS,
   BLOB,
   OFFSETS,
   PRICE_RETURN_TICKERS,

@@ -54,6 +54,13 @@ const SEC_CIK = {
   MSFT: '0000789019',
   META: '0001326801',
 };
+// The tickers each source is responsible for. Anything without a CIK above
+// falls through to Alpha Vantage, whose free key is capped at 25 requests a day
+// and shared with the transcript jobs — so callers that must not spend that
+// quota can filter on METERED_TICKERS rather than hand-maintaining a list.
+const SEC_BACKED_TICKERS = Object.keys(SEC_CIK);
+const METERED_TICKERS = FUNDAMENTALS_TICKERS.filter(ticker => !SEC_CIK[ticker]);
+
 const SEC_REVENUE_CONCEPTS = [
   'RevenueFromContractWithCustomerExcludingAssessedTax',
   'SalesRevenueNet',
@@ -160,9 +167,15 @@ function secQuarterSeries(units) {
     Number.isFinite(Number(entry.val)),
   ));
 
+  // Quarter-length rows are direct observations wherever they appear. Most come
+  // from a 10-Q, but a 10-K routinely tags the fourth quarter outright, and some
+  // filers (Broadcom's fiscal 2017) tag the first quarter only in the annual
+  // report. Restricting this to 10-Q dropped both, which then also starved the
+  // year-less-three-quarters fallback below of the three quarters it needs — so
+  // those companies lost their Q4 column entirely rather than gaining it.
   const direct = facts.filter(entry => {
     const days = daysBetween(entry.start, entry.end);
-    return entry.form === '10-Q' && days >= 70 && days <= 120;
+    return (entry.form === '10-Q' || entry.form === '10-K') && days >= 70 && days <= 120;
   });
   const annual = facts.filter(entry => {
     const days = daysBetween(entry.start, entry.end);
@@ -381,6 +394,49 @@ async function fetchFmpIncomeStatement(ticker) {
     .sort((a, b) => a.periodEnd.localeCompare(b.periodEnd));
 }
 
+// How stale the newest SEC quarter has to look before it's worth asking FMP
+// whether a newer one exists. A company reporting on schedule is ~90 days past
+// its last period end, so 45 days is comfortably inside "might have reported by
+// now" without querying every ticker on every run.
+const SEC_STALE_DAYS = 45;
+
+// SEC Company Facts only sees a quarter once the 10-Q is filed AND its XBRL has
+// propagated — Meta's Q2 2026 numbers were public in the 8-K press release the
+// evening of July 29 but absent from companyfacts, and NXPI's 10-Q sat filed for
+// two days before its facts appeared. The earnings release itself is no help:
+// its financials live in an untagged HTML exhibit, and companyfacts carries no
+// 8-K facts at all.
+//
+// FMP publishes the figures within hours of the release, so it covers exactly
+// that gap. Only quarters strictly newer than anything SEC has are taken, and
+// only when SEC already looks stale — FMP's free tier rejects most of the
+// roster as premium-only symbols, and this way those rejections are limited to
+// the few tickers actually waiting on a filing. Values are provisional: they
+// carry no cash-flow legs (so freeCashFlow stays null rather than reading as
+// zero), and the next run after the 10-Q lands overwrites them from XBRL.
+async function topUpFromFmp(ticker, reports) {
+  if (!fmpApiKey() || !reports.length) return reports;
+
+  const newestSec = reports[reports.length - 1].periodEnd;
+  const staleDays = (Date.now() - Date.parse(`${newestSec}T00:00:00Z`)) / 86_400_000;
+  if (staleDays < SEC_STALE_DAYS) return reports;
+
+  let fresh;
+  try {
+    fresh = await fetchFmpIncomeStatement(ticker);
+  } catch {
+    return reports; // premium-only symbol, or FMP is down — SEC's series stands
+  }
+
+  const added = fresh
+    .filter(row => row.periodEnd > newestSec && row.revenue != null)
+    .map(row => ({ ...row, freeCashFlow: null, provisional: true }));
+  if (!added.length) return reports;
+
+  console.log(`[fundamentals] ${ticker}: +${added.length} provisional quarter(s) from FMP (${added.map(a => a.periodEnd).join(', ')}) — SEC has only through ${newestSec}`);
+  return [...reports, ...added];
+}
+
 // Growth is computed off the ticker's OWN period sequence (index -1 for QoQ,
 // -4 for YoY), not off the calendar labels, so a company that skipped a filing
 // or shifted its fiscal year never silently compares two non-adjacent
@@ -405,6 +461,9 @@ function computeGrowth(reports) {
       netIncome: cur.netIncome,
       // A level, not a growth rate — the CSP free-cash-flow view shows it raw.
       freeCashFlow: cur.freeCashFlow ?? null,
+      // Set only on vendor figures standing in until the filing lands, so a
+      // later run can tell an unofficial number from a settled one.
+      ...(cur.provisional ? { provisional: true } : {}),
       revenueQoQ: prevQ ? growth(cur.revenue, prevQ.revenue) : null,
       revenueYoY: yearBack ? growth(cur.revenue, yearBack.revenue) : null,
       netIncomeQoQ: prevQ ? growth(cur.netIncome, prevQ.netIncome) : null,
@@ -417,7 +476,7 @@ function computeGrowth(reports) {
 async function computeTicker(ticker) {
   let reports;
   if (SEC_CIK[ticker]) {
-    reports = await fetchSecIncomeStatement(ticker);
+    reports = await topUpFromFmp(ticker, await fetchSecIncomeStatement(ticker));
   } else {
     try {
       reports = await fetchIncomeStatement(ticker);
@@ -562,6 +621,8 @@ function getTable() {
 module.exports = {
   BLOB,
   FUNDAMENTALS_TICKERS,
+  METERED_TICKERS,
+  SEC_BACKED_TICKERS,
   SOXX_SECTION,
   CSP_SECTION,
   METRICS,
