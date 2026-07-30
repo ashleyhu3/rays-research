@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Line } from 'react-chartjs-2';
-import { GRID, TICK, BORD, fmtM } from '../../utils/chartHelpers';
+import { GRID, TICK, BORD, fmtM, roundTick } from '../../utils/chartHelpers';
 import { fa } from '../../config/colors';
 
 const SAMPLES = ['2383', '2330', '2317', '2454', '3231', '2382'];
@@ -165,7 +165,7 @@ function chartOptions(win) {
         beginAtZero: true,
         grace: '5%',
         grid: GRID,
-        ticks: { ...TICK, callback: v => `${v}×`, font: { size: 10 } },
+        ticks: { ...TICK, callback: (v, i, ts) => `${roundTick(v, ts)}×`, font: { size: 10 } },
         border: BORD,
         title: { display: true, text: 'Balance ÷ daily volume', color: '#8a8a84', font: { size: 10, family: "'Inter',sans-serif" } },
       },
@@ -173,7 +173,7 @@ function chartOptions(win) {
         position: 'right',
         grace: '5%',
         grid: { drawOnChartArea: false },
-        ticks: { ...TICK, callback: v => `${v}`, font: { size: 10 } },
+        ticks: { ...TICK, callback: (v, i, ts) => `${roundTick(v, ts)}`, font: { size: 10 } },
         border: BORD,
         title: { display: true, text: 'Price (NT$)', color: '#8a8a84', font: { size: 10, family: "'Inter',sans-serif" } },
       },

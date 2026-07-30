@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Line } from 'react-chartjs-2';
-import { baseOpts, mkDs, GRID, TICK, BORD } from '../../utils/chartHelpers';
+import { baseOpts, mkDs, GRID, TICK, BORD, roundTick } from '../../utils/chartHelpers';
 import ChartCard from '../../components/chart/ChartCard';
 import EditableGrid from '../../components/chart/EditableGrid';
 import { useData } from '../../context/DataContext';
@@ -240,7 +240,7 @@ const pctOpts = withPointLabels({
   ...baseOpts(v => `${v != null ? v.toFixed(1) : '—'}%`),
   scales: {
     x: { grid: GRID, ticks: { ...TICK, maxTicksLimit: 8, autoSkip: true }, border: BORD },
-    y: { grid: GRID, ticks: { ...TICK, callback: v => `${v}%` }, border: BORD, beginAtZero: false },
+    y: { grid: GRID, ticks: { ...TICK, callback: (v, i, ts) => `${roundTick(v, ts)}%` }, border: BORD, beginAtZero: false },
   },
 }, pctLabel);
 

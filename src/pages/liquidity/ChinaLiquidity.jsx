@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { Line } from 'react-chartjs-2';
 import ChartCard from '../../components/chart/ChartCard';
+import { padTick } from '../../utils/chartHelpers';
 import { useResource } from '../../services/resourceCache';
 import ChinaFlowNationalTeam from './ChinaFlowNationalTeam';
 import ChinaStockConnect from './ChinaStockConnect';
@@ -77,26 +78,11 @@ const CARDS = {
   turnover: [{ kinds: ['turnover'] }, { kinds: ['turnoverRate'] }],
 };
 
-/** Chart.js walks its tick values by repeated float addition, so they routinely
- * arrive with noise: an axis starting at 1.4 in steps of 0.2 yields 1.4000000000000001.
- * Its built-in formatter rounds that away, but a custom tick callback bypasses the
- * formatter entirely — printing the raw number puts `1.4000000000000001%` on the
- * axis. Take the precision from the step instead, since that is what decides how
- * many decimals the axis actually needs, and render every label at that width so
- * whole-number ticks (`2.0%`) still line up with fractional ones. */
-function stepDecimals(ticks) {
-  const step = ticks?.length > 1 ? Math.abs(ticks[1].value - ticks[0].value) : 0;
-  if (!Number.isFinite(step) || step <= 0) return 0;
-  // Round off the accumulated noise before counting, or the step itself reads as
-  // 0.19999999999999996. Sub-microscopic steps fall back to the cap.
-  const text = Number(step.toPrecision(12)).toString();
-  if (text.includes('e')) return 4;
-  const [, fraction = ''] = text.split('.');
-  return Math.min(fraction.length, 4);
-}
-
+// These axes read as a right-aligned numeric column, so pad every label out to
+// the axis precision (`2.0%`, not `2%`). See padTick for why the raw tick value
+// can't be interpolated directly.
 function unitTick(value, ticks, unit) {
-  return `${Number(value).toFixed(stepDecimals(ticks))}${unit}`;
+  return `${padTick(value, ticks)}${unit}`;
 }
 
 function dateLabel(date, monthly) {

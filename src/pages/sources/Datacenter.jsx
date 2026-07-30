@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Line, Bar } from 'react-chartjs-2';
 import { C, fa } from '../../config/colors';
 import { trend } from '../../utils/dataGenerators';
-import { baseOpts, stackedOpts, hBarOpts, mkDs, GRID, TICK, BORD } from '../../utils/chartHelpers';
+import { baseOpts, stackedOpts, hBarOpts, mkDs, GRID, TICK, BORD, roundTick } from '../../utils/chartHelpers';
 import ChartCard from '../../components/chart/ChartCard';
 import EditableGrid from '../../components/chart/EditableGrid';
 
@@ -77,7 +77,7 @@ export default function Datacenter({ weeks: W }) {
     ...stackedOpts(v => `$${v}B`),
     scales: {
       x: { grid: GRID, ticks: TICK, border: BORD, stacked: true },
-      y: { grid: GRID, ticks: { ...TICK, callback: v => `$${v}B` }, border: BORD, stacked: true },
+      y: { grid: GRID, ticks: { ...TICK, callback: (v, i, ts) => `$${roundTick(v, ts)}B` }, border: BORD, stacked: true },
     },
   };
 
@@ -85,7 +85,7 @@ export default function Datacenter({ weeks: W }) {
     ...stackedOpts(v => `${v} MW`),
     scales: {
       x: { grid: GRID, ticks: TICK, border: BORD, stacked: true },
-      y: { grid: GRID, ticks: { ...TICK, callback: v => `${v} MW` }, border: BORD, stacked: true },
+      y: { grid: GRID, ticks: { ...TICK, callback: (v, i, ts) => `${roundTick(v, ts)} MW` }, border: BORD, stacked: true },
     },
   };
 

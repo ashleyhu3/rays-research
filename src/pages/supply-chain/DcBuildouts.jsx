@@ -3,7 +3,7 @@ import { Bar, Bubble } from 'react-chartjs-2';
 import { feature } from 'topojson-client';
 import worldData from 'world-atlas/countries-50m.json';
 import { C, fa } from '../../config/colors';
-import { stackedOpts, hBarOpts, GRID, TICK, BORD } from '../../utils/chartHelpers';
+import { stackedOpts, hBarOpts, GRID, TICK, BORD, roundTick } from '../../utils/chartHelpers';
 import ChartCard from '../../components/chart/ChartCard';
 import EditableGrid from '../../components/chart/EditableGrid';
 import { CompanySupplyTable } from './SupplyChainMatrix';
@@ -210,7 +210,7 @@ function buildStackedOpts() {
     },
     scales: {
       x: { grid: GRID, ticks: TICK, border: BORD, stacked: true },
-      y: { grid: GRID, ticks: { ...TICK, callback: v => `${v} GW` }, border: BORD, stacked: true, beginAtZero: true },
+      y: { grid: GRID, ticks: { ...TICK, callback: (v, i, ts) => `${roundTick(v, ts)} GW` }, border: BORD, stacked: true, beginAtZero: true },
     },
   };
 }
@@ -282,7 +282,7 @@ function deployTrendOpts() {
     },
     scales: {
       x: { grid: GRID, ticks: TICK, border: BORD, stacked: true },
-      y: { grid: GRID, ticks: { ...TICK, callback: v => `${v} GW` }, border: BORD, stacked: true, beginAtZero: true },
+      y: { grid: GRID, ticks: { ...TICK, callback: (v, i, ts) => `${roundTick(v, ts)} GW` }, border: BORD, stacked: true, beginAtZero: true },
     },
   };
 }
@@ -452,7 +452,7 @@ function companyBarOpts() {
     },
     scales: {
       x: { grid: GRID, ticks: TICK, border: BORD, stacked: true },
-      y: { grid: GRID, ticks: { ...TICK, callback: v => `$${v}bn` }, border: BORD, stacked: true, beginAtZero: true },
+      y: { grid: GRID, ticks: { ...TICK, callback: (v, i, ts) => `$${roundTick(v, ts)}bn` }, border: BORD, stacked: true, beginAtZero: true },
     },
   };
 }
@@ -493,7 +493,7 @@ function companyGwBarOpts() {
     },
     scales: {
       x: { grid: GRID, ticks: TICK, border: BORD, stacked: true },
-      y: { grid: GRID, ticks: { ...TICK, callback: v => `${v} GW` }, border: BORD, stacked: true, beginAtZero: true },
+      y: { grid: GRID, ticks: { ...TICK, callback: (v, i, ts) => `${roundTick(v, ts)} GW` }, border: BORD, stacked: true, beginAtZero: true },
     },
   };
 }
@@ -567,13 +567,13 @@ const bubbleOpts = {
     x: {
       min: -130, max: 145,
       grid: GRID, border: BORD,
-      ticks: { ...TICK, callback: v => `${v > 0 ? '+' : ''}${v}°` },
+      ticks: { ...TICK, callback: (v, i, ts) => `${v > 0 ? '+' : ''}${roundTick(v, ts)}°` },
       title: { display: true, text: 'Longitude', color: '#6b7280', font: { size: 10 } },
     },
     y: {
       min: 10, max: 68,
       grid: GRID, border: BORD,
-      ticks: { ...TICK, callback: v => `${v}°N` },
+      ticks: { ...TICK, callback: (v, i, ts) => `${roundTick(v, ts)}°N` },
       title: { display: true, text: 'Latitude', color: '#6b7280', font: { size: 10 } },
     },
   },

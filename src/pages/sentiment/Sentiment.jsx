@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { Line, Bar } from 'react-chartjs-2';
 import { C, fa } from '../../config/colors';
-import { baseOpts, mkDs, dualAxisOpts, fmtM, GRID, TICK, BORD } from '../../utils/chartHelpers';
+import { baseOpts, mkDs, dualAxisOpts, fmtM, GRID, TICK, BORD, roundTick } from '../../utils/chartHelpers';
 import ChartCard from '../../components/chart/ChartCard';
 import EditableGrid from '../../components/chart/EditableGrid';
 import { useData } from '../../context/DataContext';
@@ -315,7 +315,7 @@ function KeywordSearch() {
     scales: {
       x: { grid: GRID, ticks: TICK, border: BORD },
       y:  { position: 'left',  grid: GRID, ticks: { ...TICK, callback: v => v.toLocaleString() }, border: BORD, beginAtZero: true },
-      y1: { position: 'right', grid: { drawOnChartArea: false }, ticks: { ...TICK, callback: v => `${v > 0 ? '+' : ''}${v}%` }, border: BORD },
+      y1: { position: 'right', grid: { drawOnChartArea: false }, ticks: { ...TICK, callback: (v, i, ts) => `${v > 0 ? '+' : ''}${roundTick(v, ts)}%` }, border: BORD },
     },
   };
 

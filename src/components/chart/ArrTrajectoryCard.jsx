@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Scatter } from 'react-chartjs-2';
 import { C, fa } from '../../config/colors';
-import { GRID, TICK, BORD, autoFitValueAxes } from '../../utils/chartHelpers';
+import { GRID, TICK, BORD, autoFitValueAxes, roundTick } from '../../utils/chartHelpers';
 import { buildArrModel } from '../../utils/arrModel';
 import { useDashboard } from '../../context/DashboardContext';
 
@@ -131,7 +131,7 @@ export default function ArrTrajectoryCard({ chartId, series, color = C.accent, n
               min: Math.max(0.1, model.history[0].y * 0.8),
               grid: GRID,
               border: BORD,
-              ticks: { ...TICK, callback: v => (Number.isInteger(Math.log10(v)) ? `$${v}B` : '') },
+              ticks: { ...TICK, callback: (v, i, ts) => (Number.isInteger(Math.log10(v)) ? `$${roundTick(v, ts)}B` : '') },
             }
           : {
               type: 'linear',
@@ -139,7 +139,7 @@ export default function ArrTrajectoryCard({ chartId, series, color = C.accent, n
               suggestedMax: maxHi * 1.05,
               grid: GRID,
               border: BORD,
-              ticks: { ...TICK, callback: v => `$${v}B` },
+              ticks: { ...TICK, callback: (v, i, ts) => `$${roundTick(v, ts)}B` },
             },
       },
     };

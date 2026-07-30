@@ -1,5 +1,5 @@
 import { C, fa } from '../config/colors';
-import { GRID, TICK, BORD } from './chartHelpers';
+import { GRID, TICK, BORD, roundTick } from './chartHelpers';
 
 /**
  * ────────────────────────────────────────────────────────────────────────
@@ -256,7 +256,7 @@ export const pricingBarOpts = {
     y: {
       grid: GRID,
       border: BORD,
-      ticks: { ...TICK, callback: v => `$${v}` },
+      ticks: { ...TICK, callback: (v, i, ts) => `$${roundTick(v, ts)}` },
       beginAtZero: true,
     },
   },

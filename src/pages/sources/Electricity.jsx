@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Line, Bar } from 'react-chartjs-2';
 import { C, fa } from '../../config/colors';
-import { baseOpts, stackedOpts, hBarOpts, mkDs, GRID, TICK, BORD } from '../../utils/chartHelpers';
+import { baseOpts, stackedOpts, hBarOpts, mkDs, GRID, TICK, BORD, roundTick } from '../../utils/chartHelpers';
 import ChartCard from '../../components/chart/ChartCard';
 import EditableGrid from '../../components/chart/EditableGrid';
 import { useData } from '../../context/DataContext';
@@ -95,7 +95,7 @@ export default function Electricity({ weeks: W }) {
     ...stackedOpts(v => `${v} TWh`),
     scales: {
       x: { grid: GRID, ticks: TICK, border: BORD, stacked: true },
-      y: { grid: GRID, ticks: { ...TICK, callback: v => `${v} TWh` }, border: BORD, stacked: true },
+      y: { grid: GRID, ticks: { ...TICK, callback: (v, i, ts) => `${roundTick(v, ts)} TWh` }, border: BORD, stacked: true },
     },
   };
 
@@ -103,7 +103,7 @@ export default function Electricity({ weeks: W }) {
     ...stackedOpts(v => `${v}%`),
     scales: {
       x: { grid: GRID, ticks: TICK, border: BORD, stacked: true },
-      y: { grid: GRID, ticks: { ...TICK, callback: v => `${v}%` }, border: BORD, stacked: true },
+      y: { grid: GRID, ticks: { ...TICK, callback: (v, i, ts) => `${roundTick(v, ts)}%` }, border: BORD, stacked: true },
     },
   };
 

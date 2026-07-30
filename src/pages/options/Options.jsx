@@ -1,6 +1,6 @@
 import { useState, useRef, useMemo, useEffect } from 'react';
 import { Line } from 'react-chartjs-2';
-import { GRID, TICK, BORD, fmtM } from '../../utils/chartHelpers';
+import { GRID, TICK, BORD, fmtM, roundTick } from '../../utils/chartHelpers';
 import { fa } from '../../config/colors';
 
 const SAMPLES = ['AAPL', 'NVDA', 'TSLA', 'SPY', 'QQQ', 'AMZN', 'META'];
@@ -99,7 +99,7 @@ const oiChartOpts = {
       type: 'linear',
       title: { display: true, text: 'Strike Price', color: '#b0b0a8', font: { size: 11, family: "'Inter',sans-serif" } },
       grid: GRID,
-      ticks: { ...TICK, maxTicksLimit: 10, callback: v => `$${v}` },
+      ticks: { ...TICK, maxTicksLimit: 10, callback: (v, i, ts) => `$${roundTick(v, ts)}` },
       border: BORD,
     },
     y: {

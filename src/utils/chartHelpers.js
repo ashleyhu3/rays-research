@@ -17,6 +17,45 @@ export const fmtK = v => (v >= 1e3 ? `${(v / 1e3).toFixed(1)}k` : String(v));
 export const fmtN = v => v.toLocaleString();
 export const fmtP = v => `${v.toFixed(1)}`;
 
+/* ─── Axis tick precision ───────────────────────────────────────────────
+   Chart.js walks a value axis by repeated float addition, so its tick values
+   routinely carry noise: an axis whose data starts at 1.4, stepping by 0.2,
+   begins at Math.floor(1.4 / 0.2) * 0.2 — and 1.4 / 0.2 is 6.999999999999999,
+   so the first tick is 1.2000000000000002. Chart.js sets its internal rounding
+   factor from that value's own decimal count, so every later tick keeps the
+   noise too. The built-in tick formatter rounds it away for display, but any
+   custom ticks.callback bypasses the formatter — interpolating the raw value
+   puts `1.2000000000000002%` on the axis.
+
+   Only axes with a data-driven minimum are affected; a zero-based or stacked
+   axis starts at exactly 0 and stays clean. Both helpers below take the
+   precision from the tick step, which is what decides how many decimals the
+   axis actually needs. */
+
+/** Decimal places the axis step resolves to — the precision the labels need.
+ *  Rounding to fewer would collide adjacent ticks on a fine-grained axis. */
+export function stepDecimals(ticks) {
+  const step = ticks?.length > 1 ? Math.abs(ticks[1].value - ticks[0].value) : 0;
+  if (!Number.isFinite(step) || step <= 0) return 0;
+  // Round off the accumulated noise before counting, or the step itself reads
+  // as 0.19999999999999996 and every label inherits its 17 digits.
+  const text = Number(step.toPrecision(12)).toString();
+  // Steps below 1e-6 stringify as '5e-7', where the exponent carries the places.
+  const [mantissa, exponent] = text.split('e');
+  const [, fraction = ''] = mantissa.split('.');
+  const shift = exponent ? -Number(exponent) : 0;
+  return Math.min(Math.max(fraction.length + shift, 0), 12);
+}
+
+/** The tick's value with the float noise removed. Drop-in for `v` inside a
+ *  custom tick callback: `callback: (v, i, ticks) => `$${roundTick(v, ticks)}B``.
+ *  A no-op on axes that were already clean. */
+export const roundTick = (value, ticks) => Number(Number(value).toFixed(stepDecimals(ticks)));
+
+/** Fixed-width variant: pads every label out to the axis precision, so a whole
+ *  tick (`2.0%`) lines up with its fractional neighbours instead of reading `2%`. */
+export const padTick = (value, ticks) => Number(value).toFixed(stepDecimals(ticks));
+
 /* ─── Auto-rescale the value axis to the visible range after zoom/pan ──
    chartjs-plugin-zoom only changes the index (category/time) axis; left
    alone, the value axis keeps its full-series scale, so a zoomed-in chart
@@ -130,7 +169,7 @@ export const baseOpts = (yFmt) => ({
   },
   scales: {
     x: { grid: GRID, ticks: { ...TICK, maxTicksLimit: 8, autoSkip: true }, border: BORD },
-    y: { grid: GRID, ticks: { ...TICK, callback: v => yFmt(v) }, border: BORD, beginAtZero: false },
+    y: { grid: GRID, ticks: { ...TICK, callback: (v, i, ts) => yFmt(roundTick(v, ts)) }, border: BORD, beginAtZero: false },
   },
 });
 
@@ -164,7 +203,7 @@ export const hBarOpts = (xFmt) => {
       },
     },
     scales: {
-      x: { grid: GRID, ticks: { ...TICK, callback: v => xFmt(v) }, border: BORD, beginAtZero: true },
+      x: { grid: GRID, ticks: { ...TICK, callback: (v, i, ts) => xFmt(roundTick(v, ts)) }, border: BORD, beginAtZero: true },
       y: { grid: GRID, ticks: { ...TICK }, border: BORD },
     },
   };
@@ -235,8 +274,8 @@ export const dualAxisOpts = (yFmt, y1Fmt) => {
     },
     scales: {
       x: base.scales.x,
-      y:  { position: 'left',  grid: GRID, ticks: { ...TICK, callback: v => yFmt(v) }, border: BORD, beginAtZero: true },
-      y1: { position: 'right', grid: { drawOnChartArea: false }, ticks: { ...TICK, callback: v => y1Fmt(v) }, border: BORD },
+      y:  { position: 'left',  grid: GRID, ticks: { ...TICK, callback: (v, i, ts) => yFmt(roundTick(v, ts)) }, border: BORD, beginAtZero: true },
+      y1: { position: 'right', grid: { drawOnChartArea: false }, ticks: { ...TICK, callback: (v, i, ts) => y1Fmt(roundTick(v, ts)) }, border: BORD },
     },
   };
 };
@@ -246,7 +285,7 @@ export const stackedOpts = (yFmt) => ({
   ...baseOpts(yFmt),
   scales: {
     x: { grid: GRID, ticks: TICK, border: BORD, stacked: true },
-    y: { grid: GRID, ticks: { ...TICK, callback: v => yFmt(v) }, border: BORD, stacked: true },
+    y: { grid: GRID, ticks: { ...TICK, callback: (v, i, ts) => yFmt(roundTick(v, ts)) }, border: BORD, stacked: true },
   },
 });
 

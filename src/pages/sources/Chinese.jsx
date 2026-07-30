@@ -3,7 +3,7 @@ import { Line, Bar } from 'react-chartjs-2';
 import { C, fa } from '../../config/colors';
 import { trend } from '../../utils/dataGenerators';
 import { wkLabels } from '../../utils/labels';
-import { baseOpts, hBarOpts, stackedOpts, mkDs, fmtM, GRID, TICK, BORD } from '../../utils/chartHelpers';
+import { baseOpts, hBarOpts, stackedOpts, mkDs, fmtM, GRID, TICK, BORD, roundTick } from '../../utils/chartHelpers';
 import { buildPriceData } from '../../utils/modelPricing';
 import ChartCard from '../../components/chart/ChartCard';
 import EditableGrid from '../../components/chart/EditableGrid';
@@ -97,7 +97,7 @@ export default function Chinese({ weeks: W }) {
     ...stackedOpts(v => `¥${v}M`),
     scales: {
       x: { grid: GRID, ticks: TICK, border: BORD, stacked: true },
-      y: { grid: GRID, ticks: { ...TICK, callback: v => `¥${v}M` }, border: BORD, stacked: true },
+      y: { grid: GRID, ticks: { ...TICK, callback: (v, i, ts) => `¥${roundTick(v, ts)}M` }, border: BORD, stacked: true },
     },
   };
 

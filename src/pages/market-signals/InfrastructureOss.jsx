@@ -3,7 +3,7 @@ import { Line, Bar, Scatter } from 'react-chartjs-2';
 import { C, fa } from '../../config/colors';
 import { trend } from '../../utils/dataGenerators';
 import { wkLabels } from '../../utils/labels';
-import { baseOpts, hBarOpts, mkDs, fmtM, fmtK, GRID, TICK, BORD } from '../../utils/chartHelpers';
+import { baseOpts, hBarOpts, mkDs, fmtM, fmtK, GRID, TICK, BORD, roundTick } from '../../utils/chartHelpers';
 import { metricTrendCard } from '../../components/chart/MetricTrendCard';
 import ChartCard from '../../components/chart/ChartCard';
 import EditableGrid from '../../components/chart/EditableGrid';
@@ -43,7 +43,7 @@ const revenueOpts = {
     },
     y: {
       grid: GRID,
-      ticks: { ...TICK, callback: v => `$${v}B` },
+      ticks: { ...TICK, callback: (v, i, ts) => `$${roundTick(v, ts)}B` },
       border: BORD,
       beginAtZero: true,
     },
