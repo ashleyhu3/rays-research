@@ -9,7 +9,6 @@ const US_PERFORMANCE_SUBTABS = [
   { key: 'theme',       label: 'Theme' },
   { key: 'factor',      label: 'Factor' },
   { key: 'correlation', label: 'Correlation' },
-  { key: 'sentiment',   label: 'Sentiment' },
 ];
 
 /** Subtabs shown under the "China" rotation nav item — "Index"
@@ -17,20 +16,11 @@ const US_PERFORMANCE_SUBTABS = [
 const CHINA_PERFORMANCE_SUBTABS = [
   { key: 'all', label: 'Index' },
   ...HK_CHINA_SECTIONS.map(section => ({ key: section.title, label: section.title })),
-  { key: 'sentiment', label: 'Sentiment' },
 ];
 
 /** Subtabs shown under the "HK" rotation nav item. The parent view is the
  * aggregate sector chart; these entries open the relative-performance grids. */
 const HK_PERFORMANCE_SUBTABS = HK_SECTIONS.map(section => ({ key: section.title, label: section.title }));
-
-/** Subtabs shown under the "Global" rotation nav item — mirrors the page
- * sections in src/pages/global-performance/GlobalPerformance.jsx. */
-const GLOBAL_PERFORMANCE_SUBTABS = [
-  { key: 'breadth',   label: 'Breadth' },
-  { key: 'technical', label: 'Technical' },
-  { key: 'turnover',  label: 'Turnover' },
-];
 
 const COMMODITY_SUBTABS = [
   { key: 'precious-rare', label: 'Precious & Rare Metal' },
@@ -124,7 +114,6 @@ export const NAV_SECTIONS = [
       { id: 'us-performance',       label: 'US',     subitems: US_PERFORMANCE_SUBTABS },
       { id: 'hk-china-performance', label: 'China',  subitems: CHINA_PERFORMANCE_SUBTABS },
       { id: 'hk-performance',       label: 'HK',     subitems: HK_PERFORMANCE_SUBTABS },
-      { id: 'global-performance',  label: 'Global', subitems: GLOBAL_PERFORMANCE_SUBTABS },
     ],
   },
   {
@@ -183,6 +172,10 @@ export const NAV_SECTIONS = [
         { key: 'money-supply', label: 'Money Supply' },
       ] },
       { id: 'liquidity-carry-trade', label: 'Carry Trade' },
+      { id: 'liquidity-sentiment', label: 'Sentiment' },
+      { id: 'liquidity-breadth', label: 'Breadth' },
+      { id: 'liquidity-technical', label: 'Technical' },
+      { id: 'liquidity-turnover', label: 'Turnover' },
     ],
   },
   {
@@ -289,7 +282,6 @@ export const VIEW_META = {
   'us-performance':   { title: 'ROTATION — US' },
   'hk-china-performance': { title: 'ROTATION — CHINA' },
   'hk-performance':       { title: 'ROTATION — HK' },
-  'global-performance':   { title: 'ROTATION — GLOBAL' },
   'macro-us-inflation': { title: 'US · INFLATION' },
   'macro-yield':        { title: 'GOVERNMENT BOND YIELDS' },
   'macro-equity-risk-premium': { title: 'EQUITY RISK PREMIUM' },
@@ -313,6 +305,10 @@ export const VIEW_META = {
   'liquidity-us': { title: 'LIQUIDITY — US' },
   'liquidity-china-flow': { title: 'LIQUIDITY — CHINA' },
   'liquidity-carry-trade': { title: 'LIQUIDITY — CARRY TRADE' },
+  'liquidity-sentiment': { title: 'LIQUIDITY — SENTIMENT' },
+  'liquidity-breadth': { title: 'LIQUIDITY — BREADTH' },
+  'liquidity-technical': { title: 'LIQUIDITY — TECHNICAL' },
+  'liquidity-turnover': { title: 'LIQUIDITY — TURNOVER' },
   transcripts:        { title: 'EARNINGS TRANSCRIPT AGENT' },
   sources:            { title: 'DATA VALIDITY TERMINAL' },
 };

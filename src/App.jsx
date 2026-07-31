@@ -49,7 +49,6 @@ import Fundamentals from './pages/fundamentals/Fundamentals';
 import UsPerformance from './pages/us-performance/UsPerformance';
 import HkChinaPerformance from './pages/hk-china-performance/HkChinaPerformance';
 import HkPerformance from './pages/hk-performance/HkPerformance';
-import GlobalPerformance from './pages/global-performance/GlobalPerformance';
 import { OptionsReportProvider } from './context/OptionsReportContext';
 import DataValidity from './pages/data-validity/DataValidity';
 import { LeverageKorea, LeverageTaiwan } from './pages/leverage/Leverage';
@@ -61,6 +60,8 @@ import UsLeverage from './pages/us-leverage/UsLeverage';
 import ChinaLiquidity from './pages/liquidity/ChinaLiquidity';
 import UsLiquidity from './pages/liquidity/UsLiquidity';
 import CarryTrade from './pages/liquidity/CarryTrade';
+import LiquiditySentiment from './pages/liquidity/Sentiment';
+import { LiquidityBreadth, LiquidityTechnical, LiquidityTurnover } from './pages/liquidity/GlobalSections';
 import Transcripts from './pages/transcripts/Transcripts';
 import Macro from './pages/macro/Macro';
 import EquityRiskPremium from './pages/macro/EquityRiskPremium';
@@ -80,7 +81,7 @@ import Docker         from './pages/sources/Docker';
 import Community      from './pages/sources/Community';
 
 /** Views with sidebar-driven subtabs (see NAV_SECTIONS 'Rotation' subitems) */
-const MARKET_PERF_VIEWS = new Set(['us-performance', 'hk-china-performance', 'hk-performance', 'global-performance', 'liquidity-us', 'liquidity-china-flow', 'macro-commodity']);
+const MARKET_PERF_VIEWS = new Set(['us-performance', 'hk-china-performance', 'hk-performance', 'liquidity-us', 'liquidity-china-flow', 'macro-commodity']);
 
 /** Views that use EditableGrid and support layout customisation */
 const LAYOUT_EDITABLE = new Set([
@@ -138,7 +139,6 @@ const VIEW_COMPONENTS = {
   'us-performance':   UsPerformance,
   'hk-china-performance': HkChinaPerformance,
   'hk-performance':   HkPerformance,
-  'global-performance': GlobalPerformance,
   'sentiment':        Sentiment,
   'sources':          DataValidity,
   'leverage-korea':   LeverageKorea,
@@ -151,6 +151,10 @@ const VIEW_COMPONENTS = {
   'liquidity-us': UsLiquidity,
   'liquidity-china-flow': ChinaLiquidity,
   'liquidity-carry-trade': CarryTrade,
+  'liquidity-sentiment': LiquiditySentiment,
+  'liquidity-breadth': LiquidityBreadth,
+  'liquidity-technical': LiquidityTechnical,
+  'liquidity-turnover': LiquidityTurnover,
   'transcripts':      Transcripts,
   'macro-us-inflation': Macro,
   'macro-yield':        Macro,
