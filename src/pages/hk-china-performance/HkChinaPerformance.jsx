@@ -586,7 +586,7 @@ export default function HkChinaPerformance({ section = null }) {
         ) : !premiumPayload ? (
           <div className="empty">{premiumLoading ? 'Loading ETF premium data…' : 'No data'}</div>
         ) : (
-          <div className="usp-etf-grid">
+          <div className="cgrid">
             {[...premiumPayload.series]
               .sort((a, b) => (b.latest?.premium ?? Number.NEGATIVE_INFINITY)
                 - (a.latest?.premium ?? Number.NEGATIVE_INFINITY))

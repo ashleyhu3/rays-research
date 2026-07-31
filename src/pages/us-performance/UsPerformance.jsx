@@ -934,7 +934,7 @@ export default function UsPerformance({ section = null }) {
             </ChartCard>
           ))}
 
-          <ChartCard title="S&P500 Put Call Ratio" src="Barchart" srcUrl="https://www.barchart.com/stocks/quotes/$SPX/put-call-ratios" freq="Daily" span2 height={340}>
+          <ChartCard title="S&P500 Put Call Ratio" src="Barchart" srcUrl="https://www.barchart.com/stocks/quotes/$SPX/put-call-ratios" freq="Daily" height={340}>
             {putCallChartData ? (
               <Line data={putCallChartData} options={putCallChartOptions()} />
             ) : putCallError ? (
@@ -944,7 +944,7 @@ export default function UsPerformance({ section = null }) {
             )}
           </ChartCard>
 
-          <ChartCard title="AAII Investor Sentiment" src="AAII" srcUrl="https://www.aaii.com/sentimentsurvey" freq="Weekly" span2 height={340}>
+          <ChartCard title="AAII Investor Sentiment" src="AAII" srcUrl="https://www.aaii.com/sentimentsurvey" freq="Weekly" height={340}>
             {aaiiChartData ? (
               <Line data={aaiiChartData} options={aaiiChartOptions()} />
             ) : aaiiError ? (
@@ -955,7 +955,7 @@ export default function UsPerformance({ section = null }) {
           </ChartCard>
 
           {gldVixData && (
-            <ChartCard title="GLD/VIX" src="Yahoo Finance" srcUrl="https://finance.yahoo.com" freq="Daily" span2 height={300}>
+            <ChartCard title="GLD/VIX" src="Yahoo Finance" srcUrl="https://finance.yahoo.com" freq="Daily" height={300}>
               <Line data={gldVixData} options={chartOptions({ relative: true, compact: true })} plugins={[BASELINE_100]} />
             </ChartCard>
           )}
