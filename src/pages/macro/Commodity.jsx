@@ -14,6 +14,38 @@ export const COMMODITY_SECTIONS = [
   { key: 'chemical', label: 'Chemical', commodities: ['Silicon', 'Methanol', 'PTA', 'PP', 'PVC', 'Soda Ash', 'Urea'] },
 ];
 
+// Cross-commodity ratios rendered right after the Gold candles. Both legs are
+// the Global (Trading Economics) series so the ratio is a single-source quote —
+// mixing in a China contract would price one leg in CNY and break the reading.
+export const COMMODITY_RATIOS = [
+  { id: 'gold-silver', label: 'Gold / Silver', numerator: 'globalGold', denominator: 'globalSilver', color: '#e8c547' },
+  { id: 'gold-copper', label: 'Gold / Copper', numerator: 'globalGold', denominator: 'globalCopper', color: '#f0883e' },
+];
+
+// Quoted units per metric tonne, so a ratio can put both legs on one mass basis.
+// Gold and silver both quote in USD/t.oz and cancel out either way, but copper
+// quotes in USD/Lbs — dividing the raw closes would leave t.oz-per-lb hanging on
+// the result. Any common mass unit gives the same dimensionless number; tonnes
+// is just the one every commodity here converts into cleanly.
+const UNITS_PER_TONNE = {
+  'usd/t.oz': 32150.7466,   // troy ounces
+  'usd/lbs': 2204.62262,    // pounds
+  'usd/kilogram': 1000,
+  'usd/gram': 1e6,
+  'usd/metric ton': 1,
+};
+
+/** Price restated as USD per tonne, or null when the unit isn't convertible. */
+function perTonne(close, unit) {
+  const factor = UNITS_PER_TONNE[String(unit || '').trim().toLowerCase()];
+  return Number.isFinite(factor) ? close * factor : null;
+}
+
+function fmtRatio(value) {
+  const abs = Math.abs(value);
+  return value.toLocaleString(undefined, { maximumFractionDigits: abs >= 1e3 ? 1 : 2 });
+}
+
 function compact(value) {
   const abs = Math.abs(value);
   if (abs >= 1e9) return `${(value / 1e9).toFixed(1)}B`;
@@ -121,6 +153,95 @@ function CommodityCandle({ series }) {
   );
 }
 
+/** Join two Global series on date and divide price by price, both legs first
+ *  restated per tonne so the result is dimensionless. Both are weekly OHLC off
+ *  the same feed, but an inner join keeps a missing week on either side from
+ *  inventing a point. Returns null if either leg quotes in a unit we can't
+ *  convert — a silently un-normalized ratio would read like a real one. */
+function buildRatio(payload, spec, startDate, endDate) {
+  const top = payload?.series?.[spec.numerator];
+  const bottom = payload?.series?.[spec.denominator];
+  if (!top?.data?.length || !bottom?.data?.length) return null;
+  if (perTonne(1, top.unit) === null || perTonne(1, bottom.unit) === null) return null;
+
+  const bottomByDate = new Map(bottom.data.map(point => [point.date, point.close]));
+  const data = top.data
+    .filter(point => inDateRange(point.date, startDate, endDate))
+    .map(point => {
+      const divisor = bottomByDate.get(point.date);
+      if (!Number.isFinite(point.close) || !Number.isFinite(divisor) || divisor === 0) return null;
+      return {
+        date: point.date,
+        value: perTonne(point.close, top.unit) / perTonne(divisor, bottom.unit),
+        top: point.close,
+        bottom: divisor,
+      };
+    })
+    .filter(Boolean);
+  if (!data.length) return null;
+
+  return {
+    ...spec,
+    data,
+    topName: `${top.commodity} (${top.unit})`,
+    bottomName: `${bottom.commodity} (${bottom.unit})`,
+    frequency: top.frequency,
+    source: top.source,
+    sourceUrl: top.sourceUrl,
+  };
+}
+
+function CommodityRatio({ ratio }) {
+  const chart = useMemo(() => ({
+    labels: ratio.data.map(point => fmtDate(point.date)),
+    datasets: [{
+      label: `${ratio.label} ratio`,
+      data: ratio.data.map(point => point.value),
+      borderColor: ratio.color,
+      backgroundColor: ratio.color,
+      borderWidth: 1.5,
+      pointRadius: 0,
+      pointHoverRadius: 3,
+      tension: 0.15,
+    }],
+  }), [ratio]);
+
+  const options = useMemo(() => {
+    const opts = baseOpts(value => fmtRatio(value));
+    opts.plugins.legend = { display: false };
+    opts.plugins.zeroLine = { display: false };
+    opts.plugins.tooltip.callbacks = {
+      title: items => ratio.data[items[0]?.dataIndex]?.date || '',
+      // The legs stay in their quoted units here — a reader recognises gold at
+      // 4,077 USD/t.oz, not 131,082,000 USD/tonne. Only the ratio is normalized.
+      label: context => {
+        const point = ratio.data[context.dataIndex];
+        return [
+          ` Ratio: ${fmtRatio(point.value)}× by mass`,
+          ` ${ratio.topName}: ${compact(point.top)}`,
+          ` ${ratio.bottomName}: ${compact(point.bottom)}`,
+        ];
+      },
+    };
+    opts.scales.x.ticks.maxTicksLimit = 7;
+    return opts;
+  }, [ratio]);
+
+  return (
+    <ChartCard
+      chartId={`commodity-ratio-${ratio.id}`}
+      title={`${ratio.label} Ratio — Global: ${ratio.topName} ÷ ${ratio.bottomName}, unit-normalized per tonne`}
+      src={ratio.source}
+      srcUrl={ratio.sourceUrl}
+      freq={ratio.frequency}
+      lag="latest available close"
+      height={285}
+    >
+      <Line data={chart} options={options} />
+    </ChartCard>
+  );
+}
+
 export default function Commodity({ section = 'precious-rare' }) {
   const { liveData, loading } = useData();
   const [startDate, setStartDate] = useState(() => isoYearsAgo(1));
@@ -136,6 +257,19 @@ export default function Commodity({ section = 'precious-rare' }) {
     .map(item => ({ ...item, data: item.data.filter(point => inDateRange(point.date, startDate, endDate)) }))
     .filter(item => item.data.length);
 
+  // Gold lives in precious-rare, so the ratios only surface on that section.
+  // They slot in after the last Gold candle; if Gold has no data in range the
+  // ratios have nothing to sit behind and are dropped with it.
+  const ratios = definition.commodities.includes('Gold')
+    ? COMMODITY_RATIOS.map(spec => buildRatio(payload, spec, startDate, endDate)).filter(Boolean)
+    : [];
+  const lastGoldIndex = series.map(item => item.commodity).lastIndexOf('Gold');
+
+  const cards = series.flatMap((item, index) => [
+    <CommodityCandle key={item.id} series={item} />,
+    ...(index === lastGoldIndex ? ratios.map(ratio => <CommodityRatio key={ratio.id} ratio={ratio} />) : []),
+  ]);
+
   return (
     <div className="macro-page">
       <MacroDateControls
@@ -149,7 +283,7 @@ export default function Commodity({ section = 'precious-rare' }) {
       )}
       {!payload && !loading && <div className="macro-banner">Commodity data is unavailable. Use Refresh Data to retry the upstream sources.</div>}
       <div className="cgrid">
-        {series.map(item => <CommodityCandle key={item.id} series={item} />)}
+        {cards}
       </div>
       {!series.length && <div className="macro-empty">{loading ? 'Loading commodity candles…' : 'No commodity series are currently available for this section.'}</div>}
     </div>
