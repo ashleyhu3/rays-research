@@ -51,7 +51,12 @@ function buildChartData(series, dates) {
         // Chart.js fills toward the zero baseline, taking the colour of the
         // side the value sits on — one dataset, two bands.
         fill: { target: 'origin', above: ABOVE.fill, below: BELOW.fill },
-        borderColor: (series.latest ?? 0) < 0 ? BELOW.line : ABOVE.line,
+        borderColor: ABOVE.line,
+        // The outline follows the sign too, so a stretch below the average is
+        // not drawn with the "above" colour along its top edge.
+        segment: {
+          borderColor: ctx => (ctx.p0.parsed.y < 0 && ctx.p1.parsed.y < 0 ? BELOW.line : ABOVE.line),
+        },
         borderWidth: 1,
         pointRadius: 0,
         pointHoverRadius: 3,
