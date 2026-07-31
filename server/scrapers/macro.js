@@ -83,6 +83,7 @@ const SERIES = {
   usRetailSales: ['united-states', 'retail-sales'],
   usPersonalSpending: ['united-states', 'personal-spending'],
   usExistingHomes: ['united-states', 'existing-home-sales'],
+  usNewHomes: ['united-states', 'new-home-sales'],
   cnCpiYoy: ['china', 'inflation-cpi'],
   cnCpiMom: ['china', 'inflation-rate-mom'],
   cnPpiYoy: ['china', 'producer-prices-change'],

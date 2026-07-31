@@ -46,7 +46,7 @@ const PAGE_CHARTS = {
     ['University of Michigan consumer sentiment', ['usMichigan'], ['Sentiment']],
     ['Retail sales', ['usRetailSales'], ['MoM']],
     ['Personal spending', ['usPersonalSpending'], ['MoM']],
-    ['Existing home sales', ['usExistingHomes'], ['Annualized rate']],
+    ['Existing & New Home Sales', ['usExistingHomes', 'usNewHomes'], ['Existing home sales', 'New home sales'], 'bar', undefined, { unitSuffix: 'K' }],
   ],
   'macro-cn-inflation': [
     ['CPI YoY', ['cnCpiYoy'], ['CPI YoY']],
