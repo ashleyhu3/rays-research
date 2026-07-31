@@ -38,9 +38,9 @@ const PAGE_CHARTS = {
     ['Average hourly earnings', ['usEarningsYoy', 'usEarningsMom'], ['YoY', 'MoM']],
   ],
   'macro-us-pmi': [
-    ['ISM Manufacturing PMI', ['usIsmMfg', 'usIsmMfgEmployment', 'usIsmMfgOrders', 'usIsmMfgPrices'], ['Headline', 'Employment', 'New orders', 'Prices']],
-    ['ISM Services PMI', ['usIsmServices', 'usIsmServicesEmployment', 'usIsmServicesOrders', 'usIsmServicesPrices'], ['Headline', 'Employment', 'New orders', 'Prices']],
-    ['Markit PMI', ['usSpMfg', 'usSpServices'], ['Manufacturing', 'Services']],
+    ['ISM Manufacturing PMI', ['usIsmMfg', 'usIsmMfgEmployment', 'usIsmMfgOrders', 'usIsmMfgPrices'], ['Headline', 'Employment', 'New orders', 'Prices'], 'line', 1],
+    ['ISM Services PMI', ['usIsmServices', 'usIsmServicesEmployment', 'usIsmServicesOrders', 'usIsmServicesPrices'], ['Headline', 'Employment', 'New orders', 'Prices'], 'line', 1],
+    ['Markit PMI', ['usSpMfg', 'usSpServices'], ['Manufacturing', 'Services'], 'line', 1],
   ],
   'macro-us-household': [
     ['University of Michigan consumer sentiment', ['usMichigan'], ['Sentiment']],
