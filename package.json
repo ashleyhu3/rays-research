@@ -75,7 +75,7 @@
     "test:options-report": "node --test server/earningsDates.test.js server/optionsReportChart.test.js server/optionsScraper.test.js",
     "test:leverage": "node --test server/scrapers/koreaLeverage.test.js server/scrapers/koreaInvestorFlow.test.js server/scrapers/taiwanLeverage.test.js server/scrapers/chinaLeverage.test.js server/scrapers/japanLeverage.test.js server/scrapers/usLeverage.test.js",
     "test:spx-put-call": "node --test server/scrapers/spxPutCallRatio.test.js",
-    "test:global": "node --test server/scrapers/globalIndices.test.js server/scrapers/indexBreadth.test.js server/scrapers/maCross.test.js",
+    "test:global": "node --test server/scrapers/globalIndices.test.js server/scrapers/indexBreadth.test.js server/scrapers/maCross.test.js server/scrapers/maDeviation.test.js",
     "backfill:fundamentals:free": "node --env-file=.env server/scripts/backfillFundamentals.js --no-metered",
     "backfill:earnings-pages": "npm run backfill:price-return && npm run backfill:fundamentals:free"
   },

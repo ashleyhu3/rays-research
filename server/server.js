@@ -19,10 +19,12 @@ const { readGlobalIndices }          = require('./scrapers/globalIndices');
 const { readIndexBreadth }           = require('./scrapers/indexBreadth');
 const {
   readMaCross,
+  readIndexLevelCrosses,
   isKnownIndex: isKnownMaCrossIndex,
   RAW_BLOB_BY_KEY: MA_CROSS_RAW_BLOB,
   DEFAULT_INDEX: MA_CROSS_DEFAULT,
 } = require('./scrapers/maCross');
+const { readMaDeviation }            = require('./scrapers/maDeviation');
 const { readSpxPutCallRatio }        = require('./scrapers/spxPutCallRatio');
 const { readChinaNationalTeamFlow }  = require('./scrapers/chinaNationalTeamFlow');
 const { readChinaLiquidity }         = require('./scrapers/chinaLiquidity');
@@ -806,6 +808,30 @@ app.get('/api/index-breadth', (_req, res) => res.json(readIndexBreadth()));
 // for one of the Breadth indices. Derived on read from that index's breadth raw
 // cache — the set changes each day the cache refreshes, so it is never
 // persisted. The raw caches are large, so only the requested index is loaded.
+// The same 5/20-day test applied to each index's own level rather than its
+// constituents. Reads the index closes (globalIndicesHistory), so it is small
+// and returns all ten indices at once — crossed or not.
+app.get('/api/ma-cross/index-level', requireStorageBlobs('globalIndicesHistory'), (_req, res) => {
+  try {
+    res.json(readIndexLevelCrosses());
+  } catch (e) {
+    console.error('[ma-cross/index-level]', e.message);
+    res.status(500).json({ error: `Could not load index-level MA cross data: ${e.message}` });
+  }
+});
+
+// Distance from the 200-day average for the same ten indices, plus gold. Both
+// sources are small close series (the shared index history and gold's own
+// blob), and the deviation is derived on read, so all eleven ship in one call.
+app.get('/api/ma-deviation', requireStorageBlobs('globalIndicesHistory', 'goldPriceHistory'), (_req, res) => {
+  try {
+    res.json(readMaDeviation());
+  } catch (e) {
+    console.error('[ma-deviation]', e.message);
+    res.status(500).json({ error: `Could not load 200-day deviation data: ${e.message}` });
+  }
+});
+
 app.get('/api/ma-cross', async (req, res) => {
   const indexKey = req.query.index ?? MA_CROSS_DEFAULT;
   if (!isKnownMaCrossIndex(indexKey)) {

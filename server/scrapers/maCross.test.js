@@ -155,3 +155,55 @@ test('a sub-cent crossing still reports the two averages in the right order', ()
   else assert.ok(cross.sma5 < cross.sma20, `${cross.sma5} should be below ${cross.sma20}`);
   assert.equal(typeof readMaCross, 'function');
 });
+
+// ── Index-level crossings (the index itself, not its constituents) ────────
+
+function levelPayload(closesByKey, dayCount) {
+  const dates = Array.from({ length: dayCount }, (_, i) =>
+    new Date(Date.UTC(2026, 0, 5 + i)).toISOString().slice(0, 10));
+  return {
+    dates,
+    series: Object.entries(closesByKey).map(([ticker, closes]) => ({ ticker, closes })),
+  };
+}
+
+test('computeIndexLevelCrosses returns every index, crossed or not', () => {
+  const result = _test.computeIndexLevelCrosses(levelPayload({
+    sp500: flatThen(GOLDEN_TAIL),
+    ndx: flatThen(DEATH_TAIL),
+    hsi: flatThen(FLAT_TAIL),
+  }, 30));
+
+  const { MA_CROSS_INDEXES } = require('./maCross');
+  assert.equal(result.length, MA_CROSS_INDEXES.length, 'all indices are always present');
+  const byKey = Object.fromEntries(result.map(r => [r.key, r]));
+  assert.equal(byKey.sp500.direction, 'golden');
+  assert.equal(byKey.ndx.direction, 'death');
+  assert.equal(byKey.hsi.direction, null, 'no cross reported when averages stay on one side');
+  // An index with no data at all still appears, with nothing asserted about it.
+  assert.equal(byKey.topix.direction, null);
+  assert.equal(byKey.topix.asOf, null);
+});
+
+test('computeIndexLevelCrosses reports stance every day, not just on crossings', () => {
+  const result = _test.computeIndexLevelCrosses(levelPayload({
+    sp500: flatThen([101, 102, 103, 104, 105]),   // 5-day clearly above
+    ndx: flatThen([99, 98, 97, 96, 95]),          // 5-day clearly below
+  }, 30));
+  const byKey = Object.fromEntries(result.map(r => [r.key, r]));
+  assert.equal(byKey.sp500.stance, 'above');
+  assert.equal(byKey.ndx.stance, 'below');
+  // Stance must never contradict the reported averages.
+  assert.ok(byKey.sp500.sma5 > byKey.sp500.sma20);
+  assert.ok(byKey.ndx.sma5 < byKey.ndx.sma20);
+});
+
+test('computeIndexLevelCrosses uses each market\'s own last traded session', () => {
+  // A shared calendar: the newest row belongs to a market that was closed for
+  // this index, so asOf must be its previous session, not the calendar's last.
+  const closes = [...flatThen(GOLDEN_TAIL), null];
+  const payload = levelPayload({ sp500: closes }, closes.length);
+  const [sp500] = _test.computeIndexLevelCrosses(payload).filter(r => r.key === 'sp500');
+  assert.equal(sp500.asOf, payload.dates.at(-2), 'holiday row must not become asOf');
+  assert.equal(sp500.direction, 'golden');
+});

@@ -203,11 +203,77 @@ function readMaCross(indexKey = DEFAULT_INDEX) {
   return { index: indexKey, label: meta.label, ...computeMaCross(loadRaw(indexKey)) };
 }
 
+/* ── Index-level crossings (the index itself, not its constituents) ────── */
+
+// Enough calendar span to fill CHART_WINDOW sessions and warm up the 20-day
+// average ahead of them, across markets with differing holiday calendars.
+const INDEX_LEVEL_LOOKBACK_DAYS = 400;
+
+/**
+ * The same 5/20-day test applied to each index's own level.
+ *
+ * Source is globalIndicesHistory — the index closes that already feed the RSI
+ * chart — not the constituent caches. Every index is returned whether or not it
+ * crossed, so the UI can mark the ones that did and still chart the ones that
+ * did not.
+ *
+ * The payload uses one shared calendar across markets, so a market that was
+ * closed on the newest date carries a null there. `asOf` is therefore each
+ * index's own most recent traded session, not the calendar's last row.
+ */
+function computeIndexLevelCrosses(payload) {
+  const dates = payload?.dates ?? [];
+  const seriesByKey = new Map((payload?.series ?? []).map(series => [series.ticker, series]));
+
+  return MA_CROSS_INDEXES.map(({ key, label }) => {
+    const closes = seriesByKey.get(key)?.closes ?? [];
+    const sma5 = rollingAverage(closes, SMA_SHORT);
+    const sma20 = rollingAverage(closes, SMA_LONG);
+
+    let latest = -1;
+    for (let i = dates.length - 1; i >= 0; i -= 1) {
+      if (sma5[i] != null && sma20[i] != null) { latest = i; break; }
+    }
+    if (latest === -1) return { key, label, asOf: null, direction: null };
+
+    const cross = detectCross(sma5, sma20, dates);
+    const chartStart = Math.max(0, dates.length - CHART_WINDOW);
+    const [sma5Display, sma20Display] = roundPairForDisplay(sma5[latest], sma20[latest]);
+
+    return {
+      key,
+      label,
+      asOf: dates[latest],
+      // null when the two averages are simply on the same side today.
+      direction: cross ? cross.direction : null,
+      close: round2(closes[latest]),
+      sma5: sma5Display,
+      sma20: sma20Display,
+      // Which side the short average sits on, reported every day — useful even
+      // on the days between crossings.
+      stance: sma5[latest] > sma20[latest] ? 'above' : 'below',
+      dates: dates.slice(chartStart),
+      closes: closes.slice(chartStart).map(round2),
+      sma5Series: sma5.slice(chartStart).map(round2),
+      sma20Series: sma20.slice(chartStart).map(round2),
+    };
+  });
+}
+
+function readIndexLevelCrosses() {
+  const { readGlobalIndices } = require('./globalIndices');
+  const end = new Date();
+  const start = new Date(end.getTime() - INDEX_LEVEL_LOOKBACK_DAYS * 86400000);
+  const payload = readGlobalIndices(start.toISOString().slice(0, 10), end.toISOString().slice(0, 10));
+  return { indexes: computeIndexLevelCrosses(payload) };
+}
+
 module.exports = {
   readMaCross,
+  readIndexLevelCrosses,
   isKnownIndex,
   MA_CROSS_INDEXES,
   RAW_BLOB_BY_KEY,
   DEFAULT_INDEX,
-  _test: { computeMaCross, detectCross, rollingAverage },
+  _test: { computeMaCross, computeIndexLevelCrosses, detectCross, rollingAverage },
 };

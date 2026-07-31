@@ -30,6 +30,7 @@ module.exports = [
   blob('breadthRawSoxHistory'), blob('breadthRawNikkei225History'),
   blob('breadthRawChinextHistory'), blob('breadthRawTaiexHistory'),
   blob('breadthRawKospi200History'), blob('breadthRawTopixHistory'),
+  blob('goldPriceHistory'),
   blob('dailyOptionsReport'), blob('optionsPriorYearVolume'),
   blob('earningsDates'), blob('techEarningsCalendar'), blob('latestSnapshots'),
   blob('priceReturnAfterEarnings'), blob('fundamentalsGrowth'),

@@ -177,6 +177,7 @@ export const NAV_SECTIONS = [
       { id: 'liquidity-technical', label: 'Technical', subitems: [
         { key: 'rsi', label: 'RSI' },
         { key: 'ma-cross', label: 'MA Cross' },
+        { key: 'deviation', label: 'Deviation' },
       ] },
       { id: 'liquidity-turnover', label: 'Turnover' },
     ],

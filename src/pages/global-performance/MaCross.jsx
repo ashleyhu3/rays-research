@@ -41,6 +41,22 @@ const DIRECTION_LABEL = {
   death: '5-day dropped below the 20-day',
 };
 
+const MA_LINE = { backgroundColor: 'transparent', pointRadius: 0, pointHoverRadius: 3, pointHitRadius: 6, tension: 0.15, spanGaps: true };
+
+/** Close / 5-day / 20-day datasets — shared by the index-level and
+ *  constituent charts so both read identically. */
+function buildMaSeries(item) {
+  if (!item?.dates?.length) return null;
+  return {
+    labels: item.dates.map(fmtDate),
+    datasets: [
+      { ...MA_LINE, label: 'Close', data: item.closes, borderColor: 'rgba(234,234,224,.45)', borderWidth: 1.25 },
+      { ...MA_LINE, label: '5-day MA', data: item.sma5Series, borderColor: '#4ade80', borderWidth: 2 },
+      { ...MA_LINE, label: '20-day MA', data: item.sma20Series, borderColor: '#e8c547', borderWidth: 2 },
+    ],
+  };
+}
+
 function chartOptions() {
   return {
     responsive: true,
@@ -75,86 +91,84 @@ function chartOptions() {
 export default function MaCross() {
   const [indexKey, setIndexKey] = useState(MA_CROSS_INDEXES[0]?.key ?? 'sp500');
   const { data, error } = useResource(`/api/ma-cross?index=${indexKey}`);
+  // Index-level crossings for all ten indices at once — small, and independent
+  // of which index's constituents are loaded.
+  const { data: levelData } = useResource('/api/ma-cross/index-level');
   const [selected, setSelected] = useState(null);
 
   // Each index caches under its own URL, so switching back to one already
   // viewed is instant. `crosses` is only ever the active index's list.
   const crosses = data?.index === indexKey ? data.crosses : [];
 
-  // The selected name is keyed to a session's cross list. When that list
-  // refreshes and no longer contains it, fall back to the first name rather
-  // than rendering an empty chart.
+  // No constituent is selected by default: the page opens on the index-level
+  // chart, and a per-ticker chart appears only once the user picks a name.
+  // Switching index clears any previous pick so its chart cannot linger.
+  useEffect(() => { setSelected(null); }, [indexKey]);
+
+  // A selection is tied to one session's cross list. If that list refreshes
+  // (new trading day) and no longer contains the pick, drop back to the
+  // index-level view rather than silently charting a different name.
   useEffect(() => {
-    if (!crosses.length) {
-      if (selected !== null) setSelected(null);
-    } else if (!crosses.some(c => c.ticker === selected)) {
-      setSelected(crosses[0].ticker);
+    if (selected != null && crosses.length && !crosses.some(c => c.ticker === selected)) {
+      setSelected(null);
     }
   }, [crosses, selected]);
 
   const active = crosses.find(c => c.ticker === selected) ?? null;
 
-  const chartData = useMemo(() => {
-    if (!active) return null;
-    return {
-      labels: active.dates.map(fmtDate),
-      datasets: [
-        {
-          label: 'Close',
-          data: active.closes,
-          borderColor: 'rgba(234,234,224,.45)',
-          backgroundColor: 'transparent',
-          borderWidth: 1.25,
-          pointRadius: 0,
-          pointHoverRadius: 3,
-          pointHitRadius: 6,
-          tension: 0.15,
-          spanGaps: true,
-        },
-        {
-          label: '5-day MA',
-          data: active.sma5Series,
-          borderColor: '#4ade80',
-          backgroundColor: 'transparent',
-          borderWidth: 2,
-          pointRadius: 0,
-          pointHoverRadius: 3,
-          pointHitRadius: 6,
-          tension: 0.15,
-          spanGaps: true,
-        },
-        {
-          label: '20-day MA',
-          data: active.sma20Series,
-          borderColor: '#e8c547',
-          backgroundColor: 'transparent',
-          borderWidth: 2,
-          pointRadius: 0,
-          pointHoverRadius: 3,
-          pointHitRadius: 6,
-          tension: 0.15,
-          spanGaps: true,
-        },
-      ],
-    };
-  }, [active]);
+  const levelByKey = new Map((levelData?.indexes ?? []).map(index => [index.key, index]));
+  const activeLevel = levelByKey.get(indexKey) ?? null;
+  const crossedIndexes = (levelData?.indexes ?? []).filter(index => index.direction);
+
+  const chartData = useMemo(() => buildMaSeries(active), [active]);
+  const levelChartData = useMemo(() => buildMaSeries(activeLevel), [activeLevel]);
 
   const goldenCount = crosses.filter(c => c.direction === 'golden').length;
   const deathCount = crosses.length - goldenCount;
   const indexLabel = MA_CROSS_INDEXES.find(i => i.key === indexKey)?.label ?? indexKey;
   const isLoaded = data?.index === indexKey;
 
+  // An arrow on a picker button means the INDEX ITSELF crossed on its latest
+  // session — distinct from the constituent crossings listed in the strip below.
   const indexPicker = (
     <div className="mac-indexes">
-      {MA_CROSS_INDEXES.map(index => (
-        <button
-          key={index.key}
-          className={`mac-index${index.key === indexKey ? ' active' : ''}`}
-          onClick={() => setIndexKey(index.key)}
-        >
-          {index.label}
-        </button>
-      ))}
+      {MA_CROSS_INDEXES.map(index => {
+        const level = levelByKey.get(index.key);
+        return (
+          <button
+            key={index.key}
+            className={`mac-index${index.key === indexKey ? ' active' : ''}`}
+            onClick={() => setIndexKey(index.key)}
+            title={level?.direction
+              ? `${index.label} index itself: ${DIRECTION_LABEL[level.direction]} on ${fmtAsOf(level.asOf)}`
+              : level
+                ? `${index.label} index itself: 5-day ${level.stance} the 20-day (no cross today)`
+                : index.label}
+          >
+            {index.label}
+            {level?.direction && (
+              <span className={`mac-arrow ${level.direction}`}>{level.direction === 'golden' ? '▲' : '▼'}</span>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  const indexLevelSummary = levelData && (
+    <div className="mac-level-note">
+      {crossedIndexes.length
+        ? <>Index level crossed today: {crossedIndexes.map((index, i) => (
+            <span key={index.key}>
+              {i > 0 && ', '}
+              <button className="mac-level-link" onClick={() => setIndexKey(index.key)}>{index.label}</button>
+              <span className={`mac-arrow ${index.direction}`}>{index.direction === 'golden' ? '▲' : '▼'}</span>
+            </span>
+          ))}</>
+        : <>No index crossed its own 5/20-day averages today
+            {activeLevel && <> — {indexLabel}&rsquo;s 5-day sits {activeLevel.stance} its 20-day
+              ({activeLevel.sma5} vs {activeLevel.sma20}) as of {fmtAsOf(activeLevel.asOf)}</>}.
+          </>}
     </div>
   );
 
@@ -164,6 +178,7 @@ export default function MaCross() {
     return (
       <>
         {indexPicker}
+        {indexLevelSummary}
         <div className="empty">
           {error
             ? `Could not load MA cross data for ${indexLabel}: ${error}`
@@ -176,6 +191,7 @@ export default function MaCross() {
   return (
     <>
       {indexPicker}
+      {indexLevelSummary}
       <div className="mac-bar">
         <div className="mac-bar-head">
           <span className="mac-asof">{indexLabel} — crossings on {fmtAsOf(data.asOf)}</span>
@@ -186,28 +202,54 @@ export default function MaCross() {
           </span>
         </div>
         {crosses.length ? (
-          <div className="mac-tickers">
-            {crosses.map(c => (
-              <button
-                key={c.ticker}
-                className={`mac-ticker${c.ticker === selected ? ' active' : ''}`}
-                onClick={() => setSelected(c.ticker)}
-                title={`${c.ticker} — ${DIRECTION_LABEL[c.direction]}`}
-              >
-                {c.ticker}
-                <span className={`mac-arrow ${c.direction}`}>{c.direction === 'golden' ? '▲' : '▼'}</span>
-              </button>
-            ))}
-          </div>
+          <>
+            <div className="mac-tickers">
+              {crosses.map(c => (
+                <button
+                  key={c.ticker}
+                  className={`mac-ticker${c.ticker === selected ? ' active' : ''}`}
+                  // Clicking the selected name again clears it, returning the
+                  // page to the index-level view it opens on.
+                  onClick={() => setSelected(current => (current === c.ticker ? null : c.ticker))}
+                  title={`${c.ticker} — ${DIRECTION_LABEL[c.direction]}`}
+                >
+                  {c.ticker}
+                  <span className={`mac-arrow ${c.direction}`}>{c.direction === 'golden' ? '▲' : '▼'}</span>
+                </button>
+              ))}
+            </div>
+            <div className="mac-hint">
+              {active
+                ? <>Charting {active.ticker} below — click it again to return to the index-level view.</>
+                : <>Select a name to chart its 5/20-day averages.</>}
+            </div>
+          </>
         ) : (
           <div className="mac-none">No 5/20-day crossings on this session.</div>
         )}
       </div>
 
+      {levelChartData && (
+        <div className="cgrid">
+          <ChartCard
+            title={`${indexLabel} index — 5-day vs 20-day MA`}
+            src="Yahoo Finance / East Money"
+            freq="Daily"
+            span2
+            height={340}
+            srcNote={activeLevel.direction
+              ? `The index itself: ${DIRECTION_LABEL[activeLevel.direction]} on ${fmtAsOf(activeLevel.asOf)} — close ${activeLevel.close}, 5-day MA ${activeLevel.sma5}, 20-day MA ${activeLevel.sma20}.`
+              : `The index itself did not cross on ${fmtAsOf(activeLevel.asOf)} — its 5-day MA (${activeLevel.sma5}) sits ${activeLevel.stance} its 20-day MA (${activeLevel.sma20}).`}
+          >
+            <Line data={levelChartData} options={chartOptions()} />
+          </ChartCard>
+        </div>
+      )}
+
       {active && chartData && (
         <div className="cgrid">
           <ChartCard
-            title={`${active.ticker} (${indexLabel}) — 5-day vs 20-day MA`}
+            title={`${active.ticker} (${indexLabel} constituent) — 5-day vs 20-day MA`}
             src="Yahoo Finance"
             srcUrl="https://finance.yahoo.com"
             freq="Daily"
@@ -221,10 +263,12 @@ export default function MaCross() {
       )}
 
       <div className="src-note" style={{ marginTop: 12 }}>
-        Simple moving averages of the daily closing price over the last 5 and 20 trading sessions, computed per
-        constituent from the same per-index price caches that feed the Breadth page — S&amp;P 500, Nasdaq 100, SOX,
-        Hang Seng, CSI 300, ChiNext, TAIEX, KOSPI 200, Nikkei 225 and TOPIX. A name is listed only when its two
-        averages crossed on the most recent session, so the list changes every day.
+        Simple moving averages of the daily closing price over the last 5 and 20 trading sessions, across the same
+        ten indices the Breadth page covers — S&amp;P 500, Nasdaq 100, SOX, Hang Seng, CSI 300, ChiNext, TAIEX,
+        KOSPI 200, Nikkei 225 and TOPIX. The top chart applies the test to the index&rsquo;s own level (from the index
+        close series that also feeds the RSI chart); the ticker strip applies it per constituent (from the breadth
+        price caches). A name — or an index — is listed only when its two averages crossed on its most recent
+        session, so the list changes every day.
       </div>
     </>
   );
