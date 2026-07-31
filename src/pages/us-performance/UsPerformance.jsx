@@ -230,6 +230,81 @@ function buildPairChartData(payload, numMeta, denMeta, startDate, endDate, inclu
   );
 }
 
+const MOMENTUM_WINDOW_DAYS = 50;
+const MOMENTUM_COLOR = '#60a5fa';
+
+// GLD/VIX ratio chart plus a "Momentum" series — today's rebased value minus
+// the value MOMENTUM_WINDOW_DAYS trading sessions ago — plotted on its own
+// right-hand axis since the two series aren't on comparable scales.
+function buildGldVixChartData(payload, numMeta, denMeta, startDate, endDate) {
+  const numSeries = findSeries(payload, numMeta.ticker);
+  const denSeries = findSeries(payload, denMeta.ticker);
+  if (!numSeries || !denSeries) return null;
+  const bounds = visibleBounds(payload.dates, startDate, endDate);
+  if (!bounds) return null;
+
+  const ratios = numSeries.closes.map((close, i) => {
+    const denClose = denSeries.closes[i];
+    return close != null && denClose != null && denClose !== 0 ? close / denClose : null;
+  });
+  const baseIndex = firstValidIndex(ratios, bounds);
+  const rebasedRatios = rebaseAgainstIndex(ratios, baseIndex);
+  const rollingAvg = rollingAverage(rebasedRatios, ROLLING_AVG_DAYS);
+  const momentum = rebasedRatios.map((v, i) => {
+    const prior = rebasedRatios[i - MOMENTUM_WINDOW_DAYS];
+    return v != null && prior != null ? v - prior : null;
+  });
+  const pairLabel = `${numMeta.label}/${denMeta.label}`;
+
+  return {
+    labels: sliceBounds(payload.dates, bounds).map(fmtDate),
+    datasets: [
+      {
+        label: pairLabel,
+        fullName: `${numMeta.name} relative to ${denMeta.name}`,
+        data: sliceBounds(rebasedRatios, bounds),
+        ratios: sliceBounds(ratios, bounds),
+        borderColor: numMeta.color,
+        backgroundColor: 'transparent',
+        borderWidth: 2.25,
+        pointRadius: 0,
+        pointHoverRadius: 3,
+        pointHitRadius: 6,
+        tension: 0.15,
+        spanGaps: true,
+      },
+      {
+        label: '50D avg',
+        fullName: `${pairLabel} rolling 50-day average`,
+        data: sliceBounds(rollingAvg, bounds),
+        borderColor: lighten(numMeta.color),
+        backgroundColor: 'transparent',
+        borderWidth: 1.5,
+        borderDash: [5, 4],
+        pointRadius: 0,
+        pointHoverRadius: 2,
+        pointHitRadius: 6,
+        tension: 0.15,
+        spanGaps: true,
+      },
+      {
+        label: 'Momentum (50D)',
+        fullName: `${pairLabel} today vs ${MOMENTUM_WINDOW_DAYS} trading sessions ago`,
+        data: sliceBounds(momentum, bounds),
+        borderColor: MOMENTUM_COLOR,
+        backgroundColor: 'transparent',
+        borderWidth: 1.75,
+        pointRadius: 0,
+        pointHoverRadius: 3,
+        pointHitRadius: 6,
+        tension: 0.15,
+        spanGaps: true,
+        yAxisID: 'y1',
+      },
+    ],
+  };
+}
+
 function pearsonCorrelation(xs, ys) {
   const n = xs.length;
   let sumX = 0;
@@ -584,6 +659,74 @@ function chartOptions({ relative = false, compact = false, data = null } = {}) {
   };
 }
 
+// Same rebased-100 primary axis as chartOptions(), plus a secondary y1 axis
+// for the Momentum series, which isn't on a comparable scale.
+function gldVixChartOptions() {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: { duration: 300 },
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: {
+        display: true,
+        position: 'bottom',
+        labels: { color: '#c8c8c0', font: { size: 10, family: "'Inter',sans-serif" }, padding: 6, boxWidth: 10 },
+      },
+      tooltip: {
+        backgroundColor: '#1a1f2a',
+        borderColor: 'rgba(255,255,255,.12)',
+        borderWidth: 1,
+        titleFont: { family: "'Inter',sans-serif", size: 11 },
+        bodyFont: { family: "'Inter',sans-serif", size: 11 },
+        padding: 10,
+        callbacks: {
+          label: c => {
+            const v = c.parsed.y;
+            if (v == null) return ` ${c.dataset.label}: —`;
+            if (c.dataset.yAxisID === 'y1') return ` ${c.dataset.label}: ${v >= 0 ? '+' : ''}${v.toFixed(1)}`;
+            const pct = v - 100;
+            return ` ${c.dataset.label}: ${v.toFixed(1)} (${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%)`;
+          },
+        },
+      },
+    },
+    scales: {
+      x: { grid: GRID, ticks: { ...TICK, maxTicksLimit: 6, autoSkip: true }, border: BORD },
+      y: {
+        grid: GRID,
+        ticks: { ...TICK, maxTicksLimit: 5, callback: v => v.toFixed(0) },
+        border: BORD,
+      },
+      y1: {
+        position: 'right',
+        grid: { drawOnChartArea: false },
+        ticks: { ...TICK, callback: v => v.toFixed(0) },
+        border: BORD,
+      },
+    },
+  };
+}
+
+// Dotted reference line on the Momentum axis (y1) at -7, drawn behind the series.
+const MOMENTUM_NEG7_LINE = {
+  id: 'usPerfMomentumNeg7Line',
+  beforeDatasetsDraw(chart) {
+    const { ctx, chartArea, scales } = chart;
+    if (!chartArea || !scales.y1) return;
+    const y = scales.y1.getPixelForValue(-7);
+    ctx.save();
+    ctx.strokeStyle = 'rgba(248,113,113,.55)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([2, 3]);
+    ctx.beginPath();
+    ctx.moveTo(chartArea.left, y);
+    ctx.lineTo(chartArea.right, y);
+    ctx.stroke();
+    ctx.restore();
+  },
+};
+
 // Dashed reference line at y=0, drawn behind the correlation series.
 const ZERO_LINE = {
   id: 'usPerfZeroLine',
@@ -747,7 +890,7 @@ export default function UsPerformance({ section = null }) {
     const [numLabel, denLabel] = GLD_VIX_PAIR;
     const numMeta = metaForLabel(numLabel);
     const denMeta = metaForLabel(denLabel);
-    return numMeta && denMeta ? buildPairChartData(payload, numMeta, denMeta, startDate, endDate) : null;
+    return numMeta && denMeta ? buildGldVixChartData(payload, numMeta, denMeta, startDate, endDate) : null;
   }, [payload, startDate, endDate]);
 
   // These secondary Sentiment datasets are shared resources too, so refresh
@@ -956,7 +1099,7 @@ export default function UsPerformance({ section = null }) {
 
           {gldVixData && (
             <ChartCard title="GLD/VIX" src="Yahoo Finance" srcUrl="https://finance.yahoo.com" freq="Daily" height={300}>
-              <Line data={gldVixData} options={chartOptions({ relative: true, compact: true })} plugins={[BASELINE_100]} />
+              <Line data={gldVixData} options={gldVixChartOptions()} plugins={[BASELINE_100, MOMENTUM_NEG7_LINE]} />
             </ChartCard>
           )}
         </div>
