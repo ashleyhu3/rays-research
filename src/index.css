@@ -1628,6 +1628,39 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
   .global-breadth-row { grid-template-columns: 1fr; }
 }
 
+/* ── MA Cross (Technical): per-page ticker strip of the day's crossings ── */
+.mac-bar {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 14px;
+}
+.mac-bar-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap;
+  font-size: 11px; color: var(--sec); font-family: var(--font-m);
+}
+.mac-counts { display: flex; align-items: center; gap: 6px; }
+.mac-universe { color: var(--ter); margin-left: 4px; }
+.mac-tickers {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  margin-top: 10px; padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.mac-ticker {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; line-height: 1; padding: 5px 9px;
+  border: 1px solid var(--border-hi); border-radius: 5px;
+  background: none; color: var(--sec);
+  font-family: var(--font-m); cursor: pointer; transition: all .15s;
+}
+.mac-ticker:hover  { background: rgba(255,255,255,.05); color: var(--text); }
+.mac-ticker.active { background: var(--adim); border-color: var(--accent); color: var(--accent); }
+.mac-arrow { font-size: 9px; line-height: 1; }
+.mac-arrow.golden { color: #4ade80; }
+.mac-arrow.death  { color: #f87171; }
+.mac-none { margin-top: 10px; font-size: 11px; color: var(--ter); font-family: var(--font-m); }
+
 /* ── Leverage page (Korean retail firepower) ───────────────────────── */
 .lev-head {
   display: flex; align-items: flex-start; justify-content: space-between;

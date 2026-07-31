@@ -1,0 +1,1615 @@
+{
+  "session": "2026-07-29",
+  "pulled_at": "2026-07-30T23:49:56-04:00",
+  "scraper": "emailai/PDF_summarizer/ingest/news_fetcher.py (fetch_top_news)",
+  "window": {
+    "lookback_hours": 36,
+    "closes_at": "2026-07-30T09:30:00-04:00"
+  },
+  "counts": {
+    "articles": 120,
+    "in_window": 53,
+    "tickers_with_evidence": 21
+  },
+  "by_ticker": {
+    "005930.KS": [
+      {
+        "title": "‘My life’s screwed’: Korean investors stress out after AI bubble bursts",
+        "url": "https://www.ft.com/content/23f388eb-e8ab-4fb1-b1ca-8e04eb4561a1?syn-25a6b1a6=1",
+        "source": "Financial Times Markets",
+        "published_at": "2026-07-30T09:08:04+00:00"
+      }
+    ],
+    "000660.KS": [
+      {
+        "title": "‘My life’s screwed’: Korean investors stress out after AI bubble bursts",
+        "url": "https://www.ft.com/content/23f388eb-e8ab-4fb1-b1ca-8e04eb4561a1?syn-25a6b1a6=1",
+        "source": "Financial Times Markets",
+        "published_at": "2026-07-30T09:08:04+00:00"
+      },
+      {
+        "title": "Is SK Hynix Stock a Buy After Its Latest Earnings Report?",
+        "url": "https://finance.yahoo.com/markets/stocks/articles/sk-hynix-stock-buy-latest-154601633.html",
+        "source": "Yahoo Finance",
+        "published_at": "2026-07-29T15:46:01+00:00"
+      }
+    ],
+    "AAPL": [
+      {
+        "title": "Apple’s Siri Got an A.I. Brain Transplant. Try These 5 Prompts to Get Acclimated.",
+        "url": "https://www.nytimes.com/2026/07/30/technology/personaltech/apple-siri-ai-prompts.html",
+        "source": "NYTimes Business",
+        "published_at": "2026-07-30T09:03:08+00:00"
+      },
+      {
+        "title": "Apple says UK App Store proposal amounts to price regulation",
+        "url": "https://finance.yahoo.com/technology/articles/apple-says-uk-app-store-154808227.html",
+        "source": "Yahoo Finance",
+        "published_at": "2026-07-29T15:48:08+00:00"
+      }
+    ],
+    "HOOD": [
+      {
+        "title": "Markets react to Fed's July interest rate decision",
+        "url": "https://finance.yahoo.com/economy/policy/articles/markets-react-feds-july-interest-210558874.html",
+        "source": "Yahoo Finance",
+        "published_at": "2026-07-29T21:05:58+00:00"
+      }
+    ],
+    "MSFT": [
+      {
+        "title": "Why AMD (AMD) and Core Scientific (CORZ) Are Pairing AI Chips With Up to 2.5 Gigawatts",
+        "url": "https://finance.yahoo.com/technology/ai/articles/why-amd-amd-core-scientific-163703591.html",
+        "source": "Yahoo Finance",
+        "published_at": "2026-07-29T16:37:03+00:00"
+      },
+      {
+        "title": "QCOM Stock Alert: What to Know as Qualcomm Partners With BMW",
+        "url": "https://finance.yahoo.com/markets/stocks/articles/qcom-stock-alert-know-qualcomm-161505927.html",
+        "source": "Yahoo Finance",
+        "published_at": "2026-07-29T16:15:05+00:00"
+      },
+      {
+        "title": "Dear Sandisk Stock Fans, Mark Your Calendars for August 5",
+        "url": "https://finance.yahoo.com/markets/stocks/articles/dear-sandisk-stock-fans-mark-154110980.html",
+        "source": "Yahoo Finance",
+        "published_at": "2026-07-29T15:41:10+00:00"
+      }
+    ],
+    "GOOGL": [
+      {
+        "title": "Why AMD (AMD) and Core Scientific (CORZ) Are Pairing AI Chips With Up to 2.5 Gigawatts",
+        "url": "https://finance.yahoo.com/technology/ai/articles/why-amd-amd-core-scientific-163703591.html",
+        "source": "Yahoo Finance",
+        "published_at": "2026-07-29T16:37:03+00:00"
+      },
+      {
+        "title": "Apple says UK App Store proposal amounts to price regulation",
+        "url": "https://finance.yahoo.com/technology/articles/apple-says-uk-app-store-154808227.html",
+        "source": "Yahoo Finance",
+        "published_at": "2026-07-29T15:48:08+00:00"
+      }
+    ],
+    "NVDA": [
+      {
+        "title": "Why AMD (AMD) and Core Scientific (CORZ) Are Pairing AI Chips With Up to 2.5 Gigawatts",
+        "url": "https://finance.yahoo.com/technology/ai/articles/why-amd-amd-core-scientific-163703591.html",
+        "source": "Yahoo Finance",
+        "published_at": "2026-07-29T16:37:03+00:00"
+      },
+      {
+        "title": "Is SK Hynix Stock a Buy After Its Latest Earnings Report?",
+        "url": "https://finance.yahoo.com/markets/stocks/articles/sk-hynix-stock-buy-latest-154601633.html",
+        "source": "Yahoo Finance",
+        "published_at": "2026-07-29T15:46:01+00:00"
+      },
+      {
+        "title": "T-Mobile Fell 11% on an Earnings Beat, Then Rebounded 6% the Next Day. Here's What's Going On.",
+        "url": "https://finance.yahoo.com/markets/stocks/articles/t-mobile-fell-11-earnings-154600096.html",
+        "source": "Yahoo Finance",
+        "published_at": "2026-07-29T15:46:00+00:00"
+      },
+      {
+        "title": "UBS Buys Back Its Credit Suisse Hangover",
+        "url": "https://finance.yahoo.com/markets/stocks/articles/ubs-buys-back-credit-suisse-154209212.html",
+        "source": "Yahoo Finance",
+        "published_at": "2026-07-29T15:42:09+00:00"
+      },
+      {
+        "title": "Dear Sandisk Stock Fans, Mark Your Calendars for August 5",
+        "url": "https://finance.yahoo.com/markets/stocks/articles/dear-sandisk-stock-fans-mark-154110980.html",
+        "source": "Yahoo Finance",
+        "published_at": "2026-07-29T15:41:10+00:00"
+      }
+    ],
+    "AMD": [
+      {
+        "title": "Why AMD (AMD) and Core Scientific (CORZ) Are Pairing AI Chips With Up to 2.5 Gigawatts",
+        "url": "https://finance.yahoo.com/technology/ai/articles/why-amd-amd-core-scientific-163703591.html",
+        "source": "Yahoo Finance",
+        "published_at": "2026-07-29T16:37:03+00:00"
+      }
+    ],
+    "CRWV": [
+      {
+        "title": "Why AMD (AMD) and Core Scientific (CORZ) Are Pairing AI Chips With Up to 2.5 Gigawatts",
+        "url": "https://finance.yahoo.com/technology/ai/articles/why-amd-amd-core-scientific-163703591.html",
+        "source": "Yahoo Finance",
+        "published_at": "2026-07-29T16:37:03+00:00"
+      }
+    ],
+    "META": [
+      {
+        "title": "US FTC sues Hims & Hers for sending user health info to Meta, Snap",
+        "url": "https://finance.yahoo.com/healthcare/articles/exclusive-us-ftc-suing-hims-163411261.html",
+        "source": "Yahoo Finance",
+        "published_at": "2026-07-29T16:34:11+00:00"
+      }
+    ],
+    "INTC": [
+      {
+        "title": "Glencore Sees $3.3 Billion Trading Profit as Iran War Rattles Oil Markets",
+        "url": "https://finance.yahoo.com/markets/commodities/articles/glencore-sees-3-3-billion-163000552.html",
+        "source": "Yahoo Finance",
+        "published_at": "2026-07-29T16:30:00+00:00"
+      },
+      {
+        "title": "'Unprecedented' OpenAI Cyberattack Brings Palo Alto, CrowdStrike Into Focus",
+        "url": "https://www.investors.com/research/ibd-industry-themes/openai-cyberattack-palo-alto-stock-crowdstrike/?src=A00220&yptr=yahoo",
+        "source": "Yahoo Finance",
+        "published_at": "2026-07-29T16:08:25+00:00"
+      },
+      {
+        "title": "Is SK Hynix Stock a Buy After Its Latest Earnings Report?",
+        "url": "https://finance.yahoo.com/markets/stocks/articles/sk-hynix-stock-buy-latest-154601633.html",
+        "source": "Yahoo Finance",
+        "published_at": "2026-07-29T15:46:01+00:00"
+      },
+      {
+        "title": "Decoding PLTR Stock's Premium Valuation",
+        "url": "https://finance.yahoo.com/markets/stocks/articles/decoding-pltr-stocks-premium-valuation-154148921.html",
+        "source": "Yahoo Finance",
+        "published_at": "2026-07-29T15:41:48+00:00"
+      },
+      {
+        "title": "Dear Sandisk Stock Fans, Mark Your Calendars for August 5",
+        "url": "https://finance.yahoo.com/markets/stocks/articles/dear-sandisk-stock-fans-mark-154110980.html",
+        "source": "Yahoo Finance",
+        "published_at": "2026-07-29T15:41:10+00:00"
+      }
+    ],
+    "TSLA": [
+      {
+        "title": "Top Performing Leveraged/Inverse ETFs: 07/26/2026",
+        "url": "https://finance.yahoo.com/markets/options/articles/top-performing-leveraged-inverse-etfs-161544295.html",
+        "source": "Yahoo Finance",
+        "published_at": "2026-07-29T16:15:44+00:00"
+      },
+      {
+        "title": "Crude Oil Prices Soar as US-Iran Tensions Escalate",
+        "url": "https://finance.yahoo.com/energy/articles/crude-oil-prices-soar-us-154512027.html",
+        "source": "Yahoo Finance",
+        "published_at": "2026-07-29T15:45:12+00:00"
+      }
+    ],
+    "DELL": [
+      {
+        "title": "Top Performing Leveraged/Inverse ETFs: 07/26/2026",
+        "url": "https://finance.yahoo.com/markets/options/articles/top-performing-leveraged-inverse-etfs-161544295.html",
+        "source": "Yahoo Finance",
+        "published_at": "2026-07-29T16:15:44+00:00"
+      }
+    ],
+    "SMCI": [
+      {
+        "title": "Top Performing Leveraged/Inverse ETFs: 07/26/2026",
+        "url": "https://finance.yahoo.com/markets/options/articles/top-performing-leveraged-inverse-etfs-161544295.html",
+        "source": "Yahoo Finance",
+        "published_at": "2026-07-29T16:15:44+00:00"
+      }
+    ],
+    "ETN": [
+      {
+        "title": "Top Performing Leveraged/Inverse ETFs: 07/26/2026",
+        "url": "https://finance.yahoo.com/markets/options/articles/top-performing-leveraged-inverse-etfs-161544295.html",
+        "source": "Yahoo Finance",
+        "published_at": "2026-07-29T16:15:44+00:00"
+      }
+    ],
+    "QCOM": [
+      {
+        "title": "QCOM Stock Alert: What to Know as Qualcomm Partners With BMW",
+        "url": "https://finance.yahoo.com/markets/stocks/articles/qcom-stock-alert-know-qualcomm-161505927.html",
+        "source": "Yahoo Finance",
+        "published_at": "2026-07-29T16:15:05+00:00"
+      }
+    ],
+    "SNDK": [
+      {
+        "title": "QCOM Stock Alert: What to Know as Qualcomm Partners With BMW",
+        "url": "https://finance.yahoo.com/markets/stocks/articles/qcom-stock-alert-know-qualcomm-161505927.html",
+        "source": "Yahoo Finance",
+        "published_at": "2026-07-29T16:15:05+00:00"
+      },
+      {
+        "title": "Dear Sandisk Stock Fans, Mark Your Calendars for August 5",
+        "url": "https://finance.yahoo.com/markets/stocks/articles/dear-sandisk-stock-fans-mark-154110980.html",
+        "source": "Yahoo Finance",
+        "published_at": "2026-07-29T15:41:10+00:00"
+      }
+    ],
+    "CRWD": [
+      {
+        "title": "'Unprecedented' OpenAI Cyberattack Brings Palo Alto, CrowdStrike Into Focus",
+        "url": "https://www.investors.com/research/ibd-industry-themes/openai-cyberattack-palo-alto-stock-crowdstrike/?src=A00220&yptr=yahoo",
+        "source": "Yahoo Finance",
+        "published_at": "2026-07-29T16:08:25+00:00"
+      }
+    ],
+    "PLTR": [
+      {
+        "title": "Decoding PLTR Stock's Premium Valuation",
+        "url": "https://finance.yahoo.com/markets/stocks/articles/decoding-pltr-stocks-premium-valuation-154148921.html",
+        "source": "Yahoo Finance",
+        "published_at": "2026-07-29T15:41:48+00:00"
+      }
+    ],
+    "MU": [
+      {
+        "title": "Dear Sandisk Stock Fans, Mark Your Calendars for August 5",
+        "url": "https://finance.yahoo.com/markets/stocks/articles/dear-sandisk-stock-fans-mark-154110980.html",
+        "source": "Yahoo Finance",
+        "published_at": "2026-07-29T15:41:10+00:00"
+      }
+    ],
+    "WDC": [
+      {
+        "title": "Dear Sandisk Stock Fans, Mark Your Calendars for August 5",
+        "url": "https://finance.yahoo.com/markets/stocks/articles/dear-sandisk-stock-fans-mark-154110980.html",
+        "source": "Yahoo Finance",
+        "published_at": "2026-07-29T15:41:10+00:00"
+      }
+    ]
+  },
+  "articles": [
+    {
+      "title": "BOJ holds rates at 1%, warns of underlying inflation exceeding 2% target",
+      "url": "https://www.cnbc.com/2026/07/31/boj-rates-yen-intervention-inflation-japan.html",
+      "source": "CNBC Top News",
+      "published_at": "2026-07-31T03:33:43+00:00",
+      "in_window": false,
+      "summary": "The decision comes as speculation continues to swirl around whether the Bank of Japan will hike rates at a faster pace.",
+      "body_excerpt": "The Bank of Japan kept its policy rate steady on Friday, as it warned that underlying inflation in the country could exceed its 2% target.\n\nJapan's central bank's move to hold rates at 1% was an 8-1 decision, with board member Hajime Takata proposing a hike to 1.25%.\n\nThe decision comes as speculation continues to swirl around whether the Bank of Japan will boost rates at a faster pace due to surging bond yields and a weak yen.\n\nBOJ officials are open to moving faster than the current market view of one hike every six months, Bloomberg reported before the decision, citing people familiar with the matter.\n\nThe yen has weakened to around the 163 level against the dollar, although it rallied on Thursday night to trade as strong as 157.96 to the greenback.\n\nNikkei reported that Tokyo had conducted an intervention by selling dollars and buying yen, while U.S. authorities executed a \"rate check,\" a move usually seen as a precursor to intervention.\n\nThe benchmark 10-year Japanese government bond yield has eased slightly from multi-decade highs, but still remains at about 2.8%.\n\nAnalysts have drawn attention to BOJ Governor Kazuo Ueda's communications after the policy decision, saying that Ueda's statements will be where markets take their cue from. \"The more important question is whether Governor Ueda and the BOJ signal an acceleration in the pace of future hikes. This will be the focal point of the meeting, and Ueda's press conference will be where markets look for answers,\" accord",
+      "tickers": []
+    },
+    {
+      "title": "Asian stocks rebound and yen jumps on signs of intervention",
+      "url": "https://www.ft.com/content/23eb1fd4-8301-4c0e-89b3-2647389e6226?syn-25a6b1a6=1",
+      "source": "Financial Times Markets",
+      "published_at": "2026-07-31T02:53:41+00:00",
+      "in_window": false,
+      "summary": "Kospi soars as SK Hynix and Samsung regain ground after days of heavy selling",
+      "body_excerpt": "Kospi soars as SK Hynix and Samsung regain ground after days of heavy selling",
+      "tickers": [
+        "005930.KS",
+        "000660.KS",
+        "^KS11"
+      ]
+    },
+    {
+      "title": "China's factory activity unexpectedly contracts in July as export rush fades",
+      "url": "https://www.cnbc.com/2026/07/31/china-pmi-factory-activity-economic-growth-exports-.html",
+      "source": "CNBC Top News",
+      "published_at": "2026-07-31T02:06:06+00:00",
+      "in_window": false,
+      "summary": "China's factory activity unexpectedly contracted in July, as the export rush that powered a second-quarter rebound began to unwind.",
+      "body_excerpt": "The official manufacturing PMI fell to 49.2 in July from 50.3 in June, missing economists' median forecast of 50.0.\n\nThe disappointing data will likely sharpen expectations for easing.\n\nChina's factory activity unexpectedly contracted in July for the first time since February, as the export rush that powered a second-quarter rebound began to unwind, piling pressure on Beijing to boost domestic demand.\n\nThe official manufacturing purchasing managers' index fell to 49.2 from 50.3 in June, National Bureau of Statistics data showed Friday, dropping below the 50-point threshold that separates expansion from contraction. Economists' median forecast had pegged PMI at 50.\n\nPMI ended a 3-month expansion streak that was propped up by exporters rushing shipments ahead of U.S. tariff increases. It was the weakest reading since February.\n\nThe print lands a day after the country's top policymakers acknowledged \"difficulties and challenges facing the economy\" at its mid-year meeting, pledging to accelerate fiscal spending and roll out \"incremental policies\" to shore up growth in the second half.\n\nChina's economy in the second quarter expanded 4.3% from a year earlier, the slowest pace in more than three years, missing the lower end of the full-year target of 4.5% to 5%.\n\nExports have been one of the economy's few reliable growth engines this year — and that engine is now showing signs of strain. \"U.S.-bound shipments fell outright for the first time in several months,\" according to a survey",
+      "tickers": []
+    },
+    {
+      "title": "HSBC sells $25bn Australia loan book to Blackstone",
+      "url": "https://www.ft.com/content/b1baa12c-aedf-4ca4-9d9b-38a63d1d5dfa?syn-25a6b1a6=1",
+      "source": "Financial Times Markets",
+      "published_at": "2026-07-31T01:46:05+00:00",
+      "in_window": false,
+      "summary": "Mortgage transfer is latest step in global overhaul of Europe’s biggest lender",
+      "body_excerpt": "Mortgage transfer is latest step in global overhaul of Europe’s biggest lender",
+      "tickers": []
+    },
+    {
+      "title": "SK Hynix shares surge 25%, while Samsung soars over 20% as AI rally roars back",
+      "url": "https://www.cnbc.com/2026/07/31/sk-hynix-samsung-ai-rally-chipmakers.html",
+      "source": "CNBC Top News",
+      "published_at": "2026-07-31T00:52:26+00:00",
+      "in_window": false,
+      "summary": "South Korea's chip heavyweights SK Hynix and Samsung Electronics soared more than 20% on Friday, tracking a sharp rally in U.S. technology stocks.",
+      "body_excerpt": "South Korea's chip heavyweights SK Hynix and Samsung Electronics soared more than 20% on Friday, tracking a sharp rally in U.S. technology stocks.\n\nThe gains came after the iShares Semiconductor ETF (SOXX) surged more than 8% overnight.\n\nSouth Korea's chip heavyweights SK Hynix and Samsung Electronics skyrocketed in Seoul on Friday, tracking a sharp rally in U.S. technology stocks after blockbuster earnings from Amazon and Microsoft revived optimism around artificial intelligence spending.\n\nSK Hynix was last trading over 25% higher, putting it on course for its best day on record if gains hold. Samsung rose more than 20%. LG Innotek advanced 11.2% and Seoul Semiconductor rose 7.8%.\n\nJapanese chip stocks also rallied sharply. Advantest , climbed nearly 18%, while Tokyo Electron gained almost 9%, Disco rose over 13%, Lasertec advanced more than 12% and Renesas Electronics added over 10%. SoftBank Group , a key artificial intelligence proxy as its owns Arm , also jumped more than 9%.\n\nThe chip rally in Asia marks a sharp reversal from this week's bruising sell-off, as semiconductor stocks were battered by concerns over lofty AI valuations and signs of intensifying competition from Chinese memory chipmakers.\n\nThe iShares Semiconductor ETF (SOXX) surged more than 8% overnight, as investors piled back into AI-linked chipmakers following stronger-than-expected cloud results from the two U.S. tech giants.\n\nAmazon jumped more than 9% in extended trading after reporting second-quarter ",
+      "tickers": [
+        "MSFT",
+        "AMZN",
+        "INTC",
+        "005930.KS",
+        "000660.KS"
+      ]
+    },
+    {
+      "title": "Corporate insiders are sending warning signals about the stock market",
+      "url": "https://www.marketwatch.com/story/the-warning-signal-insiders-are-sending-f0538ddf",
+      "source": "MarketWatch Top Stories",
+      "published_at": "2026-07-31T00:31:00+00:00",
+      "in_window": false,
+      "summary": "Corporate insiders haven’t been this bearish in more than 20 years.",
+      "body_excerpt": "Corporate insiders haven’t been this bearish in more than 20 years.",
+      "tickers": []
+    },
+    {
+      "title": "‘Don’t get suckered like I did’: I paid $185 to the wrong passport website. Can I get my money back?",
+      "url": "https://www.marketwatch.com/story/dont-get-suckered-like-i-did-i-paid-185-to-the-wrong-passport-website-can-i-get-my-money-back-3a781412",
+      "source": "MarketWatch Top Stories",
+      "published_at": "2026-07-31T00:24:00+00:00",
+      "in_window": false,
+      "summary": "“I will file a complaint with the Better Business Bureau.”",
+      "body_excerpt": "“I will file a complaint with the Better Business Bureau.”",
+      "tickers": []
+    },
+    {
+      "title": "Tim Cook sees Apple's hybrid AI strategy as a 'competitive weapon'",
+      "url": "https://www.cnbc.com/2026/07/30/tim-cook-sees-apples-hybrid-ai-strategy-as-a-competitive-weapon-.html",
+      "source": "CNBC Top News",
+      "published_at": "2026-07-31T00:23:53+00:00",
+      "in_window": false,
+      "summary": "Ahead of the launch of Siri AI, Apple's outgoing CEO Tim Cook said the company will charge for artificial intelligence through iCloud.",
+      "body_excerpt": "Apple CEO Tim Cook told analysts on an earnings call that he sees \"enormous opportunities\" in artificial intelligence.\n\nCook said the iPhone maker plans to use AI as a selling point for iCloud subscriptions.\n\n\"We do believe there will be people that want to use it a lot, and so we will have some kind of upgrade possibilities on on iCloud+,\" Cook said.\n\nApple CEO Tim Cook had a lot to talk about on his last earnings call as CEO, as his company's stock price trended lower on concerns about supply constraints. Regardless of the selloff, he told investors that Apple has \"enormous opportunities\" in artificial intelligence.\n\nCook, who will be assuming the role of executive chairman on Sept. 1, said Apple's hybrid approach to AI, where some workloads can be run on iPhones and Macs is an advantage as his large tech peers rely on their massive clouds.\n\nIt's an important signal to Wall Street about the company's ability to run AI apps as Apple gears up for the launch of an updated Siri this fall.\n\n\"The ability to run some percentage of requests on device is also very strategic and sort of a competitive weapon,\" Cook said.\n\nApple has bucked its hyperscaler peers by spending significantly less on capital expenditures as it tries to be a player in AI. Most of the spending across the industry is going towards Nvidia -based data centers to run advanced AI models from companies like OpenAI and Anthropic.\n\nAlphabet , Amazon , Meta and Microsoft have each committed to shelling out well over $1",
+      "tickers": [
+        "AAPL",
+        "MSFT",
+        "GOOGL",
+        "AMZN",
+        "NVDA",
+        "META",
+        "INTC"
+      ]
+    },
+    {
+      "title": "My friend and her husband own real estate. How can her children from a previous marriage get their fair share?",
+      "url": "https://www.marketwatch.com/story/my-friend-and-her-husband-own-extensive-real-estate-how-can-her-children-from-a-previous-marriage-get-their-fair-share-3eb17c20",
+      "source": "MarketWatch Top Stories",
+      "published_at": "2026-07-31T00:16:00+00:00",
+      "in_window": false,
+      "summary": "“Her husband is open to a trust, but he wants to be the administrator.”",
+      "body_excerpt": "“Her husband is open to a trust, but he wants to be the administrator.”",
+      "tickers": []
+    },
+    {
+      "title": "Empty seats? Concert giant Live Nation says ticket sales are actually at record levels.",
+      "url": "https://www.marketwatch.com/story/empty-seats-concert-giant-live-nation-says-ticket-sales-are-actually-at-record-levels-461252db",
+      "source": "MarketWatch Top Stories",
+      "published_at": "2026-07-31T00:14:00+00:00",
+      "in_window": false,
+      "summary": "In the wake of online chatter about high-profile tour cancellations, Ticketmaster’s parent company said artists aren’t ditching shows any more than usual.",
+      "body_excerpt": "In the wake of online chatter about high-profile tour cancellations, Ticketmaster’s parent company said artists aren’t ditching shows any more than usual.",
+      "tickers": []
+    },
+    {
+      "title": "Fast-fashion retailer Shein’s 3-year IPO odyssey cost it the ‘golden time’ to go public",
+      "url": "https://www.cnbc.com/2026/07/31/shein-ipo-hong-kong-ftc-investigation-tariffs-fast-fashion-.html",
+      "source": "CNBC Top News",
+      "published_at": "2026-07-30T23:30:34+00:00",
+      "in_window": false,
+      "summary": "Investors are questioning whether Beijing's blessing can carry a $40-billion-plus valuation for a clothing retailer whose growth engine is stalling.",
+      "body_excerpt": "Investors and consumers are no longer as excited by the ultra-fast fashion retailer as they once did, analysts say.\n\nShein won Beijing's approval for a Hong Kong listing only after publicly re-embracing the Chinese roots it spent years playing down.\n\nThe Hong Kong stock market Shein is entering has also moved on, with the IPO pipeline now dominated by AI and chip listings: analyst.\n\nShein won Beijing's approval for a Hong Kong listing after it publicly embraced the Chinese roots it spent years playing down. Now investors are questioning whether that blessing can carry a $40-billion-plus valuation for a company whose growth engine has stalled.\n\nThe China Securities Regulatory Commission approved the listing early this month, after Shein's attempts at going public in New York and London failed. The company's filing on Sunday gave investors a closer look at the pressure facing the online fast-fashion retailer — higher costs, slowing growth, and mounting regulatory scrutiny in its biggest markets.\n\nShein's revenue grew 8% to $41.8 billion in 2025, decelerating from 20.7% growth a year earlier. In the first quarter of 2026, the company swung to a $99 million loss after the U.S. removed an import-duty exemption on small packages and the company booked a hefty one-time accounting charge.\n\n\"The company has missed the golden time to list,\" said William Ma, chief investment officer at GROW Investment Group.\n\nInvestors and consumers were no longer excited by the ultra-fast fashion retai",
+      "tickers": []
+    },
+    {
+      "title": "Amazon soars after CEO Andy Jassy makes the case for its massive AI investment",
+      "url": "https://www.cnbc.com/2026/07/30/amazon-soars-after-ceo-makes-the-case-for-its-massive-ai-investment.html",
+      "source": "CNBC Top News",
+      "published_at": "2026-07-30T23:27:04+00:00",
+      "in_window": false,
+      "summary": "Amazon jumped about 10% to $258 in after-hours trading, putting shares at their highest level since early June.",
+      "body_excerpt": "Amazon jumped about 10% to $258 in after-hours trading, putting shares at their highest level since early June.",
+      "tickers": [
+        "AMZN"
+      ]
+    },
+    {
+      "title": "Japan’s yen jumps 3% as speculation over intervention swirls",
+      "url": "https://www.ft.com/content/8455ec94-0182-46a6-b5dd-2bb5b0a75a6c?syn-25a6b1a6=1",
+      "source": "Financial Times Markets",
+      "published_at": "2026-07-30T23:04:25+00:00",
+      "in_window": false,
+      "summary": "Currency on track for one of its biggest moves in recent years amid growing calls for action to arrest slide",
+      "body_excerpt": "Currency on track for one of its biggest moves in recent years amid growing calls for action to arrest slide",
+      "tickers": []
+    },
+    {
+      "title": "Microsoft's Xbox chief lays out plan to pass rivals on margin by 2030 in memo to employees",
+      "url": "https://www.cnbc.com/2026/07/30/microsoft-xbox-asha-sharma-2030-plans.html",
+      "source": "CNBC Top News",
+      "published_at": "2026-07-30T22:48:30+00:00",
+      "in_window": false,
+      "summary": "Microsoft's gaming unit wants to invest in its Minecraft franchise and expand through partnerships, including in China.",
+      "body_excerpt": "Microsoft's new Xbox gaming chief, Asha Sharma, set out a goal of widening margins past peers by mid-2030.\n\nThe business wants to invest in the Minecraft franchise and expand through partnerships, including in China, Sharma said.\n\nSharma is aiming for Xbox to gain share in casual games, partly through Activision Blizzard's King, which puts out Candy Crush Saga.\n\nMicrosoft's new Xbox chief is looking to push the gaming unit's margin back in line with its rivals by next year and beat them on profitability by mid-2030.\n\n\"We will not live on past successes or be trapped by past failures,\" CEO Asha Sharma wrote in a Thursday message to staff members that CNBC viewed. \"We will learn from both and put our energy into creating what players will love for decades.\"\n\nSharma, a former Instacart and Meta executive, replaced Phil Spencer as Xbox CEO in February. She has since appointed new leaders , lowered Game Pass subscription prices and announced layoffs and divestitures of four development studios. Sharma has put more emphasis on exclusive titles for the Xbox console, delighting gamers who have seen the subsidiary bring franchises to Sony's PlayStation.\n\nOn Wednesday, Xbox turned in a 10% quarterly revenue decline — the most sluggish performance since 2022 — even as its parent surpassed consensus in cloud infrastructure and productivity software. Microsoft stock spiked almost 16% on Thursday in its strongest session since 2008.\n\nSharma and Matt Booty, Xbox's chief content officer, sai",
+      "tickers": [
+        "AAPL",
+        "MSFT",
+        "AMZN",
+        "META",
+        "DELL"
+      ]
+    },
+    {
+      "title": "Jim Cramer says this hedge fund's blowup reveals the hidden risks of leverage",
+      "url": "https://www.cnbc.com/2026/07/30/jim-cramer-situational-awareness-blowup-reveals-hidden-risks-of-leverage.html",
+      "source": "CNBC Top News",
+      "published_at": "2026-07-30T22:37:02+00:00",
+      "in_window": false,
+      "summary": "CNBC's Jim Cramer said the forced unwind of Situational Awareness shows how borrowing money can quickly magnify losses and trigger forced selling.",
+      "body_excerpt": "Monday - Friday, 6:00 - 7:00 PM ET\n\nCNBC's Jim Cramer said the forced unwind of AI-focused hedge fund Situational Awareness shows how borrowing money can quickly magnify losses and trigger forced selling.\n\nHe said the liquidation may ultimately help stabilize the AI trade by removing a major source of selling pressure, but urged individual investors to avoid buying stocks on margin.\n\nCNBC's Jim Cramer said on Thursday that Situational Awareness' collapse is a cautionary tale about the dangers of investing with borrowed money .\n\n\"For two weeks, I've been telling you to get off margin, stop using borrowed money,\" the \" Mad Money \" host said. \"I didn't want you to get caught up in what some over-leveraged hedge fund was doing. I didn't want you to get blown out.\"\n\nThe AI-focused hedge fund, founded by former OpenAI researcher Leopold Aschenbrenner, was forced to unwind its highly leveraged bets on Thursday after suffering steep losses in recent weeks. Situational Awareness embraced the popular \"long hardware, short software\" trade, betting on AI infrastructure companies such as Micron while shorting software stocks viewed as vulnerable to AI disruption.\n\nWhen the trade reversed, the fund was forced to sell its positions to meet the margin call, putting even more pressure on fundamentally strong companies.\n\n\"The irony here is that when tech had a bit of a downturn Aschenbrenner apparently lost all the money he managed, despite excellent performance of the companies themselves,\" h",
+      "tickers": [
+        "MU"
+      ]
+    },
+    {
+      "title": "Meta sinks 8%, continuing record losing streak, while Microsoft jumps 15% as AI trade splits",
+      "url": "https://www.cnbc.com/2026/07/30/microsoft-msft-meta-stock-today-earnings.html",
+      "source": "CNBC Top News",
+      "published_at": "2026-07-30T22:28:58+00:00",
+      "in_window": false,
+      "summary": "Microsoft posted strong Azure and Copilot growth, while Meta missed revenue guidance forecasts as free cash flow plunged leading to diverging stock moves.",
+      "body_excerpt": "Microsoft's growth in its Azure and Copilot businesses signaled that its AI investments are paying off.\n\nMeanwhile, Meta's revenue guidance missed market expectations.\n\nMeta's free cash flow plunged 91% year-on-year to $784 million as it continues to spend on AI.\n\nMicrosoft shares jumped 15% on Thursday while Meta tanked nearly 8% as investors gave differing verdicts on the two tech giants' earnings.\n\nOn Wednesday, Microsoft posted fiscal fourth-quarter revenue that beat analyst estimates and reported 43% growth at its key Azure cloud business, which was also ahead of market expectations.\n\nThe company said that it now has over 30 million paid seats for Microsoft 365 Copilot, its AI work assistant, up from more than 20 million as of April, in further signs that parts of its AI investments are paying off.\n\n\"Microsoft's strong revenue performance, combined with accelerating Copilot adoption, signals that its $190 billion data‑center buildout is beginning to deliver returns,\" Tracy Woo, principal analyst at Forrester, said in a note on Wednesday.\n\nMicrosoft posted its best day since 2008 and added nearly $450 billion to its market cap on Thursday.\n\nAmazon posts 'booming' cloud growth, hikes 2026 capex to $220 billion\n\nApple earnings: Revenue tops estimates, but supply constraints weigh on guidance\n\nChina's open-weight model lead exposes America's AI blind spot\n\nNew details in the OpenAI Hugging Face hack show how far agents will go: 'It's now remarkably easy'\n\nMicrosoft's stock p",
+      "tickers": [
+        "AAPL",
+        "MSFT",
+        "AMZN",
+        "META"
+      ]
+    },
+    {
+      "title": "Reddit shares sink 11% on 'choppy' search referrals even as results blow past estimates",
+      "url": "https://www.cnbc.com/2026/07/30/reddit-rddt-q2-2026-earnings-report.html",
+      "source": "CNBC Top News",
+      "published_at": "2026-07-30T22:28:38+00:00",
+      "in_window": false,
+      "summary": "Reddit reported second-quarter earnings that beat on the top and the bottom, and gave a revenue forecast that topped estimates.",
+      "body_excerpt": "Reddit's sales for the second quarter jumped 61% from a year earlier, sailing past estimates.\n\nThe company also reported earnings that trounced expectations.\n\nReddit CEO Steven Huffman said the company is reckoning with \"choppy\" search referral traffic. The company's shares sank around 11% in after-hours trading.\n\nReddit reported second-quarter earnings on Thursday that beat on the top and the bottom lines, and the company issued guidance that sailed past expectations.\n\nBut the stock sank 11% after the company said in an investor letter that \"search referrals were choppy,\" underscoring investor concerns about Reddit's reliance on Google to land new users.\n\nHere's how the company did compared with LSEG estimates:\n\nEarnings per share: $1.25 vs. 95 cents expected\n\nRevenue: $805 million vs. $730 million expected\n\nSales for the second quarter rose 61% year-over-year from $500 million a year earlier, the company said in a statement. Net income climbed to $253 million, or $1.25 a share, from $89 million, or 45 cents per share, the previous year .\n\nThird-quarter revenue should come in between $860 million to $870 million, the company said, while analysts were expecting $828 million. Reddit said adjusted earnings this quarter will be between $385 million and $395 million, topping Wall Street projections of $368 million.\n\nReddit's revenue rose more than 60% for an eighth straight quarter as the company's ad business continues to benefit from overseas expansion, a rush of new users and ",
+      "tickers": [
+        "GOOGL",
+        "META",
+        "INTC"
+      ]
+    },
+    {
+      "title": "Jersey Mike’s spent almost ‘zero dollars’ on digital marketing. That’s now changing.",
+      "url": "https://www.marketwatch.com/story/jersey-mikes-spent-almost-zero-dollars-on-digital-marketing-thats-now-changing-9738485d",
+      "source": "MarketWatch Top Stories",
+      "published_at": "2026-07-30T22:24:00+00:00",
+      "in_window": false,
+      "summary": "The CEO of the newly public sandwich chain says the company needs to be more proactive about reaching younger customers.",
+      "body_excerpt": "The CEO of the newly public sandwich chain says the company needs to be more proactive about reaching younger customers.",
+      "tickers": []
+    },
+    {
+      "title": "Implosion of Situational Awareness hedge fund has Wall Street betting the bottom is in for the AI trade",
+      "url": "https://www.marketwatch.com/story/implosion-of-situational-awareness-has-wall-street-betting-the-bottom-is-in-for-the-ai-trade-05d9f346",
+      "source": "MarketWatch Top Stories",
+      "published_at": "2026-07-30T22:09:00+00:00",
+      "in_window": false,
+      "summary": "One of the wildest months in recent memory for the U.S. stock market is ending on yet another remarkable note: A highflying hedge fund run by an AI wunderkind in his mid-20s has apparently just been carried out on a stretcher.",
+      "body_excerpt": "One of the wildest months in recent memory for the U.S. stock market is ending on yet another remarkable note: A highflying hedge fund run by an AI wunderkind in his mid-20s has apparently just been carried out on a stretcher.",
+      "tickers": []
+    },
+    {
+      "title": "A.I. Hedge Fund Situational Awareness Rescued by Rival Citadel",
+      "url": "https://www.nytimes.com/2026/07/30/business/artificial-intelligence-situational-awareness-citadel.html",
+      "source": "NYTimes Business",
+      "published_at": "2026-07-30T22:08:49+00:00",
+      "in_window": false,
+      "summary": "The once-high-flying firm Situational Awareness, whose founder is 24, has been bailed out by Kenneth Griffin’s Citadel, according to three people briefed on the transaction.",
+      "body_excerpt": "The once-high-flying firm Situational Awareness, whose founder is 24, has been bailed out by Kenneth Griffin’s Citadel, according to three people briefed on the transaction.",
+      "tickers": []
+    },
+    {
+      "title": "Coinbase shares fall after crypto exchange posts disappointing second-quarter results",
+      "url": "https://www.cnbc.com/2026/07/30/coinbase-coin-earnings-q2-2026.html",
+      "source": "CNBC Top News",
+      "published_at": "2026-07-30T21:53:07+00:00",
+      "in_window": false,
+      "summary": "Coinbase's Thursday report marked its third straight quarter missing Wall Street's forecasts for revenue and earnings.",
+      "body_excerpt": "Coinbase shares dropped in extended trading on Thursday after the crypto platform posted a wider-than-expected loss for the second quarter, underscoring the continued troubles resulting from a deepening crypto winter despite its efforts to diversify revenue.\n\nHere's how Coinbase performed in its quarter ended June 30, compared with what Wall Street was expecting, based on a survey of analysts by LSEG:\n\nLoss per share: $1.36 loss vs. 17 cent loss expected\n\nRevenue: $1.2 billion vs. $1.3 billion expected\n\nCoinbase's Thursday report marked its third straight quarter missing Wall Street's forecasts for revenue and earnings. The ​company reported a loss of $359.5 ⁠million, or $1.36 ‌per share, for ‌the quarter ended June ⁠30, compared with a ⁠profit ⁠of $1.43 billion, or $5.14 per ​share, ‌a year earlier.\n\nCoinbase net income is often distorted by accounting rules that require it to value its large crypto holdings based on whatever the price is at the end of the quarter, causing reported earnings to swing widely even when no assets are sold.\n\nRevenue fell to $1.2 billion from $1.5 billion a year ago.\n\nShares dropped more than 7% after the bell on Thursday.\n\nThe results come against a second-quarter market backdrop in which the price of bitcoin was largely range-bound. Although conditions improved over the weakness from the previous quarter, flows into bitcoin ETFs shifted to a sustained period of outflows. A challenging macro environment marked by elevated interest rates and broad",
+      "tickers": [
+        "COIN"
+      ]
+    },
+    {
+      "title": "Nexus Data Centers in advanced talks to secure $15B for Google-backed Anthropic data center",
+      "url": "https://www.cnbc.com/2026/07/30/nexus-data-centers-in-advanced-talks-to-secure-15b-for-google-backed-anthropic-data-center.html",
+      "source": "CNBC Top News",
+      "published_at": "2026-07-30T21:50:17+00:00",
+      "in_window": false,
+      "summary": "Morgan Stanley is the lead banker engaging in advanced talks to lend $15 billion to Nexus Data Centers, CNBC confirmed.",
+      "body_excerpt": "Morgan Stanley is the lead banker engaging in advanced talks to lend $15 billion to Nexus Data Centers, CNBC confirmed.\n\nNexus Data Centers will use that funding to build out a large infrastructure campus in Texas for Anthropic, according to a source.\n\nGoogle agreed to backstop Anthropic with its investment-grade credit rating, the person said.\n\nMorgan Stanley is the lead banker engaging in advanced talks to lend $15 billion to Nexus Data Centers to build out a large artificial intelligence infrastructure project for Anthropic, CNBC confirmed on Thursday.\n\nNexus Data Centers will use the capital to develop a data center campus in Hubbard, Texas, according to a source familiar with the discussions who asked not to be named because the details are confidential. As part of the deal, Google agreed to backstop Anthropic with its investment-grade credit rating, the person said.\n\nThe Wall Street Journal was first to report the deal.\n\nAnthropic has been engaging with a variety of infrastructure partners this year, inking a flurry of deals in an effort to increase its computing capacity. The company struck an agreement with Advanced Micro Devices earlier this month, Elon Musk's SpaceX in May and Google and Broadcom , in April.\n\nGoogle in April also agreed to invest up to $40 billion in Anthropic, building on a longstanding partnership between the two companies. in 2023, Google invested $300 million in the AI lab for a stake of about 10%, followed by another $2 billion months later.\n\nA",
+      "tickers": [
+        "GOOGL",
+        "AMD",
+        "AVGO",
+        "INTC"
+      ]
+    },
+    {
+      "title": "Get ready to buy the dip in tech stocks. Why the recent selling won’t break the bull market.",
+      "url": "https://www.marketwatch.com/story/get-ready-to-buy-the-dip-in-tech-stocks-why-the-recent-selling-wont-break-the-bull-market-900699f5",
+      "source": "MarketWatch Top Stories",
+      "published_at": "2026-07-30T21:45:00+00:00",
+      "in_window": false,
+      "summary": "The stock-market selloff in July looks more like a stress test than a breaking point.",
+      "body_excerpt": "The stock-market selloff in July looks more like a stress test than a breaking point.",
+      "tickers": []
+    },
+    {
+      "title": "Can credit cards survive AI shopping? Why Mastercard’s CEO says they’ll ‘prevail’ in this new era.",
+      "url": "https://www.marketwatch.com/story/can-credit-cards-survive-ai-shopping-why-mastercards-ceo-says-theyll-prevail-in-this-new-era-8f8a660c",
+      "source": "MarketWatch Top Stories",
+      "published_at": "2026-07-30T21:45:00+00:00",
+      "in_window": false,
+      "summary": "Mastercard is positioning itself for ‘agentic commerce’ as the payment-technology world evolves",
+      "body_excerpt": "Mastercard is positioning itself for ‘agentic commerce’ as the payment-technology world evolves",
+      "tickers": []
+    },
+    {
+      "title": "AI investor Leopold Aschenbrenner forced to unwind all public stock positions after steep losses, sources say",
+      "url": "https://www.cnbc.com/2026/07/30/leopold-aschenbrenners-hedge-fund-is-facing-steep-ai-losses.html",
+      "source": "CNBC Top News",
+      "published_at": "2026-07-30T21:29:19+00:00",
+      "in_window": false,
+      "summary": "Leopold Aschenbrenner's hedge fund has sold all of its public stock holdings, according to people familiar with the matter.",
+      "body_excerpt": "Leopold Aschenbrenner's hedge fund was forced to sell all of its public stock holdings, according to people familiar with the matter. Ken Griffin's Citadel hedge fund reached a deal to buy the stocks.\n\nSituational Awareness, which grew to as big as $45 billion at one point, posted large losses in recent weeks from declines in AI infrastructure investments like SK Hynix, the people said.\n\nAschenbrenner launched the fund after leaving OpenAI in 2024 and quickly became one of the most watched figures in AI investing because of eye-popping returns.\n\nThe battered hedge fund founded by former OpenAI researcher Leopold Aschenbrenner is unwinding many of its trades after big losses on artificial intelligence stocks and a bad bet against software stocks left it scrambling to raise cash, according to people familiar with the matter. The prime brokers for the fund, Situational Awareness , have been rushing to raise cash to meet margin requirements, the people said. Ken Griffin's Citadel hedge fund reached a deal to buy the fund's publicly traded assets, people familiar with the deal said. Situational Awareness has sustained significant losses in recent weeks as its portfolio of AI infrastructure investments such as SK Hynix declined while short positions in software companies such as Adobe moved sharply against it, the people said.\n\nThe fund grew to as big as $45 billion at the start of July before big losses took hold, according to a person familiar. Several of the firm's prime brokers",
+      "tickers": [
+        "MU",
+        "INTC",
+        "SNDK",
+        "NBIS",
+        "CRWV",
+        "000660.KS"
+      ]
+    },
+    {
+      "title": "FirstFT: Chinese stocks on course for worst month in decade",
+      "url": "https://www.ft.com/content/67e045bb-76cc-404f-a04c-073411eedfc5?syn-25a6b1a6=1",
+      "source": "Financial Times Markets",
+      "published_at": "2026-07-30T21:28:16+00:00",
+      "in_window": false,
+      "summary": "Also in today’s newsletter: Europe unites behind World Cup boycott and Japan’s yen jumps 3%",
+      "body_excerpt": "Also in today’s newsletter: Europe unites behind World Cup boycott and Japan’s yen jumps 3%",
+      "tickers": []
+    },
+    {
+      "title": "Software stocks are fading — but these 4 could shine through the rest of the year",
+      "url": "https://www.marketwatch.com/story/software-stocks-are-fading-but-these-4-could-shine-through-the-rest-of-the-year-2c4dbe22",
+      "source": "MarketWatch Top Stories",
+      "published_at": "2026-07-30T21:24:00+00:00",
+      "in_window": false,
+      "summary": "Evercore recommends Microsoft, ServiceNow, Salesforce and Samsara.",
+      "body_excerpt": "Evercore recommends Microsoft, ServiceNow, Salesforce and Samsara.",
+      "tickers": [
+        "MSFT",
+        "NOW",
+        "CRM"
+      ]
+    },
+    {
+      "title": "Rivian reduces 2026 spending plans, narrows earnings guidance",
+      "url": "https://www.cnbc.com/2026/07/30/rivian-rivn-q2-2026-earnings.html",
+      "source": "CNBC Top News",
+      "published_at": "2026-07-30T21:19:16+00:00",
+      "in_window": false,
+      "summary": "Rivian reduced its 2026 spending plans and slightly narrowed its previously forecast losses this year as the company reported second-quarter results.",
+      "body_excerpt": "Rivian reduced its 2026 spending plans and slightly narrowed its previously forecast losses this year as the company reported second-quarter results.\n\nThe EV maker stuck with its delivery target of 65,000 to 70,000 vehicles to customers.\n\nRivian Automotive reduced its 2026 spending plans and slightly narrowed its previously forecast losses this year as the company reported second-quarter results Thursday.\n\nThe revised guidance now includes adjusted losses between $1.8 billion and $2 billion, down from $1.8 billion to $2.1 billion, and capital expenditures of $1.7 billion to $1.8 billion, down from $1.95 billion to $2.05 billion. It reconfirmed a previously raised delivery target of 65,000 to 70,000 vehicles to customers.\n\nRivian said the $250 million reduction in capital spending at the mid-point was enabled by \"project efficiencies and timing of spend,\" which the automaker previously increased to allow for added investments in new technologies such as its hands-free driving system.\n\nHere's how Rivian performed in the second quarter, compared with average estimates compiled by LSEG:\n\nLoss per share: 47 cents adjusted vs. a loss of 63 cents expected\n\nRevenue: $1.66 billion vs. $1.51 billion expected\n\nThe company's gross profit, which is closely watched by investors, was $179 million compared with a loss of $206 million a year earlier. That included a $36 million loss for its automotive segment and a $215 million profit for its software and services division.\n\nRivian's second-q",
+      "tickers": []
+    },
+    {
+      "title": "CoreWeave bows to investor pushback on debt linked to Anthropic contracts",
+      "url": "https://www.ft.com/content/9d2117af-b3ec-4ca4-b00f-6813ab5075ec?syn-25a6b1a6=1",
+      "source": "Financial Times Markets",
+      "published_at": "2026-07-30T21:09:18+00:00",
+      "in_window": false,
+      "summary": "Sweetened terms reflect shifting power dynamics as lenders grow cautious on AI risks",
+      "body_excerpt": "Sweetened terms reflect shifting power dynamics as lenders grow cautious on AI risks",
+      "tickers": [
+        "CRWV"
+      ]
+    },
+    {
+      "title": "Saudi Arabia announces maritime defence coalition as Houthi attacks threaten Red Sea route",
+      "url": "https://www.ft.com/content/926bad8a-55e0-4d1d-8612-7ebd0aaef4ee?syn-25a6b1a6=1",
+      "source": "Financial Times Markets",
+      "published_at": "2026-07-30T20:58:07+00:00",
+      "in_window": false,
+      "summary": "Fourteen countries, including Pakistan, Turkey, Egypt and Sudan, vow to protect shipping and energy supplies",
+      "body_excerpt": "Fourteen countries, including Pakistan, Turkey, Egypt and Sudan, vow to protect shipping and energy supplies",
+      "tickers": []
+    },
+    {
+      "title": "Trump says sanctions bill should include tariffs on Iran, despite 'trivial' trade with U.S.",
+      "url": "https://www.cnbc.com/2026/07/30/trump-iran-tariffs-sanctions-bill.html",
+      "source": "CNBC Top News",
+      "published_at": "2026-07-30T20:38:18+00:00",
+      "in_window": false,
+      "summary": "Trump said he'd \"like to see tariffs on Iran\" added to a bill that would impose economic sanctions on Russia and those supporting its war against Ukraine.",
+      "body_excerpt": "President Donald Trump said Congress should strengthen a sanctions bill against Russia and Iran by adding tariffs on Tehran.\n\nThe U.S. imports hardly any goods from Iran, making his remark \"entirely symbolic,\" a trade expert told CNBC.\n\nTrump's apparent desire to change the bipartisan bill may affect its chances of passage in Congress.\n\nPresident Donald Trump wants Congress to add tariffs on Iran to a sanctions bill against Russia and Tehran that has bipartisan support.\n\nThose duties would have little effect because the U.S. imports nearly nothing from Iran. But tacking them on to the bill may torpedo its chances of becoming law.\n\nWhile sanctions against the two countries have widespread support in Congress, Trump's well-established belief in tariffs as a one-size-fits-all tool for economic coercion is polarizing.\n\nThe U.S. imported just $1.4 million in goods from Iran in 2025 , according to the Office of the U.S. Trade Representative. Works of art, collectors pieces and antiques were the largest category of those imports, making up 55% of the value, according to the firm Trading Economics .\n\nIt's hard to imagine that figure increasing much this year — especially since late February, when the U.S. and Israel launched a war against Iran that continues with no end in sight. The U.S. has sanctioned Iran for decades , and the Treasury Department has sought to further squeeze Tehran's economy amid the war.\n\n\"The Administration's threat to impose tariffs on imports from Iran is ent",
+      "tickers": []
+    },
+    {
+      "title": "Meta’s stock falls hard. Here’s why the company is in Wall Street’s doghouse.",
+      "url": "https://www.marketwatch.com/story/metas-stock-is-falling-hard-heres-why-the-company-is-in-wall-streets-doghouse-afae2f55",
+      "source": "MarketWatch Top Stories",
+      "published_at": "2026-07-30T20:31:00+00:00",
+      "in_window": false,
+      "summary": "Meta’s spending on AI is ramping, and investors want proof that the company can make serious money in areas other than advertising.",
+      "body_excerpt": "Meta’s spending on AI is ramping, and investors want proof that the company can make serious money in areas other than advertising.",
+      "tickers": [
+        "META"
+      ]
+    },
+    {
+      "title": "Trump’s Tariff Exemptions Include Diamonds, Oil and Gas, Copper and Other Items",
+      "url": "https://www.nytimes.com/2026/07/30/business/economy/trump-tariffs-exemptions.html",
+      "source": "NYTimes Business",
+      "published_at": "2026-07-30T20:24:36+00:00",
+      "in_window": false,
+      "summary": "A new round of tariff carve-outs has raised familiar questions about who should receive the lucrative exceptions, and why.",
+      "body_excerpt": "A new round of tariff carve-outs has raised familiar questions about who should receive the lucrative exceptions, and why.",
+      "tickers": []
+    },
+    {
+      "title": "Skirts and sandwiches fail to excite cautious IPO investors",
+      "url": "https://www.ft.com/content/aa292d6f-3b12-4b7a-b558-7306e8d03b9e",
+      "source": "Financial Times Markets",
+      "published_at": "2026-07-30T20:22:59+00:00",
+      "in_window": false,
+      "summary": "Reformation and Jersey Mike’s test market appetite for consumer sector that has faced twin pressures",
+      "body_excerpt": "Reformation and Jersey Mike’s test market appetite for consumer sector that has faced twin pressures",
+      "tickers": []
+    },
+    {
+      "title": "Jersey Mike's stock falls 6% in public market debut after pricing shares at $23",
+      "url": "https://www.cnbc.com/2026/07/30/jersey-mikes-ipo-jmke-starts-trading-on-the-new-york-stock-exchange.html",
+      "source": "CNBC Top News",
+      "published_at": "2026-07-30T20:13:00+00:00",
+      "in_window": false,
+      "summary": "Jersey Mike's priced its initial public offering at $23 per share.",
+      "body_excerpt": "Jersey Mike's made its public market debut on the New York Stock Exchange under the ticker \"JMKE.\"\n\nThe sandwich chain is now among the largest-ever initial fundraises for a restaurant IPO.\n\nThe company's high average unit volumes and asset-light franchise model made the stock attractive to investors.\n\nShares of Jersey Mike's closed down about 6% during trading on Thursday afternoon after the company made its public market debut on the New York Stock Exchange under the ticker \"JMKE.\"\n\nThe stock opened at $21 per share, below its initial public offering pricing of $23 per share, at the midpoint of the expected range of $21 to $25 per share.\n\nJersey Mike's sold 43.5 million shares, raising about $1 billion and valuing the company at $7.3 billion. With those proceeds, the chain is now among the largest-ever initial fundraises for a restaurant IPO.\n\nJersey Mike's has nearly 3,300 locations, making it the second-largest hoagie sandwich chain in the U.S. behind Subway. It's now the largest public chain in the category.\n\nThe company reported net income of $55 million on total revenue of $724 million last year. Its same-store sales increased 3% over the same period. The metric tracks sales growth at restaurants open at least a year.\n\nBroadly, diners are eating out less often or seeking deals to save money, and the restaurant industry has seen traffic and sales soften. But Jersey Mike's has largely bucked the trend, and its high average unit volumes and asset-light franchise model mad",
+      "tickers": []
+    },
+    {
+      "title": "Retailer Reformation closes flat in NYSE debut as CEO says company is 'ready to scale'",
+      "url": "https://www.cnbc.com/2026/07/30/reformation-ipo-public-nyse-listing.html",
+      "source": "CNBC Top News",
+      "published_at": "2026-07-30T20:08:13+00:00",
+      "in_window": false,
+      "summary": "Retailer Reformation made its IPO on the New York Stock Exchange on Thursday under the ticker symbol \"REF.\"",
+      "body_excerpt": "Retailer Reformation made its IPO on the New York Stock Exchange on Thursday under the ticker symbol \"REF.\"\n\nThe company was flat in trading after pricing at $15 per share.\n\nIt joins just a handful of consumer and retail companies that have gone public this year amid an IPO slump over the past few years.\n\nWomen's clothing retailer Reformation began trading on the New York Stock Exchange on Thursday, with the stock ending the day essentially unchanged after pricing its IPO at $15.\n\nThe company, which is trading under the ticker symbol \"REF,\" is offering 14,062,500 shares, putting its IPO raise at $210.9 million.\n\n\"Reformation is ready, and that is really the driving reason we've spent a lot of time working to build a business that redefines retail, really innovates on what the role of a brand is in the fashion space, and we've done a great job at that,\" CEO Hali Borenstein told CNBC on Thursday. \"Today, we have a foundation that is ready to scale.\"\n\nIt joins just a handful of consumer and retail companies that have gone public this year amid a slump in IPOs since the 2021 boom. Reformation went public the same day as sandwich chain Jersey Mike's , which also listed on the NYSE .\n\nAccording to its S-1 fact sheet, Reformation has seen 20 consecutive quarters of double-digit net revenue growth through the first quarter of 2026. Its net revenue for the full year 2025 came in at $507.1 million, and net income was $12.6 million, including the impact of President Donald Trump 's tari",
+      "tickers": []
+    },
+    {
+      "title": "Oil Prices Wobble as Middle East Veers Toward Wider Conflict",
+      "url": "https://www.nytimes.com/2026/07/30/business/oil-stocks-iran-war.html",
+      "source": "NYTimes Business",
+      "published_at": "2026-07-30T20:07:03+00:00",
+      "in_window": false,
+      "summary": "Bond yields are also higher on concerns about inflation.",
+      "body_excerpt": "Bond yields are also higher on concerns about inflation.",
+      "tickers": []
+    },
+    {
+      "title": "AMD and Micron surge, Lam Research climbs 17% as chip stocks rip higher",
+      "url": "https://www.cnbc.com/2026/07/30/chip-stock-rally-lam-research-micron-amd.html",
+      "source": "CNBC Top News",
+      "published_at": "2026-07-30T20:04:13+00:00",
+      "in_window": false,
+      "summary": "Strong earnings from Lam Research, Microsoft and Arm boosted hard-hit semiconductor stocks.",
+      "body_excerpt": "Battered chip stocks rebounded on Thursday following strong earnings from Microsoft and Lam Research.\n\nMemory stocks Micron and Sandisk jumped as Samsung warned of a memory crunch into 2028.\n\nChip stocks have been a major beneficiary of the AI data center and infrastructure buildout.\n\nChip stocks rocketed on Thursday after strong tech earnings from Microsoft and Lam Research sparked a widespread rally, fueling double-digit gains for hard-hit semiconductor companies.\n\nLam Research shares popped 18% and headed for their best day since 1999. The company posted strong earnings and guidance on artificial intelligence -driven demand. Microsoft popped 15% after signaling strong growth in its Azure business and lifting capital expenditures on robust demand. Shares headed for their best day since 2008.\n\nMemory stocks also surged as Samsung warned the memory crunch could last into 2028. Micron and Sandisk rallied 18% and 26%, respectively. The stocks sold off in recent sessions on underwhelming results from South Korea's SK Hynix .\n\nChip stocks have been one of the largest beneficiaries of the AI boom as companies invest in memory and central processing units to fuel the infrastructure buildout.\n\nAmazon posts 'booming' cloud growth, hikes 2026 capex to $220 billion\n\nApple earnings: Revenue tops estimates, but supply constraints weigh on guidance\n\nChina's open-weight model lead exposes America's AI blind spot\n\nNew details in the OpenAI Hugging Face hack show how far agents will go: 'It'",
+      "tickers": [
+        "AAPL",
+        "MSFT",
+        "AMZN",
+        "NVDA",
+        "AMD",
+        "MRVL",
+        "MU",
+        "AMAT",
+        "LRCX",
+        "INTC",
+        "SNDK",
+        "005930.KS",
+        "000660.KS"
+      ]
+    },
+    {
+      "title": "Is the Fed the referee or the best player?",
+      "url": "https://www.ft.com/content/89eb5696-bfed-43a7-8844-25a8de99626c?syn-25a6b1a6=1",
+      "source": "Financial Times Markets",
+      "published_at": "2026-07-30T20:00:00+00:00",
+      "in_window": false,
+      "summary": "Kevin Warsh wants the US central bank to take a step back from its effect on the markets. Can it?",
+      "body_excerpt": "Kevin Warsh wants the US central bank to take a step back from its effect on the markets. Can it?",
+      "tickers": []
+    },
+    {
+      "title": "UEFA threatens World Cup boycott over FIFA private equity investment plan",
+      "url": "https://www.cnbc.com/2026/07/30/uefa-threatens-world-cup-boycott-over-fifa-investment-plan.html",
+      "source": "CNBC Top News",
+      "published_at": "2026-07-30T19:59:12+00:00",
+      "in_window": false,
+      "summary": "FIFA has faced backlash from global soccer governing bodies over the proposal to allow private investment.",
+      "body_excerpt": "European soccer governing body UEFA threatened to boycott FIFA competitions, including the World Cup, if FIFA moves forward with plans to sell a stake in its commercial business to private investors.\n\nThe governing body called the proposal \"irresponsible and indefensible,\" arguing the sport's governance should not be driven by investor returns.\n\nNorth American governing body Concacaf also raised concerns over the proposal, while FIFA President Gianni Infantino defended it as an optional choice for member associations, not an obligation.\n\nEuropean soccer governing body UEFA said Thursday it will boycott FIFA competitions including the World Cup if the global organization goes through with its proposal to sell a stake to private investors.\n\nFollowing an emergency meeting, UEFA, which represents 55 of FIFA's 211 member associations, called it \"irresponsible and indefensible\" for FIFA leadership to bring forth such a proposal without seeking feedback from the countries that make up the organization.\n\nOn Tuesday, FIFA announced a plan to sell a 20% stake in a new entity it calls FIFA Forward Enterprise that would take over all commercial and event operations. FIFA said FFE would raise up to $4.2 billion from third party investors. The move championed by FIFA President Gianni Infantino has drawn backlash across the sport.\n\nThe proposed deal has also sparked fresh scrutiny of Infantino's relationship with President Donald Trump. Thrive Eternal, a private equity firm founded by Joshu",
+      "tickers": []
+    },
+    {
+      "title": "Bond Investors’ Inflation Angst Rises on Fed’s Lack of Guidance",
+      "url": "https://www.nytimes.com/2026/07/30/business/federal-reserve-warsh-bonds.html",
+      "source": "NYTimes Business",
+      "published_at": "2026-07-30T19:40:58+00:00",
+      "in_window": false,
+      "summary": "The yield on government bonds, which underpins borrowing costs from mortgages to business loans, remained elevated over concerns about the Federal Reserve’s efforts to contain inflation.",
+      "body_excerpt": "The yield on government bonds, which underpins borrowing costs from mortgages to business loans, remained elevated over concerns about the Federal Reserve’s efforts to contain inflation.",
+      "tickers": []
+    },
+    {
+      "title": "Taco Bell Sales Recover Following Cyclospora Outbreak",
+      "url": "https://www.nytimes.com/2026/07/30/business/taco-bell-sales-cyclospora.html",
+      "source": "NYTimes Business",
+      "published_at": "2026-07-30T17:56:21+00:00",
+      "in_window": false,
+      "summary": "Transparency around pulling affected lettuce from stores has helped Taco Bell regain consumer trust, its parent company, Yum Brands, said.",
+      "body_excerpt": "Transparency around pulling affected lettuce from stores has helped Taco Bell regain consumer trust, its parent company, Yum Brands, said.",
+      "tickers": []
+    },
+    {
+      "title": "ABC Formally Rebukes F.C.C. for Review of TV Licenses",
+      "url": "https://www.nytimes.com/2026/07/30/business/media/abc-fcc-tv-licenses.html",
+      "source": "NYTimes Business",
+      "published_at": "2026-07-30T17:50:26+00:00",
+      "in_window": false,
+      "summary": "The network’s comments are part of its efforts to push back against the F.C.C.’s review of its local broadcast licenses.",
+      "body_excerpt": "The network’s comments are part of its efforts to push back against the F.C.C.’s review of its local broadcast licenses.",
+      "tickers": []
+    },
+    {
+      "title": "OpenAI cuts prices for two of its GPT-5.6 AI models as companies grow sensitive to costs",
+      "url": "https://www.cnbc.com/2026/07/30/open-ai-price-cut-gpt.html",
+      "source": "CNBC Top News",
+      "published_at": "2026-07-30T17:27:49+00:00",
+      "in_window": false,
+      "summary": "The company is facing pressure to cater to a more cost-sensitive customer base.",
+      "body_excerpt": "OpenAI announced it is slashing the price of two of its latest artificial intelligence models, GPT-5.6 Terra and GPT-5.6 Luna.\n\nThe company said it is reducing the price of Terra by 20% and the cost of Luna by 80%.\n\nThe company is facing pressure to cater to a more cost-sensitive customer base and fend off competition from Chinese startups and other tech giants.\n\nOpenAI on Thursday announced it is slashing the price of two of its latest artificial intelligence models, GPT-5.6 Terra and GPT-5.6 Luna, roughly three weeks after their public release .\n\nThe company is facing pressure to cater to a more cost-sensitive customer base , where enterprises have been less inclined to deploy expensive models without a clear picture of the return on their investments. It's also working to fend off competition from Chinese startups and tech giants Google and Microsoft , which have been touting cost-effective models.\n\nOpenAI launched three models as part of its GPT-5.6 series, including Sol, the most powerful offering, Terra, the mid-tier model, and Luna, its fastest offering.\n\nThe company said Thursday that it's reducing the price of Terra by 20% to $2 per million input tokens and $12 per million output tokens. It's cutting the cost of Luna by 80% to 20 cents per million input tokens and $1.20 per million output tokens. Sol's pricing remains the same.\n\n\"Our strategy remains focused on advancing both capability and efficiency so each generation of intelligence can accomplish more work at a l",
+      "tickers": [
+        "AAPL",
+        "MSFT",
+        "GOOGL",
+        "AMZN",
+        "INTC",
+        "DELL"
+      ]
+    },
+    {
+      "title": "Are investors really getting cold feet about the AI boom?",
+      "url": "https://www.ft.com/content/00d91e68-9508-42bd-b1e3-124bf7dd390b?syn-25a6b1a6=1",
+      "source": "Financial Times Markets",
+      "published_at": "2026-07-30T17:15:54+00:00",
+      "in_window": false,
+      "summary": "It is not clear whether there has been a serious change of heart about the trade underpinning the stock market",
+      "body_excerpt": "It is not clear whether there has been a serious change of heart about the trade underpinning the stock market",
+      "tickers": []
+    },
+    {
+      "title": "Warsh’s stripped-back Fed communication ‘already backfiring’, say investors",
+      "url": "https://www.ft.com/content/57aac838-baee-406d-b4ac-c0ffda351aee?syn-25a6b1a6=1",
+      "source": "Financial Times Markets",
+      "published_at": "2026-07-30T16:51:57+00:00",
+      "in_window": false,
+      "summary": "Traders warn lack of guidance on interest rates erodes US central bank’s influence on Treasury market",
+      "body_excerpt": "Traders warn lack of guidance on interest rates erodes US central bank’s influence on Treasury market",
+      "tickers": []
+    },
+    {
+      "title": "U.S. GDP Growth Slowed in Second Quarter of 2026",
+      "url": "https://www.nytimes.com/2026/07/30/business/economy/us-economy-gdp-growth.html",
+      "source": "NYTimes Business",
+      "published_at": "2026-07-30T16:29:07+00:00",
+      "in_window": false,
+      "summary": "Gross domestic product grew at a slower rate in the second quarter and persistent price pressures are unsettling financial markets.",
+      "body_excerpt": "Gross domestic product grew at a slower rate in the second quarter and persistent price pressures are unsettling financial markets.",
+      "tickers": []
+    },
+    {
+      "title": "Markets Challenge Warsh’s Approach to Taming Inflation",
+      "url": "https://www.nytimes.com/2026/07/30/business/warshs-performance-falls-flat-with-markets-as-fed-holds-rates-steady.html",
+      "source": "NYTimes Business",
+      "published_at": "2026-07-30T15:10:57+00:00",
+      "in_window": false,
+      "summary": "Kevin M. Warsh has made controlling inflation the top priority of his tenure as Federal Reserve chairman. But his hesitancy to embrace the possibility of higher borrowing costs has sparked a backlash.",
+      "body_excerpt": "Kevin M. Warsh has made controlling inflation the top priority of his tenure as Federal Reserve chairman. But his hesitancy to embrace the possibility of higher borrowing costs has sparked a backlash.",
+      "tickers": []
+    },
+    {
+      "title": "U.S. economy slowed to 1.5% growth rate in Q2; June core inflation at 3.3%",
+      "url": "https://www.cnbc.com/2026/07/30/us-economy-slowed-to-1point5percent-growth-rate-in-q2-june-core-inflation-at-3point3percent.html",
+      "source": "CNBC Top News",
+      "published_at": "2026-07-30T15:04:43+00:00",
+      "in_window": false,
+      "summary": "While the GDP number was below expectations, the miss appeared to come from a decline in federal government spending and inventories.",
+      "body_excerpt": "Gross domestic product rose at just a 1.5% rate in the first quarter, but underlying economic drivers looked solid outside of a drop in inventories and government spending.\n\nInflation readings as judged by the Federal Reserve's preferred gauge were mostly in line but still well above the central bank's 2% target.\n\nConsumer spending continued to climb but the savings rate hit a four-year low.\n\nEconomic growth was weaker than expected in the second quarter though underlying drivers were mostly solid. At the same time, inflation in June held well above the Federal Reserve's goal and complicated the central bank's policy path, the Commerce Department reported Thursday.\n\nGross domestic product , a broad measure of goods and services, increased just 1.5% for the April-through June period, according to Bureau of Economic Analysis numbers adjusted for seasonality and inflation.\n\nEconomists surveyed by Dow Jones had been looking for a growth rate of 1.8%, following the 2.1% increase in the first quarter.\n\nA separate report showed that the personal consumption expenditures price index , which is the Federal Reserve's primary forecasting gauge, fell a seasonally adjusted 0.1% for the month, putting the annual inflation rate at 3.7%. The readings were in line with forecasts.\n\nExcluding food and energy, core PCE posted a monthly increase of 0.1% and an annual level of 3.3%, against respective forecasts for 0.2% and 3.3%.\n\nWhile the Fed technically uses the headline PCE number as its gauge",
+      "tickers": []
+    },
+    {
+      "title": "China Threatens Retaliation as U.S. Moves to Block Robot Imports",
+      "url": "https://www.nytimes.com/2026/07/30/business/china-robots-ban-fcc.html",
+      "source": "NYTimes Business",
+      "published_at": "2026-07-30T14:04:12+00:00",
+      "in_window": false,
+      "summary": "The dispute highlights how robotics has become the latest battleground in the intensifying technological and industrial rivalry between Washington and Beijing.",
+      "body_excerpt": "The dispute highlights how robotics has become the latest battleground in the intensifying technological and industrial rivalry between Washington and Beijing.",
+      "tickers": []
+    },
+    {
+      "title": "China, Its Economy Stumbling, Signals Only Cautious Support",
+      "url": "https://www.nytimes.com/2026/07/30/business/china-economy-politburo.html",
+      "source": "NYTimes Business",
+      "published_at": "2026-07-30T13:59:54+00:00",
+      "in_window": false,
+      "summary": "The ruling Politburo called for “more proactive” tax and spending policies but did not endorse broad action to address weak consumer spending.",
+      "body_excerpt": "The ruling Politburo called for “more proactive” tax and spending policies but did not endorse broad action to address weak consumer spending.",
+      "tickers": []
+    },
+    {
+      "title": "BP to cut 700 jobs as it warns on oil ‘oversupply’",
+      "url": "https://www.ft.com/content/39d00795-a6b7-4950-884a-38e2ef269f22?syn-25a6b1a6=1",
+      "source": "Financial Times Markets",
+      "published_at": "2026-07-30T13:51:30+00:00",
+      "in_window": false,
+      "summary": "UK oil major says reduction in ‘non-frontline’ roles will result in flatter corporate structure",
+      "body_excerpt": "UK oil major says reduction in ‘non-frontline’ roles will result in flatter corporate structure",
+      "tickers": []
+    },
+    {
+      "title": "NYSE owner to buy bond platform MarketAxess in $5.7bn deal",
+      "url": "https://www.ft.com/content/4b39365f-841d-45d3-81ae-31db7f9d8f8f?syn-25a6b1a6=1",
+      "source": "Financial Times Markets",
+      "published_at": "2026-07-30T13:34:07+00:00",
+      "in_window": false,
+      "summary": "Acquisition marks significant step by Intercontinental Exchange into fixed-income trading",
+      "body_excerpt": "Acquisition marks significant step by Intercontinental Exchange into fixed-income trading",
+      "tickers": []
+    },
+    {
+      "title": "Fed’s Preferred Inflation Gauge Eased During Pause in Iran War",
+      "url": "https://www.nytimes.com/2026/07/30/business/federal-reserve-inflation-iran-war.html",
+      "source": "NYTimes Business",
+      "published_at": "2026-07-30T12:41:03+00:00",
+      "in_window": true,
+      "summary": "Price pressures eased during a brief reprieve in the war with Iran, but the resumption of fighting suggests that inflation risks are still prevalent.",
+      "body_excerpt": "Price pressures eased during a brief reprieve in the war with Iran, but the resumption of fighting suggests that inflation risks are still prevalent.",
+      "tickers": []
+    },
+    {
+      "title": "A ‘Credibility Shock’ Looms Over the Fed",
+      "url": "https://www.nytimes.com/2026/07/30/business/dealbook/fed-warsh-credibility-shock.html",
+      "source": "NYTimes Business",
+      "published_at": "2026-07-30T12:22:25+00:00",
+      "in_window": true,
+      "summary": "Bonds sold off sharply after the Federal Reserve’s latest rate decision, signaling growing turmoil between the markets and the central bank.",
+      "body_excerpt": "Bonds sold off sharply after the Federal Reserve’s latest rate decision, signaling growing turmoil between the markets and the central bank.",
+      "tickers": []
+    },
+    {
+      "title": "How Climate Change and Tariffs Help China Raise More Cattle",
+      "url": "https://www.nytimes.com/2026/07/30/business/china-beef-imports-tariffs.html",
+      "source": "NYTimes Business",
+      "published_at": "2026-07-30T12:13:26+00:00",
+      "in_window": true,
+      "summary": "As increased rain makes grasslands and cornfields possible in areas that once were deserts, the world’s largest beef importer is becoming more self-reliant by expanding domestic herds.",
+      "body_excerpt": "As increased rain makes grasslands and cornfields possible in areas that once were deserts, the world’s largest beef importer is becoming more self-reliant by expanding domestic herds.",
+      "tickers": []
+    },
+    {
+      "title": "Has the market lost its mind over AI? You asked, we answered",
+      "url": "https://www.ft.com/content/07e7e839-6d7c-4da3-a207-de5bbfb67746?syn-25a6b1a6=1",
+      "source": "Financial Times Markets",
+      "published_at": "2026-07-30T12:00:27+00:00",
+      "in_window": true,
+      "summary": "Lex head John Foley and tech comment editor Elaine Moore replied to reader questions",
+      "body_excerpt": "Lex head John Foley and tech comment editor Elaine Moore replied to reader questions",
+      "tickers": []
+    },
+    {
+      "title": "Blue Owl’s private credit fundraising falls to slowest pace in three years",
+      "url": "https://www.ft.com/content/c8e8502f-91c2-4dcd-b39c-e99c67b93826?syn-25a6b1a6=1",
+      "source": "Financial Times Markets",
+      "published_at": "2026-07-30T11:26:17+00:00",
+      "in_window": true,
+      "summary": "Demand for data centre investments helped bolster group as redemption requests weigh on credit arm",
+      "body_excerpt": "Demand for data centre investments helped bolster group as redemption requests weigh on credit arm",
+      "tickers": []
+    },
+    {
+      "title": "KKR profits soar as it cashes in record amount of private equity bets",
+      "url": "https://www.ft.com/content/3936b8c9-8ce2-41f8-8687-90a2aa385e41?syn-25a6b1a6=1",
+      "source": "Financial Times Markets",
+      "published_at": "2026-07-30T11:01:22+00:00",
+      "in_window": true,
+      "summary": "Private capital giant weathers turmoil that has curtailed asset sales and fundraising by other players",
+      "body_excerpt": "Private capital giant weathers turmoil that has curtailed asset sales and fundraising by other players",
+      "tickers": []
+    },
+    {
+      "title": "Air India Offered to Cover My Flight on Another Airline. It Cost Me $2,000.",
+      "url": "https://www.nytimes.com/2026/07/30/travel/air-india-canceled-flight-refund.html",
+      "source": "NYTimes Business",
+      "published_at": "2026-07-30T11:01:07+00:00",
+      "in_window": true,
+      "summary": "After a cancellation and long delays, the airline offered to cover the cost of a flight on another carrier. Then it refused to make good on that promise.",
+      "body_excerpt": "After a cancellation and long delays, the airline offered to cover the cost of a flight on another carrier. Then it refused to make good on that promise.",
+      "tickers": []
+    },
+    {
+      "title": "To Know What Your Customers Think, Just Ask Their A.I. Twins",
+      "url": "https://www.nytimes.com/2026/07/30/business/dealbook/simile-ai-agents-funding.html",
+      "source": "NYTimes Business",
+      "published_at": "2026-07-30T11:00:05+00:00",
+      "in_window": true,
+      "summary": "Simile, a fast-growing start-up, says it can provide companies with accurate insights by surveying millions of A.I.-generated consumers.",
+      "body_excerpt": "Simile, a fast-growing start-up, says it can provide companies with accurate insights by surveying millions of A.I.-generated consumers.",
+      "tickers": []
+    },
+    {
+      "title": "Aston Martin investors kept in dark over details of asset shift",
+      "url": "https://www.ft.com/content/abc19970-1230-4dcc-a888-4877162db342?syn-25a6b1a6=1",
+      "source": "Financial Times Markets",
+      "published_at": "2026-07-30T10:45:41+00:00",
+      "in_window": true,
+      "summary": "Carmaker bats away questions over £550mn debt deal with BlackRock-owned private credit firm HPS",
+      "body_excerpt": "Carmaker bats away questions over £550mn debt deal with BlackRock-owned private credit firm HPS",
+      "tickers": []
+    },
+    {
+      "title": "Trump promised a 'golden age' for agriculture. Farmers in Iowa say they're still waiting",
+      "url": "https://www.cnbc.com/2026/07/30/trump-iowa-farmers-agriculture.html",
+      "source": "CNBC Top News",
+      "published_at": "2026-07-30T10:45:01+00:00",
+      "in_window": true,
+      "summary": "President Donald Trump has promised a \"golden age\" for agriculture, but farmers in Iowa and elsewhere are struggling with tariffs and the Iran war.",
+      "body_excerpt": "Farmers in Iowa told CNBC they are struggling as costs are higher, the prices for crops have dropped and some foreign buyers have disappeared amid President Donald Trump's trade wars.\n\nU.S. farmers are a reliably Republican group, but Trump's policies in his second term, including sweeping tariffs and the Iran war, have created difficult conditions in the agricultural sector.\n\nAmid these struggles, Trump's approval with rural voters has sagged, according to recent polling, raising alarms for Republicans ahead of the 2026 midterm elections.\n\nIOWA — Farmer Aaron Lehman's health insurance premiums have more than doubled since the start of the year, after Congress decided not to extend federal subsidies after they ended. As the Iran war drags on, the cost of diesel , fertilizer and other inputs he relies on to run his Polk City farm are up. And crop prices have been concerningly low .\n\nLehman grows soybeans, corn, oats and hay on the land his family has worked for five generations. The Lehmans and other Iowa farmers have endured difficult times, but 2026 — with all the volatility around trade and foreign wars — feels different from recent years, Lehman said, despite President Donald Trump 's promises of a \" golden age of American agriculture .\"\n\n\"Farmers are really tightening their belts,\" Lehman, president of the Iowa Farmers Union , a nonpartisan organization that works to advance the causes of farmers and sustainable agriculture, told CNBC on his farm.\n\n\"It's one thing to say ",
+      "tickers": []
+    },
+    {
+      "title": "‘My life’s screwed’: Korean investors stress out after AI bubble bursts",
+      "url": "https://www.ft.com/content/23f388eb-e8ab-4fb1-b1ca-8e04eb4561a1?syn-25a6b1a6=1",
+      "source": "Financial Times Markets",
+      "published_at": "2026-07-30T09:08:04+00:00",
+      "in_window": true,
+      "summary": "Millions suffer ‘unprecedented’ losses after Samsung and SK Hynix stock tumbles",
+      "body_excerpt": "Millions suffer ‘unprecedented’ losses after Samsung and SK Hynix stock tumbles",
+      "tickers": [
+        "005930.KS",
+        "000660.KS"
+      ]
+    },
+    {
+      "title": "Bank of England holds rates amid uncertainty over energy shock",
+      "url": "https://www.ft.com/content/9c33426e-d413-4d9b-b429-34dea508195e?syn-25a6b1a6=1",
+      "source": "Financial Times Markets",
+      "published_at": "2026-07-30T09:06:01+00:00",
+      "in_window": true,
+      "summary": "MPC signals it could still lift borrowing costs if Middle East war hostilities lead to more persistent inflation",
+      "body_excerpt": "MPC signals it could still lift borrowing costs if Middle East war hostilities lead to more persistent inflation",
+      "tickers": []
+    },
+    {
+      "title": "US borrowing costs hit 19-year high as Fed defies inflation fears",
+      "url": "https://www.ft.com/content/c4eedbe8-6345-48b6-8d44-5cc5b0bea2c7?syn-25a6b1a6=1",
+      "source": "Financial Times Markets",
+      "published_at": "2026-07-30T09:03:36+00:00",
+      "in_window": true,
+      "summary": "Central bank holds rates even as investors worry Iran war will ignite jolt of price growth",
+      "body_excerpt": "Central bank holds rates even as investors worry Iran war will ignite jolt of price growth",
+      "tickers": []
+    },
+    {
+      "title": "Apple’s Siri Got an A.I. Brain Transplant. Try These 5 Prompts to Get Acclimated.",
+      "url": "https://www.nytimes.com/2026/07/30/technology/personaltech/apple-siri-ai-prompts.html",
+      "source": "NYTimes Business",
+      "published_at": "2026-07-30T09:03:08+00:00",
+      "in_window": true,
+      "summary": "An upgrade transformed the beleaguered virtual assistant into a modern chatbot. It’s imperfect but worth trying.",
+      "body_excerpt": "An upgrade transformed the beleaguered virtual assistant into a modern chatbot. It’s imperfect but worth trying.",
+      "tickers": [
+        "AAPL"
+      ]
+    },
+    {
+      "title": "DR Congo’s cobalt boom carries an unwanted cargo: uranium",
+      "url": "https://www.ft.com/content/77815def-6f50-4adf-8ba3-3643de7bf8ab?syn-25a6b1a6=1",
+      "source": "Financial Times Markets",
+      "published_at": "2026-07-30T09:00:01+00:00",
+      "in_window": true,
+      "summary": "Radioactive ores have become a proliferation risk in the land that supplied material for second world war atomic bombs",
+      "body_excerpt": "Radioactive ores have become a proliferation risk in the land that supplied material for second world war atomic bombs",
+      "tickers": []
+    },
+    {
+      "title": "Shell posts second-highest profits ever as traders cash in on Iran disruption",
+      "url": "https://www.ft.com/content/dacf0dba-702a-400f-b534-f73011052b1d?syn-25a6b1a6=1",
+      "source": "Financial Times Markets",
+      "published_at": "2026-07-30T08:55:45+00:00",
+      "in_window": true,
+      "summary": "UK oil major says earnings have surged even as its gas production fell sharply because of Middle East war",
+      "body_excerpt": "UK oil major says earnings have surged even as its gas production fell sharply because of Middle East war",
+      "tickers": []
+    },
+    {
+      "title": "Chinese stocks on track for worst month in decade",
+      "url": "https://www.ft.com/content/5052b22e-aeca-4043-88af-dd7da3661a49?syn-25a6b1a6=1",
+      "source": "Financial Times Markets",
+      "published_at": "2026-07-30T08:32:25+00:00",
+      "in_window": true,
+      "summary": "Investors pull out of ‘picks and shovels’ suppliers to AI boom",
+      "body_excerpt": "Investors pull out of ‘picks and shovels’ suppliers to AI boom",
+      "tickers": []
+    },
+    {
+      "title": "Winner of US-China AI rivalry falls 2% in Hong Kong debut",
+      "url": "https://www.ft.com/content/cc7d24ec-abfe-440b-9e85-4d725567f278?syn-25a6b1a6=1",
+      "source": "Financial Times Markets",
+      "published_at": "2026-07-30T08:28:22+00:00",
+      "in_window": true,
+      "summary": "Shandong-based Innolight supplies data centre equipment to American and Chinese tech groups",
+      "body_excerpt": "Shandong-based Innolight supplies data centre equipment to American and Chinese tech groups",
+      "tickers": []
+    },
+    {
+      "title": "Central banks slashed their gold purchases in early 2026",
+      "url": "https://www.ft.com/content/ce198d5a-4a3b-46e8-aec3-77e5ab53ffb7?syn-25a6b1a6=1",
+      "source": "Financial Times Markets",
+      "published_at": "2026-07-30T06:00:09+00:00",
+      "in_window": true,
+      "summary": "Data revision cuts estimate of official sector bullion buying by 76% during first quarter",
+      "body_excerpt": "Data revision cuts estimate of official sector bullion buying by 76% during first quarter",
+      "tickers": []
+    },
+    {
+      "title": "Kevin Warsh is confusing markets",
+      "url": "https://www.ft.com/content/fe3fe258-62ab-4a71-8c8b-747f9559fd05?syn-25a6b1a6=1",
+      "source": "Financial Times Markets",
+      "published_at": "2026-07-30T05:30:09+00:00",
+      "in_window": true,
+      "summary": "The Fed is a player, not a referee",
+      "body_excerpt": "The Fed is a player, not a referee",
+      "tickers": []
+    },
+    {
+      "title": "A.I. Data Centers in Space? A System to Cool Chips Could Help.",
+      "url": "https://www.nytimes.com/2026/07/30/business/solar-powered-data-centers.html",
+      "source": "NYTimes Business",
+      "published_at": "2026-07-30T04:01:05+00:00",
+      "in_window": true,
+      "summary": "Researchers at Caltech and Sophia Space, a start-up, have developed a technology using solar power to prevent computer equipment from overheating in orbit.",
+      "body_excerpt": "Researchers at Caltech and Sophia Space, a start-up, have developed a technology using solar power to prevent computer equipment from overheating in orbit.",
+      "tickers": []
+    },
+    {
+      "title": "Hollywood Foreign Press Association Sues Over Takeover of Golden Globes",
+      "url": "https://www.nytimes.com/2026/07/29/business/media/golden-globes-penske-hollywood-foreign-press.html",
+      "source": "NYTimes Business",
+      "published_at": "2026-07-30T00:42:27+00:00",
+      "in_window": true,
+      "summary": "The press association, which owned and operated the awards show until 2023, is suing its new owner, Penske Media, claiming its purchase was fraudulent.",
+      "body_excerpt": "The press association, which owned and operated the awards show until 2023, is suing its new owner, Penske Media, claiming its purchase was fraudulent.",
+      "tickers": []
+    },
+    {
+      "title": "Jim Cramer says this post-earnings sell-off is a golden buying opportunity",
+      "url": "https://finance.yahoo.com/markets/stocks/articles/jim-cramer-says-post-earnings-221700892.html",
+      "source": "Yahoo Finance",
+      "published_at": "2026-07-29T22:17:00+00:00",
+      "in_window": true,
+      "summary": "",
+      "body_excerpt": "Some stock drops look like bad news on the surface. Some are, yes, but some also tell a completely different story underneath.\n\nAnd I think American Express ( AXP ) investors have been handed the latter. The payments giant beat earnings expectations, raised its full-year revenue guidance, and reported its strongest card member spending growth in three years. The stock fell anyway.\n\nThis kind of reaction can frustrate shareholders and even confuse casual observers. But for \"Mad Money\" host Jim Cramer, it's a pattern he's seen before, and one he thinks is creating a clear opening.\n\nI think it's a terrific opportunity in one of the best-run companies on earth.\n\nAmerican Express CEO Steve Squeri echoed that confidence in the company's Q2 2026 earnings statement, noting: \"Six months into the year, we're seeing stronger momentum than we expected.\"\n\nAlso Read: History of American Express: Company timeline & facts\n\nCramer's argument comes down to a single distinction. And it is one the market appears to have missed.\n\nAmerican Express beat earnings expectations in Q2 2026 and raised its full-year revenue growth guidance to approximately 10%, according to a company statement . Earnings per share (EPS) came in at $4.53, up 11% year-over-year (YoY). Net income reached $3.11 billion, up 8% from the same period a year earlier.\n\nSo why did the stock fall?\n\nThe answer lies in what management chose not to do. Instead of accelerating share repurchases, which would have boosted EPS more quickly",
+      "tickers": []
+    },
+    {
+      "title": "Government Borrowing Cost Hits Two-Decade High After Fed Rate Decision",
+      "url": "https://www.nytimes.com/2026/07/29/business/economy/treasury-yields-fed-inflation.html",
+      "source": "NYTimes Business",
+      "published_at": "2026-07-29T21:33:46+00:00",
+      "in_window": true,
+      "summary": "The surge in Treasury yields suggests investors doubt that the Federal Reserve can keep inflation contained.",
+      "body_excerpt": "The surge in Treasury yields suggests investors doubt that the Federal Reserve can keep inflation contained.",
+      "tickers": []
+    },
+    {
+      "title": "Fed Holds Rates Steady but Three Officials Back Increase",
+      "url": "https://www.nytimes.com/2026/07/29/business/economy/what-to-watch-at-the-meeting.html",
+      "source": "NYTimes Business",
+      "published_at": "2026-07-29T21:12:11+00:00",
+      "in_window": true,
+      "summary": "Kevin M. Warsh’s second meeting as chairman of the Federal Reserve was colored by internal divisions over the path forward for policy.",
+      "body_excerpt": "Kevin M. Warsh’s second meeting as chairman of the Federal Reserve was colored by internal divisions over the path forward for policy.",
+      "tickers": []
+    },
+    {
+      "title": "Markets react to Fed's July interest rate decision",
+      "url": "https://finance.yahoo.com/economy/policy/articles/markets-react-feds-july-interest-210558874.html",
+      "source": "Yahoo Finance",
+      "published_at": "2026-07-29T21:05:58+00:00",
+      "in_window": true,
+      "summary": "",
+      "body_excerpt": "On July 29, the Federal Reserve announced its decision on interest rates following its two-day policy meeting.\n\nAs expected, the central bank decided to keep the benchmark interest rate unchanged in the 3.50%-3.75% range.\n\nRelated: Bitcoin traders brace for Fed's rate call and inflation this week\n\nThough the Fed's newly appointed chair, Kevin Warsh , has emphasized the goal of lowering inflation to 2%, he hasn't outlined a detailed plan.\n\nEarlier, President Donald Trump called Warsh \"fantastic\" and reiterated that the Fed should lower the rates, \"He wants to do the right thing. I know what he wants to do.\"\n\nBut he sharply criticized other Fed officials as \"very political\" who \"perhaps have bad intentions.\" The president said,\n\n\"We should have the lowest interest rate in the world, like it used to be 30 years ago.\"\n\nHowever, the Warsh-led FOMC committee has decided to keep rates steady this time.\n\nElon Musk warns America will 1,000% go bankrupt and fail as a country\n\nElon Musk warns America will 1,000% go bankrupt and fail as a country\n\nVisa CEO discloses dynamic investment plan during earnings call\n\nVisa CEO discloses dynamic investment plan during earnings call\n\nAnalysts hike Robinhood stock price target ahead of July 29 earnings\n\nAnalysts hike Robinhood stock price target ahead of July 29 earnings\n\nFollowing the Federal Open Market Committee's (FOMC) latest interest rate decision, Bitcoin (BTC) and XRP were trading at $64,268.33 and $1.08 at the time of writing.\n\nEthereum (",
+      "tickers": [
+        "HOOD"
+      ]
+    },
+    {
+      "title": "What to know about the Fed’s decision.",
+      "url": "https://www.nytimes.com/live/2026/07/29/business/fed-meeting-rates-kevin-warsh/what-to-know-about-the-feds-decision",
+      "source": "NYTimes Business",
+      "published_at": "2026-07-29T20:37:59+00:00",
+      "in_window": true,
+      "summary": "",
+      "body_excerpt": "",
+      "tickers": []
+    },
+    {
+      "title": "4 Takeaways From the Federal Reserve Meeting",
+      "url": "https://www.nytimes.com/2026/07/29/business/economy/fed-meeting-interest-rates-takeaways.html",
+      "source": "NYTimes Business",
+      "published_at": "2026-07-29T19:41:04+00:00",
+      "in_window": true,
+      "summary": "Fed officials held interest rates steady, but they have splintered over how to fight inflation.",
+      "body_excerpt": "Fed officials held interest rates steady, but they have splintered over how to fight inflation.",
+      "tickers": []
+    },
+    {
+      "title": "Sanctions Bill Would Give Trump Sweeping New Tariff Powers",
+      "url": "https://www.nytimes.com/2026/07/29/us/politics/trump-tariffs-sanctions.html",
+      "source": "NYTimes Business",
+      "published_at": "2026-07-29T19:40:22+00:00",
+      "in_window": true,
+      "summary": "A bipartisan bill in the Senate would allow President Trump to impose tariffs on the biggest importers of Russian energy.",
+      "body_excerpt": "A bipartisan bill in the Senate would allow President Trump to impose tariffs on the biggest importers of Russian energy.",
+      "tickers": []
+    },
+    {
+      "title": "What the Fed’s rate decision means for your finances.",
+      "url": "https://www.nytimes.com/live/2026/07/29/business/fed-meeting-rates-kevin-warsh/what-the-feds-rate-decision-means-for-your-finances",
+      "source": "NYTimes Business",
+      "published_at": "2026-07-29T18:38:15+00:00",
+      "in_window": true,
+      "summary": "The central bank’s stance can influence consumer savings and borrowing, from credit cards to home loans and more.",
+      "body_excerpt": "The central bank’s stance can influence consumer savings and borrowing, from credit cards to home loans and more.",
+      "tickers": []
+    },
+    {
+      "title": "Types of life insurance: A complete guide",
+      "url": "https://finance.yahoo.com/personal-finance/insurance/article/types-of-life-insurance-173512440.html",
+      "source": "Yahoo Finance",
+      "published_at": "2026-07-29T17:35:12+00:00",
+      "in_window": true,
+      "summary": "",
+      "body_excerpt": "Some offers on this page are from advertisers who pay us, which may affect which products we write about, but not our recommendations. See our Advertiser Disclosure .\n\nYou know life insurance is important, and you're ready to buy coverage. But with so many life insurance policies out there, that's not always easy.\n\nSome policies protect you for a set number of years, while others can last the rest of your life. Some are simple and affordable, and others are complicated and expensive. Here's everything you need to know about the different types of life insurance policies, how they work, and what they cost.\n\nLess expensive than permanent life insurance\n\nCoverage ends if you outlive the term, with no payout\n\nPredictable premiums and death benefit\n\nNo cash value builds up\n\nCan convert to permanent insurance later without a health check\n\nRenewed/converted premiums are usually higher\n\nOptional return-of-premium plans refund what you paid\n\nReturn-of-premium plans cost more, and missed payments can cancel coverage\n\nTerm life insurance provides coverage for a specific period, usually 10, 20, or 30 years. If you die while the policy is active, the insurer pays the death benefit to your beneficiaries. If you outlive the term, coverage generally ends, and you don't receive any money back.\n\nMost people buy level term insurance, which keeps the premium and death benefit steady during the life of the policy.\n\nTerm life insurance tends to be much cheaper than permanent life because it's temp",
+      "tickers": []
+    },
+    {
+      "title": "Guyana’s Oil Boom Matters More Than Ever",
+      "url": "https://finance.yahoo.com/energy/articles/guyana-oil-boom-matters-more-170000075.html",
+      "source": "Yahoo Finance",
+      "published_at": "2026-07-29T17:00:00+00:00",
+      "in_window": true,
+      "summary": "",
+      "body_excerpt": "In a surprise development, the tiny South American nation of Guyana recently emerged as a major oil exporter . In a mere four years, the former British colony of one million went from first discovery to first oil. Guyana has cemented its place among South America's leading oil producers , pumping nearly one million barrels per day, making it the continent's third-largest oil producer. The rapid expansion of Guyana's offshore oil industry will enhance energy security in the Americas at a crucial time, with heightened Middle East tensions sharply impacting global supply.\n\nHow did Guyana become South America's third-largest oil producer?\n\nHow does Middle East instability affect Guyana's oil demand?\n\nWhat role does ExxonMobil play in Guyana's oil expansion?\n\nWhat geopolitical risks threatened Guyana's oil industry development?\n\nOfficial government data shows Guyana lifted 888,000 barrels of crude oil per day at the end of May 2026. This was 4% lower than the 924,000 barrels being extracted at the start of the month. There are four active floating production, storage, and offloading (FPSO) vessels operating in offshore Guyana, with a fifth, named the Errea Wittu, expected to start up during 2026 when the Uaru project comes online . ExxonMobil's $12.7 billion Uaru project, upon reaching capacity, will add 250,000 barrels per day to Guyana's petroleum output, lifting production over one million barrels daily.\n\nThis will allow the former British colony to surpass Venezuela, making it",
+      "tickers": []
+    },
+    {
+      "title": "Investors Are Bracing for Uncertain Fed Announcement",
+      "url": "https://www.nytimes.com/live/2026/07/29/business/fed-meeting-rates-kevin-warsh/investors-are-bracing-for-uncertain-fed-announcement",
+      "source": "NYTimes Business",
+      "published_at": "2026-07-29T16:57:58+00:00",
+      "in_window": true,
+      "summary": "The central bank is expected to leave interest rates unchanged, but investors are preparing for a possible surprise.",
+      "body_excerpt": "The central bank is expected to leave interest rates unchanged, but investors are preparing for a possible surprise.",
+      "tickers": []
+    },
+    {
+      "title": "TotalEnergies (TTE) Posts A War-Driven Earnings Surge, But The Real Test Is What Happens To LNG Once It Fades",
+      "url": "https://finance.yahoo.com/energy/articles/totalenergies-tte-posts-war-driven-165209577.html",
+      "source": "Yahoo Finance",
+      "published_at": "2026-07-29T16:52:09+00:00",
+      "in_window": true,
+      "summary": "",
+      "body_excerpt": "TotalEnergies SE (NYSE:TTE) reported second-quarter adjusted net income of $6 billion on July 23, 2026, up 67% year-over-year and its best quarter in nearly three years.\n\nThe gain traced almost entirely to the Iran war, as Hormuz disruption pushed crude and gas prices to multi-year highs and lifted European refining margins while Middle East capacity stayed offline. Refining and chemicals income rose 362% to $1.8 billion, and exploration and production earnings climbed 64% to $3.2 billion.\n\nCEO Patrick Pouyanné called the strait a battleground and said closures could become normal, leaving the real question: what the company looks like once that windfall fades.\n\nLNG is where that question starts to get answered, and the quarter alone was not encouraging.\n\nThe segment earned $807 million, a 22% decline the company attributed to trading underperformance amid flat European demand, though Pouyanné said prices rallied in July.\n\nThen, on July 28, 2026, TotalEnergies SE (NYSE:TTE) took a final investment decision alongside Eni on the Cronos gas field off Cyprus, each holding 50%. Gas from the field, discovered in 2022, will flow to Egypt for liquefaction at Damietta before export to Europe, with production starting in 2028 at about 2.8 million tons a year, half marketed by TotalEnergies, toward its 60 Mtpa LNG goal by 2030.\n\nA second decision the same day addressed the other side: earnings TotalEnergies already has.\n\nThe Financial Times reported the EU had reversed an October decisi",
+      "tickers": []
+    },
+    {
+      "title": "Why AMD (AMD) and Core Scientific (CORZ) Are Pairing AI Chips With Up to 2.5 Gigawatts",
+      "url": "https://finance.yahoo.com/technology/ai/articles/why-amd-amd-core-scientific-163703591.html",
+      "source": "Yahoo Finance",
+      "published_at": "2026-07-29T16:37:03+00:00",
+      "in_window": true,
+      "summary": "",
+      "body_excerpt": "Advanced Micro Devices, Inc. (NASDAQ: AMD ) and Core Scientific, Inc. (NASDAQ: CORZ ) announced an infrastructure partnership on July 28 that starts with more than 500 megawatts of U.S. data center capacity in 2027 and can expand to 2.5 gigawatts.\n\nThe commercial link is a deployment bottleneck. AI accelerators cannot generate revenue without energized land, cooling, networking, and buildings designed for high-density racks. Core Scientific supplies that infrastructure, while the companies will jointly design facilities around AMD Instinct GPUs, EPYC CPUs, and ROCm software. For AMD, reserving compatible capacity can turn customer interest into installable systems rather than stranded chip demand, although the agreement discloses no GPU-purchase commitment.\n\nFor illustration purposes only. Photo by Brett Sayles on Pexels\n\nThe full 2.5 GW is not firm capacity. Core Scientific said the partnership is anchored by 15-year agreements for approximately 530 MW across five sites and more than $14 billion of potential base contracted revenue. That company estimate is not recognized revenue, and no disclosed GPU-purchase commitment lets investors translate it into AMD chip sales.\n\nAdvanced Micro Devices, Inc. (NASDAQ:AMD) will receive market-priced warrants to buy Core Scientific common stock, subject to commercial conditions. That feature aligns AMD with the infrastructure provider's execution and gives it potential equity upside. It may also dilute existing CORZ holders if warrants v",
+      "tickers": [
+        "MSFT",
+        "GOOGL",
+        "NVDA",
+        "AMD",
+        "CRWV"
+      ]
+    },
+    {
+      "title": "US FTC sues Hims & Hers for sending user health info to Meta, Snap",
+      "url": "https://finance.yahoo.com/healthcare/articles/exclusive-us-ftc-suing-hims-163411261.html",
+      "source": "Yahoo Finance",
+      "published_at": "2026-07-29T16:34:11+00:00",
+      "in_window": true,
+      "summary": "",
+      "body_excerpt": "July 29 (Reuters) - The U.S. Federal Trade Commission sued Hims & Hers on Wednesday alleging the telehealth platform shared ‌users' health data with online advertisers, despite promising privacy, and engaged ‌in deceptive billing and cancellation practices.\n\nUsers' sensitive health information was shared with online advertising ​companies including Meta Platforms and Snap despite the company leading customers to believe their data was private, the FTC alleged in the lawsuit filed along with Los Angeles County and Utah.\n\nHims & Hers stock added to losses after ‌the news and was ⁠trading down around 12%.\n\nHims & Hers is one of the largest telehealth players in the market for weight loss drugs. ⁠The company offers telehealth appointments and prescriptions for erectile dysfunction, hair loss, and mental health medications, which it ships straight to customers.\n\n\"The FTC will ​not hesitate ​to act on behalf of consumers ​deprived of their ability to ‌choose which products they want and whether to keep their most sensitive health information private,\" Christopher Mufarrige, Director of the FTC's Bureau of Consumer Protection, said in a statement.\n\nHims & Hers called the claims baseless in a post on social media site X. \"This is not enforcement grounded in consumer ‌protection; it is an effort to ​generate headlines at our expense,\" the company ​said in the post.\n\nHims & Hers ​also started charging users for prescriptions before they have ‌had a chance to meet with ​healthcare provi",
+      "tickers": [
+        "META"
+      ]
+    },
+    {
+      "title": "Glencore Sees $3.3 Billion Trading Profit as Iran War Rattles Oil Markets",
+      "url": "https://finance.yahoo.com/markets/commodities/articles/glencore-sees-3-3-billion-163000552.html",
+      "source": "Yahoo Finance",
+      "published_at": "2026-07-29T16:30:00+00:00",
+      "in_window": true,
+      "summary": "",
+      "body_excerpt": "Commodity producing and trading giant Glencore expects to post a profit of $3.3 billion in its marketing division for the first half of the year, as extreme market volatility during the Iran war generated windfall earnings for the energy commodity traders.\n\nGlencore expects to report next week a strong half-year marketing adjusted earnings before interest and tax (EBIT) of about $3.3 billion in its Marketing segment, which includes oil trading, the company said on Wednesday in its half-year production report.\n\nWhat drove Glencore's record-breaking marketing division profits?\n\nWhich other companies benefited from energy market volatility?\n\nWhat role did the Iran war play in trading profits?\n\nHow does current performance compare to 2022 records?\n\nThe trading giant didn't specify how much energy trading contributed to the profit, but it's expected to do so in the detailed half-year earnings due out next week.\n\nAt any rate, the market volatility of the past five months is putting Glencore's trading profit on track for its best year ever if energy markets continue to whipsaw in the coming months.\n\nGlencore book its highest ever full-year EBIT in marketing for 2022, the year in which the Russian invasion of Ukraine upended energy flows and markets and sent oil prices soaring to $120 per barrel.\n\nThe adjusted EBIT in the marketing division hit a record $6.4 billion in 2022, a surge of 73% from the prior year, \"driven primarily by our energy departments successfully navigating the ex",
+      "tickers": [
+        "INTC"
+      ]
+    },
+    {
+      "title": "Why Wall Street Is Split on Phillips 66 (PSX) Even as Its Numbers Improve",
+      "url": "https://finance.yahoo.com/energy/articles/why-wall-street-split-phillips-162957977.html",
+      "source": "Yahoo Finance",
+      "published_at": "2026-07-29T16:29:57+00:00",
+      "in_window": true,
+      "summary": "",
+      "body_excerpt": "The energy sector in 2026 is experiencing a split-margin scenario that few investors are pricing cleanly. Even though the broader market views the sector as mature and low-growth, refining margins remain significantly higher than their typical mid-cycle range.\n\nChemicals, on the other hand, are only now recovering from some of their lowest margins in years, with the Chemical Manufacturing Industry posting an EBITDA margin of 16.86% in the year leading up to Q2 2026.\n\nMeanwhile, renewable diesel, which has long been a burden on integrated energy earnings, is moving from below break-even to mid-cycle profitability, thanks to a regulatory reset rather than increased demand. This comes as S&P Global reported that the applicable biomass-based diesel volume requirement has been substantially raised from 5.42 billion gallons in 2025 to 9.07 billion gallons in 2026.\n\nOnly a handful of companies sit at the center of all three cycles simultaneously. That's why Phillips 66 (NYSE: PSX ) is worth a deeper study. It isn't a pure refiner, a pure chemicals operation, or a pure renewables gamble, but rather a company whose near-term earnings potential depends on three distinct margin recoveries occurring nearly in sync.\n\nThe refining rebound is already quantifiable as PSX's realized refining margin increased by 48% to $10.11 per barrel in Q1 2026, from $6.81 the previous year, while crude capacity utilization increased to 95% from 80%. This lifted the refining business from a $937 million adj",
+      "tickers": []
+    },
+    {
+      "title": "Vinted taps DHL’s Germany collection points to expand second-hand market",
+      "url": "https://finance.yahoo.com/small-business/articles/vinted-taps-dhl-germany-collection-162615559.html",
+      "source": "Yahoo Finance",
+      "published_at": "2026-07-29T16:26:15+00:00",
+      "in_window": true,
+      "summary": "",
+      "body_excerpt": "Vinted, one of Europe's largest marketplaces for buying and selling pre-owned items between private individuals, will direct customers in Germany to ship or exchange goods through DHL Group's ( XETRA: DHL ) network of parcel lockers and digital kiosks, under a new strategic partnership aimed at making peer-to-peer purchases as convenient as ones through online retailers.\n\nPrivate-party sales of used items through online marketplaces have become very popular in Germany. According to the latest DHL E-Commerce Trends Report, 67% of online shoppers in the country have already sold items via a digital platform.\n\nVinted and DHL announced Wednesday they are working together to expand and simplify the shipping and collection of Vinted parcels through DHL's network of Packstations (automated, self-service locker systems that allows users to send, receive and drop-off parcels around the clock), Poststations (digital Deutsche Post retail outlets where users can take care of postal business) and DeinFach lockers (a carrier neutral parcel locker network).\n\nDHL operates the most extensive parcel shipping network in Germany, including 41,000 parcel drop-off and collection points at post offices, parcel shops and automated facilities.\n\nThe Vinted collaboration builds on a multi-month pilot program that both companies recently completed, DHL spokeswoman Sarah Preuss explained in an email message.\n\nA particular focus is on the locker-to-locker shipping option, which is expected to be used more",
+      "tickers": []
+    },
+    {
+      "title": "Dow Leader Rides Surging Oil Prices And Trump's Venezuela Spoils",
+      "url": "https://www.investors.com/news/dow-jones-stock-chevron-oil-price-surge-trump-venezuela-cvx-stock-price/?src=A00220&yptr=yahoo",
+      "source": "Yahoo Finance",
+      "published_at": "2026-07-29T16:16:33+00:00",
+      "in_window": true,
+      "summary": "",
+      "body_excerpt": "Shares of energy giant Chevron rode climbing oil prices and rising oil production levels in Venezuela, following President Donald Trump's January takeover, to outpace most other Dow Jones stocks on Wednesday. It's no secret how. The second-largest U.S. oil and gas producer by market capitalization, Chevron (CVX) rose around 2.5% midmorning to above 192. The oil stock is up 16%…\n\nCopyright ©2026 Investor's Business Daily, LLC. All rights reserved. 87990cbe856818d5eddac44c7b1cdeb8",
+      "tickers": []
+    },
+    {
+      "title": "Top Performing Leveraged/Inverse ETFs: 07/26/2026",
+      "url": "https://finance.yahoo.com/markets/options/articles/top-performing-leveraged-inverse-etfs-161544295.html",
+      "source": "Yahoo Finance",
+      "published_at": "2026-07-29T16:15:44+00:00",
+      "in_window": true,
+      "summary": "",
+      "body_excerpt": "This article was originally published on ETFTrends.com.\n\nThese were last week's top performing leveraged and inverse ETFs. Note that because of leverage, these kinds of funds can move quickly. Always do your homework.\n\nDefiance Daily Target 2X Long SMCI ETF\n\nGraniteShares 2x Long SMCI Daily ETF\n\nDefiance Daily Target 2X Long RIOT ETF\n\nTradr 2X Short TSLA Daily ETF New Oct 2025\n\nGraniteShares 2x Short TSLA Daily ETF\n\nGraniteShares 2x Long MARA Daily ETF\n\nGraniteShares 2x Long DELL Daily ETF\n\nDirexion Daily TSLA Bear 1X ETF\n\nMicroSectors Gold Miners 3X Leveraged ETN\n\n1. SMCX – Defiance Daily Target 2X Long SMCI ETF\n\nSMCX seeks to deliver 2x leveraged exposure to the daily share price movement of Super Micro Computer, topped the list of top-performing levered ETFs. Super Micro Computer (NASDAQ: SMCI) shares jumped last week due to a surprise gross margin forecast, a record order backlog, and strong demand for AI servers.\n\n2. SMCL – GraniteShares 2x Long SMCI Daily ETF\n\nSMCL, which provides 2x leveraged exposure to the daily price movement for shares of Super Micro Computer Inc (ticker: SMCI) stock ranked second on the list with over 48% weekly gains.\n\n3. RIOX – Defiance Daily Target 2X Long RIOT ETF\n\nRIOX aims to provide 2x long daily price performance of Riot Platforms, Inc., focusing on cryptocurrencies and cryptocurrency mining computers, featured on the levered ETFs list with over 47% weekly gains. Riot Platforms experienced a significant increase, driven by AI data center e",
+      "tickers": [
+        "TSLA",
+        "DELL",
+        "SMCI",
+        "ETN"
+      ]
+    },
+    {
+      "title": "QCOM Stock Alert: What to Know as Qualcomm Partners With BMW",
+      "url": "https://finance.yahoo.com/markets/stocks/articles/qcom-stock-alert-know-qualcomm-161505927.html",
+      "source": "Yahoo Finance",
+      "published_at": "2026-07-29T16:15:05+00:00",
+      "in_window": true,
+      "summary": "",
+      "body_excerpt": "Qualcomm (QCOM) stock is drawing heightened attention today after BMW named the chipmaker its lead compute silicon provider for next-gen digital cockpits and automated driving systems. This multi-year agreement expands on years of deep technical collaboration between QCOM and BMW across the latter's global vehicle fleet.\n\nThe announcement arrives as Qualcomm shares are under significant pressure amid a broader tech rout, currently down more than 35% versus their June high.\n\nDear Sandisk Stock Fans, Mark Your Calendars for August 5\n\nDear Sandisk Stock Fans, Mark Your Calendars for August 5\n\nNasdaq Futures Plunge as Chip Selloff Rages On, FOMC Meeting and Earnings on Tap\n\nNasdaq Futures Plunge as Chip Selloff Rages On, FOMC Meeting and Earnings on Tap\n\nAhead of Microsoft Earnings, Here's What Barchart Data Says Comes Next for MSFT Stock\n\nAhead of Microsoft Earnings, Here's What Barchart Data Says Comes Next for MSFT Stock\n\nStop Missing Market Moves: Get the FREE Barchart Brief – your midday dose of stock movers, trending sectors, and actionable trade ideas, delivered right to your inbox. Sign Up Now!\n\nStop Missing Market Moves: Get the FREE Barchart Brief – your midday dose of stock movers, trending sectors, and actionable trade ideas, delivered right to your inbox. Sign Up Now!\n\nUnder the new long-term agreement, Qualcomm's flagship Snapdragon Elite automotive platform will serve as the core hardware foundation for BMW's next-gen, AI-driven vehicle architectures.\n\nBuilding on ",
+      "tickers": [
+        "MSFT",
+        "QCOM",
+        "SNDK"
+      ]
+    },
+    {
+      "title": "Caterpillar Trades at 3x Its Historical Multiple — Michael Burry Is Betting Against It",
+      "url": "https://finance.yahoo.com/markets/stocks/articles/caterpillar-trades-3x-historical-multiple-161312284.html",
+      "source": "Yahoo Finance",
+      "published_at": "2026-07-29T16:13:12+00:00",
+      "in_window": true,
+      "summary": "",
+      "body_excerpt": "AI data centers are putting pressure on the US electrical grid in ways that did not seem possible just a few years ago, and that strain is a direct benefit to heavy equipment manufacturers, not just chipmakers. US data center power consumption is expected to increase by 22% in a single year, with total grid demand nearly tripling to 134.4 GW by 2030 as hyperscale buildouts gain speed.\n\nConsidering grid capacity cannot be increased quickly enough to meet that curve, on-site and backup power production has become a significant portion of AI infrastructure spending, with Caterpillar Inc. (NYSE: CAT ) alone accounting for an estimated 18% of the data center generator market. Notably, the company has come to be one of the Dow's best-performing stocks so far in 2026, with a year-to-date return of 47.81%.\n\nThe company's Q1 2026 revenue came in at $17.4 billion, up 22% year-over-year, with adjusted EPS of $5.54, above expectations. The backlog behind that expansion seems to be the real story, with Caterpillar Inc. (NYSE:CAT) closing the quarter with a record $63 billion in order backlog, an increase of 79% year-over-year and $11.5 billion sequentially, owing to major project wins like Altus and Chevron, growing rental demand, and strong Mining segment order conversion.\n\nCEO Joe Creed told analysts that the company's massive engine backlog, which directly powers AI data centers, has grown by over 3.5x since Caterpillar first revealed capacity expansion plans back in January 2024.\n\nThi",
+      "tickers": []
+    },
+    {
+      "title": "'Unprecedented' OpenAI Cyberattack Brings Palo Alto, CrowdStrike Into Focus",
+      "url": "https://www.investors.com/research/ibd-industry-themes/openai-cyberattack-palo-alto-stock-crowdstrike/?src=A00220&yptr=yahoo",
+      "source": "Yahoo Finance",
+      "published_at": "2026-07-29T16:08:25+00:00",
+      "in_window": true,
+      "summary": "",
+      "body_excerpt": "A recent OpenAI cyberattack is shining the spotlight on artificial intelligence security stocks Palo Alto Networks (PANW), CrowdStrike (CRWD), Fortinet (FTNT), Okta (OKTA) and SentinelOne (S). All of the stock picks come from Investor's Business Daily's Computer Software-Security industry group, which ranks No. 9 out of the 142 groups IBD tracks. Historically, winning stocks are in the top 40 industry…\n\nCopyright ©2026 Investor's Business Daily, LLC. All rights reserved. 87990cbe856818d5eddac44c7b1cdeb8",
+      "tickers": [
+        "INTC",
+        "CRWD"
+      ]
+    },
+    {
+      "title": "Explainer-Can J&J finally put the talc litigation behind it?",
+      "url": "https://finance.yahoo.com/healthcare/articles/explainer-j-j-finally-put-160252107.html",
+      "source": "Yahoo Finance",
+      "published_at": "2026-07-29T16:02:52+00:00",
+      "in_window": true,
+      "summary": "",
+      "body_excerpt": "NEW YORK, July 29 (Reuters) - After years of failed attempts to resolve thousands of lawsuits alleging that its talc products caused cancer, Johnson & Johnson says it has reached a settlement, worth at least $5.5 billion, that could finally help bring ‌an end to litigation that has dogged the company for over a decade.\n\nWHAT IS THE TALC LITIGATION ABOUT?\n\nTens of thousands of people ‌have sued J&J in federal and state courts, alleging that its talc-based baby powder and other products caused ovarian cancer.\n\nJ&J has long denied the allegations, arguing that decades of scientific ​testing show its talc products are safe and do not cause cancer.\n\nResults at trial have been mixed: J&J won several cases, but the litigation has also produced billions of dollars in verdicts, settlements and legal costs over more than a decade.\n\nWHAT MUST HAPPEN FOR THE SETTLEMENT TO TAKE EFFECT?\n\nJ&J says the settlement will move forward only if the deal is accepted by enough people to cover 95% of the estimated 76,000 ovarian cancer claims. That could happen in ‌a few months, according to a plaintiffs' lawyer ⁠who supports the deal.\n\nHOW HAS J&J TRIED TO RESOLVE THE LITIGATION IN THE PAST?\n\nJ&J previously tried three times to end the talc litigation through bankruptcy. In each case, it created a new subsidiary, transferred talc liabilities to that company ⁠and then placed it into bankruptcy proceedings. Each bankruptcy was tossed out of court.\n\nThe bankruptcies were fiercely opposed by some plaint",
+      "tickers": []
+    },
+    {
+      "title": "Apple says UK App Store proposal amounts to price regulation",
+      "url": "https://finance.yahoo.com/technology/articles/apple-says-uk-app-store-154808227.html",
+      "source": "Yahoo Finance",
+      "published_at": "2026-07-29T15:48:08+00:00",
+      "in_window": true,
+      "summary": "",
+      "body_excerpt": "LONDON, July 29 (Reuters) - Apple said on Wednesday that proposed UK rules governing its App Store would amount to price regulation, arguing that plans to loosen ‌its control over in-app payments could undermine innovation and investment.\n\nIn a submission to Britain's ‌Competition and Markets Authority, the iPhone maker said proposed \"steering\" requirements would go beyond promoting competition and give the regulator a \"highly ​intrusive\" role in managing its business.\n\nWhat powers does Britain's digital markets regime provide?\n\nWhat revenue does Apple generate from UK operations?\n\nWhat are Apple's main objections to UK regulations?\n\nHow would CMA proposals change App Store payments?\n\nThe CMA's consultation, which closed on Monday, is part of its efforts to boost competition and consumer choice. Its proposed measures would allow app developers to direct users to payment options outside Apple's App Store and Google's Play Store and require any fees charged for such ‌steering to be fair and ⁠reasonable.\n\nA CMA spokesperson rejected Apple's characterisation of the proposals as price regulation.\n\n\"Our consultation proposes principles to ensure that the fees Apple and Google charge for steering ⁠are fair and reasonable, not to directly set prices,\" the spokesperson said.\n\nThe watchdog said it would expect steering fees to be lower than current app store charges, with savings passed on to UK customers or ​reinvested ​into developers' businesses to support innovation. It added that ",
+      "tickers": [
+        "AAPL",
+        "GOOGL"
+      ]
+    },
+    {
+      "title": "Is SK Hynix Stock a Buy After Its Latest Earnings Report?",
+      "url": "https://finance.yahoo.com/markets/stocks/articles/sk-hynix-stock-buy-latest-154601633.html",
+      "source": "Yahoo Finance",
+      "published_at": "2026-07-29T15:46:01+00:00",
+      "in_window": true,
+      "summary": "",
+      "body_excerpt": "The South Korean memory chipmaker SK Hynix (NASDAQ:SKHY) has been one of the hottest stocks in the market this year.\n\nThe company's South Korean shares are up roughly 115% this year, and that's after a nearly 47% pullback over the past month.\n\nMissed Nvidia in 2009? This Rare Signal Is Flashing Again. In 2009, a \"Double Down\" signal flashed for a little-known chipmaker called Nvidia. For the first time in years, that same \"Total Conviction\" signal is flashing for a company 1/100th the size of Nvidia. Continue »\n\nRecently, the company delivered strong second-quarter earnings results. SK Hynix reported $42 billion of operating income and roughly $54.4 billion in revenue, which is 257% higher year over year.\n\nHowever, the results fell short of Wall Street expectations, and shares continued to struggle.\n\nSK Hynix also said it plans to raise capital expenditures to roughly $27.6 billion this year, a roughly 33% increase from 2025. The company is also planning to introduce a capital return policy for shareholders later this year.\n\nEarlier this month, SK Hynix listed American Depositary Receipts on the Nasdaq. Is the stock a buy after its latest earnings report?\n\nImage source: The Motley Fool.\n\nSK Hynix is one of the largest manufacturers of memory in the world, specifically, NAND flash memory, dynamic random-access memory (DRAM), and high-bandwidth memory (HBM).\n\nMemory has become imperative in the artificial intelligence trade because it feeds data to the graphics processing units",
+      "tickers": [
+        "NVDA",
+        "INTC",
+        "000660.KS"
+      ]
+    },
+    {
+      "title": "T-Mobile Fell 11% on an Earnings Beat, Then Rebounded 6% the Next Day. Here's What's Going On.",
+      "url": "https://finance.yahoo.com/markets/stocks/articles/t-mobile-fell-11-earnings-154600096.html",
+      "source": "Yahoo Finance",
+      "published_at": "2026-07-29T15:46:00+00:00",
+      "in_window": true,
+      "summary": "",
+      "body_excerpt": "T-Mobile (NASDAQ: TMUS) investors saw some serious volatility last week. On Thursday, July 23, the wireless carrier reported second-quarter results in which profit came in ahead of Wall Street's expectations while revenue landed just shy of them. The stock fell 10.75% to $170.42. Then on Friday, July 24, shares turned around and rose 5.67% to close at $180.09.\n\nTwo wild sessions, one report, and a nearly $10-per-share gap between their closing verdicts. Clearly, investors are having a hard time making up their mind about the stock. With the stock now sitting about 31% below its 52-week high of $261.56, at about 14 times forward earnings , it's worth sorting out what is going on with the underlying business.\n\nMissed Nvidia in 2009? This Rare Signal Is Flashing Again. In 2009, a \"Double Down\" signal flashed for a little-known chipmaker called Nvidia. For the first time in years, that same \"Total Conviction\" signal is flashing for a company 1/100th the size of Nvidia. Continue »\n\nThe second quarter itself held up fine. Total revenue rose about 8% year over year to $22.8 billion. Service revenue (the recurring monthly billings that matter most for a carrier) grew 9% to $19.0 billion. The company added 277,000 postpaid accounts in the period, with average revenue per account up 2% from a year ago.\n\nThe discomfort came from the outlook. Management told investors to expect only about 250,000 postpaid account additions in the third quarter, a step down from the second quarter's pace.",
+      "tickers": [
+        "NVDA"
+      ]
+    },
+    {
+      "title": "Woman, 33, Says She Found $380 A Month In Impulse Subscriptions Quietly Draining Their Down Payment Fund — Her Partner Didn't Even Know Half Of Them Existed",
+      "url": "https://finance.yahoo.com/small-business/articles/woman-33-says-she-found-154515022.html",
+      "source": "Yahoo Finance",
+      "published_at": "2026-07-29T15:45:15+00:00",
+      "in_window": true,
+      "summary": "",
+      "body_excerpt": "Benzinga and Yahoo Finance LLC may earn commission or revenue on some items through the links below.\n\nA woman, 33, was reviewing their joint down payment savings account before a mortgage pre-approval appointment and discovered $380 a month in recurring subscription charges pulling directly from the fund, several of which her partner didn't recognize or remember signing up for. Between forgotten streaming services, a fitness app neither of them used, and a subscription box that had shipped for eight months unopened, the leak had quietly pushed their home buying timeline back by nearly a year.\n\nRecurring charges are specifically designed to require an active decision to cancel rather than an active decision to continue, which is part of why they're so easy to forget once the initial sign up excitement fades. A $15 charge here and a $22 charge there rarely triggers scrutiny on a monthly statement the way a single large purchase would.\n\nThe Future Of Work May Look Very Different From Today's Office. This Startup Is Building Toward That Vision.\n\nThe Future Of Work May Look Very Different From Today's Office. This Startup Is Building Toward That Vision.\n\nDeloitte's #1 Fastest-Growing Software Company Lets Users Earn Money Just by Scrolling — Investors Can Still Get In at $0.52/Share\n\nDeloitte's #1 Fastest-Growing Software Company Lets Users Earn Money Just by Scrolling — Investors Can Still Get In at $0.52/Share\n\nAdd them up over a year, though, and $380 a month comes out to more ",
+      "tickers": []
+    },
+    {
+      "title": "Crude Oil Prices Soar as US-Iran Tensions Escalate",
+      "url": "https://finance.yahoo.com/energy/articles/crude-oil-prices-soar-us-154512027.html",
+      "source": "Yahoo Finance",
+      "published_at": "2026-07-29T15:45:12+00:00",
+      "in_window": true,
+      "summary": "",
+      "body_excerpt": "September WTI crude oil (CLU26) today is up +5.31 (+6.70%), and September RBOB gasoline (RBU26) is up -0.0802 (+2.55%).\n\nCrude oil and gasoline prices are soaring today amid a fresh round of hostilities in the Middle East, which threatens global energy supplies. Gains in crude accelerated after President Trump said the US will \"hit Iran hard\" after a recent attack from Iran that targeted a US base in Jordan. Crude prices raced to their highs after weekly EIA crude inventories unexpectedly fell to a 7.75-year low and after crude supplies at Cushing sank to a nearly 12-year low.\n\nTesla Just Delayed Its Biggest Growth Story. What That Means for TSLA Stock.\n\nTesla Just Delayed Its Biggest Growth Story. What That Means for TSLA Stock.\n\nCrude Oil Prices Pressured by Optimism Over Iran Negotiations\n\nCrude Oil Prices Pressured by Optimism Over Iran Negotiations\n\nCooler US Weather Forecasts Push Nat-Gas Prices Lower\n\nCooler US Weather Forecasts Push Nat-Gas Prices Lower\n\nGet exclusive insights with the FREE Barchart Brief newsletter. Subscribe now for quick, incisive midday market analysis you won't find anywhere else.\n\nGet exclusive insights with the FREE Barchart Brief newsletter. Subscribe now for quick, incisive midday market analysis you won't find anywhere else.\n\nCrude oil prices jumped today after the Islamic Revolutionary Guard Corps (IRGC) said it targeted a US airbase and command center in Jordan with ballistic missiles. The IRGC also claimed to have hit and halted three tan",
+      "tickers": [
+        "TSLA"
+      ]
+    },
+    {
+      "title": "UBS Buys Back Its Credit Suisse Hangover",
+      "url": "https://finance.yahoo.com/markets/stocks/articles/ubs-buys-back-credit-suisse-154209212.html",
+      "source": "Yahoo Finance",
+      "published_at": "2026-07-29T15:42:09+00:00",
+      "in_window": true,
+      "summary": "",
+      "body_excerpt": "Our analysts just identified a stock with the potential to be the next Nvidia. Tell us how you invest and we'll show you why it's our #1 pick. Tap here.\n\nTurns out swallowing a collapsing rival can actually work out. UBS just posted its cleanest quarter yet since absorbing Credit Suisse, so now the only thing standing between the bank and full bragging rights is literally Switzerland.\n\nUBS reported second-quarter net profit of $2.8 billion, comfortably ahead of the roughly $2.39 billion analysts expected. Underlying pretax profit jumped 70% to $3.89 billion, revenue rose 13% year over year to $13.7 billion.\n\nWealth management and investment banking did the heavy lifting. Global wealth management pulled in $36 billion of net new assets, with Switzerland itself contributing strong inflows. The investment bank rode buoyant markets and active trading to a 26% revenue jump.\n\nUBS also announced a new $3 billion buyback, to wrap by mid-2027, with at least $1 billion of that repurchased in just the next three months. Credit Suisse integration is on track to be substantially done by the end of 2026, with another $1.1 billion in cost savings this quarter alone, pushing cumulative savings to $12.6 billion. Shares rose on the news.\n\nUBS is trying to turn a forced marriage into a shareholder-return story, and so far, it's working better than almost anyone expected.\n\nBack in 2023, Swiss authorities pushed UBS into buying a collapsing Credit Suisse, handing it a legal migraine and instant d",
+      "tickers": [
+        "NVDA"
+      ]
+    },
+    {
+      "title": "Decoding PLTR Stock's Premium Valuation",
+      "url": "https://finance.yahoo.com/markets/stocks/articles/decoding-pltr-stocks-premium-valuation-154148921.html",
+      "source": "Yahoo Finance",
+      "published_at": "2026-07-29T15:41:48+00:00",
+      "in_window": true,
+      "summary": "",
+      "body_excerpt": "This is a hyper-growth chapter for Palantir Technologies. The company provides its Artificial Intelligence Platform to critical institutions like the Department of the Navy.\n\nDemand, particularly in the U.S., is now outstripping the company's ability to deliver. In response, management has surged resources from its commercial teams to support the defense industrial base.\n\nThat's the story the market is currently paying 129.6x trailing earnings for. Has it taken the multiple too far, or is the growth implied by today's price reasonable? Let's unpack below.\n\nBefore we get into the math behind that valuation, PLTR 's current numbers are worth keeping in mind as a reference point:\n\nLTM refers to last twelve months.\n\nWhat The Price Is Asking For\n\nTo defend PLTR's $295.7B market cap over the next 7 years, three things have to play out. The multiple is settled from today's 129.6x toward 28.8x , the multiple a mature, scaled software franchise typically settles into. Margins land near 31% , set near the midpoint of the company's own margin cycle, since its peak clears mature peers but its through-cycle average sits well below that peak. And revenue compounds from $5.2B today to $32.9B at maturity, supporting $10.3B of annual net income. That last line works out to a required revenue CAGR of 30% , below the 68% the business is currently running.\n\nGrowth is being driven by the company's U.S. commercial segment and the positioning of its AIP platform. Management frames AIP as the only r",
+      "tickers": [
+        "INTC",
+        "PLTR"
+      ]
+    },
+    {
+      "title": "Dear Sandisk Stock Fans, Mark Your Calendars for August 5",
+      "url": "https://finance.yahoo.com/markets/stocks/articles/dear-sandisk-stock-fans-mark-154110980.html",
+      "source": "Yahoo Finance",
+      "published_at": "2026-07-29T15:41:10+00:00",
+      "in_window": true,
+      "summary": "",
+      "body_excerpt": "Sandisk Corporation (SNDK) spent most of the past year rewarding investors who backed the artificial intelligence (AI) trade. Relentless optimism over booming memory demand kept the stock climbing until the rally suddenly lost its footing. On Monday, July 27, shares tumbled 11%, making Sandisk the worst-performing stock on the S&P 500 Index ($SPX).\n\nThe sell-off spilled over into the semiconductor sector, leaving other chip stocks under pressure too. Traders returned the next day with little appetite for bargains, driving another 14.25% intraday decline. The retreat revived a familiar debate among retail investors over whether Sandisk could hold above the psychological $1,000 mark.\n\nNasdaq Futures Plunge as Chip Selloff Rages On, FOMC Meeting and Earnings on Tap\n\nNasdaq Futures Plunge as Chip Selloff Rages On, FOMC Meeting and Earnings on Tap\n\nAhead of Microsoft Earnings, Here's What Barchart Data Says Comes Next for MSFT Stock\n\nAhead of Microsoft Earnings, Here's What Barchart Data Says Comes Next for MSFT Stock\n\nMichael Burry Is Doubling Down His Short Bets Against Micron and Nvidia. What That Tells Us About the Future of Chip Stocks.\n\nMichael Burry Is Doubling Down His Short Bets Against Micron and Nvidia. What That Tells Us About the Future of Chip Stocks.\n\nGet exclusive insights with the FREE Barchart Brief newsletter. Subscribe now for quick, incisive midday market analysis you won't find anywhere else.\n\nGet exclusive insights with the FREE Barchart Brief newsletter. Su",
+      "tickers": [
+        "MSFT",
+        "NVDA",
+        "MU",
+        "INTC",
+        "WDC",
+        "SNDK"
+      ]
+    },
+    {
+      "title": "Mortgage rate predictions through 2030: Where are they headed?",
+      "url": "https://finance.yahoo.com/personal-finance/mortgages/article/mortgage-rate-predictions-through-2030-where-are-they-headed-195826935.html",
+      "source": "Yahoo Finance",
+      "published_at": "2025-08-18T19:58:26+00:00",
+      "in_window": false,
+      "summary": "",
+      "body_excerpt": "Some offers on this page are from advertisers who pay us, which may affect which products we write about, but not our recommendations. See our Advertiser Disclosure .\n\nMortgage rates have been higher in the last few years. But where are rates headed in the next five years, and should you wait for mortgage rates to fall significantly before buying or refinancing? Mortgage interest rates are determined by several factors , all of which can give us clues about the future. Let's take a closer look at mortgage rate predictions over the next five years.\n\nHere are the housing market predictions for 2026.\n\nHere are the housing market predictions for 2026.\n\nOne of the most useful indicators for predicting mortgage rates is the yield on the 10-year U.S. Treasury note . Mortgage rates and 10-year Treasury yields typically move in the same direction, although mortgage rates are usually higher because lenders factor in additional risks. This difference between the two is known as the spread, and we'll account for that when estimating where mortgage rates could go.\n\nWith that in mind, the first step is to look at where economists believe Treasury yields are headed over the next five years. To build a forecast, we'll combine expert economic projections with data compiled using artificial intelligence.\n\nMichael Wolf, a global economist at Deloitte Touche Tohmatsu Ltd., outlined the firm's Treasury yield expectations over the next five years in a December update from the Deloitte Global Econo",
+      "tickers": [
+        "INTC"
+      ]
+    },
+    {
+      "title": "Stocks Sink in Broad AI Rout Sparked by China's DeepSeek",
+      "url": "https://www.wsj.com/articles/nikkei-may-rise-as-weak-yen-raises-earnings-hopes-776a8056",
+      "source": "WSJ Markets",
+      "published_at": "2025-01-27T19:26:00+00:00",
+      "in_window": false,
+      "summary": "U.S. stocks were mostly lower, with the Nasdaq leading declines as makers of AI infrastructure suffered steep falls, many in the double digits. Nvidia was down 16%.",
+      "body_excerpt": "U.S. stocks were mostly lower, with the Nasdaq leading declines as makers of AI infrastructure suffered steep falls, many in the double digits. Nvidia was down 16%.",
+      "tickers": [
+        "NVDA"
+      ]
+    },
+    {
+      "title": "Comex Gold, Silver Settle Lower",
+      "url": "https://www.wsj.com/articles/gold-edges-lower-feds-rate-decision-in-focus-09dbfceb",
+      "source": "WSJ Markets",
+      "published_at": "2025-01-27T19:01:00+00:00",
+      "in_window": false,
+      "summary": "Gold settled 1.4% lower, down two of the past three sessions, and silver fell 2.5%, down three of the past four sessions.",
+      "body_excerpt": "Gold settled 1.4% lower, down two of the past three sessions, and silver fell 2.5%, down three of the past four sessions.",
+      "tickers": []
+    },
+    {
+      "title": "DeepSeek Won't Sink U.S. AI Titans",
+      "url": "https://www.wsj.com/articles/deepseek-us-ai-stocks-nvidia-broadcom-6cdfae81",
+      "source": "WSJ Markets",
+      "published_at": "2025-01-27T18:12:00+00:00",
+      "in_window": false,
+      "summary": "Panic fueling the selloff of Nvidia, Broadcom and other tech giants is overblown.",
+      "body_excerpt": "Panic fueling the selloff of Nvidia, Broadcom and other tech giants is overblown.",
+      "tickers": [
+        "NVDA",
+        "AVGO"
+      ]
+    },
+    {
+      "title": "Financial Services Roundup: Market Talk",
+      "url": "https://www.wsj.com/articles/financial-services-roundup-market-talk-94f52cba",
+      "source": "WSJ Markets",
+      "published_at": "2025-01-27T17:27:00+00:00",
+      "in_window": false,
+      "summary": "Gain insight on Experian, SoFi Technologies and more in the latest Market Talks covering Financial Services.",
+      "body_excerpt": "Gain insight on Experian, SoFi Technologies and more in the latest Market Talks covering Financial Services.",
+      "tickers": []
+    },
+    {
+      "title": "Arabica Coffee Prices Hit Record on U.S., Colombia Tariff Spat",
+      "url": "https://www.wsj.com/articles/arabica-coffee-prices-hit-new-high-on-u-s-colombia-tariff-spat-582446fe",
+      "source": "WSJ Markets",
+      "published_at": "2025-01-27T17:20:00+00:00",
+      "in_window": false,
+      "summary": "Arabica coffee prices hit a record level, as traders digested the withdrawal of President Trump’s threats to impose tariffs and economic sanctions on Colombia.",
+      "body_excerpt": "Arabica coffee prices hit a record level, as traders digested the withdrawal of President Trump’s threats to impose tariffs and economic sanctions on Colombia.",
+      "tickers": []
+    },
+    {
+      "title": "Swiss franc, Japanese yen Rise as DeepSeek News Boosts Safe Havens",
+      "url": "https://www.wsj.com/articles/safe-haven-currencies-strengthen-amid-fears-over-global-tariffs-9964e17a",
+      "source": "WSJ Markets",
+      "published_at": "2025-01-27T14:55:00+00:00",
+      "in_window": false,
+      "summary": "The Yen and Swiss Franc were stronger against the dollar as investors sought safe havens after Chinese start-up DeepSeek’s new AI model hit U.S. tech stocks.",
+      "body_excerpt": "The Yen and Swiss Franc were stronger against the dollar as investors sought safe havens after Chinese start-up DeepSeek’s new AI model hit U.S. tech stocks.",
+      "tickers": []
+    },
+    {
+      "title": "Natural Gas Falls on Shifting Weather Forecasts",
+      "url": "https://www.wsj.com/articles/u-s-natural-gas-futures-fall-on-shifting-weather-forecasts-1ef3e457",
+      "source": "WSJ Markets",
+      "published_at": "2025-01-27T14:05:00+00:00",
+      "in_window": false,
+      "summary": "U.S. natural gas futures fell after weekend updates took some of the chill out of early February weather forecasts.",
+      "body_excerpt": "U.S. natural gas futures fell after weekend updates took some of the chill out of early February weather forecasts.",
+      "tickers": []
+    },
+    {
+      "title": "Building-Products Distributor QXO Launches Hostile Bid for Beacon",
+      "url": "https://www.wsj.com/articles/building-products-distributor-qxo-launching-hostile-bid-for-beacon-de024410",
+      "source": "WSJ Markets",
+      "published_at": "2025-01-27T13:28:00+00:00",
+      "in_window": false,
+      "summary": "QXO is taking its offer directly to shareholders after being rebuffed on several occasions.",
+      "body_excerpt": "QXO is taking its offer directly to shareholders after being rebuffed on several occasions.",
+      "tickers": []
+    },
+    {
+      "title": "Natural-Gas Firm Diversified Energy Strikes Deal for Permian Basin Player",
+      "url": "https://www.wsj.com/articles/natural-gas-firm-diversified-energy-nears-deal-for-permian-basin-player-4c1c5ff5",
+      "source": "WSJ Markets",
+      "published_at": "2025-01-27T11:57:00+00:00",
+      "in_window": false,
+      "summary": "Maverick Natural Resources has operations in Texas and Oklahoma.",
+      "body_excerpt": "Maverick Natural Resources has operations in Texas and Oklahoma.",
+      "tickers": []
+    },
+    {
+      "title": "What's New This Tax Season That Can Save You Money",
+      "url": "https://www.wsj.com/articles/tax-season-2024-irs-filing-dates-explained-628a8b37",
+      "source": "WSJ Markets",
+      "published_at": "2025-01-27T10:30:00+00:00",
+      "in_window": false,
+      "summary": "There are some new wrinkles, especially for those who sell things online or bought an EV.",
+      "body_excerpt": "There are some new wrinkles, especially for those who sell things online or bought an EV.",
+      "tickers": []
+    },
+    {
+      "title": "Chinese Investors With Few Options Turn to Dividends",
+      "url": "https://www.wsj.com/articles/chinese-investors-with-few-options-turn-to-dividends-ad31dcc4",
+      "source": "WSJ Markets",
+      "published_at": "2025-01-27T10:30:00+00:00",
+      "in_window": false,
+      "summary": "Companies with good payouts are now the hottest bet in China markets.",
+      "body_excerpt": "Companies with good payouts are now the hottest bet in China markets.",
+      "tickers": []
+    },
+    {
+      "title": "U.S. Treasury Yields Fall But Direction for Long-End Yields Still Seen Upward",
+      "url": "https://www.wsj.com/articles/jgbs-consolidate-supported-by-u-s-treasurys-gains-7edccc7d",
+      "source": "WSJ Markets",
+      "published_at": "2025-01-27T10:02:00+00:00",
+      "in_window": false,
+      "summary": "The 10-year U.S. Treasury yield fell and ING said the the long end of the Treasury curve will continue trading at higher yields even as Trump hasn’t delivered anything to shock markets so far.",
+      "body_excerpt": "The 10-year U.S. Treasury yield fell and ING said the the long end of the Treasury curve will continue trading at higher yields even as Trump hasn’t delivered anything to shock markets so far.",
+      "tickers": []
+    },
+    {
+      "title": "Russia's Crude Exports Fairly Stable Despite U.S. Sanctions, Goldman Says",
+      "url": "https://www.wsj.com/articles/oil-futures-fall-after-trump-calls-for-tariffs-on-colombia-5b2a178c",
+      "source": "WSJ Markets",
+      "published_at": "2025-01-27T09:46:00+00:00",
+      "in_window": false,
+      "summary": "Oil edged lower in early trade as Goldman Sachs said the latest round of U.S. sanctions against Russia haven’t had a significant impact on the country’s oil exports.",
+      "body_excerpt": "Oil edged lower in early trade as Goldman Sachs said the latest round of U.S. sanctions against Russia haven’t had a significant impact on the country’s oil exports.",
+      "tickers": []
+    }
+  ]
+}

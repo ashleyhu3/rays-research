@@ -174,7 +174,10 @@ export const NAV_SECTIONS = [
       { id: 'liquidity-carry-trade', label: 'Carry Trade' },
       { id: 'liquidity-sentiment', label: 'Sentiment' },
       { id: 'liquidity-breadth', label: 'Breadth' },
-      { id: 'liquidity-technical', label: 'Technical' },
+      { id: 'liquidity-technical', label: 'Technical', subitems: [
+        { key: 'rsi', label: 'RSI' },
+        { key: 'ma-cross', label: 'MA Cross' },
+      ] },
       { id: 'liquidity-turnover', label: 'Turnover' },
     ],
   },

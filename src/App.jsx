@@ -81,7 +81,7 @@ import Docker         from './pages/sources/Docker';
 import Community      from './pages/sources/Community';
 
 /** Views with sidebar-driven subtabs (see NAV_SECTIONS 'Rotation' subitems) */
-const MARKET_PERF_VIEWS = new Set(['us-performance', 'hk-china-performance', 'hk-performance', 'liquidity-us', 'liquidity-china-flow', 'macro-commodity']);
+const MARKET_PERF_VIEWS = new Set(['us-performance', 'hk-china-performance', 'hk-performance', 'liquidity-us', 'liquidity-china-flow', 'liquidity-technical', 'macro-commodity']);
 
 /** Views that use EditableGrid and support layout customisation */
 const LAYOUT_EDITABLE = new Set([
@@ -202,6 +202,7 @@ export default function App() {
     setCurrentView(viewId);
     const defaultSection = viewId === 'liquidity-us' ? 'fed-balance'
       : viewId === 'liquidity-china-flow' ? 'flow'
+      : viewId === 'liquidity-technical' ? 'rsi'
       : viewId === 'macro-commodity' ? 'precious-rare'
       : null;
     setPerfSection(s => ({ ...s, [viewId]: defaultSection }));

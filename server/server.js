@@ -17,6 +17,7 @@ const { readChinaEtfPremium }        = require('./scrapers/chinaEtfPremium');
 const { readHkPerformance }          = require('./scrapers/hkPerformance');
 const { readGlobalIndices }          = require('./scrapers/globalIndices');
 const { readIndexBreadth }           = require('./scrapers/indexBreadth');
+const { readMaCross }                = require('./scrapers/maCross');
 const { readSpxPutCallRatio }        = require('./scrapers/spxPutCallRatio');
 const { readChinaNationalTeamFlow }  = require('./scrapers/chinaNationalTeamFlow');
 const { readChinaLiquidity }         = require('./scrapers/chinaLiquidity');
@@ -104,6 +105,9 @@ app.use('/api/china-etf-premium', requireStorageBlobs('chinaEtfPremiumHistory'))
 app.use('/api/hk-performance', requireStorageBlobs('hkPerformanceHistory'));
 app.use('/api/global-indices', requireStorageBlobs('globalIndicesHistory'));
 app.use('/api/index-breadth', requireStorageBlobs('indexBreadthHistory'));
+// MA Cross reads the S&P 500 rolling raw-price cache that the breadth job
+// already maintains, not the breadth aggregate.
+app.use('/api/ma-cross', requireStorageBlobs('breadthRawSp500History'));
 app.use('/api/spx-put-call-ratio', requireStorageBlobs('spxPutCallRatioHistory'));
 app.use('/api/options', requireStorageBlobs('optionsOI'));
 app.use('/api/alerts/earnings-calendar', requireStorageBlobs('techEarningsCalendar'));
@@ -792,6 +796,18 @@ app.get('/api/global-indices', async (req, res) => {
 // returned in full — no date-range query needed, same as
 // china-national-team-flow below.
 app.get('/api/index-breadth', (_req, res) => res.json(readIndexBreadth()));
+
+// S&P 500 names whose 5-day SMA crossed their 20-day SMA on the latest
+// session. Derived on read from the breadth raw cache — the set changes each
+// day that cache refreshes, so it is never persisted.
+app.get('/api/ma-cross', (_req, res) => {
+  try {
+    res.json(readMaCross());
+  } catch (e) {
+    console.error('[ma-cross]', e.message);
+    res.status(500).json({ error: `Could not load MA cross data: ${e.message}` });
+  }
+});
 
 // Run a targeted breadth repair inside the deployed environment. This matters
 // when a local worker and Vercel use different Mongo credentials: the repair
