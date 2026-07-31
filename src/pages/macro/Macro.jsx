@@ -22,41 +22,41 @@ const PAGE_CHARTS = {
     ['Germany', ['de10yYield', 'de30yYield'], ['10Y', '30Y'], 'line', 2],
   ],
   'macro-us-inflation': [
-    ['CPI', ['usCpiYoy', 'usCoreCpiYoy'], ['Headline CPI', 'Core CPI']],
-    ['CPI', ['usCpiMom', 'usCoreCpiMom'], ['Headline CPI', 'Core CPI']],
-    ['PPI', ['usPpiYoy', 'usCorePpiYoy'], ['Headline PPI', 'Core PPI']],
-    ['PPI', ['usPpiMom', 'usCorePpiMom'], ['Headline PPI', 'Core PPI']],
-    ['PCE', ['usPceYoy', 'usCorePceYoy'], ['Headline PCE', 'Core PCE']],
-    ['PCE', ['usPceMom', 'usCorePceMom'], ['Headline PCE', 'Core PCE']],
+    ['CPI YoY', ['usCpiYoy', 'usCoreCpiYoy'], ['Headline CPI', 'Core CPI']],
+    ['CPI MoM', ['usCpiMom', 'usCoreCpiMom'], ['Headline CPI', 'Core CPI']],
+    ['PPI YoY', ['usPpiYoy', 'usCorePpiYoy'], ['Headline PPI', 'Core PPI']],
+    ['PPI MoM', ['usPpiMom', 'usCorePpiMom'], ['Headline PPI', 'Core PPI']],
+    ['PCE YoY', ['usPceYoy', 'usCorePceYoy'], ['Headline PCE', 'Core PCE']],
+    ['PCE MoM', ['usPceMom', 'usCorePceMom'], ['Headline PCE', 'Core PCE']],
   ],
   'macro-us-labor': [
     ['Non-farm payrolls', ['usNfp'], ['Monthly change']],
     ['ADP employment change — monthly', ['usAdpMonthly'], ['Monthly change']],
-    ['ADP employment change — weekly', ['usAdpWeekly'], ['Weekly change']],
+    ['ADP employment change — weekly (4-week rolling sum)', ['usAdpWeekly'], ['4-week rolling sum'], 'line', undefined, { rollingSum: 4 }],
     ['Initial jobless claims', ['usJoblessClaims'], ['Claims']],
     ['Unemployment rate', ['usUnemployment'], ['Unemployment rate']],
     ['Average hourly earnings', ['usEarningsYoy', 'usEarningsMom'], ['YoY', 'MoM']],
   ],
   'macro-us-pmi': [
-    ['ISM manufacturing & subindices', ['usIsmMfg', 'usIsmMfgEmployment', 'usIsmMfgOrders', 'usIsmMfgPrices'], ['Headline', 'Employment', 'New orders', 'Prices']],
-    ['ISM services & subindices', ['usIsmServices', 'usIsmServicesEmployment', 'usIsmServicesOrders', 'usIsmServicesPrices'], ['Headline', 'Employment', 'New orders', 'Prices']],
-    ['S&P Global PMIs', ['usSpMfg', 'usSpServices'], ['Manufacturing', 'Services']],
+    ['ISM Manufacturing PMI', ['usIsmMfg', 'usIsmMfgEmployment', 'usIsmMfgOrders', 'usIsmMfgPrices'], ['Headline', 'Employment', 'New orders', 'Prices']],
+    ['ISM Services PMI', ['usIsmServices', 'usIsmServicesEmployment', 'usIsmServicesOrders', 'usIsmServicesPrices'], ['Headline', 'Employment', 'New orders', 'Prices']],
+    ['Markit PMI', ['usSpMfg', 'usSpServices'], ['Manufacturing', 'Services']],
   ],
   'macro-us-household': [
     ['University of Michigan consumer sentiment', ['usMichigan'], ['Sentiment']],
     ['Retail sales', ['usRetailSales'], ['MoM']],
     ['Personal spending', ['usPersonalSpending'], ['MoM']],
-    ['Existing home sales', ['usExistingHomes'], ['Annualized rate']],
+    ['Existing & New Home Sales MoM', ['usExistingHomesMom', 'usNewHomesMom'], ['Existing home sales', 'New home sales']],
   ],
   'macro-cn-inflation': [
-    ['Consumer prices — YoY', ['cnCpiYoy'], ['CPI YoY']],
-    ['Consumer prices — MoM', ['cnCpiMom'], ['CPI MoM']],
-    ['Producer prices — YoY', ['cnPpiYoy'], ['PPI YoY']],
-    ['Producer prices — MoM', ['cnPpiMom'], ['PPI MoM']],
+    ['CPI YoY', ['cnCpiYoy'], ['CPI YoY']],
+    ['CPI MoM', ['cnCpiMom'], ['CPI MoM']],
+    ['PPI YoY', ['cnPpiYoy'], ['PPI YoY']],
+    ['PPI MoM', ['cnPpiMom'], ['PPI MoM']],
   ],
   'macro-cn-pmi': [
-    ['NBS purchasing managers indices', ['cnNbsMfg', 'cnNbsNonMfg'], ['Manufacturing', 'Non-manufacturing']],
-    ['RatingDog purchasing managers indices', ['cnRatingDogMfg', 'cnRatingDogServices'], ['Manufacturing', 'Services']],
+    ['NBS PMI', ['cnNbsMfg', 'cnNbsNonMfg'], ['Manufacturing', 'Non-manufacturing']],
+    ['RatingDog PMI', ['cnRatingDogMfg', 'cnRatingDogServices'], ['Manufacturing', 'Services']],
   ],
   'macro-cn-trade': [
     ['Exports & imports — YoY', ['cnExportsYoy', 'cnImportsYoy'], ['Exports', 'Imports']],
@@ -95,9 +95,25 @@ function latestPoint(series) {
     Number.isFinite(point.value) && (!best || point.date > best.date) ? point : best, null);
 }
 
-function buildData(macro, keys, labels, startDate, endDate) {
+// Trailing N-period sum, keyed to the last date in each window. Windows that
+// aren't yet fully populated (start of history) are dropped rather than
+// shown as a partial/misleading sum.
+function rollingSum(data, window) {
+  const sorted = [...data]
+    .filter(point => Number.isFinite(point.value))
+    .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+  const result = [];
+  for (let index = window - 1; index < sorted.length; index += 1) {
+    const windowPoints = sorted.slice(index - window + 1, index + 1);
+    result.push({ date: sorted[index].date, value: windowPoints.reduce((sum, point) => sum + point.value, 0) });
+  }
+  return result;
+}
+
+function buildData(macro, keys, labels, startDate, endDate, transform) {
   const available = keys.map(key => macro?.series?.[key]).filter(Boolean);
-  const dates = [...new Set(available.flatMap(series => series.data
+  const seriesData = new Map(available.map(series => [series.id, transform ? transform(series.data) : series.data]));
+  const dates = [...new Set([...seriesData.values()].flatMap(data => data
     .filter(point => inDateRange(point.date, startDate, endDate))
     .map(point => point.date)))].sort();
   const dateIndex = new Map(dates.map((date, index) => [date, index]));
@@ -106,7 +122,7 @@ function buildData(macro, keys, labels, startDate, endDate) {
     const series = macro?.series?.[key];
     if (!series) return;
     const values = Array(dates.length).fill(null);
-    series.data.forEach(point => {
+    (seriesData.get(key) ?? series.data).forEach(point => {
       const index = dateIndex.get(point.date);
       if (index != null) values[index] = point.value;
     });
@@ -166,10 +182,15 @@ const POINT_VALUE_MARKS = {
 };
 
 function MacroChart({ definition, macro, errors, startDate, endDate, isYield }) {
-  const [title, keys, labels, chartType = 'line', decimals] = definition;
+  const [title, keys, labels, chartType = 'line', decimals, chartOptions] = definition;
+  const rollingWindow = chartOptions?.rollingSum;
+  const transform = useMemo(
+    () => (rollingWindow ? data => rollingSum(data, rollingWindow) : undefined),
+    [rollingWindow],
+  );
   const built = useMemo(
-    () => buildData(macro, keys, labels, startDate, endDate),
-    [macro, keys, labels, startDate, endDate],
+    () => buildData(macro, keys, labels, startDate, endDate, transform),
+    [macro, keys, labels, startDate, endDate, transform],
   );
   const chartData = useMemo(() => {
     if (chartType !== 'bar') return { labels: built.labels, datasets: built.datasets };
@@ -191,7 +212,6 @@ function MacroChart({ definition, macro, errors, startDate, endDate, isYield }) 
       // Yield page shows latest values as on-chart point marks + top summary
       // cards instead, so the bottom legend would just be duplicate text.
       opts.plugins.legend = { display: false };
-      opts.plugins.macroPointMarks = { fmt: value => fmtSeriesValue(value, decimals, percentUnit) };
     } else {
       opts.plugins.legend = {
         display: built.datasets.length > 1,
@@ -199,6 +219,10 @@ function MacroChart({ definition, macro, errors, startDate, endDate, isYield }) 
         labels: { color: '#c8c8c0', boxWidth: 10, padding: 12, font: { size: 10 } },
       };
     }
+    // All macro charts (Yield, US, China) mark each series' latest visible
+    // reading directly on the chart, so "where are we now" never requires
+    // hunting through a legend or tooltip.
+    opts.plugins.macroPointMarks = { fmt: value => fmtSeriesValue(value, decimals, percentUnit) };
     opts.plugins.tooltip.callbacks.label = context =>
       ` ${context.dataset.label}: ${fmtSeriesValue(context.parsed.y, decimals, percentUnit)}`;
     opts.plugins.zeroLine = { display: true };
@@ -206,7 +230,7 @@ function MacroChart({ definition, macro, errors, startDate, endDate, isYield }) 
   }, [isYield, built.datasets.length, percentUnit, decimals]);
   const source = built.available[0];
   const missing = keys.filter(key => !macro?.series?.[key]);
-  const chartPlugins = isYield ? [POINT_VALUE_MARKS] : undefined;
+  const chartPlugins = [POINT_VALUE_MARKS];
 
   return (
     <ChartCard
