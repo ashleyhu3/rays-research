@@ -32,7 +32,7 @@ const PAGE_CHARTS = {
   'macro-us-labor': [
     ['Non-farm payrolls', ['usNfp'], ['Monthly change']],
     ['ADP employment change — monthly', ['usAdpMonthly'], ['Monthly change']],
-    ['ADP employment change — weekly (4-week rolling sum)', ['usAdpWeekly'], ['4-week rolling sum'], 'line', undefined, { rollingSum: 4 }],
+    ['ADP employment change — weekly', ['usAdpWeekly'], ['Weekly change'], 'line', undefined, { addRollingSum: { window: 4, label: '4-week rolling sum' } }],
     ['Initial jobless claims', ['usJoblessClaims'], ['Claims']],
     ['Unemployment rate', ['usUnemployment'], ['Unemployment rate']],
     ['Average hourly earnings', ['usEarningsYoy', 'usEarningsMom'], ['YoY', 'MoM']],
@@ -46,7 +46,7 @@ const PAGE_CHARTS = {
     ['University of Michigan consumer sentiment', ['usMichigan'], ['Sentiment']],
     ['Retail sales', ['usRetailSales'], ['MoM']],
     ['Personal spending', ['usPersonalSpending'], ['MoM']],
-    ['Existing & New Home Sales MoM', ['usExistingHomesMom', 'usNewHomesMom'], ['Existing home sales', 'New home sales']],
+    ['Existing & New Home Sales', ['usExistingHomes', 'usNewHomes'], ['Existing home sales', 'New home sales'], 'bar', undefined, { unitSuffix: 'K' }],
   ],
   'macro-cn-inflation': [
     ['CPI YoY', ['cnCpiYoy'], ['CPI YoY']],
@@ -110,19 +110,27 @@ function rollingSum(data, window) {
   return result;
 }
 
-function buildData(macro, keys, labels, startDate, endDate, transform) {
-  const available = keys.map(key => macro?.series?.[key]).filter(Boolean);
-  const seriesData = new Map(available.map(series => [series.id, transform ? transform(series.data) : series.data]));
-  const dates = [...new Set([...seriesData.values()].flatMap(data => data
+// `transforms` may be a single function (applied to every key) or an array
+// aligned with `keys` by position — the latter lets the same underlying key
+// appear twice with different transforms (e.g. raw value + its rolling sum).
+function buildData(macro, keys, labels, startDate, endDate, transforms) {
+  const entries = keys.map((key, index) => {
+    const series = macro?.series?.[key];
+    if (!series) return null;
+    const transform = Array.isArray(transforms) ? transforms[index] : transforms;
+    return { series, data: transform ? transform(series.data) : series.data };
+  });
+  const available = entries.filter(Boolean).map(entry => entry.series);
+  const dates = [...new Set(entries.filter(Boolean).flatMap(entry => entry.data
     .filter(point => inDateRange(point.date, startDate, endDate))
     .map(point => point.date)))].sort();
   const dateIndex = new Map(dates.map((date, index) => [date, index]));
   const datasets = [];
   keys.forEach((key, seriesIndex) => {
-    const series = macro?.series?.[key];
-    if (!series) return;
+    const entry = entries[seriesIndex];
+    if (!entry) return;
     const values = Array(dates.length).fill(null);
-    (seriesData.get(key) ?? series.data).forEach(point => {
+    entry.data.forEach(point => {
       const index = dateIndex.get(point.date);
       if (index != null) values[index] = point.value;
     });
@@ -182,18 +190,31 @@ const POINT_VALUE_MARKS = {
 };
 
 function MacroChart({ definition, macro, errors, startDate, endDate, isYield }) {
-  const [title, keys, labels, chartType = 'line', decimals, chartOptions] = definition;
-  const rollingWindow = chartOptions?.rollingSum;
-  const transform = useMemo(
-    () => (rollingWindow ? data => rollingSum(data, rollingWindow) : undefined),
-    [rollingWindow],
-  );
+  const [title, baseKeys, baseLabels, chartType = 'line', decimals, chartOptions] = definition;
+  const addRollingSum = chartOptions?.addRollingSum;
+  // Appends a derived series — the rolling sum of the last base key — as its
+  // own line, so a chart can show the raw reading and its rolling sum side
+  // by side instead of replacing one with the other.
+  const keys = addRollingSum ? [...baseKeys, baseKeys[baseKeys.length - 1]] : baseKeys;
+  const labels = addRollingSum
+    ? [...baseLabels, addRollingSum.label ?? `${addRollingSum.window}-period rolling sum`]
+    : baseLabels;
+  const transforms = addRollingSum
+    ? baseKeys.map(() => undefined).concat(data => rollingSum(data, addRollingSum.window))
+    : undefined;
   const built = useMemo(
-    () => buildData(macro, keys, labels, startDate, endDate, transform),
-    [macro, keys, labels, startDate, endDate, transform],
+    () => buildData(macro, keys, labels, startDate, endDate, transforms),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [macro, keys.join('|'), labels.join('|'), startDate, endDate, addRollingSum?.window],
   );
   const chartData = useMemo(() => {
     if (chartType !== 'bar') return { labels: built.labels, datasets: built.datasets };
+    // A single-series bar (e.g. the yield spread) recolors bars red/green by
+    // sign. Grouped multi-series bars (e.g. home sales) keep each series'
+    // own color instead, or the sign recolor would make every series green.
+    if (built.datasets.length > 1) {
+      return { labels: built.labels, datasets: built.datasets.map(dataset => ({ ...dataset, borderWidth: 0 })) };
+    }
     return {
       labels: built.labels,
       datasets: built.datasets.map(dataset => ({
@@ -206,8 +227,16 @@ function MacroChart({ definition, macro, errors, startDate, endDate, isYield }) 
   }, [built.datasets, built.labels, chartType]);
   const unit = built.available[0]?.unit || '';
   const percentUnit = /percent|%/i.test(unit);
+  // Some series (e.g. home sales) are already reported in a fixed unit
+  // (Thousand) rather than a raw count — compact()'s auto B/M/K scaling
+  // would re-divide an already-scaled number, so unitSuffix formats the
+  // value as-is with an explicit "K" instead.
+  const unitSuffix = chartOptions?.unitSuffix;
+  const formatValue = value => unitSuffix
+    ? `${Math.round(value).toLocaleString()}${unitSuffix}`
+    : fmtSeriesValue(value, decimals, percentUnit);
   const options = useMemo(() => {
-    const opts = baseOpts(value => fmtSeriesValue(value, decimals, percentUnit));
+    const opts = baseOpts(formatValue);
     if (isYield) {
       // Yield page shows latest values as on-chart point marks + top summary
       // cards instead, so the bottom legend would just be duplicate text.
@@ -222,19 +251,20 @@ function MacroChart({ definition, macro, errors, startDate, endDate, isYield }) 
     // All macro charts (Yield, US, China) mark each series' latest visible
     // reading directly on the chart, so "where are we now" never requires
     // hunting through a legend or tooltip.
-    opts.plugins.macroPointMarks = { fmt: value => fmtSeriesValue(value, decimals, percentUnit) };
+    opts.plugins.macroPointMarks = { fmt: formatValue };
     opts.plugins.tooltip.callbacks.label = context =>
-      ` ${context.dataset.label}: ${fmtSeriesValue(context.parsed.y, decimals, percentUnit)}`;
+      ` ${context.dataset.label}: ${formatValue(context.parsed.y)}`;
     opts.plugins.zeroLine = { display: true };
     return opts;
-  }, [isYield, built.datasets.length, percentUnit, decimals]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isYield, built.datasets.length, percentUnit, decimals, unitSuffix]);
   const source = built.available[0];
-  const missing = keys.filter(key => !macro?.series?.[key]);
+  const missing = [...new Set(baseKeys)].filter(key => !macro?.series?.[key]);
   const chartPlugins = [POINT_VALUE_MARKS];
 
   return (
     <ChartCard
-      chartId={`macro-${keys.join('-')}`}
+      chartId={`macro-${baseKeys.join('-')}`}
       title={title}
       src={source?.source || 'Trading Economics'}
       srcUrl={source?.sourceUrl || 'https://tradingeconomics.com'}
