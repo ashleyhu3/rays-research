@@ -1,13 +1,14 @@
 /**
- * Liquidity → Technical → MA Cross: for every S&P 500 constituent, the 5-day
- * and 20-day simple moving average of the closing price, and the names whose
- * two averages crossed on the most recent session.
+ * Liquidity → Technical → MA Cross: for every constituent of each index the
+ * Breadth page tracks, the 5-day and 20-day simple moving average of the
+ * closing price, and the names whose two averages crossed on the most recent
+ * session.
  *
  * No new scraping: indexBreadth.js already maintains a rolling raw-price cache
- * for the S&P 500 (`breadthRawSp500History`, shape
+ * per index (`breadthRaw<Index>History`, shape
  * `{ [date]: { [ticker]: { close, volume } } }`, ~260 trailing sessions) in
  * order to compute its 50/200-day breadth aggregates. A 20-day average needs
- * far less history than that, so this module is a pure read over the same blob
+ * far less history than that, so this module is a pure read over those blobs
  * and adds no storage of its own — consistent with the "rolling cache only,
  * never hoard raw per-ticker history" rule the breadth pipeline follows.
  *
@@ -16,27 +17,64 @@
  *   golden — SMA5 was at or below SMA20, and is now above it.
  *   death  — SMA5 was at or above SMA20, and is now below it.
  * Because the set is recomputed from the latest session every time the breadth
- * job refreshes the cache, the returned names change from day to day.
+ * job refreshes a cache, the returned names change from day to day.
+ *
+ * One index is served per call. The raw caches are large (the S&P 500's alone
+ * is ~5 MB, TOPIX's more), so the route loads only the blob it was asked for
+ * rather than every index at once.
  */
 'use strict';
 
 const path = require('path');
 const storage = require('../storage');
+const { INDEX_CONFIGS } = require('./indexBreadth');
 
 const SMA_SHORT = 5;
 const SMA_LONG = 20;
 
 // Trailing sessions returned per crossing ticker for the detail chart. Enough
 // to show the two averages converging into the cross with context around it,
-// while keeping the payload to the crossing names only (typically 20-40).
+// while keeping the payload to the crossing names only.
 const CHART_WINDOW = 120;
 
-const RAW_BLOB = 'breadthRawSp500History';
-const RAW_FILE = path.join(__dirname, '..', 'data', 'breadthRawSp500History.json');
+// Keyed off indexBreadth's own config so the two stay in sync: every index
+// with a breadth series has an MA Cross view, in the same order.
+const RAW_BLOB_BY_KEY = {
+  sp500: 'breadthRawSp500History',
+  ndx: 'breadthRawNdxHistory',
+  hsi: 'breadthRawHsiHistory',
+  csi300: 'breadthRawCsi300History',
+  sox: 'breadthRawSoxHistory',
+  nikkei225: 'breadthRawNikkei225History',
+  chinext: 'breadthRawChinextHistory',
+  taiex: 'breadthRawTaiexHistory',
+  kospi200: 'breadthRawKospi200History',
+  topix: 'breadthRawTopixHistory',
+};
+
+/** [{ key, label, blob }] for every index the Breadth page covers. */
+const MA_CROSS_INDEXES = INDEX_CONFIGS.map(({ key, label }) => ({
+  key,
+  label,
+  blob: RAW_BLOB_BY_KEY[key],
+}));
+
+const DEFAULT_INDEX = 'sp500';
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
-function loadRaw() { return storage.read(RAW_BLOB, RAW_FILE); }
+function rawFile(blobName) {
+  return path.join(__dirname, '..', 'data', `${blobName}.json`);
+}
+
+function isKnownIndex(key) {
+  return Object.prototype.hasOwnProperty.call(RAW_BLOB_BY_KEY, key);
+}
+
+function loadRaw(indexKey) {
+  const blob = RAW_BLOB_BY_KEY[indexKey];
+  return storage.read(blob, rawFile(blob));
+}
 
 function sortedDates(history) {
   return Object.keys(history ?? {}).filter(date => ISO_DATE.test(date)).sort();
@@ -58,6 +96,26 @@ function rollingAverage(values, windowSize) {
 }
 
 const round2 = v => (v == null ? null : Math.round(v * 100) / 100);
+
+/**
+ * Round the two averages for display, keeping their ordering visible.
+ *
+ * A crossing is decided on unrounded values, so the gap on the crossing day can
+ * be smaller than a cent — at which point both averages round to the same
+ * number and the summary reads "5-day dropped below the 20-day … 39.33 / 39.33",
+ * which contradicts itself. Widen the precision just enough for the two to
+ * differ (seen on thinly-priced TAIEX names).
+ */
+function roundPairForDisplay(short, long) {
+  if (short == null || long == null) return [round2(short), round2(long)];
+  for (let decimals = 2; decimals <= 6; decimals += 1) {
+    const factor = 10 ** decimals;
+    const a = Math.round(short * factor) / factor;
+    const b = Math.round(long * factor) / factor;
+    if (a !== b) return [a, b];
+  }
+  return [short, long];
+}
 
 /**
  * Direction of the crossing at the end of a ticker's series, or null.
@@ -83,7 +141,7 @@ function detectCross(sma5, sma20, dates) {
 }
 
 /**
- * Compute the latest session's crossings across the whole index.
+ * Compute the latest session's crossings across one index.
  *
  * Returns `{ asOf, tickerCount, crosses }`, where each cross carries the
  * trailing close/SMA5/SMA20 series needed to render its chart. Tickers come
@@ -110,12 +168,15 @@ function computeMaCross(history) {
     // stale one carried by a ticker that stopped updating days ago.
     if (!cross || dates[cross.index] !== asOf) continue;
 
+    // Chart series stay at 2dp — a sub-cent gap is invisible on a chart — but
+    // the headline pair keeps enough precision to show which is above.
+    const [sma5Display, sma20Display] = roundPairForDisplay(sma5[cross.index], sma20[cross.index]);
     crosses.push({
       ticker,
       direction: cross.direction,
       close: round2(closes[cross.index]),
-      sma5: round2(sma5[cross.index]),
-      sma20: round2(sma20[cross.index]),
+      sma5: sma5Display,
+      sma20: sma20Display,
       dates: chartDates,
       closes: closes.slice(chartStart).map(round2),
       sma5Series: sma5.slice(chartStart).map(round2),
@@ -131,12 +192,22 @@ function computeMaCross(history) {
   return { asOf, tickerCount: tickers.length, crosses };
 }
 
-function readMaCross() {
-  return computeMaCross(loadRaw());
+/**
+ * Read one index's crossings. `indexKey` must be one of MA_CROSS_INDEXES;
+ * anything else throws rather than silently falling back, so a typo in the
+ * query string surfaces instead of returning the wrong index's names.
+ */
+function readMaCross(indexKey = DEFAULT_INDEX) {
+  if (!isKnownIndex(indexKey)) throw new Error(`Unknown MA cross index: ${indexKey}`);
+  const meta = MA_CROSS_INDEXES.find(index => index.key === indexKey);
+  return { index: indexKey, label: meta.label, ...computeMaCross(loadRaw(indexKey)) };
 }
 
 module.exports = {
   readMaCross,
-  RAW_BLOB,
+  isKnownIndex,
+  MA_CROSS_INDEXES,
+  RAW_BLOB_BY_KEY,
+  DEFAULT_INDEX,
   _test: { computeMaCross, detectCross, rollingAverage },
 };

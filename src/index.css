@@ -1629,6 +1629,19 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
 }
 
 /* ── MA Cross (Technical): per-page ticker strip of the day's crossings ── */
+.mac-indexes {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  margin-bottom: 12px;
+}
+.mac-index {
+  font-size: 11px; line-height: 1; padding: 6px 11px;
+  border: 1px solid var(--border-hi); border-radius: 5px;
+  background: none; color: var(--sec);
+  font-family: var(--font-b); cursor: pointer; transition: all .15s;
+  white-space: nowrap;
+}
+.mac-index:hover  { background: rgba(255,255,255,.05); color: var(--text); }
+.mac-index.active { background: var(--adim); border-color: var(--accent); color: var(--accent); }
 .mac-bar {
   border: 1px solid var(--border);
   border-radius: 6px;

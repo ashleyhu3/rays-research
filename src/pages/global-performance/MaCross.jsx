@@ -1,18 +1,29 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Line } from 'react-chartjs-2';
 import ChartCard from '../../components/chart/ChartCard';
+import { GLOBAL_INDICES, BREADTH_PHASE1_KEYS } from '../../config/globalIndices';
 import { GRID, TICK, BORD } from '../../utils/chartHelpers';
 import { useResource } from '../../services/resourceCache';
 
 /**
  * Liquidity → Technical → MA Cross.
  *
- * The strip under the page title lists only the S&P 500 names whose 5-day SMA
- * crossed their 20-day SMA on the most recent session — a green ▲ where the
- * 5-day moved up through the 20-day, a red ▼ where it dropped below. The
- * server recomputes that set from the latest session each time the breadth
- * raw-price cache refreshes, so the names turn over daily.
+ * The strip under the page title lists only the names whose 5-day SMA crossed
+ * their 20-day SMA on the most recent session — a green ▲ where the 5-day moved
+ * up through the 20-day, a red ▼ where it dropped below. The server recomputes
+ * that set from the latest session each time the breadth raw-price cache
+ * refreshes, so the names turn over daily.
+ *
+ * Coverage matches the Breadth page: every index whose constituents the breadth
+ * job already caches. One index is loaded at a time, since the underlying raw
+ * caches are large (TOPIX alone carries ~1,600 tickers).
  */
+
+const INDEX_BY_KEY = new Map(GLOBAL_INDICES.map(index => [index.key, index]));
+const MA_CROSS_INDEXES = BREADTH_PHASE1_KEYS.map(key => ({
+  key,
+  label: INDEX_BY_KEY.get(key)?.label ?? key,
+}));
 
 function fmtDate(iso) {
   const [y, m, d] = iso.split('-').map(Number);
@@ -62,10 +73,13 @@ function chartOptions() {
 }
 
 export default function MaCross() {
-  const { data, error } = useResource('/api/ma-cross');
+  const [indexKey, setIndexKey] = useState(MA_CROSS_INDEXES[0]?.key ?? 'sp500');
+  const { data, error } = useResource(`/api/ma-cross?index=${indexKey}`);
   const [selected, setSelected] = useState(null);
 
-  const crosses = data?.crosses ?? [];
+  // Each index caches under its own URL, so switching back to one already
+  // viewed is instant. `crosses` is only ever the active index's list.
+  const crosses = data?.index === indexKey ? data.crosses : [];
 
   // The selected name is keyed to a session's cross list. When that list
   // refreshes and no longer contains it, fall back to the first name rather
@@ -125,21 +139,50 @@ export default function MaCross() {
     };
   }, [active]);
 
-  if (error) return <div className="empty">Could not load MA cross data: {error}</div>;
-  if (!data) return <div className="empty">Loading MA cross data…</div>;
-
   const goldenCount = crosses.filter(c => c.direction === 'golden').length;
   const deathCount = crosses.length - goldenCount;
+  const indexLabel = MA_CROSS_INDEXES.find(i => i.key === indexKey)?.label ?? indexKey;
+  const isLoaded = data?.index === indexKey;
+
+  const indexPicker = (
+    <div className="mac-indexes">
+      {MA_CROSS_INDEXES.map(index => (
+        <button
+          key={index.key}
+          className={`mac-index${index.key === indexKey ? ' active' : ''}`}
+          onClick={() => setIndexKey(index.key)}
+        >
+          {index.label}
+        </button>
+      ))}
+    </div>
+  );
+
+  // The picker stays mounted while an index loads, so switching never blanks
+  // the control the user just clicked.
+  if (error || !isLoaded) {
+    return (
+      <>
+        {indexPicker}
+        <div className="empty">
+          {error
+            ? `Could not load MA cross data for ${indexLabel}: ${error}`
+            : `Loading ${indexLabel} MA cross data…`}
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
+      {indexPicker}
       <div className="mac-bar">
         <div className="mac-bar-head">
-          <span className="mac-asof">Crossings on {fmtAsOf(data.asOf)}</span>
+          <span className="mac-asof">{indexLabel} — crossings on {fmtAsOf(data.asOf)}</span>
           <span className="mac-counts">
             <span className="mac-arrow golden">▲</span> {goldenCount}
             <span className="mac-arrow death">▼</span> {deathCount}
-            <span className="mac-universe">of {data.tickerCount} S&amp;P 500 names</span>
+            <span className="mac-universe">of {data.tickerCount} constituents</span>
           </span>
         </div>
         {crosses.length ? (
@@ -164,7 +207,7 @@ export default function MaCross() {
       {active && chartData && (
         <div className="cgrid">
           <ChartCard
-            title={`${active.ticker} — 5-day vs 20-day MA`}
+            title={`${active.ticker} (${indexLabel}) — 5-day vs 20-day MA`}
             src="Yahoo Finance"
             srcUrl="https://finance.yahoo.com"
             freq="Daily"
@@ -179,8 +222,9 @@ export default function MaCross() {
 
       <div className="src-note" style={{ marginTop: 12 }}>
         Simple moving averages of the daily closing price over the last 5 and 20 trading sessions, computed per
-        constituent from the same S&amp;P 500 price cache that feeds the Breadth page. A name is listed only when its
-        two averages crossed on the most recent session, so the list changes every day.
+        constituent from the same per-index price caches that feed the Breadth page — S&amp;P 500, Nasdaq 100, SOX,
+        Hang Seng, CSI 300, ChiNext, TAIEX, KOSPI 200, Nikkei 225 and TOPIX. A name is listed only when its two
+        averages crossed on the most recent session, so the list changes every day.
       </div>
     </>
   );

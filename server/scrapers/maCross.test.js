@@ -112,3 +112,46 @@ test('computeMaCross sorts golden crosses before death crosses, then alphabetica
   }));
   assert.deepEqual(result.crosses.map(c => c.ticker), ['AUP', 'ZUP', 'ADOWN']);
 });
+
+test('MA_CROSS_INDEXES covers every index the breadth job caches', () => {
+  const { MA_CROSS_INDEXES, RAW_BLOB_BY_KEY, isKnownIndex, DEFAULT_INDEX } = require('./maCross');
+  const { INDEX_CONFIGS } = require('./indexBreadth');
+  assert.deepEqual(
+    MA_CROSS_INDEXES.map(i => i.key),
+    INDEX_CONFIGS.map(c => c.key),
+    'MA Cross must expose exactly the breadth indices, in the same order',
+  );
+  // Every index needs a raw blob to read, or its route would load nothing.
+  for (const { key, label, blob } of MA_CROSS_INDEXES) {
+    assert.ok(blob, `${key} has no raw blob mapped`);
+    assert.equal(blob, RAW_BLOB_BY_KEY[key]);
+    assert.ok(label, `${key} has no label`);
+    assert.equal(isKnownIndex(key), true);
+  }
+  assert.equal(isKnownIndex('not-an-index'), false);
+  assert.equal(isKnownIndex(DEFAULT_INDEX), true);
+});
+
+test('readMaCross rejects an unknown index instead of falling back', () => {
+  const { readMaCross } = require('./maCross');
+  assert.throws(() => readMaCross('nope'), /Unknown MA cross index/);
+});
+
+test('a sub-cent crossing still reports the two averages in the right order', () => {
+  // Real case: TAIEX 2031.TW crossed with SMA5 and SMA20 less than a cent
+  // apart, so plain 2dp rounding printed them as equal next to a "dropped
+  // below" label. The reported pair must never contradict the direction.
+  const { readMaCross } = require('./maCross');
+  const closes = [...Array.from({ length: 25 }, () => 100), 100.02, 100.01, 100, 99.99, 99.976];
+  const history = {};
+  closes.forEach((close, i) => {
+    history[new Date(Date.UTC(2026, 0, 5 + i)).toISOString().slice(0, 10)] = { TIGHT: { close, volume: 1 } };
+  });
+
+  const [cross] = _test.computeMaCross(history).crosses;
+  assert.ok(cross, 'expected a crossing');
+  assert.notEqual(cross.sma5, cross.sma20, 'displayed averages must not print as equal');
+  if (cross.direction === 'golden') assert.ok(cross.sma5 > cross.sma20);
+  else assert.ok(cross.sma5 < cross.sma20, `${cross.sma5} should be below ${cross.sma20}`);
+  assert.equal(typeof readMaCross, 'function');
+});

@@ -17,7 +17,12 @@ const { readChinaEtfPremium }        = require('./scrapers/chinaEtfPremium');
 const { readHkPerformance }          = require('./scrapers/hkPerformance');
 const { readGlobalIndices }          = require('./scrapers/globalIndices');
 const { readIndexBreadth }           = require('./scrapers/indexBreadth');
-const { readMaCross }                = require('./scrapers/maCross');
+const {
+  readMaCross,
+  isKnownIndex: isKnownMaCrossIndex,
+  RAW_BLOB_BY_KEY: MA_CROSS_RAW_BLOB,
+  DEFAULT_INDEX: MA_CROSS_DEFAULT,
+} = require('./scrapers/maCross');
 const { readSpxPutCallRatio }        = require('./scrapers/spxPutCallRatio');
 const { readChinaNationalTeamFlow }  = require('./scrapers/chinaNationalTeamFlow');
 const { readChinaLiquidity }         = require('./scrapers/chinaLiquidity');
@@ -105,9 +110,9 @@ app.use('/api/china-etf-premium', requireStorageBlobs('chinaEtfPremiumHistory'))
 app.use('/api/hk-performance', requireStorageBlobs('hkPerformanceHistory'));
 app.use('/api/global-indices', requireStorageBlobs('globalIndicesHistory'));
 app.use('/api/index-breadth', requireStorageBlobs('indexBreadthHistory'));
-// MA Cross reads the S&P 500 rolling raw-price cache that the breadth job
-// already maintains, not the breadth aggregate.
-app.use('/api/ma-cross', requireStorageBlobs('breadthRawSp500History'));
+// MA Cross reads the per-index rolling raw-price caches the breadth job already
+// maintains, not the breadth aggregate. Its route loads just the requested
+// index's blob, so there is no blanket middleware here.
 app.use('/api/spx-put-call-ratio', requireStorageBlobs('spxPutCallRatioHistory'));
 app.use('/api/options', requireStorageBlobs('optionsOI'));
 app.use('/api/alerts/earnings-calendar', requireStorageBlobs('techEarningsCalendar'));
@@ -797,14 +802,21 @@ app.get('/api/global-indices', async (req, res) => {
 // china-national-team-flow below.
 app.get('/api/index-breadth', (_req, res) => res.json(readIndexBreadth()));
 
-// S&P 500 names whose 5-day SMA crossed their 20-day SMA on the latest
-// session. Derived on read from the breadth raw cache — the set changes each
-// day that cache refreshes, so it is never persisted.
-app.get('/api/ma-cross', (_req, res) => {
+// Constituents whose 5-day SMA crossed their 20-day SMA on the latest session,
+// for one of the Breadth indices. Derived on read from that index's breadth raw
+// cache — the set changes each day the cache refreshes, so it is never
+// persisted. The raw caches are large, so only the requested index is loaded.
+app.get('/api/ma-cross', async (req, res) => {
+  const indexKey = req.query.index ?? MA_CROSS_DEFAULT;
+  if (!isKnownMaCrossIndex(indexKey)) {
+    return res.status(400).json({ error: `Unknown MA cross index: ${indexKey}` });
+  }
   try {
-    res.json(readMaCross());
+    const blob = STORAGE_BLOB_BY_NAME.get(MA_CROSS_RAW_BLOB[indexKey]);
+    await storage.load(blob.name, blob.file);
+    res.json(readMaCross(indexKey));
   } catch (e) {
-    console.error('[ma-cross]', e.message);
+    console.error('[ma-cross]', indexKey, e.message);
     res.status(500).json({ error: `Could not load MA cross data: ${e.message}` });
   }
 });

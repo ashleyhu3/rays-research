@@ -280,9 +280,24 @@ const SMA_SHORT = 50;
 const SMA_LONG = 200;
 // The old cache pruned at 300 *calendar* days, leaving only ~196–205 market
 // sessions. That produced zero to six valid SMA200 observations for several
-// indices. Bootstrap two calendar years, then retain a fixed number of actual
+// indices. Bootstrap three calendar years, then retain a fixed number of actual
 // market observations so every refresh has enough input for the long average.
-const BOOTSTRAP_WINDOW_DAYS = 730;
+//
+// The bootstrap window sets how much *aggregate* history one rebuild can
+// produce: a run computes the breadth aggregate across everything it fetched
+// before pruning the raw cache back down, and the aggregate blob keeps its
+// values forever.
+//
+// Sized for THREE YEARS OF PLOTTABLE breadth. The first SMA_LONG - 1 sessions
+// of any fetch produce nulls (the 200-day average has not warmed up yet), so
+// the window must cover the target history *plus* that warm-up: four calendar
+// years ≈ 1,000 sessions, minus ~199 warm-up sessions, leaves ~800 valid
+// observations ≈ 3.2 years. Fetching only 1,095 days yields 752 sessions and
+// just ~553 valid ones — 2.2 years, which visibly under-fills the page's 3Y view.
+const BOOTSTRAP_WINDOW_DAYS = 1460;
+// Deliberately NOT widened alongside the bootstrap: the raw per-ticker cache
+// stays a small rolling window (enough to keep SMA200 fed), because only the
+// tiny derived aggregate is worth keeping long-term.
 const ROLLING_WINDOW_OBSERVATIONS = SMA_LONG + 60;
 
 const RAW_BLOB = {

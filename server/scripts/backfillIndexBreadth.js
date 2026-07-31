@@ -44,8 +44,23 @@ async function main() {
     const aggregateBlob = blobByName.get('indexBreadthHistory');
     await storage.load(aggregateBlob.name, aggregateBlob.file);
 
+    // Default: repair only series with gaps. `--all` rebuilds every index from
+    // scratch over the full bootstrap window, which is what extending the
+    // history (e.g. two years → three) requires — a continuous-but-short series
+    // is not "incomplete", so the default check would skip it.
+    // `--only=a,b` limits either mode to specific indices.
+    const args = process.argv.slice(2);
+    const rebuildAll = args.includes('--all');
+    const onlyArg = args.find(arg => arg.startsWith('--only='));
+    const only = onlyArg ? onlyArg.slice('--only='.length).split(',').map(s => s.trim()).filter(Boolean) : null;
+
     const before = readIndexBreadth();
-    const incompleteKeys = incompleteBreadthKeys(before);
+    let incompleteKeys = rebuildAll ? Object.keys(RAW_BLOB) : incompleteBreadthKeys(before);
+    if (only) {
+      const unknown = only.filter(key => !RAW_BLOB[key]);
+      if (unknown.length) throw new Error(`Unknown index key(s): ${unknown.join(', ')}`);
+      incompleteKeys = incompleteKeys.filter(key => only.includes(key));
+    }
 
     if (!incompleteKeys.length) {
       console.log('[index-breadth-backfill] all breadth series are already continuous');
@@ -63,9 +78,20 @@ async function main() {
 
     console.log(`[index-breadth-backfill] bootstrapping/rebuilding series: ${incompleteKeys.join(', ')}`);
     const failures = [];
-    for (const key of incompleteKeys) {
+    for (const [position, key] of incompleteKeys.entries()) {
+      const startedAt = Date.now();
+      console.log(`[index-breadth-backfill] (${position + 1}/${incompleteKeys.length}) ${key} starting…`);
       try {
-        await updateIndexBreadth(key, { forceBootstrap: true });
+        const series = await updateIndexBreadth(key, { forceBootstrap: true });
+        const valid = series.pctAboveBoth?.filter(value => value != null).length ?? 0;
+        // Flush per index: a full rebuild is a long network job, so each index's
+        // result is persisted as soon as it is computed rather than risking the
+        // whole run to a failure several indices later.
+        await storage.flush();
+        console.log(
+          `[index-breadth-backfill] (${position + 1}/${incompleteKeys.length}) ${key} done in `
+          + `${Math.round((Date.now() - startedAt) / 1000)}s — ${series.dates.length} dates, ${valid} valid`,
+        );
       } catch (error) {
         failures.push(`${key}: ${error.message}`);
         console.error(`[index-breadth-backfill] ${key} failed: ${error.message}`);
