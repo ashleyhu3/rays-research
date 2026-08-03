@@ -3,14 +3,21 @@
 const path = require('path');
 const storage = require('./storage');
 const { SOXX_CONSTITUENTS, CSP_TICKERS, computeIndexCandles, QUARTERS_SHOWN } = require('./priceReturnAfterEarnings');
+const { DEFAULT_TICKERS } = require('./scripts/generateDailyOptionsReport');
 
-// The page's two sections, mirroring the Price Return page's ticker-scope
-// views: the tracked iShares SOXX holdings, and the hyperscaler cloud service
+// The page's sections, mirroring the Price Return page's ticker-scope views:
+// the tracked iShares SOXX holdings, and the hyperscaler cloud service
 // providers that buy from them. Kept as re-exports rather than second literal
-// lists so the two pages can never drift apart.
+// lists so the pages can never drift apart.
 const SOXX_SECTION = SOXX_CONSTITUENTS;
 const CSP_SECTION = CSP_TICKERS;
-const FUNDAMENTALS_TICKERS = [...SOXX_SECTION, ...CSP_SECTION];
+// Everything else the Alerts page tracks (DEFAULT_TICKERS) that isn't already
+// in one of the two curated sections above, so newly-added Alerts tickers
+// show up here automatically instead of needing a second hand-maintained list.
+const EXTENDED_SECTION = DEFAULT_TICKERS.filter(
+  t => t !== 'SOXX' && !SOXX_SECTION.includes(t) && !CSP_SECTION.includes(t),
+);
+const FUNDAMENTALS_TICKERS = [...SOXX_SECTION, ...CSP_SECTION, ...EXTENDED_SECTION];
 
 // The sidebar views. The first four are growth rates derived from the same two
 // quarterly income-statement lines, so one fetch per ticker fills all four.
@@ -21,10 +28,11 @@ const METRICS = ['revenueYoY', 'revenueQoQ', 'netIncomeYoY', 'netIncomeQoQ', 'fr
 // Primary source: the SEC Company Facts API. It is free, needs no API key, and
 // gives the long quarterly history this page needs. Yahoo's public fundamentals
 // endpoint only exposes the trailing five quarters, while Alpha Vantage's free
-// key is shared with other jobs and has a hard 25-request/day cap. The four
-// foreign private issuers without quarterly SEC facts therefore retain Alpha
-// Vantage as a fallback; the other 20 constituents no longer depend on that
-// scarce quota.
+// key is shared with other jobs and has a hard 25-request/day cap. Foreign
+// private issuers that only file annually (Form 20-F/40-F, no quarterly SEC
+// facts) retain Alpha Vantage as a fallback; every domestic 10-Q filer below —
+// verified against SEC EDGAR's full-text search and each CIK's own filing
+// history — no longer depends on that scarce quota.
 const SEC_COMPANY_FACTS_URL = 'https://data.sec.gov/api/xbrl/companyfacts';
 const SEC_CIK = {
   AMD: '0000002488',
@@ -47,12 +55,62 @@ const SEC_CIK = {
   ON: '0001097864',
   CRDO: '0001807794',
   MTSI: '0001493594',
+  ENTG: '0001101302',
   // CSP section. All four are domestic filers with full quarterly SEC facts,
   // so the section costs no Alpha Vantage quota.
   AMZN: '0001018724',
   GOOG: '0001652044', // Alphabet Inc. — one filer for both share classes
   MSFT: '0000789019',
   META: '0001326801',
+  // Extended section — domestic 10-Q filers only. Remaining Extended tickers
+  // (NOK, TSEM, GFS, CAMT, IFNNY, ERIC, STM, ARM, NVMI) file annually (20-F)
+  // and stay on Alpha Vantage.
+  AAPL: '0000320193',
+  CSCO: '0000858877',
+  ORCL: '0001341439',
+  T: '0000732717',
+  VZ: '0000732712',
+  TMUS: '0001283699',
+  NFLX: '0001065280',
+  ANET: '0001596532',
+  PLTR: '0001321655',
+  SNPS: '0000883241',
+  JBL: '0000898293',
+  ARW: '0000007536',
+  AVT: '0000008858',
+  CDNS: '0000813672',
+  GLW: '0000024741',
+  APH: '0000820313',
+  DELL: '0001571996',
+  HPQ: '0000047217',
+  HPE: '0001645590',
+  CIEN: '0000936395',
+  SMCI: '0001375365',
+  KEYS: '0001601046',
+  QRVO: '0001604778',
+  WDC: '0000106040',
+  SWKS: '0000004127',
+  FLEX: '0000866374',
+  SANM: '0000897723',
+  CLS: '0001030894',
+  APP: '0001751008',
+  FORM: '0001039399',
+  CALX: '0001406666',
+  VIAV: '0000912093',
+  ONTO: '0000704532',
+  VRT: '0001674101',
+  RMBS: '0000917273',
+  POWI: '0000833640',
+  TTMI: '0001116942',
+  AXTI: '0001051627',
+  STX: '0001137789',
+  ALGM: '0000866291',
+  COHR: '0000820318',
+  LITE: '0001633978',
+  AMKR: '0001047127',
+  TEL: '0001385157',
+  SNDK: '0002023554',
+  FN: '0001408710',
 };
 // The tickers each source is responsible for. Anything without a CIK above
 // falls through to Alpha Vantage, whose free key is capped at 25 requests a day
@@ -614,6 +672,7 @@ function getTable() {
     metrics: METRICS,
     soxxTickers: SOXX_SECTION,
     cspTickers: CSP_SECTION,
+    extendedTickers: EXTENDED_SECTION,
     updatedAt: state.updatedAt ?? null,
   };
 }
@@ -625,6 +684,7 @@ module.exports = {
   SEC_BACKED_TICKERS,
   SOXX_SECTION,
   CSP_SECTION,
+  EXTENDED_SECTION,
   METRICS,
   QUARTERS_SHOWN,
   backfill,

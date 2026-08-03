@@ -47,8 +47,9 @@ const METRICS = [
 ];
 
 const SECTIONS = [
-  { key: 'soxx', label: 'SOXX', suffix: ' — SOXX Index', metrics: METRICS.slice(0, 4) },
-  { key: 'csp',  label: 'CSP',  suffix: ' — Cloud Service Providers', metrics: METRICS },
+  { key: 'soxx',     label: 'SOXX',     suffix: ' — SOXX Index', metrics: METRICS.slice(0, 4) },
+  { key: 'csp',      label: 'CSP',      suffix: ' — Cloud Service Providers', metrics: METRICS },
+  { key: 'extended', label: 'Extended', suffix: ' — Extended Coverage', metrics: METRICS.slice(0, 4) },
 ];
 
 // Fallbacks if the API predates the section fields (stale cached blob). An
@@ -268,14 +269,16 @@ export default function Fundamentals() {
   const allRows = data?.rows ?? [];
   const cspSet = useMemo(() => new Set(data?.cspTickers ?? CSP_FALLBACK), [data]);
   const soxxSet = useMemo(() => new Set(data?.soxxTickers ?? []), [data]);
+  const extendedSet = useMemo(() => new Set(data?.extendedTickers ?? []), [data]);
   const rows = useMemo(() => {
     if (section === 'csp') return allRows.filter(r => cspSet.has(r.ticker));
+    if (section === 'extended') return allRows.filter(r => extendedSet.has(r.ticker));
     // Explicit SOXX roster when the API sends one; otherwise "not a CSP", which
     // matches what the payload contained before the section split.
     return soxxSet.size
       ? allRows.filter(r => soxxSet.has(r.ticker))
       : allRows.filter(r => !cspSet.has(r.ticker));
-  }, [section, allRows, soxxSet, cspSet]);
+  }, [section, allRows, soxxSet, cspSet, extendedSet]);
 
   // API returns quarters newest-first; show chronologically (oldest left).
   const quarters = useMemo(() => [...(data?.quarters ?? [])].reverse(), [data]);

@@ -15,12 +15,14 @@ const PRICE_RETURN_TICKERS = DEFAULT_TICKERS.filter(t => t !== INDEX_TICKER);
 
 // The SOXX index constituents we also track, for the "SOXX Index" view that
 // narrows the table to just the index's members. Snapshot of iShares SOXX
-// holdings (via stockanalysis.com, 2026-07) intersected with the tracked list;
-// membership drifts slowly, so revise here if the index reconstitutes.
+// holdings (via Zacks' full 30-name breakdown, 2026-08 — stockanalysis.com's
+// free tier only discloses the top 25 of 34 total holdings, which had let this
+// list go stale) intersected with the tracked list; membership drifts slowly,
+// so revise here if the index reconstitutes.
 const SOXX_CONSTITUENTS = [
   'AMD', 'NVDA', 'MU', 'AVGO', 'INTC', 'AMAT', 'KLAC', 'TSM', 'LRCX', 'TXN',
   'MRVL', 'ADI', 'NXPI', 'MPWR', 'QCOM', 'TER', 'ASML', 'MCHP', 'ALAB', 'ON',
-  'CRDO', 'ASX', 'MTSI', 'UMC',
+  'CRDO', 'ASX', 'MTSI', 'UMC', 'STM', 'ARM', 'NVMI', 'RMBS', 'SWKS', 'ENTG',
 ].filter(t => PRICE_RETURN_TICKERS.includes(t));
 
 // The hyperscaler cloud service providers, for the "CSP" view. These are the

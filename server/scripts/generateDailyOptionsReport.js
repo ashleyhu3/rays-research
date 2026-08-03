@@ -45,6 +45,11 @@ const DEFAULT_TICKERS = [
   'MTSI', 'ALAB', 'CSCO', 'ANET', 'CRDO', 'AXTI', 'CIEN', 'ASX', 'SMCI', 'DELL',
   'HPQ', 'HPE', 'JBL', 'SNPS', 'ARW', 'AVT', 'ORCL', 'PLTR', 'AMZN', 'NFLX',
   'APP', 'T', 'VZ', 'TMUS', 'ERIC', 'CALX',
+  // Added 2026-08: current SOXX constituent (Entegris) that was missing from
+  // this list entirely, which had also left it out of every page that derives
+  // its ticker scope from here (Price Return's SOXX view, Fundamentals).
+  // Needs the same backfillOptionsReportTickers.js seeding as the batches above.
+  'ENTG',
 ];
 const BASE = 'https://api.massive.com';
 const CALL_COLOR = '#059669';
