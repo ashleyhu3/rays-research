@@ -1,11 +1,12 @@
-"""Same-session news pull for the section-4 catalyst attribution.
+"""Same-session news pull for the section-4 catalyst attribution (US or Asia — kinds.py).
 
-Reuses emailai's trusted-feed scraper (emailai/PDF_summarizer/ingest/news_fetcher.py)
-directly — its RSS parsing, article-body extraction, finance triage and dedupe are
-already tuned. Unlike emailai it writes nothing to a database; headlines and bodies go
-straight to data/news_{DATE}.json for the attribution pass to read.
+Uses the vendored scraper (vendor/news_fetcher.py, falling back to emailai's copy if that
+vendored file is missing — see kinds.py) directly: its RSS parsing, article-body
+extraction, finance triage and dedupe are already tuned. Writes nothing to a database;
+headlines and bodies go through store.py (local data/news_{DATE}.json, or Mongo) for the
+attribution pass to read.
 
-Every headline is matched against the 92-name universe (plus company aliases) so the
+Every headline is matched against the kind's locked universe (plus company aliases) so the
 section-4 write-up starts from an evidence list per mover instead of from memory. A
 mover with no in-window evidence must be labelled beta in the report, never invented.
 """
@@ -13,26 +14,13 @@ mover with no in-window evidence must be labelled beta in the report, never inve
 from __future__ import annotations
 
 import argparse
-import json
 import re
-import sys
 from datetime import date, datetime, time, timedelta, timezone
-from pathlib import Path
 from zoneinfo import ZoneInfo
 
-ROOT = Path(__file__).resolve().parent
-DATA_DIR = ROOT / "data"
-EMAILAI_INGEST = ROOT.parent / "emailai" / "PDF_summarizer" / "ingest"
-
-if not EMAILAI_INGEST.is_dir():
-    raise SystemExit(f"emailai news scraper not found at {EMAILAI_INGEST}")
-sys.path.insert(0, str(EMAILAI_INGEST))
-
-from news_fetcher import fetch_top_news  # noqa: E402
-
-import universe  # noqa: E402
-
-ET = ZoneInfo("America/New_York")
+import kinds
+import store
+from kinds import fetch_top_news
 
 # Company names that would not be caught by a bare ticker match. Only names whose
 # headline mention is unambiguous — no "Arm" (English word), no "ON" (preposition).
@@ -65,6 +53,19 @@ ALIASES: dict[str, list[str]] = {
     "HOOD": ["Robinhood"], "MSTR": ["MicroStrategy", "Strategy Inc"],
     "RKLB": ["Rocket Lab"], "ASTS": ["AST SpaceMobile"], "JOBY": ["Joby"],
     "PONY": ["Pony.ai"], "MBLY": ["Mobileye"], "BABA": ["Alibaba"], "BIDU": ["Baidu"],
+    # Asia universe aliases.
+    "2330.TW": ["TSMC", "Taiwan Semiconductor"], "2317.TW": ["Hon Hai", "Foxconn"],
+    "2454.TW": ["MediaTek"], "2382.TW": ["Quanta Computer"], "6669.TW": ["Wiwynn"],
+    "2308.TW": ["Delta Electronics"], "3711.TW": ["ASE Technology"],
+    "2327.TW": ["Yageo"], "042700.KS": ["Hanmi Semiconductor"],
+    "8035.T": ["Tokyo Electron"], "6857.T": ["Advantest"], "6146.T": ["Disco Corp", "DISCO"],
+    "7735.T": ["SCREEN Holdings"], "6920.T": ["Lasertec"], "5803.T": ["Fujikura"],
+    "0981.HK": ["SMIC", "Semiconductor Manufacturing International"],
+    "1347.HK": ["Hua Hong Semiconductor", "Hua Hong"], "0700.HK": ["Tencent"],
+    "9988.HK": ["Alibaba"], "1810.HK": ["Xiaomi"],
+    "002371.SZ": ["NAURA", "Naura Technology"],
+    "688012.SS": ["AMEC", "Advanced Micro-Fabrication Equipment"],
+    "300308.SZ": ["Zhongji Innolight", "Innolight"], "601138.SS": ["Foxconn Industrial Internet", "FII"],
 }
 
 # Korea sub-layer names carry their own headline evidence.
@@ -85,24 +86,28 @@ def _matchers(symbol: str, aliases: list[str]) -> list[re.Pattern]:
     return out
 
 
-def _in_window(published: datetime | None, session: date, lookback_hours: int) -> bool:
+def _in_window(published: datetime | None, session: date, lookback_hours: int,
+                tz: ZoneInfo, open_time: tuple[int, int]) -> bool:
     if published is None:
         return False
-    # Window closes at the next ET open so post-close earnings land in the right session.
-    close = datetime.combine(session + timedelta(days=1), time(9, 30), tzinfo=ET)
-    return (close - timedelta(hours=lookback_hours)) <= published.astimezone(ET) <= close
+    # Window closes at the next local open so post-close catalysts land in the right session.
+    hour, minute = open_time
+    close = datetime.combine(session + timedelta(days=1), time(hour, minute), tzinfo=tz)
+    return (close - timedelta(hours=lookback_hours)) <= published.astimezone(tz) <= close
 
 
-def pull(session: date, max_articles: int, per_source_limit: int, lookback_hours: int) -> dict:
-    articles = fetch_top_news(max_articles=max_articles, per_source_limit=per_source_limit)
+def pull(session: date, kind: str, max_articles: int, per_source_limit: int, lookback_hours: int) -> dict:
+    k = kinds.get(kind)
+    articles = fetch_top_news(max_articles=max_articles, per_source_limit=per_source_limit,
+                               sources=k.news_sources)
 
-    targets = {t: ALIASES.get(t, []) for t in universe.locked_universe()}
+    targets = {t: ALIASES.get(t, []) for t in k.universe.locked_universe()}
     targets.update(KOREA_ALIASES)
     patterns = {sym: _matchers(sym, aliases) for sym, aliases in targets.items()}
 
     rows, by_ticker, out_of_window = [], {}, 0
     for article in articles:
-        in_window = _in_window(article.published_at, session, lookback_hours)
+        in_window = _in_window(article.published_at, session, lookback_hours, k.tz, k.open_time)
         if not in_window:
             out_of_window += 1
         hay = f"{article.title}\n{article.summary}\n{article.body_text[:4000]}"
@@ -127,11 +132,13 @@ def pull(session: date, max_articles: int, per_source_limit: int, lookback_hours
 
     return {
         "session": session.isoformat(),
+        "kind": kind,
         "pulled_at": datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds"),
-        "scraper": "emailai/PDF_summarizer/ingest/news_fetcher.py (fetch_top_news)",
+        "scraper": "vendor/news_fetcher.py (fetch_top_news)",
         "window": {
             "lookback_hours": lookback_hours,
-            "closes_at": datetime.combine(session + timedelta(days=1), time(9, 30), tzinfo=ET).isoformat(),
+            "closes_at": datetime.combine(session + timedelta(days=1),
+                                           time(*k.open_time), tzinfo=k.tz).isoformat(),
         },
         "counts": {
             "articles": len(rows),
@@ -146,6 +153,7 @@ def pull(session: date, max_articles: int, per_source_limit: int, lookback_hours
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--date", required=True)
+    parser.add_argument("--kind", default="us", choices=sorted(kinds.KINDS), help="us | asia")
     parser.add_argument("--max-articles", type=int, default=120)
     parser.add_argument("--per-source-limit", type=int, default=25)
     parser.add_argument("--lookback-hours", type=int, default=36)
@@ -153,21 +161,20 @@ def main() -> int:
 
     payload = pull(
         date.fromisoformat(args.date),
+        args.kind,
         args.max_articles,
         args.per_source_limit,
         args.lookback_hours,
     )
 
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    out = DATA_DIR / f"news_{payload['session']}.json"
-    out.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+    store.write_json("news", args.kind, payload["session"], payload)
 
     c = payload["counts"]
-    print(f"session {payload['session']}: {c['articles']} articles, {c['in_window']} in window, "
+    print(f"[{args.kind}] session {payload['session']}: {c['articles']} articles, {c['in_window']} in window, "
           f"{c['tickers_with_evidence']} universe names with evidence")
     for sym, items in sorted(payload["by_ticker"].items(), key=lambda kv: -len(kv[1])):
         print(f"  {sym:<10} {len(items)}  {items[0]['title'][:80]}")
-    print(f"wrote {out}")
+    print(f"wrote news doc ({store.mode()} mode, kind={args.kind}, session={payload['session']})")
     return 0
 
 

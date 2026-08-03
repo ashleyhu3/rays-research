@@ -1070,6 +1070,7 @@
     "down": 3,
     "highlight_n": 1,
     "extreme_n": 1,
+    "direction": "↓",
     "trigger_ticker": "000660.KS",
     "trigger_pct": -5.638829407566027,
     "triggered": true

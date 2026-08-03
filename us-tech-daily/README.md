@@ -1,12 +1,21 @@
-# us-tech-daily — 美股科技板块涨跌复盘
+# us-tech-daily — 美股科技板块涨跌复盘 / 亚洲科技板块复盘
 
-Daily US tech sector review over a locked universe of **92 names × 12 sub-sectors**, plus
-3 indices and 3 Korea anchors. Produces a single self-contained HTML report.
+Two sector reviews a day, published to the site's **Report** page: **US Close**
+(`--kind us`, the locked 92-name US tech universe × 12 sub-sectors + 3 indices + 3 Korea
+anchors) and **Asia Close** (`--kind asia`, Taiwan/Korea/Japan/HK/China A-shares × 12
+sub-sectors + 5 indices + 3 US mega-cap anchors — see `universe_asia.py`). Each produces a
+single self-contained HTML report, plus Markdown and PDF exports.
 
 ```bash
-./run.sh 2026-07-30        # or ./run.sh for today's ET session
+./run.sh 2026-07-30            # US kind, today defaults to the ET session
+./run.sh 2026-07-30 asia       # Asia kind, same date
 open reports/2026-07-30_us_tech_daily.html
 ```
+
+Set `MONGODB_URI` (see `../.env`) to run the whole pipeline against Mongo instead of local
+files — see `store.py`. A scheduled run always does this and writes nothing to disk; the
+`.claude/skills/us-tech-daily/SKILL.md` skill drives it end to end, including authoring the
+narrative, and is what the two daily scheduled agents (07:00 / 18:00 HKT) invoke.
 
 Each run produces the report in three formats, all off the same inputs:
 
@@ -32,27 +41,44 @@ against the table directly above it.
 
 | File | Role |
 | --- | --- |
-| `universe.py` | The 92-name lock, 12 sub-sectors, indices, Korea anchors, thresholds |
-| `pull_global_eod.py` | yfinance EOD pull → `data/eod_{DATE}.json` |
-| `aggregate.py` | Sector means, up/down, highlight/extreme flags → `data/agg_{DATE}.json` |
-| `pull_news.py` | RSS scrape + per-ticker matching → `data/news_{DATE}.json` |
-| `render_report.py` | `agg` + `narrative` → `reports/{DATE}_us_tech_daily.html` |
-| `export_report.py` | Same inputs → `.md`; the HTML → `.pdf` via Playwright |
-| `lint_narrative.py` | Checks every hand-written figure against the tape |
+| `kinds.py` | Registry mapping `--kind` (`us` \| `asia`) → universe module, timezone, news sources |
+| `universe.py` | US: the 92-name lock, 12 sub-sectors, indices, Korea anchors, thresholds |
+| `universe_asia.py` | Asia: same shape, Taiwan/Korea/Japan/HK/China A-share universe |
+| `store.py` | Dual-mode read/write for every doc below — local files, or Mongo when `MONGODB_URI` is set |
+| `session.py` | Resolves each scheduled slot to a session date; freshness (see "Dead slots" below) |
+| `pull_global_eod.py` | yfinance EOD pull → `eod` doc |
+| `aggregate.py` | Sector means, up/down, highlight/extreme flags → `agg` doc |
+| `aggregate_span.py` | Compounds N sessions into one tape → `agg_{START}_{END}` (US kind, file mode only) |
+| `pull_news.py` | RSS scrape + per-ticker matching → `news` doc |
+| `render_report.py` | `agg` + `narrative` → report HTML (pure `render()`, callable in-process too) |
+| `export_report.py` | Same inputs → `.md`; the HTML → PDF bytes via Playwright (`export_pdf()`, no temp file) |
+| `lint_narrative.py` | Checks every hand-written figure against the tape, across every kind/date on record |
+| `publish.py` | Renders + writes the report/PDF/history-index docs to Mongo; `--backfill` imports old files |
 | `narrative/_template.json` | Blank schema with the authoring rules |
-| `run.sh` | Chains all five; stops at the first failure |
+| `run.sh` | Chains EOD → aggregate → news → lint → render → export for one kind; stops at the first failure |
+| `vendor/news_fetcher.py` | Vendored copy of `emailai/PDF_summarizer/ingest/news_fetcher.py` (see below) |
+| `.claude/skills/us-tech-daily/SKILL.md` | Drives a full run including narrative authoring; what the schedule calls |
 
 ## Reused from this repo
 
-- **News scraping** imports `emailai/PDF_summarizer/ingest/news_fetcher.py` directly —
-  its RSS parsing, article-body extraction, finance triage and dedupe are already tuned.
-  Unlike emailai, nothing is written to a database; headlines go straight to JSON.
-  Feeds: CNBC, MarketWatch, WSJ Markets, Yahoo Finance, NYTimes Business, FT Markets.
+- **News scraping** uses `vendor/news_fetcher.py`, a vendored copy of
+  `emailai/PDF_summarizer/ingest/news_fetcher.py` (that directory is gitignored, so the
+  pipeline can't depend on it directly) — its RSS parsing, article-body extraction, finance
+  triage and dedupe are already tuned. Nothing is written to a database; headlines go
+  straight into the `news` doc. US feeds: CNBC, MarketWatch, WSJ Markets, Yahoo Finance,
+  NYTimes Business, FT Markets. Asia feeds (see `kinds.ASIA_NEWS_SOURCES`): Nikkei Asia,
+  SCMP Business, Korea Herald, Yonhap, DigiTimes Asia, Reuters Asia Markets, Taipei Times,
+  CNA Business.
 - **Price sourcing** follows the pattern in `server/scrapers/globalIndices.js` (Yahoo
   history, bounded concurrency, retry on rate limits), reimplemented in Python so the
   pipeline is one language end to end.
 - **Alpha Vantage** (`ALPHA_VANTAGE_API_KEY` in the repo `.env`) is the bad-bar repair
-  path, matching the fallback role it plays in `server/alphaVantageEarningsDates.js`.
+  path (US kind only), matching the fallback role it plays in
+  `server/alphaVantageEarningsDates.js`.
+- **Mongo storage** (`store.py`) matches `server/storage.js`'s wire format exactly —
+  gzip-json for compressed docs, `{_id,data}` for plain blobs — so the Node server reads
+  what this pipeline writes with no translation layer. See `server/server.js`'s
+  `/api/reports/*` routes.
 
 ## Data integrity
 
@@ -85,6 +111,51 @@ before rendering.
 - The Korea sub-layer in section 1 is mandatory when SK Hynix moves more than 3%.
 - The news window closes at the next ET open, so post-close earnings land in the session
   the market actually traded them on.
+
+## Dead slots (no weekend format)
+
+There is no separate weekend report anymore. Each kind's schedule fires 7 days a week
+(US Close 07:00 HKT, Asia Close 18:00 HKT) — but on a US holiday, a weekend `us-close` run,
+or a Saturday/Sunday `asia-close` run, nothing new has actually traded. `session.py`
+resolves this by asking the tape, not a calendar: it probes the kind's primary index for
+the newest bar and compares it against the session the *previous* report in that exact
+(kind, slot) used. No new bar → `is_fresh=False`, and the run:
+
+- **skips** the EOD pull and aggregate step entirely — the prior session's `agg` doc is
+  reused as-is (pass it to `render_report.py` / `export_report.py` / `lint_narrative.py`
+  via `--session-date`, distinct from `--date`, the report's own publish date)
+- **still** pulls fresh news and writes a new narrative — new prose, reused prices
+- renders with an automatic "价格沿用 {reused session}" banner (`render_report.render()`'s
+  `meta` parameter) so the reused tape is never presented as if it just happened
+
+This is what `session.py --kind <k> --slot <s>` is for; the skill calls it first, every
+run. See the skill's docstring for the exact command sequence including `--session-date`.
+
+### Multi-session spans — `*_us_tech_daily` over a span
+
+Where the week actually ended up, compounded across the last two sessions:
+
+```bash
+python aggregate_span.py --dates 2026-07-30 2026-07-31
+python lint_narrative.py --date 2026-07-30_2026-07-31
+python render_report.py   --date 2026-07-30_2026-07-31
+python export_report.py   --date 2026-07-30_2026-07-31
+```
+
+`aggregate_span.py` builds a synthetic tape and hands it to the same `aggregate.build()`
+the daily run uses, so sector means, flags, direction arrows and the Korea trigger are
+computed by identical code. On the span tape:
+
+- `pct` is **compounded**, `(1+r₁)(1+r₂)−1` — never summed
+- `dollar_volume_b` is summed across the window
+- `close` and `dist_52w_high_pct` are the last session's; point-in-time, never compounded
+- a name missing a price in *any* session is dropped, so a compounded return can never
+  silently describe a shorter window than the report claims
+
+**Thresholds are deliberately not rescaled.** `|pct|>5%` over two sessions is a much
+weaker statement than over one — 71 of 92 names cleared it over 7/30–7/31 against 14 on
+7/31 alone. Section 7 says so in words rather than quietly moving the number, so the same
+metric never means two different things across reports.
 
 ## Adding a session
 

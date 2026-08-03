@@ -1894,6 +1894,10 @@ async function generateDailyOptionsReport({
         // nothing until every ticker finishes — see writeDailyReport in
         // optionsReportStore.js for the atomic-overwrite write this feeds.
         if (onTickerDone) await onTickerDone({ date, tickers: [...tickerReports] });
+      } catch (error) {
+        // One ticker with no options chain (e.g. an ADR with nothing listed)
+        // must not sink every ticker after it in the list — skip and continue.
+        console.warn(`[options-report] ${ticker} failed, skipping: ${error.message}`);
       } finally {
         // Persist after every ticker so a late failure does not make the next run
         // repeat all completed full-chain backfills.

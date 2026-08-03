@@ -57,6 +57,13 @@ KOREA_TRIGGER_ABS_PCT = 3.0
 HIGHLIGHT_ABS_PCT = 2.5   # 高亮 threshold
 EXTREME_ABS_PCT = 5.0     # 极端 threshold
 
+# The two spots in render_report.py that print the anchor layer's Chinese label directly
+# (the §2 total row, and the §4 "非成交额" tag check) read these instead of a hardcoded
+# string, so a non-US kind (e.g. universe_asia.py) can relabel the same KOREA_ANCHORS
+# mechanism without forking the renderer.
+ANCHOR_LABEL = "韩国锚"
+ANCHOR_HEADER_LABEL = "韩国锚（非 92 票）"
+
 
 def locked_universe() -> list[str]:
     """The 92 de-duplicated names the report claims to lock."""

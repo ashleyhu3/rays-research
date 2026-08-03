@@ -34,4 +34,5 @@ module.exports = [
   blob('dailyOptionsReport'), blob('optionsPriorYearVolume'),
   blob('earningsDates'), blob('techEarningsCalendar'), blob('latestSnapshots'),
   blob('priceReturnAfterEarnings'), blob('fundamentalsGrowth'),
+  blob('usTechReportIndex'),
 ];

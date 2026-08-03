@@ -1,0 +1,493 @@
+{
+  "session": "2026-07-31",
+  "framework": "framework v6.6",
+  "vault": "vault `复盘日志/美股科技板块复盘/`",
+  "badge": "美股科技板块复盘",
+  "title": "美股科技板块涨跌复盘 · 2026-07-31（ET）",
+  "subtitle_extra": "云验证 · 韩国史上最强反弹 · 苹果供应链塌方",
+
+  "key_signal": "今日最大边际——<mark>AWS Q2 增速 37%、为 18 个季度以来最快</mark>，把\"AI 需求见顶\"证伪，<b>AMZN +15.32%</b> 创 2012 年以来最佳单日；同一份云读数在亚洲时段引爆<mark>韩国史上最大单日涨幅（KOSPI ^KS11 +17.91%、SK Hynix 000660.KS +29.95% 触及涨停、Samsung 005930.KS +26.81%）</mark>——但它的反面同样锋利：<b>同夜财报的 AAPL −7.35%</b>（营收创纪录却因元器件短缺下修指引），以及<mark>美股存储链逆势收跌（MU −5.90% / SNDK −5.09%）</mark>。市场本日买的是<b>「云算力需求」而非「存储涨价」</b>：^SOX +0.07% 几乎持平、92 票等权仅 +0.98%（58 涨 / 34 跌），指数级涨幅几乎全部由 AMZN 一票贡献，这不是普涨日，是一次<b>高度选择性的重新定价</b>。",
+
+  "s1": {
+    "rotation": "<b>窄幅但高烈度的分化日</b>——锁定 92 票等权 <b>+0.98%</b>（58 涨 / 34 跌），12 个子赛道 9 红 3 绿，表面温和，内部撕裂。^GSPC +0.70% / ^NDX +0.60% 双双收在纪录区，<mark>但 ^SOX +0.07% 基本走平</mark>——这是理解本日的钥匙：<b>指数上涨由云/平台驱动，半导体并未参与</b>。领涨端是光通讯 +5.44%、中概 AI mega +4.24%、MAG7 +3.53%、AI 网络设备 +3.00%；落后端是前沿科技/流动性敏感 −1.93%、数据中心 REIT −1.19%、半导体核心 −0.94%。MAG7 内部即是全场缩影：<b>AMZN +15.32% 与 AAPL −7.35% 同处一个板块、同为 7/30 盘后财报</b>，一个被奖赏云的加速、一个被惩罚硬件的供给约束。与 7/30 的\"全 12 赛道翻红\"相比，本日主轴从<b>\"β 普涨\"切换为\"按证据分配\"</b>。",
+    "macro_layers": [
+      {
+        "icon": "🌍",
+        "label": "地缘政治 / 风险情绪",
+        "color": "geo",
+        "body": "<mark>油价本周全面上行——Brent 盘中重上 $92 上方、月内累计涨幅超 20%</mark>，直接源头是<b>美伊军事冲突重启</b>：伊朗弹道导弹袭击后 7/29 Brent 结算 $90.74 / WTI $84.46，特朗普\"重击伊朗\"表态进一步推高溢价。与 7/30\"沙特护航联盟提议压过袭击溢价\"的短暂回落相比，本日地缘层<b>由缓和翻回紧张</b>。NYTimes 当日专文《Iran War Drives Oil Profits to Highest Levels in Years》、FT《Chevron and Exxon earnings soar as Trump threatens price interventions》为同一线索。<b>传导路径值得留意</b>：本轮油价并未压制科技风险偏好，而是<b>经由通胀预期推高长端利率</b>再作用于估值——见下一层。"
+      },
+      {
+        "icon": "💵",
+        "label": "通胀 / 利率",
+        "color": "infl",
+        "body": "本日科技股是<b>顶着利率逆风上涨</b>的。<mark>10 年期美债收益率盘中升破 4.7%，为 2025 年 1 月以来最高；30 年期升约 4bp 至 5.25%</mark>——油价上行与 Warsh 主席的沟通方式共同推动。FT 当日以《Warsh spooks long bonds》直接点名，NYTimes 同步报道<mark>Warsh 正考虑<b>降低 FOMC 议息会议频率</b></mark>，叠加 7/29 决议 9–3 维持 3.50%–3.75%（Logan / Hammack / Kashkari 三人同向异议主张加息，为 2016 年 9 月以来首次），长端定价的是<b>\"政策路径可见度下降 + 通胀未回锚\"</b>。CNBC 当日给出的应对是\"聚焦收益率曲线前端\"。<b>本层为纯逆风</b>：它解释了为何估值最长久期的一端（数据中心 REIT −1.19%、SMR 核电、量子）在一个云利好日里依然收跌。"
+      },
+      {
+        "icon": "⚡",
+        "label": "AI capex / 行业微观",
+        "color": "capex",
+        "body": "本日全部由 <b>7/30 盘后财报夜</b>定调，且给出了一个比 7/30 更精确的结论：<mark>市场奖赏的是「云算力需求的可计量加速」</mark>。<b>AWS Q2 营收 $42.2B、同比 +37%，为 18 个季度以来最快</b>；AI 与自研芯片两块业务年化收入运行率<b>各自突破 $25B</b>；在手订单 backlog <b>$496B</b>、同比三位数增长；2026 资本开支指引上调至 <b>$220B</b>。这条读数与 7/29 盘后 Azure +43%、7/22 Google Cloud +82%（backlog $514B）连成<b>三大云同向加速</b>的完整证据链。但同一夜的另一半是供给侧警告：<mark>AAPL 营收创 6 月季度纪录（$109.4B、+16%）、iPhone +22%，却因<b>元器件短缺</b>把 FQ4 指引压到 +9%~11%（市场预期 >12%）</mark>——<b>存储涨价正在变成下游整机厂的成本与产能约束</b>，这也正是本日美股存储链不涨反跌的微观根据。"
+      }
+    ],
+    "korea": {
+      "heading": "韩国子层（trigger 触发：SK Hynix 000660.KS +29.95% > 3% 阈值）",
+      "lead": "——<b>这是本报告开写以来最极端的一次韩国读数</b>：KOSPI 录得<mark>有史以来最大单日涨幅</mark>，而 7/30 我们标注的\"韩美半导体脱钩\"在一个交易日内被彻底反向兑现。",
+      "points": [
+        "<b>KOSPI（^KS11）+17.91% 收 6,595.45</b>——<mark>韩国交易所历史最大单日涨幅</mark>，此前唯一单日涨超 10% 的纪录是 2008 年 10 月 30 日。<b>SK Hynix 000660.KS +29.95%（收 ₩1,718,000）触及韩国 ±30% 单日涨跌幅上限、为其首次涨停</b>；<b>Samsung 005930.KS +26.81%（收 ₩262,500）创其历史最大单日涨幅</b>。三票韩国锚等权 +24.89%、全部触发极端阈值。",
+        "<b>反弹的三重驱动</b>：① <mark>美股云财报（MSFT Azure / AMZN AWS）直接缓解了对存储终端需求见顶的恐慌</mark>——韩国半导体的多头逻辑重新接回美股 AI 主线；② <mark>SK 集团会长崔泰源（Chey Tae-won）买入 SK Hynix 约 362 万股（约 ₩49 亿）</mark>，大股东增持提供了明确的信心信号；③ <b>技术性超卖</b>——此前三个交易日 SK Hynix 已跌 29.9%、Samsung 跌 19.34%。",
+        "<b>资金结构是本次反弹最重要的细节</b>：<mark>外资净买入 ₩7.22 万亿（约 $50.6 亿）、机构净买入 ₩1.18 万亿，而散户净卖出 ₩8.25 万亿</mark>——<b>这是一次外资与机构从散户手中接货的反弹，而非散户追涨</b>，与 7/28–7/29 那轮由散户杠杆 ETF 强平驱动的踩踏在筹码方向上完全相反。同日<mark>杠杆 ETF 最低申购额自 ₩1,000 万提高至 ₩3,000 万的新规生效</mark>，机械性抛压来源被制度性收窄。"
+      ],
+      "stabilizer": "<b>定性：这是一次机制性修复，而非新一轮上涨的起点。</b>三点约束需并列写明——① <b>此轮波动的起因尚未消失</b>：7/28 起的崩跌由中国半导体推进（<mark>长鑫存储 CXMT 上交所上市募资 $86 亿、首日大涨 466%；次日有报道称中国已开始量产国产 DUV 光刻机</mark>）触发，本日反弹并未提供任何对该竞争叙事的反证；② <b>幅度不等于收复</b>：KOSPI 6 月 19 日高点 9,385.59，7 月末低点 5,262.77，最大回撤 −43.9%，本日收 6,595.45 仍距 52 周高点 <b>−29.7%</b>；③ <b>7/28 与 7/29 连续两日触发熔断，为韩交所史上首次连续熔断</b>——市场结构受损的痕迹不会被一根涨停抹除。",
+      "sources": "信源：Korea Times / KED Global / Korea Herald / Bloomberg / FT《South Korean stock market soars 18% as investors pile back into AI》/ FT《Why South Korea's won was one of world's best performers in July》。"
+    },
+    "stacking": "<b>三层叠加机制</b>：微观层（云 capex 证据）单独扛起全部涨幅，地缘层（油价上行）与利率层（10y 破 4.7%、30y 5.25%）<b>同时为负</b>并已明确压制了长久期资产——数据中心 REIT −1.19%（EQIX −2.70% / DLR −2.42%）、核电 SMR（OKLO −5.50% / NNE −4.62%）、加密代理（COIN −10.59% / MSTR −4.56%）三组收跌，共同的分母就是利率而非各自的基本面。<b>因此本日结构的正确描述是「微观证据在利率逆风中做定向突破」</b>，而非风险偏好整体抬升——这也解释了 92 票等权仅 +0.98%、^SOX +0.07% 的钝感读数。它的<b>可持续性取决于云 backlog 能否继续兑现</b>：一旦下季云增速回落，本日唯一的正向层会消失，而两个负向层仍在。",
+    "mechanical": "<b>机械成分本日主要在韩国一侧，且方向可辨</b>：外资 ₩7.22 万亿 + 机构 ₩1.18 万亿净买入对散户 ₩8.25 万亿净卖出，叠加杠杆 ETF 申购门槛新规当日生效，构成\"强平压力被制度性掐断 + 专业资金接货\"的组合——<b>这与 7/28–7/29 的杠杆 ETF 踩踏是同一机制的反向释放</b>。美股一侧，FT 当日《Citadel's swoop on Situational Awareness helped stem a $3tn AI rout》进一步确认了 7/30 已标注的 Situational Awareness（峰值 AUM $45B）强平 / Citadel 接盘事件，并将其定性为<b>阻断了一轮 $3 万亿规模 AI 抛售的关键节点</b>——但该事件对本日的边际影响已大幅衰减（软件股本日 AI infra/SaaS 等权 +0.02%、方向中性），<b>不应再作为本日涨幅的解释项</b>。"
+  },
+
+  "s2_note": "本日真正的反向信号不在\"哪个板块跌\"，而在<b>两组同源资产的方向相反</b>：<b>① 韩美存储彻底反向</b>——Samsung 005930.KS +26.81% / SK Hynix 000660.KS +29.95% 涨停，而美股存储链 <mark>MU −5.90%（$44.66B 成交居全表第二）/ SNDK −5.09%（$25.62B）</mark> 双双大跌，STX +0.52% / WDC +2.21% 仅微涨。<b>这是 7/30 脱钩的镜像</b>：7/30 是美股存储暴涨（MU +18.36% / SNDK +25.99%）而韩国独跌，本日完全调转。同一条 DRAM/NAND 产业链在两地被读成相反的故事，说明<b>驱动两边的并非产业基本面，而是各自的仓位与流动性状态</b>。<b>② 云的上游与下游反向</b>——云需求（AMZN +15.32%）与云的算力设备（ANET +5.46% / ALAB +3.85%）上涨，但云的物业载体（EQIX −2.70% / DLR −2.42%）与云的电力长久期资产（OKLO −5.50% / NNE −4.62% / SMR −2.09%）下跌，分界线是<b>久期与利率敏感度</b>而非 AI 相关性。详见 §4 / §5.2。",
+
+  "s3_notes": {
+    "MAG7": "MAG7 等权 <b>+3.53%</b>（6 涨 1 跌），但均值严重掩盖内部裂口——<mark>AMZN +15.32% 与 AAPL −7.35% 之间是 22.7 个百分点的价差，两者同为 7/30 盘后财报</mark>。<b>AMZN $35.00B / AAPL $40.86B 成交分列全表第二、第一</b>，本日全场资金几乎押在这一对上。GOOGL +6.73% <b>无当日 catalyst</b>——其 Q2 财报早在 7/22 已发布（营收 $119.8B / +24%、Google Cloud +82% 至 $24.8B、backlog $514B），本日涨幅属 <mark>AWS/Azure 云读数的板块间传导（read-through）</mark>，市场把 AMZN 的云加速外推为整个超大规模云的共同景气；META +3.28% 为 7/30 深跌 −7.95% 后的修复，NVDA +2.93% / MSFT +3.02% 温和跟随，TSLA +0.76% 基本走平。",
+    "半导体核心": "半导体核心是本日<b>最反直觉的板块</b>：等权 <b>−0.94%</b>（3 涨 3 跌），在韩国半导体涨停、^SOX 持平的背景下收跌。<mark>MU −5.90% 独自拖累全板块</mark>，成交 $44.66B——<b>本日全表第二大成交额出现在一只下跌股上，是显著的换手信号</b>；AMD −1.90% / ARM −0.77% 跟跌，MRVL +2.32% / AVGO +0.37% / TSM +0.23% 撑住上沿。<b>关键判读</b>：AWS 的云需求证据没有传导到存储定价叙事——市场把\"云支出加速\"与\"存储涨价周期能否延续\"拆成了两笔独立交易，而 AAPL 财报中的<b>元器件短缺压制指引</b>恰好从下游给出了\"涨价正在毁需求\"的第一个实证。",
+    "半导体硬件扩展": "20 票 12 涨 8 跌、等权 <b>+0.20%</b>，是本日最接近\"零信号\"的板块——但零均值来自两端对冲而非集体钝化。5 子链：",
+    "光通讯": "光通讯 9 涨 1 跌、等权 <b>+5.44% 为全场板块之冠</b>，且是<b>唯一由个股硬基本面（而非 beta）领涨的板块</b>。两子链：",
+    "AI 服务器/EMS": "3/3 全涨、等权 +1.39%，无个股 catalyst。SMCI +2.42% / HPE +1.61% / DELL +0.14% 随 AMZN capex 上调至 $220B 的读数温和跟随——<b>涨幅显著小于 7/30 的 +7.83%</b>，说明整机环节已在 7/30 一次性定价完毕，本日只剩余温。",
+    "AI 网络设备": "4/4 全涨、等权 <b>+3.00%</b>，是本日<b>最干净的\"云 capex 直接受益\"表达</b>。<mark>ANET +5.46% 为财报驱动</mark>——营收与 EPS 双超预期，云巨头客户 AI 组网需求强劲，叠加 1.6Tbps 交换机新品线索；ALAB +3.85%（PCIe Gen6 基本面延续，8/4 才财报）、CSCO +2.14% / APH +0.55% 为连接与交换 beta。<b>本板块与数据中心 REIT −1.19% 的反向是 §2 第二条分界线的核心证据</b>：同样服务于 AI 数据中心，设备（短久期、现金流当期兑现）涨，物业（长久期、利率敏感）跌。",
+    "AI infra/SaaS": "12 票 6 涨 6 跌、等权 <b>+0.02%</b>——<b>方向完全中性</b>，这本身是重要读数。7/30 该板块曾因 Situational Awareness 强平（多 AI 基建 / 空软件）出现 neocloud 暴涨 + 应用软件收跌的剧烈分化，本日<mark>分化消失：CRWD +3.05% / CRM +1.83% / ORCL +1.81% / NOW +1.05% 应用软件端反而收涨，而 neocloud 端 CRWV −2.88% 领跌、NBIS +1.05% 仅微涨</mark>——<b>与 7/30 完全对调</b>。这条证据支持把 7/30 的\"卖软件买硬件\"相当程度归因于<b>单一基金的强平机械成分</b>，而非一次结构性 rotation：机械压力退去后，该 rotation 没有延续。APP −1.97% / SNOW −1.62% / NET −1.56% 为估值端小幅回吐。",
+    "AI 电力 baseload": "13 票 6 涨 7 跌、等权 <b>+0.37%</b>，是本日<b>内部分裂最锋利的板块</b>——3 票极端上涨与 1 票极端下跌同时出现。分界线不是\"是否 AI 电力\"，而是<b>「已兑现的现金流」对「远期故事」</b>。3 子链：",
+    "数据中心 REIT": "4 票 1 涨 3 跌、等权 <b>−1.19%</b>，为本日<b>唯一单向收跌的美股板块</b>（方向标 ↓）。<mark>EQIX −2.70% / DLR −2.42% 在一个云需求大超预期的日子里下跌</mark>——这不是需求问题而是<b>贴现率问题</b>：10 年期破 4.7%（2025 年 1 月以来最高）、30 年期 5.25%，REIT 作为全表久期最长、对长端最敏感的资产首当其冲，两票距 52 周高点仅 −9.4% / −9.7%（估值起点高、缓冲薄）。中概 IDC 分化：GDS +2.41% 随中概 risk-on 上涨、VNET −2.05% 回吐 7/30 的 +16.38%。",
+    "AI 量子/边缘": "3/3 全涨、等权 +1.01%（IONQ +1.87% / RGTI +0.61% / QBTS +0.56%），无个股 catalyst，纯 beta。<b>值得注意的是弹性消失</b>：7/30 该板块等权 +11.78% 为全场第二，本日风险偏好并未整体抬升，这批距 52 周高点 −57%~−74% 的高 beta 票立刻回到近乎持平——<b>可作为验证\"本日不是普涨日\"的独立温度计</b>。",
+    "前沿科技/流动性敏感": "8 票 3 涨 5 跌、等权 <b>−1.93% 为全场最弱板块</b>，拖累全部来自加密子链。按 4 主题：– <b>BTC 代理 / 加密（本日全场最大跌幅来源）</b>：<mark>COIN −10.59% 财报暴雷（见 §4）+ MSTR −4.56%</mark>，<b>比特币跌约 3% 失守 $63,000（约 $62,478），较年初水平低约 28%</b>——加密与 AI 叙事本日彻底切割 – <b>商业航天</b>：ASTS +0.92% / RKLB +0.42% 走平 – <b>eVTOL</b>：JOBY −1.24% – <b>自动驾驶</b>：MBLY +0.51% / PONY −0.88%；HOOD −0.05% 持平（7/30 已因加密降温跌 −3.61%，本日未续跌）。",
+    "中概 AI mega": "2/2 全涨、等权 <b>+4.24%</b>，<mark>为本日仅次于光通讯的第二强板块，且是连续第二个交易日跑赢自身 7/30 读数（+1.61%）</mark>——中概 mega 从 7/30 的\"显著落后美股 AI 主线\"转为本日领先。<b>BABA +5.10%</b> 有独立 catalyst（Moonshot 模型算力与阿里云基础设施关联的报道，见 §4），BIDU +3.38% 跟随。<b>一条容易被忽略的产业链交叉</b>：<mark>阿里持有长鑫存储（CXMT）约 5% 股权</mark>——而 CXMT 的上市正是 7/28 韩国半导体崩跌的触发源之一，<b>同一事件在中概端是资产增值、在韩国端是竞争威胁</b>，与 §5 中\"同一份数据被两地反向解读\"是同构的。"
+  },
+
+  "s3_chains": {
+    "半导体硬件扩展": [
+      "<b>电源芯片（本子链唯一硬 catalyst）</b>：<mark>MPWR +8.35%（Q2 财报大超 + 上调指引，见 §4）</mark> + VICR +0.34%——AI 服务器供电是本日硬件端唯一被基本面奖赏的环节",
+      "<b>存储（本板块最大拖累）</b>：<mark>SNDK −5.09%（$25.62B 成交）</mark> 领跌，WDC +2.21% / STX +0.52% 仅微涨——与 7/30 的 SNDK +25.99% / WDC +15.37% / STX +11.41% 全面反向，回吐幅度远小于涨幅，属高位换手而非趋势逆转",
+      "<b>设备 / 测试</b>：KLAC +1.38% / AMAT +1.18% / TER +0.60% 小幅收涨，<b>而 LRCX −1.58% / ASML −1.36% 收跌</b>——设备链在 7/30 集体暴涨（LRCX +17.98% / AMAT +14.97%）后本日方向不一，无新增 catalyst，属获利了结与仓位再平衡",
+      "<b>CPU / Foundry / 模拟</b>：INTC −1.02% / GFS +0.20% / ADI +0.20% / ASX +1.15% 走平；<b>QCOM −2.63% 与 ON −2.54% 为本子链最弱</b>——QCOM 连续第二个交易日收跌（7/30 −2.62%），手机 SoC 与 AI 数据中心链的脱敏在本日 <mark>AAPL −7.35%</mark> 的背景下进一步强化（苹果为其重要客户）",
+      "<b>其余</b>：RMBS +1.62% / VSH +1.27% / TTMI −0.06% / WOLF −0.71% 无独立 catalyst，7/30 的高 beta 挤压（WOLF +18.59%）本日未延续"
+    ],
+    "光通讯": [
+      "<b>化合物半导体衬底（全场最强个股）</b>：<mark>AXTI +28.74% Q2 财报炸裂 + Lumentum 至 2031 年长约（见 §4）</mark> + TSEM +4.03%（Tower 硅光子代工跟涨）+ GLW +2.24%（康宁光纤）",
+      "<b>光模块 / 接口 / 高速</b>：COHR +5.55% / AAOI +4.67% / LITE +2.99% / CRDO +2.94% / SMTC +2.80% / CIEN +1.34% 集体上涨——<mark>AXTI 的 InP 衬底订单是整条光模块链的上游领先指标</mark>，其\"backlog >$100M + Q3 指引大幅上修\"被读为下游 800G/1.6T 光模块需求的前置确认；<b>FN −0.89% 为板块唯一收跌</b>，无个股 catalyst"
+    ],
+    "AI 电力 baseload": [
+      "<b>电气设备 / 液冷（已兑现现金流，本日强势端）</b>：<mark>ETN +7.32%（Electrical Americas 数据中心与电网需求持续超过供给能力）+ VRT +6.18%（Q2 beat-and-raise，见 §4）</mark> + FLNC +3.41% + PWR +1.43% + GEV +0.85%——<b>共同点是本季度报表里已经有 AI 数据中心的收入与订单</b>",
+      "<b>公用事业 baseload（利率敏感，本日弱势）</b>：NRG +0.24% / VST −0.29% / CEG −0.31% / <b>NEE −1.15%</b>——长端利率破位直接压制受监管公用事业估值",
+      "<b>核电 SMR pure play（本日最弱子链）</b>：<mark>OKLO −5.50% / NNE −4.62% / SMR −2.09%</mark>，与 7/30 的 SMR +13.31% / OKLO +11.54% / NNE +12.10% 全面反向。除利率逆风外有一条明确的<b>供给侧机械原因</b>：<mark>核电巨头 Westinghouse（Brookfield 与 Cameco 共同持有）于当日向 SEC 秘密提交美国 IPO 申请</mark>——一家拥有全球半数以上核电站反应堆技术的成熟企业即将上市，<b>直接稀释了尚无实质商业合同的 SMR 概念股的稀缺性溢价</b>；BE −0.63% 亦回吐 7/30 的 +26.49%"
+    ]
+  },
+
+  "s4_intro": "本日 <b>14 票 |x|>5%</b>、32 票 |x|>2.5%——较 7/30 的 63 票极端股大幅收敛，印证\"选择性定价\"而非普涨。§4 归因覆盖<b>全部 14 只极端票 + 具独立 catalyst 的高亮票 + 反向代表</b>，共 24 条，按事件重要性而非涨跌幅排序。",
+
+  "s4": [
+    {
+      "name": "亚马逊 AMZN",
+      "ticker": "AMZN",
+      "catalyst": "<mark>Q2（7/30 盘后）营收 $200.61B（预期 $196.46B）、EPS $5.75（预期 $1.82）、营业利润同比 +43% 至 $27.5B</mark>；核心是 <mark><b>AWS 营收 $42.2B、同比 +37%，为 18 个季度以来最快增速</b></mark>。CEO Jassy 披露：<b>AI 业务与自研芯片业务的年化收入运行率各自突破 $25B</b>；<b>在手订单 backlog $496B、同比三位数增长</b>；2026 年资本开支指引上调至 <b>$220B</b>。多家卖方（Wells Fargo / Citi / Wedbush 等）当日重申买入并上调目标价。<b>本日创 2012 年以来最佳单日表现</b>，$35.00B 成交为全表第二。",
+      "resonance": "是——<b>本日唯一的全局启动键</b>：不仅带动 GOOGL/MSFT 与 AI 网络设备，更在亚洲时段直接点燃韩国半导体史上最大反弹（见 §1 韩国子层）",
+      "sources": [
+        {"label": "CNBC", "url": "https://www.cnbc.com/2026/07/30/amazon-amzn-q2-earnings-report-2026.html"},
+        {"label": "Yahoo Finance", "url": "https://finance.yahoo.com/markets/stocks/articles/wall-street-rushes-raise-amazon-203417618.html"},
+        {"label": "Benzinga", "url": "https://www.benzinga.com/analyst-stock-ratings/analyst-color/26/07/60831159/the-breakout-the-stock-needed-analyst-cheers-amazons-aws-surge"}
+      ]
+    },
+    {
+      "name": "苹果 AAPL",
+      "ticker": "AAPL",
+      "catalyst": "<mark>FQ3（7/30 盘后）营收 $109.4B、同比 +16%，为史上最强 6 月季度；摊薄 EPS $2.02、同比 +29%；iPhone 营收 $54.25B、同比 +22%（预期 $53.86B）——营收与利润双双超预期</mark>，股价却<b>开盘即跌约 8.6%、单日蒸发约 $4,300 亿市值，为 2024 年 8 月以来最差开盘</b>。三处硬伤：① <mark><b>FQ4 营收指引仅 +9%~11%，市场预期 >12%——公司明确将其归因于元器件短缺</b></mark>；② <b>服务业务 $30.74B 不及预期的 $31.22B</b>；③ <b>大中华区 $18.8B 不及预期的 $19.5B</b>。$40.86B 成交为<b>全表第一</b>。",
+      "resonance": "否——<b>本日最重要的反向证据</b>：它把\"存储/元器件涨价\"从供给端的利好翻译成了下游整机的产能与成本约束，是同日 MU −5.90% / SNDK −5.09% 逆势收跌的微观根据（见 §5.2 主题 1）",
+      "sources": [
+        {"label": "CNBC", "url": "https://www.cnbc.com/2026/07/30/apple-earnings-live-updates.html"},
+        {"label": "Bloomberg", "url": "https://www.bloomberg.com/news/articles/2026-07-30/apple-s-sales-disappoint-in-china-unit-services-business"},
+        {"label": "9to5Mac", "url": "https://9to5mac.com/2026/07/31/apple-stock-opens-down-roughly-10-following-mixed-q3-2026-results/"}
+      ]
+    },
+    {
+      "name": "SK 海力士 000660.KS",
+      "ticker": "000660.KS",
+      "tag": "韩国锚",
+      "catalyst": "<mark><b>+29.95% 触及韩国 ±30% 单日涨跌幅上限，为该股首次涨停</b>，收 ₩1,718,000（收盘价即当日最高价）</mark>。三重驱动：① 美股云财报（AWS +37% / Azure +43%）缓解存储终端需求见顶恐慌；② <mark>SK 集团会长崔泰源买入约 362 万股（约 ₩49 亿）</mark>；③ 前三个交易日已跌 29.9% 的极度超卖。<b>但须并列记录约束</b>：本日收盘仍距 52 周高点 <b>−42.5%</b>，且触发此轮崩跌的中国竞争叙事（CXMT 上市募资 $86 亿、首日 +466%；国产 DUV 光刻机量产报道）<b>未获任何反证</b>。",
+      "resonance": "是——但与美股半导体<b>反向共振</b>：韩国存储涨停的同一天，美股存储 MU −5.90% / SNDK −5.09%，半导体核心板块等权 −0.94%",
+      "sources": [
+        {"label": "Korea Times", "url": "https://www.koreatimes.co.kr/economy/20260731/kospi-rockets-18-in-record-breaking-rally"},
+        {"label": "KED Global", "url": "https://www.kedglobal.com/korean-stock-market/newsView/ked202607310001"},
+        {"label": "Bloomberg", "url": "https://www.bloomberg.com/news/articles/2026-07-30/sk-hynix-shares-surge-in-seoul-on-us-peer-rally-chey-purchase"}
+      ]
+    },
+    {
+      "name": "三星电子 005930.KS",
+      "ticker": "005930.KS",
+      "tag": "韩国锚",
+      "catalyst": "<mark>+26.81% 收 ₩262,500，为<b>三星电子历史最大单日百分比涨幅</b></mark>，与 SK Hynix 共同推动 <b>KOSPI ^KS11 +17.91% 创韩交所史上最大单日涨幅</b>（此前唯一单日涨超 10% 为 2008 年 10 月 30 日）。<b>资金结构是本次反弹的定性依据</b>：<mark>外资净买入 ₩7.22 万亿（约 $50.6 亿）、机构净买入 ₩1.18 万亿，散户净卖出 ₩8.25 万亿</mark>——外资与机构从散户手中接货。同日<b>杠杆 ETF 最低申购额自 ₩1,000 万提高至 ₩3,000 万的新规生效</b>，散户强平的机械抛压来源被制度性收窄。",
+      "resonance": "是——韩国内部完全共振（三票韩国锚等权 +24.89%、全部极端），但<b>不计入 92 票板块均</b>",
+      "sources": [
+        {"label": "Korea Times", "url": "https://www.koreatimes.co.kr/economy/20260731/kospi-rockets-18-in-record-breaking-rally"},
+        {"label": "KED Global", "url": "https://www.kedglobal.com/korean-stock-market/newsView/ked202607310001"},
+        {"label": "Financial Times", "url": "https://www.ft.com/"}
+      ]
+    },
+    {
+      "name": "AXT AXTI",
+      "ticker": "AXTI",
+      "catalyst": "<mark>Q2 EPS $0.19 大幅超越 $0.07 共识；营收 $47.6M 创公司纪录，同比 <b>+164%</b>、环比 +77%</mark>；其中 <b>InP（磷化铟）衬底营收 $30.7M 创纪录</b>、在手订单 <b>backlog 超过 $100M</b>、毛利率目标推向 40% 区间。指引更为激进：<mark>Q3 EPS 指引 $0.30–$0.32、营收约 $66M，远高于市场预期</mark>。同时公布<mark>与 Lumentum 签订至 2031 年的长期协议、附带 $87M 预付款</mark>，锁定多年期 InP 晶圆需求。",
+      "resonance": "是——<b>本日全场最强个股，且是光通讯板块 +5.44% 登顶的唯一硬基本面来源</b>；其 InP 衬底订单为下游 800G/1.6T 光模块需求的上游前置确认，带动 COHR +5.55% / AAOI +4.67% 集体上涨",
+      "sources": [
+        {"label": "StocksToTrade", "url": "https://stockstotrade.com/news/axt-inc-axti-news-2026_07_31/"},
+        {"label": "TS2", "url": "https://ts2.tech/en/axt-nasdaqaxti-surges-27-as-record-indium-phosphide-sales-push-gross-margin-higher/"}
+      ]
+    },
+    {
+      "name": "Coinbase COIN",
+      "ticker": "COIN",
+      "catalyst": "<mark>Q2 净亏损 $359.4M（每股 −$1.36），为市场预期 −$0.23 的<b>五倍以上</b>；营收 $1.22B 不及预期</mark>，主因加密交易量萎缩。宏观同步施压：<mark>比特币当日跌约 3% 失守 $63,000（约 $62,478），较年初水平低约 28%</mark>。7/30 我们已标注\"COIN 盘后财报不及预期、盘后转跌\"，本日为该事件的正式定价。",
+      "resonance": "否——<b>本日全场最大跌幅（92 票唯一跌逾 10%）</b>，独自造成前沿科技/流动性敏感板块 −1.93% 的全场最弱读数；加密与 AI 叙事本日彻底切割",
+      "sources": [
+        {"label": "The Motley Fool", "url": "https://www.fool.com/coverage/stock-market-today/2026/07/31/crypto-market-today-july-31-bitcoin-slides-below-usd63-000-and-coinbase-tumbles-10/"},
+        {"label": "Yahoo Finance", "url": "https://finance.yahoo.com/markets/crypto/article/coinbase-stock-sinks-as-weak-crypto-market-leads-to-another-quarterly-loss-113236213.html"}
+      ]
+    },
+    {
+      "name": "芯源系统 MPWR",
+      "ticker": "MPWR",
+      "catalyst": "<mark>Q2（7/30 发布）调整后 EPS $6.50 超预期 $5.98；营收 $980.6M 超预期约 $903–921M</mark>。指引更强：<mark>Q3 营收指引 $1.14B–$1.16B，显著高于市场预期</mark>，并上调全年营收指引，公司明确将其归因于 <b>AI 基础设施电源方案的强劲需求</b>。卖方随之集体上调目标价，理由是高毛利技术增长 + 成功摆脱对消费电子市场的依赖。",
+      "resonance": "是——<b>半导体硬件扩展板块（等权 +0.20%）中唯一具硬 catalyst 的上涨票</b>，与 ETN/VRT 同属\"AI 供电已兑现现金流\"主题（见 §5.1 主题 2）",
+      "sources": [
+        {"label": "StocksToTrade", "url": "https://stockstotrade.com/news/monolithic-power-systems-inc-mpwr-news-2026_07_31/"},
+        {"label": "Quiver Quantitative", "url": "https://www.quiverquant.com/news/MONOLITHIC+POWER+SYSTEMS+%28%24MPWR%29+Releases+Q2+2026+Earnings%2C+Stock+Rises"}
+      ]
+    },
+    {
+      "name": "伊顿 ETN",
+      "ticker": "ETN",
+      "catalyst": "驱动来自 <b>Electrical Americas 部门的超预期增长</b>——<mark>数据中心基础设施与电网现代化需求持续超过供给能力</mark>。该表述本身即为 AI 电力瓶颈的直接确认：约束在供给侧而非需求侧。本日为 AI 电力 baseload 板块（等权仅 +0.37%）的最大正贡献。",
+      "resonance": "是——与 VRT +6.18% 共同构成\"AI 电力已兑现现金流\"子链；<b>但与同板块的核电 SMR 子链（OKLO −5.50% / NNE −4.62%）完全反向</b>，分界线是财报里是否已有收入",
+      "sources": [
+        {"label": "TradingKey", "url": "https://www.tradingkey.com/news/market-movers/262067936-market-movers-etn-20260731"}
+      ]
+    },
+    {
+      "name": "Vertiv VRT",
+      "ticker": "VRT",
+      "catalyst": "<mark>Q2 营收同比 +24%、利润率扩张超 400bps、EPS 增长逾 50%、自由现金流暴增 234%</mark>，公司明确归因于 AI 数据中心需求。<b>全线上调 2026 全年指引</b>（营收 / 利润率 / EPS / 自由现金流）：<mark>调整后 EPS 目标上调至 $6.65–$6.75，高于市场预期的 $6.49</mark>；<mark>Q3 指引 EPS $1.77–$1.83、营收 $3.65B–$3.85B，隐含 24%–25% 营业利润率</mark>，同样高于共识。",
+      "resonance": "是——典型 beat-and-raise，与 ETN +7.32% / MPWR +8.35% 同属本日<b>基本面证据最硬</b>的一条主线",
+      "sources": [
+        {"label": "StocksToTrade", "url": "https://stockstotrade.com/news/vertiv-holdings-llc-vrt-news-2026_07_31/"},
+        {"label": "TradingKey", "url": "https://www.tradingkey.com/news/market-movers/262068045-market-movers-vrt-20260731"}
+      ]
+    },
+    {
+      "name": "美光 MU",
+      "ticker": "MU",
+      "catalyst": "<b>无当日个股财报</b>——本日下跌为<mark>存储供给过剩担忧（memory supply-glut fears）的延续</mark>，与 SNDK −5.09% 同源。基本面背景未变：MU 兼营 NAND 与 DRAM，7 月以来累计跌约 20%。<b>本日下跌的两条特殊性必须写明</b>：① 它发生在<mark>韩国存储双雄涨停（Samsung 005930.KS +26.81% / SK Hynix 000660.KS +29.95%）的同一天</mark>；② 它发生在 <mark>AAPL 明确以\"元器件短缺\"下修指引的同一天</mark>——下游产能约束的证据，正在把存储涨价从利好重估为需求破坏。<b>$44.66B 成交为全表第二</b>，是本日最大的换手信号。",
+      "resonance": "否——<b>本日最重要的反向票</b>：独自把半导体核心板块拖至 −0.94%，并构成 §2 第一条分界线（韩美存储反向）的核心证据",
+      "sources": [
+        {"label": "Yahoo Finance", "url": "https://finance.yahoo.com/markets/stocks/articles/sandisk-sinks-11-seagate-falls-160250009.html"},
+        {"label": "24/7 Wall St.", "url": "https://247wallst.com/investing/2026/07/31/sandisk-is-down-45-in-a-month-should-memory-investors-switch-to-micron-or-sk-hynix-now/"}
+      ]
+    },
+    {
+      "name": "闪迪 SNDK",
+      "ticker": "SNDK",
+      "tag": "反向备注",
+      "catalyst": "<b>无当日新 catalyst</b>——纯 NAND 敞口使其在存储供给过剩担忧中承压幅度大于 MU。<mark>其月内累计跌幅达约 45%，而 7/30 单日曾因财报爆表暴涨 +25.99%</mark>——<b>一个月内 −45% 与单日 +26% 并存，本身即说明该票已进入高波动的仓位驱动状态</b>，$25.62B 成交（全表第四）印证换手而非趋势。本日回吐幅度（−5.09%）远小于 7/30 涨幅，尚不构成趋势逆转。",
+      "resonance": "是——与 MU −5.90% 完全共振，共同定义本日\"存储链独立于云需求定价\"",
+      "sources": [
+        {"label": "24/7 Wall St.", "url": "https://247wallst.com/investing/2026/07/31/sandisk-is-down-45-in-a-month-should-memory-investors-switch-to-micron-or-sk-hynix-now/"}
+      ]
+    },
+    {
+      "name": "谷歌 GOOGL",
+      "ticker": "GOOGL",
+      "tag": "beta 备注",
+      "catalyst": "<b>本日无独立 catalyst——必须明确标注</b>。<mark>Alphabet 的 Q2 财报早在 7/22 已发布</mark>（营收 $119.8B / +24%、摊薄 EPS $9.11、<b>Google Cloud +82% 至 $24.8B</b>、cloud backlog $514B、资本开支 $44.9B 翻倍、全年 capex 指引上调至 $195–205B），当日股价曾因 capex 上调而下跌。本日 +6.73% 属 <mark><b>AWS 云读数的板块间传导（read-through）</b></mark>：市场把 AMZN 的云加速外推为超大规模云的共同景气，并回溯性地重新奖赏 Alphabet 已披露的 +82% 云增速。<b>归类为传导性 beta，不作独立事件计入。</b>",
+      "resonance": "是——与 MSFT +3.02% / MSFT-AMZN 云链共振，是\"三大云同向加速\"叙事在价格上的完整闭环",
+      "sources": [
+        {"label": "CNBC", "url": "https://www.cnbc.com/2026/07/22/google-earnings-q2-goog-live-updates.html"},
+        {"label": "Investing.com", "url": "https://www.investing.com/news/company-news/alphabet-q2-2026-slides-24-revenue-growth-cloud-surges-despite-capex-93CH-4807148"}
+      ]
+    },
+    {
+      "name": "Arista ANET",
+      "ticker": "ANET",
+      "catalyst": "<mark>季度业绩营收与 EPS 双超市场预期</mark>，公司指出<b>云巨头客户为 AI 基础设施激进扩张</b>带来的高性能组网需求强劲；市场同时消化其 <b>1.6Tbps 交换机新品</b>线索（卖方 BofA 与 KeyBanc 目标价 $200）。<b>本日距 52 周高点仅 −5.0%，是全表 92 票中距高点最近的名字之一</b>——在一个半导体走平的日子里，网络设备是少数处于新高附近的 AI 环节。",
+      "resonance": "是——领涨 AI 网络设备板块（等权 +3.00%），且与数据中心 REIT −1.19% 构成 §2 第二条分界线（设备 vs 物业）的正向端",
+      "sources": [
+        {"label": "TradingKey", "url": "https://www.tradingkey.com/news/market-movers/262067852-market-movers-anet-20260731"},
+        {"label": "TradingKey 目标价", "url": "https://www.tradingkey.com/analysis/stocks/us-stocks/262020828-arista-networks-anet-stock-forecast-july-2026-7060xe7-200-target-tradingkey"}
+      ]
+    },
+    {
+      "name": "Oklo OKLO",
+      "ticker": "OKLO",
+      "catalyst": "<b>本日有一条明确的供给侧机械原因</b>：<mark>核电巨头 Westinghouse（Brookfield Renewable 与 Cameco 共同持有，Cameco 于 2023 年以约 $80 亿估值收购 49% 股权）于 7/31 向 SEC <b>秘密提交美国 IPO 申请</b></mark>——该公司为全球半数以上核电站提供反应堆技术。<b>一家拥有成熟商业合同与装机基础的核电企业即将上市，直接稀释了尚无实质商业合同的 SMR 概念股的稀缺性溢价</b>。叠加长端利率破位（10y >4.7% / 30y 5.25%）对超长久期资产的压制，以及市场对该组\"要求实际业绩而非 AI 故事\"的持续质疑。",
+      "resonance": "否——与同板块 ETN +7.32% / VRT +6.18% 完全反向；<b>本日 AI 电力板块的分界线不是「是否 AI 电力」，而是「财报里是否已有收入」</b>",
+      "sources": [
+        {"label": "Bloomberg", "url": "https://www.bloomberg.com/news/articles/2026-07-31/nuclear-tech-firm-westinghouse-files-confidentially-for-ipo"},
+        {"label": "Westinghouse 公告", "url": "https://info.westinghousenuclear.com/news/westinghouse-confidentially-submits-draft-registration-statement-for-proposed-initial-public-offering"},
+        {"label": "Financial Times", "url": "https://www.ft.com/"}
+      ]
+    },
+    {
+      "name": "阿里巴巴 BABA",
+      "ticker": "BABA",
+      "catalyst": "<mark>有报道将月之暗面（Moonshot）的 AI 模型算力与阿里云基础设施关联——称 Moonshot 可能经由阿里的算力平台使用了约 20,000 颗英伟达 Hopper 芯片</mark>，被市场读为阿里云 AI 变现能力的实证；叠加中国消费与风险资产整体回暖。背景：阿里三年 AI 投入超过 <b>人民币 3,800 亿元</b>。<b>一条重要的产业链交叉</b>：<mark>阿里持有长鑫存储（CXMT）约 5% 股权</mark>——CXMT 上交所上市募资 $86 亿、首日大涨 466%，正是 7/28 起韩国半导体崩跌的触发源之一，<b>同一事件在中概端是资产增值、在韩国端是竞争威胁</b>。",
+      "resonance": "是——领涨中概 AI mega（等权 +4.24%、全场第二强板块），BIDU +3.38% 跟随",
+      "sources": [
+        {"label": "Benzinga", "url": "https://www.benzinga.com/markets/tech/26/07/60846829/alibaba-stock-is-soaring-friday-whats-going-on"},
+        {"label": "TS2", "url": "https://ts2.tech/en/alibaba-nysebaba-rises-5-on-moonshot-report-highlighting-ai-cloud-synergy/"}
+      ]
+    },
+    {
+      "name": "II-VI / Coherent COHR",
+      "ticker": "COHR",
+      "tag": "beta 备注",
+      "catalyst": "<b>无当日个股财报</b>——由 <mark>AXTI +28.74% 的 InP 衬底订单读数驱动的光模块链共振</mark>：上游衬底 backlog >$100M 与 Q3 指引大幅上修，被读为下游 800G/1.6T 光模块需求的前置确认。AAOI +4.67% / LITE +2.99% / CRDO +2.94% / SMTC +2.80% 同源。",
+      "resonance": "是——光通讯板块 9/10 上涨、等权 +5.44% 登顶全场",
+      "sources": [
+        {"label": "TS2（AXTI 上游读数）", "url": "https://ts2.tech/en/axt-nasdaqaxti-surges-27-as-record-indium-phosphide-sales-push-gross-margin-higher/"}
+      ]
+    },
+    {
+      "name": "微软 MSFT",
+      "ticker": "MSFT",
+      "tag": "beta 备注",
+      "catalyst": "<b>无当日新 catalyst</b>——7/29 盘后财报（Azure +43%、Microsoft 365 Copilot 付费席位突破 3,000 万）已在 7/30 一次性定价（<mark>MSFT 7/30 +15.51%，创 2008 年以来最佳单日</mark>）。本日 +3.02% 为 AWS 读数的<b>二次确认</b>：AMZN 的云加速验证了 Azure 的读数并非孤例，\"三大云同向加速\"叙事因此成立。",
+      "resonance": "是——与 GOOGL +6.73% / AMZN +15.32% 共同构成本日唯一的正向宏观层",
+      "sources": [
+        {"label": "CNBC", "url": "https://www.cnbc.com/2026/07/30/microsoft-msft-meta-stock-today-earnings.html"}
+      ]
+    },
+    {
+      "name": "英伟达 NVDA",
+      "ticker": "NVDA",
+      "tag": "beta 备注",
+      "catalyst": "<b>无当日个股 catalyst</b>。+2.93% 为云 capex 读数（AMZN 2026 capex 上调至 $220B）的算力 beta 跟随。<b>值得注意的是幅度之小</b>：在\"三大云同向加速 + capex 全面上调\"的最强利好组合下，全球 AI 算力核心资产仅涨 2.93%、且 ^SOX +0.07% 走平——<mark>说明市场已把云 capex 上调视为既定事实（price-in），本日的边际信息在需求增速而非支出规模</mark>。",
+      "resonance": "是（弱）——与半导体核心板块 −0.94% 的方向背离，NVDA 未能带动整个半导体板块",
+      "sources": [
+        {"label": "CNBC", "url": "https://www.cnbc.com/2026/07/30/amazon-amzn-q2-earnings-report-2026.html"}
+      ]
+    },
+    {
+      "name": "Meta META",
+      "ticker": "META",
+      "tag": "反向备注",
+      "catalyst": "<b>无当日新 catalyst</b>——本日 +3.28% 为 <mark>7/30 −7.95%（FCF 同比崩塌 91% 至 $784M、营收指引不及预期）</mark> 后的技术性修复。<b>但基本面惩罚并未解除</b>：本日收盘距 52 周高点 <b>−30.1%</b>，为全部 MAG7 中最深，与 AMZN 的 −2.5% 形成极端对照——<mark>「capex 有回报」与「capex 无回报」的估值裂口在 MAG7 内部已扩大到近 28 个百分点的距高位差</mark>。",
+      "resonance": "是（技术性）——不构成基本面反转信号",
+      "sources": [
+        {"label": "CNBC", "url": "https://www.cnbc.com/2026/07/30/microsoft-msft-meta-stock-today-earnings.html"}
+      ]
+    },
+    {
+      "name": "Equinix EQIX",
+      "ticker": "EQIX",
+      "tag": "反向备注",
+      "catalyst": "<b>无个股负面 catalyst——这正是它的意义所在</b>。在云需求大超预期（AWS +37%）、云 capex 上调至 $220B 的日子里，最直接的数据中心物业载体反而下跌。原因是<mark>贴现率而非需求</mark>：10 年期美债破 4.7%（2025 年 1 月以来最高）、30 年期升至 5.25%，REIT 是全表久期最长、对长端最敏感的资产。<b>估值缓冲同时最薄</b>：EQIX 与 DLR −2.42% 距 52 周高点仅 −9.7% / −9.4%，是 92 票中距高点最近的一组。",
+      "resonance": "否——拖累数据中心 REIT 成为<b>本日唯一单向收跌的美股板块</b>（等权 −1.19%、方向 ↓）",
+      "sources": [
+        {"label": "Financial Times《Warsh spooks long bonds》", "url": "https://www.ft.com/"},
+        {"label": "The Washington Post", "url": "https://www.washingtonpost.com/business/2026/07/31/wall-street-stocks-dow-nasdaq/ee08da40-8d1d-11f1-8912-d71e69d679d7_story.html"}
+      ]
+    },
+    {
+      "name": "CoreWeave CRWV",
+      "ticker": "CRWV",
+      "tag": "反向备注",
+      "catalyst": "<b>无当日 catalyst</b>——回吐 7/30 的 <mark>+21.51%</mark>。<b>其反向本身是本日最有信息量的观察之一</b>：7/30 neocloud 暴涨（CRWV +21.51% / NBIS +27.13%）+ 应用软件收跌（NOW −4.92% / CRM −4.07%）的剧烈分化，被解释为 Situational Awareness（多 AI 基建 / 空软件）强平的机械成分；<mark>本日该分化<b>完全对调</b>——CRWV 领跌、而 CRM +1.83% / NOW +1.05% / CRWD +3.05% 收涨</mark>，机械压力退去后 rotation 未延续，<b>支持把 7/30 的\"卖软件买硬件\"主要归因于单一基金强平而非结构性轮动</b>。",
+      "resonance": "否——AI infra/SaaS 板块等权 +0.02%、6 涨 6 跌，方向完全中性",
+      "sources": [
+        {"label": "Financial Times《Citadel's swoop on Situational Awareness helped stem a $3tn AI rout》", "url": "https://www.ft.com/"},
+        {"label": "CNBC", "url": "https://www.cnbc.com/"}
+      ]
+    },
+    {
+      "name": "高通 QCOM",
+      "ticker": "QCOM",
+      "tag": "反向备注",
+      "catalyst": "<b>无当日个股 catalyst</b>，但方向可解释：<mark>连续第二个交易日收跌（7/30 −2.62%），且下跌发生在 AAPL −7.35% 的同一天</mark>——苹果为其重要客户，苹果因元器件短缺下修 FQ4 指引，直接映射到其手机 SoC 出货预期。手机 SoC 与 AI 数据中心链的脱敏在本日进一步强化：^SOX +0.07% 走平的背景下，QCOM 与 ON −2.54% 为半导体硬件扩展板块最弱两票。",
+      "resonance": "否——与板块等权 +0.20% 反向",
+      "sources": [
+        {"label": "Bloomberg（AAPL 供应链）", "url": "https://www.bloomberg.com/news/articles/2026-07-30/apple-s-sales-disappoint-in-china-unit-services-business"}
+      ]
+    },
+    {
+      "name": "MicroStrategy MSTR",
+      "ticker": "MSTR",
+      "tag": "反向备注",
+      "catalyst": "<b>无个股 catalyst</b>——纯比特币代理敞口。<mark>比特币当日跌约 3% 失守 $63,000（约 $62,478），较年初水平低约 28%</mark>，同时长端利率破位对无现金流资产形成双重压制。与 COIN −10.59% 同源但幅度较轻（MSTR 为持币敞口，COIN 另有财报暴雷）。本日距 52 周高点 <b>−77.5%</b>。",
+      "resonance": "是——与 COIN 共振，共同拖累前沿科技/流动性敏感板块至 −1.93%（全场最弱）",
+      "sources": [
+        {"label": "The Motley Fool", "url": "https://www.fool.com/coverage/stock-market-today/2026/07/31/crypto-market-today-july-31-bitcoin-slides-below-usd63-000-and-coinbase-tumbles-10/"},
+        {"label": "24/7 Wall St.", "url": "https://247wallst.com/investing/2026/07/31/coinbase-sinks-15-strategy-and-bitmine-drop-8-as-bitcoin-slides-below-63k/"}
+      ]
+    },
+    {
+      "name": "Nano Nuclear NNE",
+      "ticker": "NNE",
+      "tag": "反向备注",
+      "catalyst": "<b>无个股 catalyst</b>——与 OKLO −5.50% / SMR −2.09% 同源：<mark>Westinghouse 当日秘密提交美国 IPO 申请</mark>稀释 SMR 概念稀缺性 + 长端利率破位压制超长久期资产。<b>该子链的结构性弱点须写明</b>：三票距 52 周高点分别为 −73.9% / −80.0% / −85.3%，且核心质疑始终未解——<mark>公用事业客户表达兴趣但停在签署具约束力协议之前，缺乏实质商业合同</mark>。",
+      "resonance": "否——与同板块 ETN +7.32% / VRT +6.18% 完全反向",
+      "sources": [
+        {"label": "Bloomberg", "url": "https://www.bloomberg.com/news/articles/2026-07-31/nuclear-tech-firm-westinghouse-files-confidentially-for-ipo"},
+        {"label": "Foreign Policy Journal", "url": "https://www.foreignpolicyjournal.com/2026/07/18/nuclear-stocks-nasdaq-oklo-nyse-xe-and-nyse-smr-slide-as-investors-demand-real-results-over-ai-hype/"}
+      ]
+    },
+    {
+      "name": "万国数据 GDS",
+      "ticker": "GDS",
+      "tag": "beta 备注",
+      "catalyst": "<b>无当日个股 catalyst</b>——随中概整体 risk-on（BABA +5.10% / BIDU +3.38%）上涨，是数据中心 REIT 板块（等权 −1.19%）中<b>唯一收涨的票</b>。<mark>与美国 IDC（EQIX −2.70% / DLR −2.42%）反向，说明中概 IDC 本日由中国资产风险偏好而非美债长端利率定价</mark>；同板块的 VNET −2.05% 则回吐 7/30 的 +16.38%，两票分化说明中概 IDC 内部亦无统一驱动。",
+      "resonance": "否——与板块方向 ↓ 相反",
+      "sources": [
+        {"label": "Benzinga（中概 risk-on）", "url": "https://www.benzinga.com/markets/tech/26/07/60846829/alibaba-stock-is-soaring-friday-whats-going-on"}
+      ]
+    }
+  ],
+
+  "s5": {
+    "up_themes": [
+      {
+        "title": "主题 1（云需求加速验证 → 平台与组网重估）",
+        "rows": [
+          ["核心驱动", "<b>AWS Q2 +37% 至 $42.2B、18 个季度以来最快</b>，AI 与自研芯片各自年化运行率突破 $25B、backlog $496B（同比三位数增长）——把\"AI 需求见顶\"直接证伪；与 7/29 Azure +43%、7/22 Google Cloud +82%（backlog $514B）连成<b>三大云同向加速</b>的完整证据链"],
+          ["强度信号", "AMZN +15.32% 创 2012 年以来最佳单日、$35.00B 成交；GOOGL +6.73% 为传导性重估（其财报 7/22 已发）；AI 网络设备板块等权 +3.00%（ANET +5.46% 财报驱动）；<b>但 ^GSPC +0.70% / ^NDX +0.60% / ^SOX +0.07%——指数涨幅几乎全部由 AMZN 一票贡献</b>"],
+          ["资金路径", "买\"云需求的直接计量\"（平台 + 组网设备），<b>不买\"云的载体\"</b>（数据中心 REIT −1.19%）也<b>不买\"云的上游存储\"</b>（半导体核心 −0.94%）——这是一次沿着<b>久期与证据强度</b>切割的定向配置，而非风险偏好抬升"]
+        ]
+      },
+      {
+        "title": "主题 2（AI 电力/供电 beat-and-raise → 已兑现现金流）",
+        "rows": [
+          ["核心驱动", "ETN +7.32%（Electrical Americas 数据中心与电网需求持续<b>超过供给能力</b>）+ VRT +6.18%（Q2 全线 beat 并上调全年指引）+ MPWR +8.35%（Q2 双超 + Q3 指引大幅上修，AI 基础设施电源需求）"],
+          ["强度信号", "VRT：营收 +24%、利润率扩张 >400bps、FCF +234%，全年调整后 EPS 上调至 $6.65–6.75（vs 共识 $6.49）；MPWR：Q3 营收指引 $1.14–1.16B 远超预期；<b>三家共同点是本季报表里已经有 AI 数据中心的收入与订单</b>"],
+          ["资金路径", "<mark>本日三条涨方主线中基本面证据最硬的一条</mark>——且它与同板块核电 SMR（OKLO −5.50% / NNE −4.62% / SMR −2.09%）的反向，精确定义了本日的选股标准：<b>不是「是否 AI 电力」，而是「财报里是否已有收入」</b>"]
+        ]
+      },
+      {
+        "title": "主题 3（InP 衬底 → 光模块上游前置确认）",
+        "rows": [
+          ["核心驱动", "AXTI +28.74%：Q2 EPS $0.19 vs 共识 $0.07、营收 $47.6M 创纪录（同比 +164%），InP 衬底营收 $30.7M 创纪录、backlog >$100M；<mark>Q3 指引 EPS $0.30–0.32 / 营收约 $66M 远超预期</mark>；与 Lumentum 签订至 2031 年长约、附 $87M 预付款"],
+          ["强度信号", "光通讯板块 9/10 上涨、等权 <b>+5.44% 为全场板块之冠</b>；COHR +5.55% / AAOI +4.67% / LITE +2.99% / CRDO +2.94% 集体跟涨"],
+          ["资金路径", "<b>上游衬底订单是下游 800G/1.6T 光模块需求的领先指标</b>——本主题是本日唯一\"由单一个股硬基本面拉动整条子链\"的案例，信号质量高于纯 beta 板块；<b>但须注意 AXTI 市值与流动性有限（$1.79B 成交），单票不足以代表全链景气</b>"]
+        ]
+      },
+      {
+        "title": "主题 4（韩国半导体机制性修复 · 非美股主题但影响传导）",
+        "rows": [
+          ["核心驱动", "KOSPI ^KS11 +17.91% 史上最大单日；SK Hynix 000660.KS +29.95% 涨停、Samsung 005930.KS +26.81% 历史最大单日。三重驱动：美股云财报缓解需求恐慌 + SK 会长崔泰源增持约 362 万股 + 前三日已跌 29.9% 的极度超卖"],
+          ["强度信号", "<mark>外资净买入 ₩7.22 万亿（约 $50.6 亿）、机构 ₩1.18 万亿，散户净卖出 ₩8.25 万亿</mark>——外资机构从散户接货；杠杆 ETF 最低申购额自 ₩1,000 万提至 ₩3,000 万的新规当日生效，强平抛压源被制度性收窄"],
+          ["资金路径", "<b>定性为机制性修复，不是新一轮上涨的起点</b>：① 崩跌触发源（CXMT 上市募资 $86 亿首日 +466%、国产 DUV 光刻机量产报道）<b>未获任何反证</b>；② KOSPI 收盘仍距 52 周高点 −29.7%（6/19 高点 9,385.59 → 7 月低点 5,262.77，最大回撤 −43.9%）；③ 7/28–7/29 连续两日熔断为韩交所史上首次"]
+        ]
+      }
+    ],
+    "down_themes": [
+      {
+        "title": "主题 1（存储涨价的下游反噬 → 韩美存储反向）",
+        "rows": [
+          ["narrative 修正源", "<mark>AAPL −7.35%——营收创 6 月季度纪录（$109.4B / +16%）、iPhone +22%，却明确以<b>元器件短缺</b>把 FQ4 指引压到 +9%~11%（预期 >12%）</mark>；同日美股存储 MU −5.90%（$44.66B 成交、全表第二）/ SNDK −5.09% 逆势下跌"],
+          ["估值起点", "<b>这是本轮存储行情的第一个下游实证反证</b>：7/30 市场用\"三星警告短缺延续至 2028\"把存储重估为 AI 稀缺资源（MU +18.36% / SNDK +25.99%）；本日苹果的指引把同一件事翻译成\"涨价正在毁需求\"。<mark>同一条 DRAM/NAND 链在韩国涨停、在美股大跌，说明驱动两边的是各自的仓位与流动性状态而非产业基本面</mark>"],
+          ["性质", "<b>基本面 narrative 修正（非 beta）</b>——且方向上是对 7/30 主导叙事的直接挑战。<b>但尚不构成趋势逆转</b>：SNDK 本日回吐幅度远小于 7/30 涨幅，成交额居前说明高位换手；需观察下季存储合约价与整机厂指引能否互相印证"]
+        ]
+      },
+      {
+        "title": "主题 2（长端利率破位 → 长久期资产被无差别压制）",
+        "rows": [
+          ["narrative 修正源", "<mark>10 年期美债盘中破 4.7%（2025 年 1 月以来最高）、30 年期升约 4bp 至 5.25%</mark>——油价月内涨超 20%（美伊冲突）推高通胀预期，叠加 Warsh 主席沟通方式引发长端定价\"政策可见度下降\"（FT《Warsh spooks long bonds》；NYTimes 报道其正考虑降低 FOMC 会议频率）"],
+          ["估值起点", "受压三组资产的共同分母是<b>久期而非基本面</b>：数据中心 REIT −1.19%（EQIX −2.70% / DLR −2.42%，两票距 52 周高点仅 −9.7% / −9.4%，缓冲最薄）；核电 SMR（OKLO −5.50% / NNE −4.62% / SMR −2.09%）；加密代理（COIN −10.59% / MSTR −4.56%）；公用事业 NEE −1.15%"],
+          ["性质", "<b>宏观 rotation（非个股 catalyst）</b>——这是本日最被低估的一条线索：它解释了为何一个云需求大超预期的日子里，最直接的 AI 基础设施载体反而下跌。<mark>本日结构的正确描述是「微观证据在利率逆风中做定向突破」，而非风险偏好整体抬升</mark>"]
+        ]
+      },
+      {
+        "title": "主题 3（加密与 AI 叙事切割）",
+        "rows": [
+          ["narrative 修正源", "COIN −10.59% 为本日全场最大跌幅——<mark>Q2 净亏损 $359.4M（每股 −$1.36）为预期 −$0.23 的五倍以上、营收 $1.22B 不及预期</mark>，加密交易量萎缩；MSTR −4.56% 随比特币跌破 $63,000（约 $62,478、较年初低约 28%）"],
+          ["估值起点", "COIN 距 52 周高点 −63.6%、MSTR −77.5%。<b>本主题的价值在于对照</b>：在\"AI 云需求加速\"被强力验证的同一天，同属高 beta 风险资产的加密板块独立崩跌——<mark>说明本日不存在统一的\"风险偏好\"变量，AI 与加密已彻底解耦</mark>"],
+          ["性质", "<b>个股 catalyst（财报）+ 资产类别独立走弱</b>——独自造成前沿科技/流动性敏感板块 −1.93% 的全场最弱读数；不构成对 AI 主线的证伪"]
+        ]
+      },
+      {
+        "title": "主题 4（7/30「卖软件买硬件」rotation 未能延续 · 机械成分证伪）",
+        "rows": [
+          ["narrative 修正源", "<mark>7/30 的剧烈分化本日<b>完全对调</b></mark>：neocloud 端 CRWV −2.88% 领跌（7/30 为 +21.51%）、NBIS +1.05% 仅微涨（7/30 +27.13%）；而应用软件端 CRWD +3.05% / CRM +1.83% / ORCL +1.81% / NOW +1.05% 收涨（7/30 分别为 NOW −4.92% / CRM −4.07%）"],
+          ["估值起点", "AI infra/SaaS 板块本日等权 <b>+0.02%</b>、6 涨 6 跌，方向完全中性——<b>与 7/30 的 +5.85% 剧烈分化形成对照</b>"],
+          ["性质", "<b>这是对 7/30 归因的一次事后检验，结论是修正</b>：7/30 我们把\"卖软件买硬件\"标注为结构性 rotation 并附注机械成分；<mark>本日 Situational Awareness 强平压力退去后该 rotation 立即消失且反向，说明其中<b>机械成分占比高于结构性成分</b></mark>。FT 当日《Citadel's swoop on Situational Awareness helped stem a $3tn AI rout》进一步确认该事件为阻断 $3 万亿 AI 抛售的关键节点，但其对本日的边际影响已衰减，<b>不应再作为本日涨幅的解释项</b>"]
+        ]
+      }
+    ],
+    "one_liner": "本日是<b>「按证据分配、按久期收缩」的选择性定价日</b>——云需求的可计量加速（AWS +37%）被重奖并外溢成韩国史上最大单日反弹，而同夜苹果的元器件短缺指引、长端利率破位（10y >4.7%）与加密财报暴雷同时压制下游整机、长久期载体与无现金流资产；<mark>92 票等权仅 +0.98%、^SOX +0.07%，指数涨幅几乎全部来自 AMZN 一票</mark>。<b>可证伪点有三</b>：① 存储涨价若继续毁需求（观察下季整机厂指引），云的景气无法拯救半导体；② 长端利率若不回落，本日跌方三组资产的压制不会解除；③ 韩国反弹未对中国半导体竞争叙事（CXMT / 国产 DUV）提供任何反证，收盘仍距 52 周高点 −29.7%。"
+  },
+
+  "s6": {
+    "sections": [
+      {
+        "title": "6.1 涨方主题 1（云需求加速 → 算力基建/服务器）映射 → 强度 强",
+        "rows": [
+          ["算力服务器 / AI 整机", "浪潮信息(000977) / 工业富联(601138) / 中科曙光(603019)", "AWS +37%、backlog $496B、2026 capex 上调至 $220B —— 超大规模云采购加速的最直接映射", "强"],
+          ["AI 网络 / 交换", "紫光股份(000938) / 星网锐捷(002396) / 菲菱科思(301191)", "ANET +5.46% 财报驱动 + 1.6Tbps 交换机；云巨头 AI 组网需求", "中-强"]
+        ]
+      },
+      {
+        "title": "6.2 涨方主题 2（AI 电力/供电 beat-and-raise）映射 → 强度 强",
+        "rows": [
+          ["数据中心供配电 / 液冷", "阳光电源(300274) / 英维克(002837) / 科华数据(002335) / 麦格米特(002851)", "ETN +7.32%「需求持续超过供给能力」+ VRT +6.18% 全线上调指引 + MPWR +8.35% AI 电源芯片 —— <b>本日证据最硬的一条链</b>", "强"],
+          ["核电（反向提示）", "中国核电(601985) / 中国广核(003816)", "<b>美股核电本日为跌方</b>：Westinghouse 秘密递交美国 IPO 稀释 SMR 稀缺性 + 长端利率压制（OKLO <span class=\"c-neg\">−5.50%</span> / NNE <span class=\"c-neg\">−4.62%</span>）——映射方向为<b>负</b>，与 7/30 相反", "弱（方向为负）"]
+        ]
+      },
+      {
+        "title": "6.3 涨方主题 3（InP 衬底 → 光模块）映射 → 强度 强",
+        "rows": [
+          ["光模块 pure play", "中际旭创(300308) / 新易盛(300502) / 天孚通信(300394)", "AXTI InP backlog >$100M + Lumentum 至 2031 长约 = 800G/1.6T 需求前置确认；COHR/AAOI/LITE 全链跟涨", "强"],
+          ["化合物半导体衬底 / 硅光", "仕佳光子(688313) / 源杰科技(688498) / 光库科技(300620)", "AXTI 为直接对标；<b>A 股无纯 InP 衬底 pure play，映射偏薄</b>", "中"]
+        ]
+      },
+      {
+        "title": "6.4 反向主题 1（存储链信号冲突）映射 → 强度 <b>矛盾，需降权</b>",
+        "rows": [
+          ["存储 / HBM 链", "兆易创新(603986) / 江波龙(301308) / 佰维存储(688525) / 香农芯创(300475)", "<mark><b>本日信号自相矛盾，不可单向映射</b></mark>：韩国端 Samsung <b>+26.81%</b> / SK Hynix <b>+29.95%</b> 涨停（利多），美股端 MU <span class=\"c-neg\">−5.90%</span> / SNDK <span class=\"c-neg\">−5.09%</span> 大跌（利空），下游 AAPL <span class=\"c-neg\">−7.35%</span> 因元器件短缺下修指引（利空需求）。三方向不一致时应<b>以下游整机指引为准</b>", "矛盾（建议观望）"],
+          ["长鑫存储 CXMT 关联", "香农芯创(300475) / 阿里概念（BABA <b>+5.10%</b> 持股约 5%）", "CXMT 上交所上市募资 $86 亿、首日 +466%，同一事件在中概端为资产增值、在韩国端为竞争威胁；<b>国产存储替代叙事本身获强化</b>", "中-强"]
+        ]
+      },
+      {
+        "title": "6.5 反向主题 2（苹果供应链）映射 → 强度 中-强（方向为负）",
+        "rows": [
+          ["苹果链", "立讯精密(002475) / 歌尔股份(002241) / 蓝思科技(300433) / 领益智造(002600)", "<b>AAPL <span class=\"c-neg\">−7.35%</span> 的下跌原因是元器件短缺压制 FQ4 出货指引（+9%~11% vs 预期 >12%）——这是<b>数量</b>问题而非单价问题，直接映射到组装与零部件供应商的排产</b>；同日 QCOM <span class=\"c-neg\">−2.63%</span> 已给出同向验证", "中-强（负向）"]
+        ]
+      },
+      {
+        "title": "6.6 中概与宏观映射",
+        "rows": [
+          ["中概 AI 平台 / 云", "恒生科技成分（阿里 9988.HK / 百度 9888.HK）", "BABA +5.10% / BIDU +3.38%，中概 AI mega 等权 +4.24% 为本日第二强板块；驱动为阿里云算力变现报道（Moonshot 约 20,000 颗 Hopper）+ 中国风险资产回暖", "强"],
+          ["IDC / 算力基建", "润泽科技(300442) / 宝信软件(600845) / 数据港(603881)", "<b>信号分歧</b>：GDS +2.41%（中概 risk-on）vs VNET <span class=\"c-neg\">−2.05%</span>（回吐 7/30 的 +16.38%）；美国 IDC 因长端利率下跌（EQIX <span class=\"c-neg\">−2.70%</span>），<b>中美 IDC 本日由不同变量定价</b>", "中（内部分歧）"]
+        ]
+      }
+    ],
+    "summary_table": [
+      ["云需求加速（算力/服务器/组网）", "强", "浪潮信息 / 工业富联 / 紫光股份"],
+      ["AI 电力供配电 beat-and-raise", "强", "阳光电源 / 英维克 / 科华数据"],
+      ["InP 衬底 → 光模块", "强", "中际旭创 / 新易盛 / 仕佳光子"],
+      ["中概 AI 平台 / 云", "强", "阿里 9988.HK / 百度 9888.HK"],
+      ["国产存储替代（CXMT 关联）", "中-强", "香农芯创 / 兆易创新"],
+      ["苹果供应链（反向）", "中-强（负向）", "立讯精密 / 歌尔股份 / 蓝思科技"],
+      ["存储 / HBM（信号矛盾）", "矛盾（建议观望）", "兆易创新 / 江波龙"],
+      ["核电（反向）", "弱（方向为负）", "中国核电 / 中国广核"]
+    ],
+    "caveat": "<b>整体 caveat</b>：本日美股内部分化极大（92 票等权仅 +0.98%、^SOX +0.07%），<b>指数级涨幅几乎全部由 AMZN 一票贡献</b>，因此\"美股科技上涨\"不构成对 A 股的整体正向指引。更需注意的是<mark>本日出现了两组同源资产方向相反的读数</mark>（韩美存储、云设备 vs 云物业），当映射源自身矛盾时，主题强度不应按单边解读——§6.4 已按此原则降权。上述映射为<b>主题方向定位</b>，不构成推荐。"
+  },
+
+  "s7_notes": [
+    "<b>数据源</b>：yfinance EOD（<code>pull_global_eod.py</code>，OHLC 一致性校验 + Alpha Vantage 修复）+ 自建 RSS 新闻抓取（<code>pull_news.py</code>，复用 <code>emailai/PDF_summarizer/ingest/news_fetcher.py</code>：CNBC / MarketWatch / WSJ / Yahoo Finance / NYTimes Business / FT）+ WebSearch 补充个股 catalyst",
+    "<b>覆盖范围</b>：<b>锁定 92 票 + 3 指数 + 3 韩国锚</b>（AI 全产业链 82 票 + 前沿科技/流动性敏感 8 票 + 中概 AI mega 2 票）；本次 EOD 填充率 <b>98/98 = 100%</b>",
+    "<b>§4 归因口径</b>：本日 <b>14 票 |x|>5%</b>、32 票 |x|>2.5%（较 7/30 的 63 票极端股大幅收敛）；§4 覆盖全部 14 只极端票 + 具独立 catalyst 的高亮票 + 反向代表，共 24 条；§3 数据表仍完整 92 票",
+    "<b>板块均口径</b>：等权（不按市值加权）；§3.11 前沿科技 + §3.12 中概 AI mega 各自单独汇总；韩国锚不计入 92 票板块均",
+    "<b>高亮阈值</b> |pct|>2.5%；<b>极端阈值</b> |pct|>5%；<b>方向</b>标 ↑↓ 的条件为少数方占比 ≥1/3（故数据中心 REIT 1/3 为单向 ↓，而 MAG7 6/1 与光通讯 9/1 亦为单向 ↑）",
+    "<b>宏观锚</b>：10 年期美债盘中破 <b>4.7%</b>（2025 年 1 月以来最高）、30 年期约 <b>5.25%</b>（+4bp）；<b>油价：Brent 盘中重上 $92、月内累计涨超 20%</b>（美伊冲突升级；7/29 Brent 结算 $90.74 / WTI $84.46 为可比锚）；美股指数：^GSPC +0.70% 收 7,489.72、^NDX +0.60% 收 28,274.20、^SOX +0.07% 收 11,311.08；Nasdaq 综合指数 +1% 收 25,373.85、道指 +0.53% 收 52,485.03（<b>非本报告锁定指数，仅作背景</b>）",
+    "<b>韩国 trigger</b>：SK Hynix 000660.KS <b>+29.95%</b> > 3% 阈值触发（触及韩国 ±30% 单日涨跌幅上限），§1 韩国子层 3 数字锚已落；三票韩国锚等权 +24.89%、全部触发极端阈值",
+    "<b>数据校验记录</b>：<b>本场次无 OHLC 不一致 bar</b>（low ≤ close ≤ high 全部通过），无 stale bar，无需 Alpha Vantage 修复。<mark>韩国三锚的极端读数（+17.91% / +26.81% / +29.95%）已单独回溯 7/20–7/31 原始日线复核，确认为真实行情而非坏 bar 或 prev_close 错位</mark>：SK Hynix 由 7/27 的 ₩1,816,000 连跌至 7/30 的 ₩1,322,000（三日 −27.2%）后于 7/31 收 ₩1,718,000，收盘价等于当日最高价，符合涨停特征",
+    "<b>归因纪律记录</b>：GOOGL +6.73% 已标注为传导性 beta（其 Q2 财报 7/22 已发布，非当日事件）；MSFT +3.02% / NVDA +2.93% / META +3.28% / COHR +5.55% / GDS +2.41% 均标注 beta 或技术性修复，未编造 catalyst",
+    "<b>前日归因的事后修正</b>：7/30 报告将\"卖软件买硬件\"标注为结构性 rotation 并附注 Situational Awareness 强平的机械成分；<mark>本日该分化完全对调（CRWV −2.88% / NBIS +1.05% vs CRM +1.83% / NOW +1.05%），据此<b>上修机械成分的权重、下修结构性成分</b></mark>——留档以便后续检验",
+    "<b>A 股映射</b>：仅做方向定位，不构成推荐；<b>§6.4 存储链因韩美信号矛盾已主动降权为「建议观望」</b>",
+    "<b>不含</b>：新势力车企（NIO/XPEV/LI）/ 银行保险地产 / 能源化工消费 / 纯生物医药"
+  ]
+}

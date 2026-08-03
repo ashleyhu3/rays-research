@@ -3,7 +3,6 @@ import { VIEW_META, SECTOR_OVERVIEW_IDS, getModeForView } from './config/navigat
 import Sidebar from './components/layout/Sidebar';
 import Topbar from './components/layout/Topbar';
 import Navbar from './components/layout/Navbar';
-import Chat from './pages/chat/Chat';
 import { UIProvider } from './context/UIContext';
 import { DashboardProvider } from './context/DashboardContext';
 import { LayoutProvider } from './context/LayoutContext';
@@ -46,11 +45,11 @@ import Sentiment from './pages/sentiment/Sentiment';
 import Alerts, { OptionsReportTitle, OptionsReportControls } from './pages/alerts/Alerts';
 import PriceReturn from './pages/price-return/PriceReturn';
 import Fundamentals from './pages/fundamentals/Fundamentals';
+import Reports from './pages/reports/Reports';
 import UsPerformance from './pages/us-performance/UsPerformance';
 import HkChinaPerformance from './pages/hk-china-performance/HkChinaPerformance';
 import HkPerformance from './pages/hk-performance/HkPerformance';
 import { OptionsReportProvider } from './context/OptionsReportContext';
-import DataValidity from './pages/data-validity/DataValidity';
 import { LeverageKorea, LeverageTaiwan } from './pages/leverage/Leverage';
 import KoreaInvestorFlow from './pages/korea-investor-flow/KoreaInvestorFlow';
 import TaiwanIndividual from './pages/taiwan-individual/TaiwanIndividual';
@@ -136,11 +135,11 @@ const VIEW_COMPONENTS = {
   'alerts':           Alerts,
   'price-return':     PriceReturn,
   'fundamentals':     Fundamentals,
+  'reports':          Reports,
   'us-performance':   UsPerformance,
   'hk-china-performance': HkChinaPerformance,
   'hk-performance':   HkPerformance,
   'sentiment':        Sentiment,
-  'sources':          DataValidity,
   'leverage-korea':   LeverageKorea,
   'korea-investor-flow': KoreaInvestorFlow,
   'leverage-taiwan':  LeverageTaiwan,
@@ -183,12 +182,11 @@ const VIEW_COMPONENTS = {
   'demand-general':        DemandGeneral,
   'openrouter-rankings':   DemandOpenRouter,
   'market-signals':        MarketSignals,
-  chat:                    Chat,
 };
 
 // Pages that render their own left nav and page heading inside the component,
 // so the shared Sidebar and Topbar would only duplicate that chrome.
-const SELF_CHROMED_VIEWS = new Set(['price-return', 'fundamentals']);
+const SELF_CHROMED_VIEWS = new Set(['price-return', 'fundamentals', 'reports']);
 
 export default function App() {
   const [currentView, setCurrentView] = useState('overview');
@@ -234,7 +232,7 @@ export default function App() {
   const ViewComponent = sectorId ? null : VIEW_COMPONENTS[currentView];
   const isAlerts = currentView === 'alerts';
   const isSelfChromed = SELF_CHROMED_VIEWS.has(currentView);
-  const showSidebar = currentView !== 'options' && currentView !== 'chat' && currentView !== 'sentiment' && currentView !== 'sources' && currentView !== 'transcripts' && currentView !== 'alerts' && !isSelfChromed;
+  const showSidebar = currentView !== 'options' && currentView !== 'sentiment' && currentView !== 'transcripts' && currentView !== 'alerts' && !isSelfChromed;
 
   return (
     <DashboardProvider>
@@ -254,7 +252,7 @@ export default function App() {
             />
           )}
           <main className="main">
-            {currentView !== 'chat' && !isSelfChromed && (
+            {!isSelfChromed && (
               <Topbar
                 title={meta.title}
                 titleContent={
@@ -272,11 +270,9 @@ export default function App() {
                 layoutEditable={LAYOUT_EDITABLE.has(currentView)}
               />
             )}
-            <div className={`content${currentView === 'chat' ? ' content--chat' : ''}`}>
+            <div className="content">
               {sectorId
                 ? <SectorOverview key={sectorId} sectorId={sectorId} weeks={weeks} />
-                : currentView === 'chat'
-                ? <Chat onNavigate={setCurrentView} />
                 : ViewComponent && (
                     <ViewComponent
                       viewId={currentView}

@@ -1,0 +1,15 @@
+# us-tech-daily pipeline dependencies.
+#
+#   pip install -r requirements.txt
+#   playwright install chromium
+#
+# Mirrors the packages actually imported across pull_global_eod.py, aggregate.py,
+# pull_news.py, vendor/news_fetcher.py, render_report.py, export_report.py, session.py,
+# and store.py. pymongo is only exercised when MONGODB_URI is set (store.py's Mongo mode).
+
+yfinance>=0.2.40
+pandas>=2.0
+requests>=2.31
+beautifulsoup4>=4.12
+playwright>=1.45
+pymongo>=4.7

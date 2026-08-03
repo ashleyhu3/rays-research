@@ -43,13 +43,12 @@ export default function Navbar({ onNavigate, currentView }) {
   const { loading, lastUpdated, error, forceRefresh } = useData();
 
   const mode        = getModeForView(currentView);
-  const isChat      = currentView === 'chat';
   const isOptions   = currentView === 'options';
   const isAlerts    = currentView === 'alerts';
   const isPriceReturn = currentView === 'price-return';
   const isFundamentals = currentView === 'fundamentals';
+  const isReports    = currentView === 'reports';
   const isSentiment = currentView === 'sentiment';
-  const isSources   = currentView === 'sources';
   const isTranscripts = currentView === 'transcripts';
   const isSupply    = mode === 'supply';
   const isInfra     = mode === 'aisupplychain';
@@ -58,7 +57,7 @@ export default function Navbar({ onNavigate, currentView }) {
   const isLiquidity = mode === 'liquidity';
   const isUsPerf    = mode === 'us-performance';
   const isMacro     = mode === 'macro';
-  const isDemand    = mode === 'demand' && !isChat && !isAlerts && !isPriceReturn && !isFundamentals;
+  const isDemand    = mode === 'demand' && !isAlerts && !isPriceReturn && !isFundamentals && !isReports;
 
   const title = loading
     ? 'Updating live data…'
@@ -101,6 +100,12 @@ export default function Navbar({ onNavigate, currentView }) {
           onClick={() => onNavigate('fundamentals')}
         >
           Fundamentals
+        </button>
+        <button
+          className={`nlink${isReports ? ' active' : ''}`}
+          onClick={() => onNavigate('reports')}
+        >
+          Report
         </button>
         <button
           className={`nlink${isUsPerf ? ' active' : ''}`}
@@ -149,18 +154,6 @@ export default function Navbar({ onNavigate, currentView }) {
           onClick={() => onNavigate('transcripts')}
         >
           Transcripts
-        </button>
-        <button
-          className={`nlink${isSources ? ' active' : ''}`}
-          onClick={() => onNavigate('sources')}
-        >
-          Sources
-        </button>
-        <button
-          className={`nlink nlink-ask${isChat ? ' active' : ''}`}
-          onClick={() => onNavigate('chat')}
-        >
-          Ask
         </button>
       </div>
       <div className="navbar-r">

@@ -1,4 +1,4 @@
-"""EOD pull for the US tech sector review.
+"""EOD pull for the tech sector review (US or Asia — see kinds.py).
 
 Mirrors the sourcing pattern already used by server/scrapers/globalIndices.js (Yahoo
 chart history, bounded concurrency, retry on 429) but in Python so the report pipeline
@@ -13,29 +13,25 @@ close falls outside the session range — QBTS on 2026-07-30 closed 17.98 but Ya
 reported 16.21, below its own 16.71 low, which alone moved the 92-name equal-weight
 average by 12bp. Those bars are repaired from Alpha Vantage rather than trusted.
 
-Writes data/eod_{DATE}.json. Fails loudly on a low fill rate rather than silently
-carrying yesterday's tape forward.
+Writes through store.py (local data/eod_{DATE}.json, or Mongo when MONGODB_URI is set).
+Fails loudly on a low fill rate rather than silently carrying yesterday's tape forward.
 """
 
 from __future__ import annotations
 
 import argparse
-import json
 import math
 import os
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timedelta
-from pathlib import Path
 
 import requests
 import yfinance as yf
 
-import universe
-
-ROOT = Path(__file__).resolve().parent
-DATA_DIR = ROOT / "data"
+import kinds
+import store
 
 # A session is only usable if this share of the universe resolved.
 MIN_FILL_RATE = 0.95
@@ -198,8 +194,9 @@ def derive(row: dict) -> dict:
     return row
 
 
-def pull(session: date, workers: int = 8) -> dict:
-    symbols = universe.all_quote_symbols()
+def pull(session: date, kind: str = "us", workers: int = 8) -> dict:
+    uni = kinds.get(kind).universe
+    symbols = uni.all_quote_symbols()
     with ThreadPoolExecutor(max_workers=workers) as pool:
         rows = list(pool.map(lambda s: fetch_symbol(s, session), symbols))
 
@@ -223,12 +220,13 @@ def pull(session: date, workers: int = 8) -> dict:
 
     return {
         "session": session.isoformat(),
+        "kind": kind,
         "pulled_at": datetime.now().astimezone().isoformat(timespec="seconds"),
         "source": "yfinance EOD (pull_global_eod.py)",
         "counts": {
             "requested": len(rows),
             "resolved": len(rows) - len(failed),
-            "locked_universe": len(universe.locked_universe()),
+            "locked_universe": len(uni.locked_universe()),
         },
         "fill_rate": round(fill_rate, 4),
         "failed": failed,
@@ -241,16 +239,17 @@ def pull(session: date, workers: int = 8) -> dict:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--date", default=date.today().isoformat(), help="session date (ET), YYYY-MM-DD")
+    parser.add_argument("--date", default=date.today().isoformat(), help="session date (local to --kind), YYYY-MM-DD")
+    parser.add_argument("--kind", default="us", choices=sorted(kinds.KINDS), help="us | asia")
     parser.add_argument("--workers", type=int, default=8)
     parser.add_argument("--allow-low-fill", action="store_true", help="write output even below the fill-rate floor")
     args = parser.parse_args()
 
     session = date.fromisoformat(args.date)
-    payload = pull(session, workers=args.workers)
+    payload = pull(session, args.kind, workers=args.workers)
 
     counts = payload["counts"]
-    print(f"session {payload['session']}: resolved {counts['resolved']}/{counts['requested']} "
+    print(f"[{args.kind}] session {payload['session']}: resolved {counts['resolved']}/{counts['requested']} "
           f"(fill {payload['fill_rate']:.1%})")
     if payload["failed"]:
         print(f"  failed: {', '.join(payload['failed'])}")
@@ -265,10 +264,8 @@ def main() -> int:
         print(f"ABORT: fill rate below {MIN_FILL_RATE:.0%}. Refusing to write a partial tape.", file=sys.stderr)
         return 1
 
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    out = DATA_DIR / f"eod_{payload['session']}.json"
-    out.write_text(json.dumps(payload, indent=2), encoding="utf-8")
-    print(f"wrote {out}")
+    store.write_json("eod", args.kind, payload["session"], payload)
+    print(f"wrote eod doc ({store.mode()} mode, kind={args.kind}, session={payload['session']})")
     return 0
 
 

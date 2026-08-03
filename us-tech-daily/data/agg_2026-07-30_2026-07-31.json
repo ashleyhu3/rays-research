@@ -1,0 +1,1920 @@
+{
+  "session": "2026-07-31",
+  "kind": "us",
+  "source": "span tape compounded from 2 sessions (aggregate)",
+  "indices": [
+    {
+      "symbol": "^NDX",
+      "label": "Nasdaq 100 (^NDX)",
+      "close": 28274.19921875,
+      "pct": 3.9786421989852716
+    },
+    {
+      "symbol": "^GSPC",
+      "label": "S&P 500 (^GSPC)",
+      "close": 7489.72021484375,
+      "pct": 2.372426957030993
+    },
+    {
+      "symbol": "^SOX",
+      "label": "Philadelphia Semi (^SOX)",
+      "close": 11311.080078125,
+      "pct": 8.26597481875806
+    }
+  ],
+  "sectors": [
+    {
+      "name": "光通讯",
+      "n": 10,
+      "mean_pct": 20.163102590617903,
+      "up": 10,
+      "down": 0,
+      "highlight_n": 10,
+      "extreme_n": 10,
+      "direction": "↑",
+      "standalone": false,
+      "rows": [
+        {
+          "ticker": "AXTI",
+          "close": 60.43000030517578,
+          "pct": 63.456852339336955,
+          "dollar_volume_b": 2.507037322956749,
+          "dist_52w_high_pct": -57.78848927120419,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "AAOI",
+          "close": 94.31999969482422,
+          "pct": 23.26189732441748,
+          "dollar_volume_b": 1.8529044004307098,
+          "dist_52w_high_pct": -59.63538304706534,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "LITE",
+          "close": 713.9400024414062,
+          "pct": 18.525779260955268,
+          "dollar_volume_b": 7.038247768376465,
+          "dist_52w_high_pct": -34.24029482708975,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "COHR",
+          "close": 262.8900146484375,
+          "pct": 18.392258966625775,
+          "dollar_volume_b": 2.8072050574068603,
+          "dist_52w_high_pct": -40.25226939808238,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "TSEM",
+          "close": 219.6699981689453,
+          "pct": 16.94527387756024,
+          "dollar_volume_b": 0.745238087903656,
+          "dist_52w_high_pct": -31.340252393360647,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "CRDO",
+          "close": 206.99000549316406,
+          "pct": 16.64694790247754,
+          "dollar_volume_b": 2.7149875884899903,
+          "dist_52w_high_pct": -32.94133006489002,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "CIEN",
+          "close": 377.04998779296875,
+          "pct": 14.12961024478725,
+          "dollar_volume_b": 1.5364330698703004,
+          "dist_52w_high_pct": -40.85583253326674,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "SMTC",
+          "close": 117.81999969482422,
+          "pct": 13.780778582820297,
+          "dollar_volume_b": 0.5101297353898773,
+          "dist_52w_high_pct": -33.56639659428314,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "GLW",
+          "close": 138.25,
+          "pct": 11.446994436846136,
+          "dollar_volume_b": 4.125621792385498,
+          "dist_52w_high_pct": -49.13165037127399,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "FN",
+          "close": 435.4100036621094,
+          "pct": 5.044632970352092,
+          "dollar_volume_b": 0.7118981248750305,
+          "dist_52w_high_pct": -41.859285723483666,
+          "highlight": true,
+          "extreme": true
+        }
+      ]
+    },
+    {
+      "name": "AI 量子/边缘",
+      "n": 3,
+      "mean_pct": 12.913239223427581,
+      "up": 3,
+      "down": 0,
+      "highlight_n": 3,
+      "extreme_n": 3,
+      "direction": "↑",
+      "standalone": false,
+      "rows": [
+        {
+          "ticker": "IONQ",
+          "close": 36.439998626708984,
+          "pct": 13.910593583712538,
+          "dollar_volume_b": 1.2938327198090058,
+          "dist_52w_high_pct": -56.94707125533647,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "RGTI",
+          "close": 14.949999809265137,
+          "pct": 13.08622925334586,
+          "dollar_volume_b": 0.5840501869913102,
+          "dist_52w_high_pct": -74.29062868964529,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "QBTS",
+          "close": 18.079999923706055,
+          "pct": 11.742894833224348,
+          "dollar_volume_b": 0.6602135038009898,
+          "dist_52w_high_pct": -61.32620337175175,
+          "highlight": true,
+          "extreme": true
+        }
+      ]
+    },
+    {
+      "name": "AI 网络设备",
+      "n": 4,
+      "mean_pct": 12.205447157408113,
+      "up": 4,
+      "down": 0,
+      "highlight_n": 4,
+      "extreme_n": 3,
+      "direction": "↑",
+      "standalone": false,
+      "rows": [
+        {
+          "ticker": "ALAB",
+          "close": 311.2300109863281,
+          "pct": 24.621608128717366,
+          "dollar_volume_b": 3.521293764633728,
+          "dist_52w_high_pct": -37.688697200374165,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "ANET",
+          "close": 180.35000610351562,
+          "pct": 14.167249927120618,
+          "dollar_volume_b": 2.553931091454346,
+          "dist_52w_high_pct": -4.987432723248119,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "APH",
+          "close": 160.6999969482422,
+          "pct": 6.912380785315508,
+          "dollar_volume_b": 2.945714939402893,
+          "dist_52w_high_pct": -9.982078701399466,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "CSCO",
+          "close": 115.98999786376953,
+          "pct": 3.1205497884789546,
+          "dollar_volume_b": 4.546972004485413,
+          "dist_52w_high_pct": -11.03014327836096,
+          "highlight": true,
+          "extreme": false
+        }
+      ]
+    },
+    {
+      "name": "半导体硬件扩展",
+      "n": 20,
+      "mean_pct": 11.207766055082585,
+      "up": 19,
+      "down": 1,
+      "highlight_n": 20,
+      "extreme_n": 18,
+      "direction": "↑",
+      "standalone": false,
+      "rows": [
+        {
+          "ticker": "SNDK",
+          "close": 1214.8299560546875,
+          "pct": 19.582822799483445,
+          "dollar_volume_b": 55.36303606362354,
+          "dist_52w_high_pct": -48.40149629064141,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "WDC",
+          "close": 544.8400268554688,
+          "pct": 17.920529992912225,
+          "dollar_volume_b": 9.455631034372924,
+          "dist_52w_high_pct": -31.883927365515785,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "WOLF",
+          "close": 23.6200008392334,
+          "pct": 17.746767039227194,
+          "dollar_volume_b": 0.21082744903344725,
+          "dist_52w_high_pct": -70.7745596035358,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "AMAT",
+          "close": 507.6700134277344,
+          "pct": 16.3180202150893,
+          "dollar_volume_b": 9.840514185603578,
+          "dist_52w_high_pct": -31.36533519579119,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "LRCX",
+          "close": 293.0199890136719,
+          "pct": 16.116497692285826,
+          "dollar_volume_b": 10.201898540891206,
+          "dist_52w_high_pct": -33.17674138798817,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "TER",
+          "close": 367.69000244140625,
+          "pct": 15.115368406047258,
+          "dollar_volume_b": 3.9268544708334963,
+          "dist_52w_high_pct": -24.639790190479193,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "VSH",
+          "close": 34.220001220703125,
+          "pct": 14.218966176264992,
+          "dollar_volume_b": 0.34662619686216734,
+          "dist_52w_high_pct": -50.74132629998422,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "MPWR",
+          "close": 1426.030029296875,
+          "pct": 14.195683569697382,
+          "dollar_volume_b": 4.430939876772827,
+          "dist_52w_high_pct": -16.805415250510524,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "VICR",
+          "close": 207.3699951171875,
+          "pct": 13.459533987893657,
+          "dollar_volume_b": 0.3532251964462281,
+          "dist_52w_high_pct": -45.806873533288005,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "TTMI",
+          "close": 115.44000244140625,
+          "pct": 13.432255329912302,
+          "dollar_volume_b": 0.6896933457806091,
+          "dist_52w_high_pct": -48.42514341373255,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "ASX",
+          "close": 35.16999816894531,
+          "pct": 13.014129885902914,
+          "dollar_volume_b": 0.6254256028211937,
+          "dist_52w_high_pct": -22.737263147485564,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "STX",
+          "close": 856.1300048828125,
+          "pct": 11.99586791277616,
+          "dollar_volume_b": 11.40681969801178,
+          "dist_52w_high_pct": -25.228820534252183,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "INTC",
+          "close": 90.19999694824219,
+          "pct": 10.161211497203503,
+          "dollar_volume_b": 21.97626453272626,
+          "dist_52w_high_pct": -36.63505930400201,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "RMBS",
+          "close": 91.02999877929688,
+          "pct": 9.926339165614518,
+          "dollar_volume_b": 0.5418369969734191,
+          "dist_52w_high_pct": -47.713960029862,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "KLAC",
+          "close": 182.82000732421875,
+          "pct": 7.421120337054377,
+          "dollar_volume_b": 5.615137912972229,
+          "dist_52w_high_pct": -40.52119262502606,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "GFS",
+          "close": 49.9900016784668,
+          "pct": 6.203530916877553,
+          "dollar_volume_b": 0.4341061762845764,
+          "dist_52w_high_pct": -45.985953506116786,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "ASML",
+          "close": 1629.0,
+          "pct": 5.050013964928035,
+          "dollar_volume_b": 6.101821518026367,
+          "dist_52w_high_pct": -18.54836937653537,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "ADI",
+          "close": 367.4100036621094,
+          "pct": 3.9731750683206224,
+          "dollar_volume_b": 3.503421660574371,
+          "dist_52w_high_pct": -17.604449183760362,
+          "highlight": true,
+          "extreme": false
+        },
+        {
+          "ticker": "ON",
+          "close": 81.61000061035156,
+          "pct": 3.4871924660358378,
+          "dollar_volume_b": 1.4567887391807632,
+          "dist_52w_high_pct": -39.51230231402728,
+          "highlight": true,
+          "extreme": false
+        },
+        {
+          "ticker": "QCOM",
+          "close": 147.61000061035156,
+          "pct": -5.183705321875387,
+          "dollar_volume_b": 5.5393641290903926,
+          "dist_52w_high_pct": -43.20945176028486,
+          "highlight": true,
+          "extreme": true
+        }
+      ]
+    },
+    {
+      "name": "AI 电力 baseload",
+      "n": 13,
+      "mean_pct": 10.004341990197101,
+      "up": 12,
+      "down": 1,
+      "highlight_n": 11,
+      "extreme_n": 10,
+      "direction": "↑",
+      "standalone": false,
+      "rows": [
+        {
+          "ticker": "BE",
+          "close": 205.80999755859375,
+          "pct": 25.685494692270993,
+          "dollar_volume_b": 11.735842342153077,
+          "dist_52w_high_pct": -41.41141019306921,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "PWR",
+          "close": 667.3599853515625,
+          "pct": 18.929316735623168,
+          "dollar_volume_b": 2.9850372205825195,
+          "dist_52w_high_pct": -15.390176183637083,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "FLNC",
+          "close": 13.930000305175781,
+          "pct": 17.157274204778794,
+          "dollar_volume_b": 0.17501675846026327,
+          "dist_52w_high_pct": -58.43031631480417,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "ETN",
+          "close": 415.20001220703125,
+          "pct": 14.734167847014756,
+          "dollar_volume_b": 3.0164404234583744,
+          "dist_52w_high_pct": -4.9319912325373245,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "SMR",
+          "close": 8.420000076293945,
+          "pct": 10.935440145189702,
+          "dollar_volume_b": 0.595251443890543,
+          "dist_52w_high_pct": -85.33611921839494,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "GEV",
+          "close": 990.2899780273438,
+          "pct": 9.997994601831529,
+          "dollar_volume_b": 5.050122276933594,
+          "dist_52w_high_pct": -17.19567649334398,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "VRT",
+          "close": 241.57000732421875,
+          "pct": 8.307933373327447,
+          "dollar_volume_b": 5.907898866376954,
+          "dist_52w_high_pct": -36.41806917590852,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "NRG",
+          "close": 134.2899932861328,
+          "pct": 8.097874633630298,
+          "dollar_volume_b": 0.6631805592520141,
+          "dist_52w_high_pct": -29.306175752872534,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "NNE",
+          "close": 15.90999984741211,
+          "pct": 6.922041162967374,
+          "dollar_volume_b": 0.06900860545027923,
+          "dist_52w_high_pct": -73.8623293468169,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "OKLO",
+          "close": 38.83000183105469,
+          "pct": 5.401741775853397,
+          "dollar_volume_b": 0.7496150494374809,
+          "dist_52w_high_pct": -79.96801353453986,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "VST",
+          "close": 148.19000244140625,
+          "pct": 3.7672466737527444,
+          "dollar_volume_b": 1.2464632398339845,
+          "dist_52w_high_pct": -32.585753114439385,
+          "highlight": true,
+          "extreme": false
+        },
+        {
+          "ticker": "CEG",
+          "close": 262.75,
+          "pct": 1.8608209210380977,
+          "dollar_volume_b": 1.3285670680366821,
+          "dist_52w_high_pct": -36.33390059891946,
+          "highlight": false,
+          "extreme": false
+        },
+        {
+          "ticker": "NEE",
+          "close": 86.91999816894531,
+          "pct": -1.740900894715991,
+          "dollar_volume_b": 1.9830412003327331,
+          "dist_52w_high_pct": -11.97974868967563,
+          "highlight": false,
+          "extreme": false
+        }
+      ]
+    },
+    {
+      "name": "半导体核心",
+      "n": 6,
+      "mean_pct": 9.433065840072588,
+      "up": 6,
+      "down": 0,
+      "highlight_n": 6,
+      "extreme_n": 6,
+      "direction": "↑",
+      "standalone": false,
+      "rows": [
+        {
+          "ticker": "MRVL",
+          "close": 187.55999755859375,
+          "pct": 14.78580450707665,
+          "dollar_volume_b": 10.331546897488693,
+          "dist_52w_high_pct": -43.142962658429965,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "MU",
+          "close": 823.030029296875,
+          "pct": 11.370775276979028,
+          "dollar_volume_b": 96.7829013561043,
+          "dist_52w_high_pct": -34.419917984312754,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "AMD",
+          "close": 476.1499938964844,
+          "pct": 10.845981144120742,
+          "dollar_volume_b": 29.665324991326294,
+          "dist_52w_high_pct": -18.569252509546764,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "TSM",
+          "close": 404.25,
+          "pct": 7.8949436870188405,
+          "dollar_volume_b": 11.796577186945619,
+          "dist_52w_high_pct": -15.605427974947805,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "ARM",
+          "close": 239.69000244140625,
+          "pct": 6.580996528047045,
+          "dollar_volume_b": 4.77113952866333,
+          "dist_52w_high_pct": -47.05323702713091,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "AVGO",
+          "close": 389.2799987792969,
+          "pct": 5.119893897193228,
+          "dollar_volume_b": 16.426500822246215,
+          "dist_52w_high_pct": -21.357576004182455,
+          "highlight": true,
+          "extreme": true
+        }
+      ]
+    },
+    {
+      "name": "AI 服务器/EMS",
+      "n": 3,
+      "mean_pct": 9.319257719059875,
+      "up": 3,
+      "down": 0,
+      "highlight_n": 3,
+      "extreme_n": 3,
+      "direction": "↑",
+      "standalone": false,
+      "rows": [
+        {
+          "ticker": "SMCI",
+          "close": 28.399999618530273,
+          "pct": 10.505831811041588,
+          "dollar_volume_b": 2.022915879981663,
+          "dist_52w_high_pct": -54.457986945856504,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "DELL",
+          "close": 405.3699951171875,
+          "pct": 9.666156003898152,
+          "dollar_volume_b": 4.017177832305786,
+          "dist_52w_high_pct": -13.653695856358139,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "HPE",
+          "close": 47.900001525878906,
+          "pct": 7.7857853422398815,
+          "dollar_volume_b": 1.5133679868311005,
+          "dist_52w_high_pct": -25.447468442211818,
+          "highlight": true,
+          "extreme": true
+        }
+      ]
+    },
+    {
+      "name": "数据中心 REIT",
+      "n": 4,
+      "mean_pct": 6.492772320000546,
+      "up": 4,
+      "down": 0,
+      "highlight_n": 2,
+      "extreme_n": 2,
+      "direction": "↑",
+      "standalone": false,
+      "rows": [
+        {
+          "ticker": "VNET",
+          "close": 7.170000076293945,
+          "pct": 13.990462953543027,
+          "dollar_volume_b": 0.11325183749975251,
+          "dist_52w_high_pct": -50.4834233220798,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "GDS",
+          "close": 32.7400016784668,
+          "pct": 10.682899807001856,
+          "dollar_volume_b": 0.16141592566507723,
+          "dist_52w_high_pct": -32.647600766549324,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "EQIX",
+          "close": 1019.280029296875,
+          "pct": 1.1170422756942022,
+          "dollar_volume_b": 1.6772193425129394,
+          "dist_52w_high_pct": -9.692740121912403,
+          "highlight": false,
+          "extreme": false
+        },
+        {
+          "ticker": "DLR",
+          "close": 188.52000427246094,
+          "pct": 0.18068424376309622,
+          "dollar_volume_b": 0.7984466981079101,
+          "dist_52w_high_pct": -9.426345332334652,
+          "highlight": false,
+          "extreme": false
+        }
+      ]
+    },
+    {
+      "name": "中概 AI mega",
+      "n": 2,
+      "mean_pct": 5.912133983179391,
+      "up": 2,
+      "down": 0,
+      "highlight_n": 2,
+      "extreme_n": 2,
+      "direction": "↑",
+      "standalone": true,
+      "rows": [
+        {
+          "ticker": "BABA",
+          "close": 122.25,
+          "pct": 6.2766246173364015,
+          "dollar_volume_b": 2.9761276816413877,
+          "dist_52w_high_pct": -36.54954006237992,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "BIDU",
+          "close": 111.11000061035156,
+          "pct": 5.54764334902238,
+          "dollar_volume_b": 0.5625910974473878,
+          "dist_52w_high_pct": -32.782819988477904,
+          "highlight": true,
+          "extreme": true
+        }
+      ]
+    },
+    {
+      "name": "MAG7",
+      "n": 7,
+      "mean_pct": 5.852232127966858,
+      "up": 5,
+      "down": 2,
+      "highlight_n": 7,
+      "extreme_n": 5,
+      "direction": "↑",
+      "standalone": false,
+      "rows": [
+        {
+          "ticker": "AMZN",
+          "close": 271.5799865722656,
+          "pct": 19.823513737353828,
+          "dollar_volume_b": 53.54839646941613,
+          "dist_52w_high_pct": -2.5057477913209447,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "MSFT",
+          "close": 464.7200012207031,
+          "pct": 18.994210849782544,
+          "dollar_volume_b": 77.55511380952758,
+          "dist_52w_high_pct": -16.33450517460977,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "GOOGL",
+          "close": 356.1300048828125,
+          "pct": 5.767578604903156,
+          "dollar_volume_b": 26.51828296815576,
+          "dist_52w_high_pct": -12.84353842297734,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "NVDA",
+          "close": 200.75,
+          "pct": 5.652337142074737,
+          "dollar_volume_b": 52.0480993068544,
+          "dist_52w_high_pct": -15.13063088779203,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "TSLA",
+          "close": 311.2099914550781,
+          "pct": 4.320858076692891,
+          "dollar_volume_b": 22.657512963130586,
+          "dist_52w_high_pct": -37.61201214193785,
+          "highlight": true,
+          "extreme": false
+        },
+        {
+          "ticker": "META",
+          "close": 556.7100219726562,
+          "pct": -4.935018886598486,
+          "dollar_volume_b": 36.128206537436526,
+          "dist_52w_high_pct": -30.08351372399921,
+          "highlight": true,
+          "extreme": false
+        },
+        {
+          "ticker": "AAPL",
+          "close": 308.9100036621094,
+          "pct": -8.657854628440663,
+          "dollar_volume_b": 59.367141178669,
+          "dist_52w_high_pct": -10.34913164353145,
+          "highlight": true,
+          "extreme": true
+        }
+      ]
+    },
+    {
+      "name": "AI infra/SaaS",
+      "n": 12,
+      "mean_pct": 5.830069572373277,
+      "up": 9,
+      "down": 3,
+      "highlight_n": 8,
+      "extreme_n": 5,
+      "direction": "↑",
+      "standalone": false,
+      "rows": [
+        {
+          "ticker": "NBIS",
+          "close": 190.41000366210938,
+          "pct": 28.46444615702326,
+          "dollar_volume_b": 12.556140458239746,
+          "dist_52w_high_pct": -36.50036251456877,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "CRWV",
+          "close": 71.7699966430664,
+          "pct": 18.003941143021795,
+          "dollar_volume_b": 5.1237130574593275,
+          "dist_52w_high_pct": -53.15274277236865,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "ORCL",
+          "close": 129.8699951171875,
+          "pct": 10.302358988873861,
+          "dollar_volume_b": 9.168760509236815,
+          "dist_52w_high_pct": -62.43491997609934,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "CRWD",
+          "close": 190.86000061035156,
+          "pct": 6.399819051760436,
+          "dollar_volume_b": 2.9559352034194335,
+          "dist_52w_high_pct": -12.248275581447555,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "TEM",
+          "close": 43.869998931884766,
+          "pct": 5.583633543739985,
+          "dollar_volume_b": 0.6299695047452087,
+          "dist_52w_high_pct": -57.94670335484927,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "SNOW",
+          "close": 293.2799987792969,
+          "pct": 3.669142844382889,
+          "dollar_volume_b": 4.046389576556091,
+          "dist_52w_high_pct": -3.5802393949740163,
+          "highlight": true,
+          "extreme": false
+        },
+        {
+          "ticker": "NET",
+          "close": 278.9800109863281,
+          "pct": 3.1807108322388755,
+          "dollar_volume_b": 1.8113975325117186,
+          "dist_52w_high_pct": -5.044240102924635,
+          "highlight": true,
+          "extreme": false
+        },
+        {
+          "ticker": "DDOG",
+          "close": 267.9700012207031,
+          "pct": 1.4269450565799646,
+          "dollar_volume_b": 2.49004416316095,
+          "dist_52w_high_pct": -3.8700215078436906,
+          "highlight": false,
+          "extreme": false
+        },
+        {
+          "ticker": "PLTR",
+          "close": 123.05999755859375,
+          "pct": 0.048778502921753564,
+          "dollar_volume_b": 6.938682848139221,
+          "dist_52w_high_pct": -40.699693993344574,
+          "highlight": false,
+          "extreme": false
+        },
+        {
+          "ticker": "APP",
+          "close": 395.8999938964844,
+          "pct": -0.8912025321049288,
+          "dollar_volume_b": 9.142239268371583,
+          "dist_52w_high_pct": -46.90253595385882,
+          "highlight": false,
+          "extreme": false
+        },
+        {
+          "ticker": "CRM",
+          "close": 184.02000427246094,
+          "pct": -2.3144710146195346,
+          "dollar_volume_b": 3.6058857268290714,
+          "dist_52w_high_pct": -31.61903523124231,
+          "highlight": false,
+          "extreme": false
+        },
+        {
+          "ticker": "NOW",
+          "close": 111.2300033569336,
+          "pct": -3.9132677053390297,
+          "dollar_volume_b": 5.208369525285912,
+          "dist_52w_high_pct": -43.36557697880629,
+          "highlight": true,
+          "extreme": false
+        }
+      ]
+    },
+    {
+      "name": "前沿科技/流动性敏感",
+      "n": 8,
+      "mean_pct": 2.387405083318293,
+      "up": 4,
+      "down": 4,
+      "highlight_n": 6,
+      "extreme_n": 4,
+      "direction": "↑↓",
+      "standalone": true,
+      "rows": [
+        {
+          "ticker": "ASTS",
+          "close": 58.97999954223633,
+          "pct": 11.220065811621982,
+          "dollar_volume_b": 1.2713717296984863,
+          "dist_52w_high_pct": -55.93904133175738,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "RKLB",
+          "close": 64.94999694824219,
+          "pct": 10.836175152675786,
+          "dollar_volume_b": 2.022363700212204,
+          "dist_52w_high_pct": -56.98675698791909,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "JOBY",
+          "close": 7.150000095367432,
+          "pct": 7.518796884654377,
+          "dollar_volume_b": 0.43501516826104164,
+          "dist_52w_high_pct": -65.87112250603933,
+          "highlight": true,
+          "extreme": true
+        },
+        {
+          "ticker": "PONY",
+          "close": 7.869999885559082,
+          "pct": 2.7415149129268013,
+          "dollar_volume_b": 0.07868263116596651,
+          "dist_52w_high_pct": -68.4189411658722,
+          "highlight": true,
+          "extreme": false
+        },
+        {
+          "ticker": "MSTR",
+          "close": 93.27999877929688,
+          "pct": -0.05357661071124786,
+          "dollar_volume_b": 3.185462404172257,
+          "dist_52w_high_pct": -77.48817403298396,
+          "highlight": false,
+          "extreme": false
+        },
+        {
+          "ticker": "MBLY",
+          "close": 7.940000057220459,
+          "pct": -0.8739097335974555,
+          "dollar_volume_b": 0.10327092155526829,
+          "dist_52w_high_pct": -49.77862209688064,
+          "highlight": false,
+          "extreme": false
+        },
+        {
+          "ticker": "HOOD",
+          "close": 86.55999755859375,
+          "pct": -3.6509337856167168,
+          "dollar_volume_b": 4.500108788557282,
+          "dist_52w_high_pct": -43.741065114249025,
+          "highlight": true,
+          "extreme": false
+        },
+        {
+          "ticker": "COIN",
+          "close": 146.25999450683594,
+          "pct": -8.638891965407181,
+          "dollar_volume_b": 4.275560095468231,
+          "dist_52w_high_pct": -63.63139218843801,
+          "highlight": true,
+          "extreme": true
+        }
+      ]
+    }
+  ],
+  "sectors_ordered": [
+    "MAG7",
+    "半导体核心",
+    "半导体硬件扩展",
+    "光通讯",
+    "AI 服务器/EMS",
+    "AI 网络设备",
+    "AI infra/SaaS",
+    "AI 电力 baseload",
+    "数据中心 REIT",
+    "AI 量子/边缘",
+    "前沿科技/流动性敏感",
+    "中概 AI mega"
+  ],
+  "universe": {
+    "locked_n": 92,
+    "scored_n": 92,
+    "mean_pct": 9.736755707120414,
+    "up": 81,
+    "down": 11,
+    "highlight_n": 82,
+    "extreme_n": 71,
+    "sectors_green": 12,
+    "sectors_total": 12
+  },
+  "korea": {
+    "rows": [
+      {
+        "ticker": "^KS11",
+        "close": 6595.4501953125,
+        "pct": 16.460717228259682,
+        "dollar_volume_b": 4.984463471044922,
+        "dist_52w_high_pct": -29.727909432303758,
+        "highlight": true,
+        "extreme": true,
+        "label": "KOSPI (^KS11)"
+      },
+      {
+        "ticker": "005930.KS",
+        "close": 262500.0,
+        "pct": 25.899280575539585,
+        "dollar_volume_b": 25016.4021135,
+        "dist_52w_high_pct": -29.90654205607477,
+        "highlight": true,
+        "extreme": true,
+        "label": "Samsung 005930.KS"
+      },
+      {
+        "ticker": "000660.KS",
+        "close": 1718000.0,
+        "pct": 22.62669521770164,
+        "dollar_volume_b": 30654.441300000002,
+        "dist_52w_high_pct": -42.48409775694677,
+        "highlight": true,
+        "extreme": true,
+        "label": "SK Hynix 000660.KS"
+      }
+    ],
+    "mean_pct": 21.66223100716697,
+    "up": 3,
+    "down": 0,
+    "highlight_n": 3,
+    "extreme_n": 3,
+    "direction": "↑",
+    "trigger_ticker": "000660.KS",
+    "trigger_pct": 22.62669521770164,
+    "triggered": true
+  },
+  "movers": [
+    {
+      "ticker": "AXTI",
+      "close": 60.43000030517578,
+      "pct": 63.456852339336955,
+      "dollar_volume_b": 2.507037322956749,
+      "dist_52w_high_pct": -57.78848927120419,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "NBIS",
+      "close": 190.41000366210938,
+      "pct": 28.46444615702326,
+      "dollar_volume_b": 12.556140458239746,
+      "dist_52w_high_pct": -36.50036251456877,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "BE",
+      "close": 205.80999755859375,
+      "pct": 25.685494692270993,
+      "dollar_volume_b": 11.735842342153077,
+      "dist_52w_high_pct": -41.41141019306921,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "ALAB",
+      "close": 311.2300109863281,
+      "pct": 24.621608128717366,
+      "dollar_volume_b": 3.521293764633728,
+      "dist_52w_high_pct": -37.688697200374165,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "AAOI",
+      "close": 94.31999969482422,
+      "pct": 23.26189732441748,
+      "dollar_volume_b": 1.8529044004307098,
+      "dist_52w_high_pct": -59.63538304706534,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "AMZN",
+      "close": 271.5799865722656,
+      "pct": 19.823513737353828,
+      "dollar_volume_b": 53.54839646941613,
+      "dist_52w_high_pct": -2.5057477913209447,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "SNDK",
+      "close": 1214.8299560546875,
+      "pct": 19.582822799483445,
+      "dollar_volume_b": 55.36303606362354,
+      "dist_52w_high_pct": -48.40149629064141,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "MSFT",
+      "close": 464.7200012207031,
+      "pct": 18.994210849782544,
+      "dollar_volume_b": 77.55511380952758,
+      "dist_52w_high_pct": -16.33450517460977,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "PWR",
+      "close": 667.3599853515625,
+      "pct": 18.929316735623168,
+      "dollar_volume_b": 2.9850372205825195,
+      "dist_52w_high_pct": -15.390176183637083,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "LITE",
+      "close": 713.9400024414062,
+      "pct": 18.525779260955268,
+      "dollar_volume_b": 7.038247768376465,
+      "dist_52w_high_pct": -34.24029482708975,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "COHR",
+      "close": 262.8900146484375,
+      "pct": 18.392258966625775,
+      "dollar_volume_b": 2.8072050574068603,
+      "dist_52w_high_pct": -40.25226939808238,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "CRWV",
+      "close": 71.7699966430664,
+      "pct": 18.003941143021795,
+      "dollar_volume_b": 5.1237130574593275,
+      "dist_52w_high_pct": -53.15274277236865,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "WDC",
+      "close": 544.8400268554688,
+      "pct": 17.920529992912225,
+      "dollar_volume_b": 9.455631034372924,
+      "dist_52w_high_pct": -31.883927365515785,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "WOLF",
+      "close": 23.6200008392334,
+      "pct": 17.746767039227194,
+      "dollar_volume_b": 0.21082744903344725,
+      "dist_52w_high_pct": -70.7745596035358,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "FLNC",
+      "close": 13.930000305175781,
+      "pct": 17.157274204778794,
+      "dollar_volume_b": 0.17501675846026327,
+      "dist_52w_high_pct": -58.43031631480417,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "TSEM",
+      "close": 219.6699981689453,
+      "pct": 16.94527387756024,
+      "dollar_volume_b": 0.745238087903656,
+      "dist_52w_high_pct": -31.340252393360647,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "CRDO",
+      "close": 206.99000549316406,
+      "pct": 16.64694790247754,
+      "dollar_volume_b": 2.7149875884899903,
+      "dist_52w_high_pct": -32.94133006489002,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "AMAT",
+      "close": 507.6700134277344,
+      "pct": 16.3180202150893,
+      "dollar_volume_b": 9.840514185603578,
+      "dist_52w_high_pct": -31.36533519579119,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "LRCX",
+      "close": 293.0199890136719,
+      "pct": 16.116497692285826,
+      "dollar_volume_b": 10.201898540891206,
+      "dist_52w_high_pct": -33.17674138798817,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "TER",
+      "close": 367.69000244140625,
+      "pct": 15.115368406047258,
+      "dollar_volume_b": 3.9268544708334963,
+      "dist_52w_high_pct": -24.639790190479193,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "MRVL",
+      "close": 187.55999755859375,
+      "pct": 14.78580450707665,
+      "dollar_volume_b": 10.331546897488693,
+      "dist_52w_high_pct": -43.142962658429965,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "ETN",
+      "close": 415.20001220703125,
+      "pct": 14.734167847014756,
+      "dollar_volume_b": 3.0164404234583744,
+      "dist_52w_high_pct": -4.9319912325373245,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "VSH",
+      "close": 34.220001220703125,
+      "pct": 14.218966176264992,
+      "dollar_volume_b": 0.34662619686216734,
+      "dist_52w_high_pct": -50.74132629998422,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "MPWR",
+      "close": 1426.030029296875,
+      "pct": 14.195683569697382,
+      "dollar_volume_b": 4.430939876772827,
+      "dist_52w_high_pct": -16.805415250510524,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "ANET",
+      "close": 180.35000610351562,
+      "pct": 14.167249927120618,
+      "dollar_volume_b": 2.553931091454346,
+      "dist_52w_high_pct": -4.987432723248119,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "CIEN",
+      "close": 377.04998779296875,
+      "pct": 14.12961024478725,
+      "dollar_volume_b": 1.5364330698703004,
+      "dist_52w_high_pct": -40.85583253326674,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "VNET",
+      "close": 7.170000076293945,
+      "pct": 13.990462953543027,
+      "dollar_volume_b": 0.11325183749975251,
+      "dist_52w_high_pct": -50.4834233220798,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "IONQ",
+      "close": 36.439998626708984,
+      "pct": 13.910593583712538,
+      "dollar_volume_b": 1.2938327198090058,
+      "dist_52w_high_pct": -56.94707125533647,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "SMTC",
+      "close": 117.81999969482422,
+      "pct": 13.780778582820297,
+      "dollar_volume_b": 0.5101297353898773,
+      "dist_52w_high_pct": -33.56639659428314,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "VICR",
+      "close": 207.3699951171875,
+      "pct": 13.459533987893657,
+      "dollar_volume_b": 0.3532251964462281,
+      "dist_52w_high_pct": -45.806873533288005,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "TTMI",
+      "close": 115.44000244140625,
+      "pct": 13.432255329912302,
+      "dollar_volume_b": 0.6896933457806091,
+      "dist_52w_high_pct": -48.42514341373255,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "RGTI",
+      "close": 14.949999809265137,
+      "pct": 13.08622925334586,
+      "dollar_volume_b": 0.5840501869913102,
+      "dist_52w_high_pct": -74.29062868964529,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "ASX",
+      "close": 35.16999816894531,
+      "pct": 13.014129885902914,
+      "dollar_volume_b": 0.6254256028211937,
+      "dist_52w_high_pct": -22.737263147485564,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "STX",
+      "close": 856.1300048828125,
+      "pct": 11.99586791277616,
+      "dollar_volume_b": 11.40681969801178,
+      "dist_52w_high_pct": -25.228820534252183,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "QBTS",
+      "close": 18.079999923706055,
+      "pct": 11.742894833224348,
+      "dollar_volume_b": 0.6602135038009898,
+      "dist_52w_high_pct": -61.32620337175175,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "GLW",
+      "close": 138.25,
+      "pct": 11.446994436846136,
+      "dollar_volume_b": 4.125621792385498,
+      "dist_52w_high_pct": -49.13165037127399,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "MU",
+      "close": 823.030029296875,
+      "pct": 11.370775276979028,
+      "dollar_volume_b": 96.7829013561043,
+      "dist_52w_high_pct": -34.419917984312754,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "ASTS",
+      "close": 58.97999954223633,
+      "pct": 11.220065811621982,
+      "dollar_volume_b": 1.2713717296984863,
+      "dist_52w_high_pct": -55.93904133175738,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "SMR",
+      "close": 8.420000076293945,
+      "pct": 10.935440145189702,
+      "dollar_volume_b": 0.595251443890543,
+      "dist_52w_high_pct": -85.33611921839494,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "AMD",
+      "close": 476.1499938964844,
+      "pct": 10.845981144120742,
+      "dollar_volume_b": 29.665324991326294,
+      "dist_52w_high_pct": -18.569252509546764,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "RKLB",
+      "close": 64.94999694824219,
+      "pct": 10.836175152675786,
+      "dollar_volume_b": 2.022363700212204,
+      "dist_52w_high_pct": -56.98675698791909,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "GDS",
+      "close": 32.7400016784668,
+      "pct": 10.682899807001856,
+      "dollar_volume_b": 0.16141592566507723,
+      "dist_52w_high_pct": -32.647600766549324,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "SMCI",
+      "close": 28.399999618530273,
+      "pct": 10.505831811041588,
+      "dollar_volume_b": 2.022915879981663,
+      "dist_52w_high_pct": -54.457986945856504,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "ORCL",
+      "close": 129.8699951171875,
+      "pct": 10.302358988873861,
+      "dollar_volume_b": 9.168760509236815,
+      "dist_52w_high_pct": -62.43491997609934,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "INTC",
+      "close": 90.19999694824219,
+      "pct": 10.161211497203503,
+      "dollar_volume_b": 21.97626453272626,
+      "dist_52w_high_pct": -36.63505930400201,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "GEV",
+      "close": 990.2899780273438,
+      "pct": 9.997994601831529,
+      "dollar_volume_b": 5.050122276933594,
+      "dist_52w_high_pct": -17.19567649334398,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "RMBS",
+      "close": 91.02999877929688,
+      "pct": 9.926339165614518,
+      "dollar_volume_b": 0.5418369969734191,
+      "dist_52w_high_pct": -47.713960029862,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "DELL",
+      "close": 405.3699951171875,
+      "pct": 9.666156003898152,
+      "dollar_volume_b": 4.017177832305786,
+      "dist_52w_high_pct": -13.653695856358139,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "AAPL",
+      "close": 308.9100036621094,
+      "pct": -8.657854628440663,
+      "dollar_volume_b": 59.367141178669,
+      "dist_52w_high_pct": -10.34913164353145,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "COIN",
+      "close": 146.25999450683594,
+      "pct": -8.638891965407181,
+      "dollar_volume_b": 4.275560095468231,
+      "dist_52w_high_pct": -63.63139218843801,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "VRT",
+      "close": 241.57000732421875,
+      "pct": 8.307933373327447,
+      "dollar_volume_b": 5.907898866376954,
+      "dist_52w_high_pct": -36.41806917590852,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "NRG",
+      "close": 134.2899932861328,
+      "pct": 8.097874633630298,
+      "dollar_volume_b": 0.6631805592520141,
+      "dist_52w_high_pct": -29.306175752872534,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "TSM",
+      "close": 404.25,
+      "pct": 7.8949436870188405,
+      "dollar_volume_b": 11.796577186945619,
+      "dist_52w_high_pct": -15.605427974947805,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "HPE",
+      "close": 47.900001525878906,
+      "pct": 7.7857853422398815,
+      "dollar_volume_b": 1.5133679868311005,
+      "dist_52w_high_pct": -25.447468442211818,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "JOBY",
+      "close": 7.150000095367432,
+      "pct": 7.518796884654377,
+      "dollar_volume_b": 0.43501516826104164,
+      "dist_52w_high_pct": -65.87112250603933,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "KLAC",
+      "close": 182.82000732421875,
+      "pct": 7.421120337054377,
+      "dollar_volume_b": 5.615137912972229,
+      "dist_52w_high_pct": -40.52119262502606,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "NNE",
+      "close": 15.90999984741211,
+      "pct": 6.922041162967374,
+      "dollar_volume_b": 0.06900860545027923,
+      "dist_52w_high_pct": -73.8623293468169,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "APH",
+      "close": 160.6999969482422,
+      "pct": 6.912380785315508,
+      "dollar_volume_b": 2.945714939402893,
+      "dist_52w_high_pct": -9.982078701399466,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "ARM",
+      "close": 239.69000244140625,
+      "pct": 6.580996528047045,
+      "dollar_volume_b": 4.77113952866333,
+      "dist_52w_high_pct": -47.05323702713091,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "CRWD",
+      "close": 190.86000061035156,
+      "pct": 6.399819051760436,
+      "dollar_volume_b": 2.9559352034194335,
+      "dist_52w_high_pct": -12.248275581447555,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "BABA",
+      "close": 122.25,
+      "pct": 6.2766246173364015,
+      "dollar_volume_b": 2.9761276816413877,
+      "dist_52w_high_pct": -36.54954006237992,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "GFS",
+      "close": 49.9900016784668,
+      "pct": 6.203530916877553,
+      "dollar_volume_b": 0.4341061762845764,
+      "dist_52w_high_pct": -45.985953506116786,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "GOOGL",
+      "close": 356.1300048828125,
+      "pct": 5.767578604903156,
+      "dollar_volume_b": 26.51828296815576,
+      "dist_52w_high_pct": -12.84353842297734,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "NVDA",
+      "close": 200.75,
+      "pct": 5.652337142074737,
+      "dollar_volume_b": 52.0480993068544,
+      "dist_52w_high_pct": -15.13063088779203,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "TEM",
+      "close": 43.869998931884766,
+      "pct": 5.583633543739985,
+      "dollar_volume_b": 0.6299695047452087,
+      "dist_52w_high_pct": -57.94670335484927,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "BIDU",
+      "close": 111.11000061035156,
+      "pct": 5.54764334902238,
+      "dollar_volume_b": 0.5625910974473878,
+      "dist_52w_high_pct": -32.782819988477904,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "OKLO",
+      "close": 38.83000183105469,
+      "pct": 5.401741775853397,
+      "dollar_volume_b": 0.7496150494374809,
+      "dist_52w_high_pct": -79.96801353453986,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "QCOM",
+      "close": 147.61000061035156,
+      "pct": -5.183705321875387,
+      "dollar_volume_b": 5.5393641290903926,
+      "dist_52w_high_pct": -43.20945176028486,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "AVGO",
+      "close": 389.2799987792969,
+      "pct": 5.119893897193228,
+      "dollar_volume_b": 16.426500822246215,
+      "dist_52w_high_pct": -21.357576004182455,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "ASML",
+      "close": 1629.0,
+      "pct": 5.050013964928035,
+      "dollar_volume_b": 6.101821518026367,
+      "dist_52w_high_pct": -18.54836937653537,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "FN",
+      "close": 435.4100036621094,
+      "pct": 5.044632970352092,
+      "dollar_volume_b": 0.7118981248750305,
+      "dist_52w_high_pct": -41.859285723483666,
+      "highlight": true,
+      "extreme": true
+    },
+    {
+      "ticker": "META",
+      "close": 556.7100219726562,
+      "pct": -4.935018886598486,
+      "dollar_volume_b": 36.128206537436526,
+      "dist_52w_high_pct": -30.08351372399921,
+      "highlight": true,
+      "extreme": false
+    },
+    {
+      "ticker": "TSLA",
+      "close": 311.2099914550781,
+      "pct": 4.320858076692891,
+      "dollar_volume_b": 22.657512963130586,
+      "dist_52w_high_pct": -37.61201214193785,
+      "highlight": true,
+      "extreme": false
+    },
+    {
+      "ticker": "ADI",
+      "close": 367.4100036621094,
+      "pct": 3.9731750683206224,
+      "dollar_volume_b": 3.503421660574371,
+      "dist_52w_high_pct": -17.604449183760362,
+      "highlight": true,
+      "extreme": false
+    },
+    {
+      "ticker": "NOW",
+      "close": 111.2300033569336,
+      "pct": -3.9132677053390297,
+      "dollar_volume_b": 5.208369525285912,
+      "dist_52w_high_pct": -43.36557697880629,
+      "highlight": true,
+      "extreme": false
+    },
+    {
+      "ticker": "VST",
+      "close": 148.19000244140625,
+      "pct": 3.7672466737527444,
+      "dollar_volume_b": 1.2464632398339845,
+      "dist_52w_high_pct": -32.585753114439385,
+      "highlight": true,
+      "extreme": false
+    },
+    {
+      "ticker": "SNOW",
+      "close": 293.2799987792969,
+      "pct": 3.669142844382889,
+      "dollar_volume_b": 4.046389576556091,
+      "dist_52w_high_pct": -3.5802393949740163,
+      "highlight": true,
+      "extreme": false
+    },
+    {
+      "ticker": "HOOD",
+      "close": 86.55999755859375,
+      "pct": -3.6509337856167168,
+      "dollar_volume_b": 4.500108788557282,
+      "dist_52w_high_pct": -43.741065114249025,
+      "highlight": true,
+      "extreme": false
+    },
+    {
+      "ticker": "ON",
+      "close": 81.61000061035156,
+      "pct": 3.4871924660358378,
+      "dollar_volume_b": 1.4567887391807632,
+      "dist_52w_high_pct": -39.51230231402728,
+      "highlight": true,
+      "extreme": false
+    },
+    {
+      "ticker": "NET",
+      "close": 278.9800109863281,
+      "pct": 3.1807108322388755,
+      "dollar_volume_b": 1.8113975325117186,
+      "dist_52w_high_pct": -5.044240102924635,
+      "highlight": true,
+      "extreme": false
+    },
+    {
+      "ticker": "CSCO",
+      "close": 115.98999786376953,
+      "pct": 3.1205497884789546,
+      "dollar_volume_b": 4.546972004485413,
+      "dist_52w_high_pct": -11.03014327836096,
+      "highlight": true,
+      "extreme": false
+    },
+    {
+      "ticker": "PONY",
+      "close": 7.869999885559082,
+      "pct": 2.7415149129268013,
+      "dollar_volume_b": 0.07868263116596651,
+      "dist_52w_high_pct": -68.4189411658722,
+      "highlight": true,
+      "extreme": false
+    },
+    {
+      "ticker": "CRM",
+      "close": 184.02000427246094,
+      "pct": -2.3144710146195346,
+      "dollar_volume_b": 3.6058857268290714,
+      "dist_52w_high_pct": -31.61903523124231,
+      "highlight": false,
+      "extreme": false
+    },
+    {
+      "ticker": "CEG",
+      "close": 262.75,
+      "pct": 1.8608209210380977,
+      "dollar_volume_b": 1.3285670680366821,
+      "dist_52w_high_pct": -36.33390059891946,
+      "highlight": false,
+      "extreme": false
+    },
+    {
+      "ticker": "NEE",
+      "close": 86.91999816894531,
+      "pct": -1.740900894715991,
+      "dollar_volume_b": 1.9830412003327331,
+      "dist_52w_high_pct": -11.97974868967563,
+      "highlight": false,
+      "extreme": false
+    },
+    {
+      "ticker": "DDOG",
+      "close": 267.9700012207031,
+      "pct": 1.4269450565799646,
+      "dollar_volume_b": 2.49004416316095,
+      "dist_52w_high_pct": -3.8700215078436906,
+      "highlight": false,
+      "extreme": false
+    },
+    {
+      "ticker": "EQIX",
+      "close": 1019.280029296875,
+      "pct": 1.1170422756942022,
+      "dollar_volume_b": 1.6772193425129394,
+      "dist_52w_high_pct": -9.692740121912403,
+      "highlight": false,
+      "extreme": false
+    },
+    {
+      "ticker": "APP",
+      "close": 395.8999938964844,
+      "pct": -0.8912025321049288,
+      "dollar_volume_b": 9.142239268371583,
+      "dist_52w_high_pct": -46.90253595385882,
+      "highlight": false,
+      "extreme": false
+    },
+    {
+      "ticker": "MBLY",
+      "close": 7.940000057220459,
+      "pct": -0.8739097335974555,
+      "dollar_volume_b": 0.10327092155526829,
+      "dist_52w_high_pct": -49.77862209688064,
+      "highlight": false,
+      "extreme": false
+    },
+    {
+      "ticker": "DLR",
+      "close": 188.52000427246094,
+      "pct": 0.18068424376309622,
+      "dollar_volume_b": 0.7984466981079101,
+      "dist_52w_high_pct": -9.426345332334652,
+      "highlight": false,
+      "extreme": false
+    },
+    {
+      "ticker": "MSTR",
+      "close": 93.27999877929688,
+      "pct": -0.05357661071124786,
+      "dollar_volume_b": 3.185462404172257,
+      "dist_52w_high_pct": -77.48817403298396,
+      "highlight": false,
+      "extreme": false
+    },
+    {
+      "ticker": "PLTR",
+      "close": 123.05999755859375,
+      "pct": 0.048778502921753564,
+      "dollar_volume_b": 6.938682848139221,
+      "dist_52w_high_pct": -40.699693993344574,
+      "highlight": false,
+      "extreme": false
+    }
+  ],
+  "thresholds": {
+    "highlight_abs_pct": 2.5,
+    "extreme_abs_pct": 5.0,
+    "korea_trigger_abs_pct": 3.0
+  },
+  "sessions": [
+    "2026-07-30",
+    "2026-07-31"
+  ],
+  "session_end": "2026-07-31",
+  "session_label": "2026-07-30 → 2026-07-31（2 个交易日合并）"
+}

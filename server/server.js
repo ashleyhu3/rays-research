@@ -8,7 +8,6 @@ const snapshotStore = require('./snapshotStore');
 const scheduler    = require('./scheduler');
 const STORAGE_BLOBS = require('./storageBlobs');
 const htmlTemplate = require('./htmlTemplate');
-const { chat } = require('./chat');
 const { getOptionsData }             = require('./scrapers/options');
 const { getStockHistory }            = require('./scrapers/stocks');
 const { readUsPerformance }          = require('./scrapers/usPerformance');
@@ -120,17 +119,6 @@ app.use('/api/options', requireStorageBlobs('optionsOI'));
 app.use('/api/alerts/earnings-calendar', requireStorageBlobs('techEarningsCalendar'));
 app.use('/api/alerts/price-return', requireStorageBlobs('priceReturnAfterEarnings'));
 app.use('/api/fundamentals/growth', requireStorageBlobs('fundamentalsGrowth'));
-
-// Chat consumes many cached sources at once. Hydrate those projected snapshot
-// fields only when Chat is used, rather than on every deployment cold start.
-app.use('/api/chat', async (_req, _res, next) => {
-  try {
-    await snapshotStore.seedKeys(cache, Object.keys(scheduler.scrapers), scheduler.TTL);
-    next();
-  } catch (error) {
-    next(error);
-  }
-});
 
 function requireAdminSecret(req, res, next) {
   const secret = process.env.ADMIN_SECRET;
@@ -344,10 +332,6 @@ app.get('/api/sec',               cachedRoute('sec',              s.sec));
 
 // Accumulated daily snapshots of point-in-time metrics (for trend charts)
 app.get('/api/metrics-history', (_req, res) => res.json(history.all()));
-
-// Data Validity Terminal — registry + live telemetry, served from memory.
-const { buildValidityState } = require('./validity');
-app.get('/api/validity/status', (_req, res) => res.json(buildValidityState()));
 
 // Earnings transcript pipeline.
 // Collect full transcripts from Alpha Vantage, normalize into deterministic
@@ -1258,18 +1242,51 @@ app.get('/api/fundamentals/growth', (req, res) => {
   res.json(fundamentalsGrowth.getTable());
 });
 
-app.post('/api/chat', async (req, res) => {
-  const { message, history } = req.body ?? {};
-  if (!message || typeof message !== 'string') {
-    return res.status(400).json({ error: 'message required' });
-  }
-  try {
-    const result = await chat(message, Array.isArray(history) ? history : []);
-    res.json(result);
-  } catch (e) {
-    console.error('[chat]', e.message);
-    res.status(500).json({ error: e.message });
-  }
+/* ── US Tech Daily reports (Report page) ─────────────────────────────── */
+// Written by us-tech-daily/publish.py (via us-tech-daily/store.py), scheduled twice daily.
+// The report/PDF docs use dynamic per-(kind,date) ids rather than the fixed blob names
+// requireStorageBlobs expects, so they're read directly through storage.readCompressed /
+// storage.readRaw — only the history index is a normal named blob.
+const REPORT_KINDS = new Set(['us', 'asia']);
+const REPORT_DATE_RE = /^\d{4}-\d{2}-\d{2}(?:_\d{4}-\d{2}-\d{2})?$/;
+
+function validReportParams(kind, date) {
+  return REPORT_KINDS.has(kind) && REPORT_DATE_RE.test(String(date || ''));
+}
+
+app.get('/api/reports/index', requireStorageBlobs('usTechReportIndex'), (_req, res) => {
+  const blob = STORAGE_BLOB_BY_NAME.get('usTechReportIndex');
+  res.json(storage.read(blob.name, blob.file));
+});
+
+app.get('/api/reports/:kind/:date/html', async (req, res) => {
+  const { kind, date } = req.params;
+  if (!validReportParams(kind, date)) return res.status(400).json({ error: 'invalid kind/date' });
+  const report = await storage.readCompressed(`usTechReport:${kind}:${date}`);
+  if (!report?.html) return res.status(404).send('Report not found');
+  res.set('Content-Type', 'text/html; charset=utf-8').send(report.html);
+});
+
+app.get('/api/reports/:kind/:date/pdf-meta', async (req, res) => {
+  const { kind, date } = req.params;
+  if (!validReportParams(kind, date)) return res.status(400).json({ error: 'invalid kind/date' });
+  const pdf = await storage.readRaw(`usTechReportPdf:${kind}:${date}`);
+  res.json({
+    available: Boolean(pdf?.base64),
+    size: pdf?.size ?? null,
+    filename: pdf?.filename ?? null,
+  });
+});
+
+app.get('/api/reports/:kind/:date/pdf', async (req, res) => {
+  const { kind, date } = req.params;
+  if (!validReportParams(kind, date)) return res.status(400).json({ error: 'invalid kind/date' });
+  const pdf = await storage.readRaw(`usTechReportPdf:${kind}:${date}`);
+  if (!pdf?.base64) return res.status(404).json({ error: `No PDF for ${kind}/${date}.` });
+  res.set({
+    'Content-Type': pdf.contentType || 'application/pdf',
+    'Content-Disposition': `attachment; filename="${pdf.filename || `${kind}-${date}.pdf`}"`,
+  }).send(Buffer.from(pdf.base64, 'base64'));
 });
 
 // Keep Vercel function failures machine-readable and allow the platform to

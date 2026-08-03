@@ -352,6 +352,21 @@ function writeCompressed(id, value) {
   return true;
 }
 
+// Read a whole document by _id with no shape assumption — unlike read()/readCompressed(),
+// which expect the {_id,data} or {_id,compressed} conventions, this is for documents whose
+// fields are stored directly on the doc (e.g. the us-tech-daily PDF docs, written by
+// us-tech-daily/store.py: {_id, base64, contentType, filename, size, ...}). Mongo-only,
+// like readCompressed — there is no local-file fallback shape to fall back to.
+async function readRaw(id) {
+  if (mode !== 'mongo' || !collection) return null;
+  try {
+    return await collection.findOne({ _id: id }, { maxTimeMS: 15000 });
+  } catch (error) {
+    console.warn(`[storage] raw read "${id}" failed:`, error.message);
+    return null;
+  }
+}
+
 // Wait for all queued Mongo writes to land (no-op in file mode).
 async function flush() {
   await Promise.allSettled([...pending]);
@@ -386,6 +401,6 @@ function status() {
 
 module.exports = {
   init, load, loadMany, read, write, mergeDatedRows, reload, readField, writeField,
-  readCompressed, writeCompressed,
+  readCompressed, writeCompressed, readRaw,
   flush, seedFromFiles, close, status,
 };

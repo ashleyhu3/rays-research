@@ -8,8 +8,7 @@
  *   freq   — cadence badge ('daily', 'weekly', 'hourly', 'live', 'static', …)
  *   lag    — the feed's INHERENT data lag (how far behind reality the value is),
  *            shown in parentheses after the source link. Distinct from `freq`
- *            (how often we refresh). Mirrors the upstreamLagText values curated
- *            in server/sourceRegistry.js; charts with no live scraper (research
+ *            (how often we refresh). Charts with no live scraper (research
  *            reports, benchmarks, IPO figures) use the nearest equivalent.
  *
  * To repoint a chart's source or relabel its cadence, edit here — no need to
@@ -17,7 +16,7 @@
  * data is present; those keep that bit in the view.)
  */
 
-// Canonical data-lag phrases per upstream feed (see server/sourceRegistry.js).
+// Canonical data-lag phrases per upstream feed.
 // Referenced below so every chart on the same feed reads consistently.
 const LAG = {
   sdk:        '~1 day behind',            // combined PyPI + npm SDK installs

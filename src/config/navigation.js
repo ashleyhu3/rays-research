@@ -190,13 +190,6 @@ export const NAV_SECTIONS = [
     ],
   },
   {
-    label: 'Sources',
-    mode: 'tool',
-    items: [
-      { id: 'sources', label: 'Data validity' },
-    ],
-  },
-  {
     label: 'Pricing',
     sectorId: 'pricing',
     mode: 'pricing',
@@ -238,7 +231,7 @@ export const VIEW_META = {
   'market-signals':        { title: 'MARKET SIGNALS' },
   'demand-general':        { title: 'INFRASTRUCTURE & OSS SIGNALS' },
   'openrouter-rankings':   { title: 'OPENROUTER MODEL RANKINGS' },
-  // Source-specific signal pages — reachable via direct navigation or Ask tab
+  // Source-specific signal pages
   pypi:              { title: 'PYPI / NPM' },
   github:            { title: 'GITHUB DEPENDENTS' },
   web:               { title: 'WEB TRAFFIC & STICKINESS' },
@@ -282,6 +275,7 @@ export const VIEW_META = {
   alerts:             { title: 'DAILY OPTIONS REPORT' },
   'price-return':     { title: 'PRICE RETURN AFTER EARNINGS' },
   fundamentals:       { title: 'FUNDAMENTALS — GROWTH & FREE CASH FLOW' },
+  reports:            { title: 'US TECH DAILY REPORT' },
   sentiment:          { title: 'MARKETS — SENTIMENT & OPTIONS' },
   'us-performance':   { title: 'ROTATION — US' },
   'hk-china-performance': { title: 'ROTATION — CHINA' },
@@ -314,7 +308,6 @@ export const VIEW_META = {
   'liquidity-technical': { title: 'LIQUIDITY — TECHNICAL' },
   'liquidity-turnover': { title: 'LIQUIDITY — TURNOVER' },
   transcripts:        { title: 'EARNINGS TRANSCRIPT AGENT' },
-  sources:            { title: 'DATA VALIDITY TERMINAL' },
 };
 
 /** Map sector overview view id → sectorId */

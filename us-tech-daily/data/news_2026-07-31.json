@@ -1,0 +1,1431 @@
+{
+  "session": "2026-07-31",
+  "pulled_at": "2026-08-02T20:53:52-04:00",
+  "scraper": "emailai/PDF_summarizer/ingest/news_fetcher.py (fetch_top_news)",
+  "window": {
+    "lookback_hours": 36,
+    "closes_at": "2026-08-01T09:30:00-04:00"
+  },
+  "counts": {
+    "articles": 120,
+    "in_window": 44,
+    "tickers_with_evidence": 10
+  },
+  "by_ticker": {
+    "NVDA": [
+      {
+        "title": "How Server CPUs Could Give AMD Stock a Big Boost After August 4",
+        "url": "https://finance.yahoo.com/markets/stocks/articles/server-cpus-could-amd-stock-130002075.html",
+        "source": "Yahoo Finance",
+        "published_at": "2026-08-01T13:00:02+00:00"
+      }
+    ],
+    "META": [
+      {
+        "title": "How Server CPUs Could Give AMD Stock a Big Boost After August 4",
+        "url": "https://finance.yahoo.com/markets/stocks/articles/server-cpus-could-amd-stock-130002075.html",
+        "source": "Yahoo Finance",
+        "published_at": "2026-08-01T13:00:02+00:00"
+      },
+      {
+        "title": "Ray Dalio warns this major asset will have the ‘worst return’ guaranteed — and you probably own a lot of it",
+        "url": "https://finance.yahoo.com/markets/currencies/articles/ray-dalio-warns-major-asset-125500604.html",
+        "source": "Yahoo Finance",
+        "published_at": "2026-08-01T12:55:00+00:00"
+      },
+      {
+        "title": "Massive US tungsten discovery could run into Nasa roadblock",
+        "url": "https://www.ft.com/content/6abf82dc-6b66-4fc7-8bf7-aa196dbd8e97?syn-25a6b1a6=1",
+        "source": "Financial Times Markets",
+        "published_at": "2026-08-01T12:00:05+00:00"
+      }
+    ],
+    "TSLA": [
+      {
+        "title": "How Server CPUs Could Give AMD Stock a Big Boost After August 4",
+        "url": "https://finance.yahoo.com/markets/stocks/articles/server-cpus-could-amd-stock-130002075.html",
+        "source": "Yahoo Finance",
+        "published_at": "2026-08-01T13:00:02+00:00"
+      }
+    ],
+    "AMD": [
+      {
+        "title": "How Server CPUs Could Give AMD Stock a Big Boost After August 4",
+        "url": "https://finance.yahoo.com/markets/stocks/articles/server-cpus-could-amd-stock-130002075.html",
+        "source": "Yahoo Finance",
+        "published_at": "2026-08-01T13:00:02+00:00"
+      }
+    ],
+    "INTC": [
+      {
+        "title": "How Server CPUs Could Give AMD Stock a Big Boost After August 4",
+        "url": "https://finance.yahoo.com/markets/stocks/articles/server-cpus-could-amd-stock-130002075.html",
+        "source": "Yahoo Finance",
+        "published_at": "2026-08-01T13:00:02+00:00"
+      },
+      {
+        "title": "OpenAI's Hugging Face hack confirmed months of AI cyber warnings: 'Pandora's box is open'",
+        "url": "https://www.cnbc.com/2026/08/01/open-ai-hugging-face-hack-cyber-warnings.html",
+        "source": "CNBC Top News",
+        "published_at": "2026-08-01T12:00:01+00:00"
+      },
+      {
+        "title": "Is A.I. ‘Scheming’ Against Us?",
+        "url": "https://www.nytimes.com/2026/08/01/business/ai-scheming.html",
+        "source": "NYTimes Business",
+        "published_at": "2026-08-01T09:01:46+00:00"
+      },
+      {
+        "title": "Leopold Aschenbrenner Built a Hot A.I. Hedge Fund. Then it Melted Down.",
+        "url": "https://www.nytimes.com/2026/07/31/business/situational-awareness-leopold-aschenbrenner.html",
+        "source": "NYTimes Business",
+        "published_at": "2026-07-31T22:18:59+00:00"
+      },
+      {
+        "title": "How Leopold Aschenbrenner built a $45 billion AI hedge fund — and lost most of it in days",
+        "url": "https://www.cnbc.com/2026/07/31/leopold-aschenbrenner-situational-awareness-fund-fire-sale.html",
+        "source": "CNBC Top News",
+        "published_at": "2026-07-31T20:19:03+00:00"
+      }
+    ],
+    "GOOGL": [
+      {
+        "title": "The 5 travel money traps to avoid, according to someone who has visited nearly 100 countries in the last decade",
+        "url": "https://finance.yahoo.com/small-business/articles/5-travel-money-traps-avoid-130000525.html",
+        "source": "Yahoo Finance",
+        "published_at": "2026-08-01T13:00:00+00:00"
+      }
+    ],
+    "AMZN": [
+      {
+        "title": "As Americans go direct with GLP-1 prescriptions, Walmart, Costco, Amazon will be big weight-loss winners",
+        "url": "https://www.cnbc.com/2026/08/01/glp-1-prescriptions-weight-loss-walmart-costco-amazon.html",
+        "source": "CNBC Top News",
+        "published_at": "2026-08-01T12:30:01+00:00"
+      },
+      {
+        "title": "OpenAI's Hugging Face hack confirmed months of AI cyber warnings: 'Pandora's box is open'",
+        "url": "https://www.cnbc.com/2026/08/01/open-ai-hugging-face-hack-cyber-warnings.html",
+        "source": "CNBC Top News",
+        "published_at": "2026-08-01T12:00:01+00:00"
+      }
+    ],
+    "AAPL": [
+      {
+        "title": "OpenAI's Hugging Face hack confirmed months of AI cyber warnings: 'Pandora's box is open'",
+        "url": "https://www.cnbc.com/2026/08/01/open-ai-hugging-face-hack-cyber-warnings.html",
+        "source": "CNBC Top News",
+        "published_at": "2026-08-01T12:00:01+00:00"
+      }
+    ],
+    "CRWV": [
+      {
+        "title": "How Leopold Aschenbrenner built a $45 billion AI hedge fund — and lost most of it in days",
+        "url": "https://www.cnbc.com/2026/07/31/leopold-aschenbrenner-situational-awareness-fund-fire-sale.html",
+        "source": "CNBC Top News",
+        "published_at": "2026-07-31T20:19:03+00:00"
+      }
+    ],
+    "000660.KS": [
+      {
+        "title": "How Leopold Aschenbrenner built a $45 billion AI hedge fund — and lost most of it in days",
+        "url": "https://www.cnbc.com/2026/07/31/leopold-aschenbrenner-situational-awareness-fund-fire-sale.html",
+        "source": "CNBC Top News",
+        "published_at": "2026-07-31T20:19:03+00:00"
+      }
+    ]
+  },
+  "articles": [
+    {
+      "title": "U.S., Japan confirm coordinated yen intervention, signal readiness for more",
+      "url": "https://www.cnbc.com/2026/08/03/yen-intervention-us-japan-trump-bessent-katayama.html",
+      "source": "CNBC Top News",
+      "published_at": "2026-08-03T00:42:06+00:00",
+      "in_window": false,
+      "summary": "Japan's finance ministry said Monday it conducted a coordinated yen-buying intervention with the U.S. Treasury on Friday.",
+      "body_excerpt": "Japan's Finance Ministry said it conducted a coordinated yen-buying intervention with the U.S. Treasury on Friday.\n\nJapan said it \"will not hesitate to conduct further coordinated interventions in the future\" and remains in close communication with the U.S. Treasury.\n\nU.S. Treasury Secretary Scott Bessent also confirmed the coordinated action in a statement, saying, \"Friday's coordinated foreign exchange actions countered disorderly yen movements.\"\n\nJapan's finance ministry said Monday it had conducted a coordinated yen-buying operation with the U.S. Treasury on Friday, marking a rare joint move by the two allies to stem sharp swings in the Japanese currency.\n\nTokyo signaled it was prepared to act again if needed, saying it \"will not hesitate to conduct further coordinated interventions in the future\" and remains in close communication with the U.S. Treasury . Finance Minister Satsuki Katayama also stressed that Japan \"remains attentive and in close communication with counterparts at U.S. Treasury.\"\n\nThe Japanese yen had hit 163.73 against the greenback on Thursday last week, and strengthened to 157.57 on Friday. It was trading at 157.70 per dollar on Monday. The yen's weakness has become an increasing concern for Tokyo, with the currency recently falling to its weakest level in roughly four decades against the dollar .\n\nThe ministry said the intervention was carried out \"in accordance with the 'Joint Statement of the Japanese and U.S. Finance Ministers'\" issued in September ",
+      "tickers": []
+    },
+    {
+      "title": "U.S. and Japan Coordinated to Help Stabilize the Yen",
+      "url": "https://www.nytimes.com/2026/08/02/business/us-japan-yen.html",
+      "source": "NYTimes Business",
+      "published_at": "2026-08-03T00:23:27+00:00",
+      "in_window": false,
+      "summary": "U.S. and Japanese officials confirmed on Sunday that the Treasury Department had moved last week to help the currency.",
+      "body_excerpt": "U.S. and Japanese officials confirmed on Sunday that the Treasury Department had moved last week to help the currency.",
+      "tickers": []
+    },
+    {
+      "title": "Oil drops over 4% after Trump calls off planned strike on Iran",
+      "url": "https://www.cnbc.com/2026/08/03/oil-prices-today-wti-brent-hormuz-trump-iran.html",
+      "source": "CNBC Top News",
+      "published_at": "2026-08-02T23:33:07+00:00",
+      "in_window": false,
+      "summary": "Oil prices fell on Monday as investors pared geopolitical risk premiums after U.S. President Donald Trump said he had called off a planned strike on Iran.",
+      "body_excerpt": "Oil prices fell after U.S. President Donald Trump said he had called off a planned strike on Iran.\n\n\"We have just been asked by Iran, and other Middle Eastern Countries, to hold off any attack in that the perimeters of a deal has been agreed to,\" Trump said in a Truth Social post.\n\nOil prices fell Monday in Asia trading as investors pared geopolitical risk premiums after U.S. President Donald Trump said he had called off a planned strike on Iran .\n\nWest Texas Intermediate futures for September delivery declined 4.5% to $80.89 per barrel. Brent crude futures for October delivery lost 4.4% to $84.10 a barrel.\n\nTrump said early Sunday that he had called off a planned strike on Iran after receiving a request from Tehran and other countries in the Middle East.\n\n\"We have just been asked by Iran, and other Middle Eastern Countries, to hold off any attack in that the perimeters of a deal has been agreed to,\" Trump said in a Truth Social post.\n\nHe said the proposed agreement would include the \"Immediate, Complete, and Total OPENING OF THE HORMUZ STRAIT, and an end to Iran's nuclear threat.\"\n\nTrump has reportedly been weighing another round of strikes on Iran amid fading prospects for a diplomatic resolution to the conflict, which began on Feb. 28.\n\nTehran responded cautiously to Trump's announcement.\n\n\"Although the enemy's recent statements are part of a psychological and cognitive warfare campaign, we consider every threat to be real and take it seriously,\" said Seyyed Majid Ibn Al-R",
+      "tickers": []
+    },
+    {
+      "title": "Oil Prices Plummet as Investors Digest Pause in Fighting in Iran War",
+      "url": "https://www.nytimes.com/2026/08/02/business/oil-prices-plummet-iran-war.html",
+      "source": "NYTimes Business",
+      "published_at": "2026-08-02T23:30:13+00:00",
+      "in_window": false,
+      "summary": "The markets’ moves were the first since President Trump said late Saturday that he had halted a U.S. assault on Iran.",
+      "body_excerpt": "The markets’ moves were the first since President Trump said late Saturday that he had halted a U.S. assault on Iran.",
+      "tickers": []
+    },
+    {
+      "title": "The Ultra-Rich Are Moving to Miami, and Want Their Money Managers There, Too",
+      "url": "https://www.nytimes.com/2026/08/02/business/family-offices-miami.html",
+      "source": "NYTimes Business",
+      "published_at": "2026-08-02T21:25:25+00:00",
+      "in_window": false,
+      "summary": "Tax incentives, among other benefits, have drawn the ultrawealthy to the city. And they need space for the firms that manage their money.",
+      "body_excerpt": "Tax incentives, among other benefits, have drawn the ultrawealthy to the city. And they need space for the firms that manage their money.",
+      "tickers": []
+    },
+    {
+      "title": "Here's my power rankings for the big 4 hyperscalers after this earnings season",
+      "url": "https://www.cnbc.com/2026/08/02/heres-my-power-rankings-for-the-big-4-hyperscalers-after-this-earnings-season.html",
+      "source": "CNBC Top News",
+      "published_at": "2026-08-02T20:27:44+00:00",
+      "in_window": false,
+      "summary": "In his Sunday column, Jim Cramer explains why Amazon is his favorite hyperscaler after second-quarter earnings season.",
+      "body_excerpt": "In his Sunday column, Jim Cramer explains why Amazon is his favorite hyperscaler after second-quarter earnings season.",
+      "tickers": [
+        "AMZN"
+      ]
+    },
+    {
+      "title": "For a Day, Google Made It Easy to Spoof Satellite Imagery",
+      "url": "https://www.nytimes.com/2026/08/02/technology/google-earth-ai-satellite-images.html",
+      "source": "NYTimes Business",
+      "published_at": "2026-08-02T19:25:56+00:00",
+      "in_window": false,
+      "summary": "A new Google Earth tool allowed the creation of A.I. deepfake maps. The tech giant quickly pulled it back after a backlash and concerns about disinformation risks.",
+      "body_excerpt": "A new Google Earth tool allowed the creation of A.I. deepfake maps. The tech giant quickly pulled it back after a backlash and concerns about disinformation risks.",
+      "tickers": [
+        "GOOGL"
+      ]
+    },
+    {
+      "title": "We’re in our 60s with $1.5 million. Would a trust be more effective than a will to prevent conflict among our heirs?",
+      "url": "https://www.marketwatch.com/story/we-already-have-wills-were-in-our-60s-with-1-5-million-how-do-we-prevent-family-drama-among-our-heirs-bf7b0eb1",
+      "source": "MarketWatch Top Stories",
+      "published_at": "2026-08-02T17:00:00+00:00",
+      "in_window": false,
+      "summary": "“I realize that probate can be lengthy, public and expensive.”",
+      "body_excerpt": "“I realize that probate can be lengthy, public and expensive.”",
+      "tickers": []
+    },
+    {
+      "title": "Looking at just the odds isn’t enough. How traders gain an edge on prediction markets",
+      "url": "https://www.cnbc.com/2026/08/01/traders-go-full-time-on-prediction-markets-using-ai-bots-and-antennas.html",
+      "source": "CNBC Top News",
+      "published_at": "2026-08-02T16:54:18+00:00",
+      "in_window": false,
+      "summary": "Gaining an edge on prediction markets requires speed and skills beyond just reading the odds on platforms like Kalshi and Polymarket.",
+      "body_excerpt": "Between Polymarket and Kalshi alone, there can be over 100,000 active markets. That's too much for one prediction market trader to juggle on her own.\n\nFrom using AI bots to purchasing an antenna, traders rely on tools and peculiar methods to compete against others. It's enough motivation for some to trade on the platforms full-time.\n\nIt's been less than a year since 26-year-old Logan Sudeith became a full-time trader on prediction markets and in one month alone he managed to collect $250,000.\n\nThat doesn't happen from simply checking the odds of an event contract on the platform, he said. A clever trade requires tools.\n\n\"For the Super Bowl I bought an antenna, so that I could watch the commercials,\" he said, noting online streaming services could face lags. Sudeith was able to quickly trade on what companies would show ads during the largest televised U.S. sporting event, or what would be said during those commercials. \"I wanted to have the lowest latency access to those.\"\n\nBetween Polymarket and Kalshi alone, there can be more than 100,000 active markets. That's too much for traders like Sudeith to juggle on their own. And that's why they don't.\n\nCNBC spoke to several active traders on prediction market exchanges about how they gain an edge. From using AI bots to purchasing an antenna, traders rely on tools and peculiar methods to compete against others, and it's enough motivation for some to trade on the platforms full-time.\n\nAnd while hedge funds and large institutional tr",
+      "tickers": []
+    },
+    {
+      "title": "‘Spider-Man: Brand New Day’ Heads for $875 Million Opening at Global Box Office",
+      "url": "https://www.nytimes.com/2026/08/01/business/media/spider-man-box-office-superhero.html",
+      "source": "NYTimes Business",
+      "published_at": "2026-08-02T16:48:04+00:00",
+      "in_window": false,
+      "summary": "The Sony Pictures movie, the 11th big-budget Spider-Man blockbuster since 2002, was on pace to have one of the biggest domestic first weekends ever.",
+      "body_excerpt": "The Sony Pictures movie, the 11th big-budget Spider-Man blockbuster since 2002, was on pace to have one of the biggest domestic first weekends ever.",
+      "tickers": []
+    },
+    {
+      "title": "Warren Buffett keeps pointing at the same ETF for a reason",
+      "url": "https://finance.yahoo.com/markets/stocks/articles/warren-buffett-keeps-pointing-same-160300409.html",
+      "source": "Yahoo Finance",
+      "published_at": "2026-08-02T16:03:00+00:00",
+      "in_window": false,
+      "summary": "",
+      "body_excerpt": "Most people assume that the world's most successful investors have some edge that regular people can't access. Better information. Smarter models. A network of insiders who call before the news breaks. Warren Buffett spent 60 years proving that assumption wrong, building one of the greatest fortunes in history through patience and simplicity rather than complexity.\n\nAnd yet when people ask him what they should do with their money, his answer has been the same for decades. It's not a stock tip. It's not a sector call. It's an ETF that anyone can buy for three cents on every hundred dollars invested.\n\nBuffett has made his position clear in shareholder letters, interviews, and annual meetings going back years. In his 2016 shareholder letter, he wrote: \"My regular recommendation has been a low-cost S&P 500 index fund .\" At Berkshire's 2021 annual meeting, he said: \"In my view, for most people, I think that the best thing to do is buy an S&P 500 index fund.\"\n\nThe most direct version of the advice came in his 2013 letter to Berkshire Hathaway shareholders, where he described the instructions he had written into his will for the money he would leave to his wife: \"My advice to the trustee could not be more simple: Put 10% of the cash in short-term government bonds and 90% in a very low-cost S&P 500 index fund. (I suggest Vanguard's.) I believe the trust's long-term results from this policy will be superior to those attained by most investors, whether pension funds, institutions or in",
+      "tickers": [
+        "AAPL",
+        "MSFT",
+        "GOOGL",
+        "AMZN",
+        "NVDA"
+      ]
+    },
+    {
+      "title": "America’s biggest companies report ‘rock solid’ profits as consumers face higher costs",
+      "url": "https://www.ft.com/content/b4f150ea-9ea3-4bb4-b1e0-014cf1f0df26?syn-25a6b1a6=1",
+      "source": "Financial Times Markets",
+      "published_at": "2026-08-02T16:00:06+00:00",
+      "in_window": false,
+      "summary": "S&P 500 groups on track for strongest earnings in five years",
+      "body_excerpt": "S&P 500 groups on track for strongest earnings in five years",
+      "tickers": []
+    },
+    {
+      "title": "My girlfriend is 62. Can she claim her late husband’s full Social Security benefit — or does she have to wait?",
+      "url": "https://www.marketwatch.com/story/my-girlfriend-is-62-can-she-claim-her-late-husbands-full-social-security-benefit-or-does-she-have-to-wait-315c0fa1",
+      "source": "MarketWatch Top Stories",
+      "published_at": "2026-08-02T16:00:00+00:00",
+      "in_window": false,
+      "summary": "“Her husband passed away 10 years ago. They had been married for more than 20 years.”",
+      "body_excerpt": "“Her husband passed away 10 years ago. They had been married for more than 20 years.”",
+      "tickers": []
+    },
+    {
+      "title": "Here’s what’s worth streaming in August 2026 on Netflix, Hulu, HBO Max and more",
+      "url": "https://www.marketwatch.com/story/heres-whats-worth-streaming-in-august-2026-on-netflix-hulu-hbo-max-and-more-21b78a08",
+      "source": "MarketWatch Top Stories",
+      "published_at": "2026-08-02T15:19:00+00:00",
+      "in_window": false,
+      "summary": "Turn off your brain and enjoy new seasons of Apple’s ‘Ted Lasso,’ Amazon’s ‘Reacher,’ Netflix’s ‘Outer Banks’ and much more",
+      "body_excerpt": "Turn off your brain and enjoy new seasons of Apple’s ‘Ted Lasso,’ Amazon’s ‘Reacher,’ Netflix’s ‘Outer Banks’ and much more",
+      "tickers": [
+        "AAPL",
+        "AMZN"
+      ]
+    },
+    {
+      "title": "Why people are dropping out of the workforce and not looking for new jobs: 'The market wore me down'",
+      "url": "https://www.cnbc.com/2026/08/02/why-people-are-dropping-out-of-the-workforce-and-not-looking-for-new-jobs-the-market-wore-me-down.html",
+      "source": "CNBC Top News",
+      "published_at": "2026-08-02T14:30:01+00:00",
+      "in_window": false,
+      "summary": "Candidates giving up in the face of relentless job searches could be part of the reason behind recent declines in the labor force participation rate.",
+      "body_excerpt": "Work 'Doomjobbing’ can hurt your job search and worsen anxiety, experts say: Why it happens and how to avoid it\n\nWork Barriers to U.S. jobs grow for international students: The 'American dream ... is collapsing'\n\nWork 34-year-old competed on 'Survivor' while building her business: It 'truly was a reset'\n\nThe Next Dream They're living the new American Dream—and doing it on less than $100,000 a year\n\nLeadership Harvard expert: Ambitious people often make this career mistake\n\nAfter six months of scouring job listings and sending off resumes, Dan Coda's job search came to an end. He didn't find the technical program or project management job he wanted; he just stopped looking altogether.\n\nStarting around December 2025, when he was laid off from his previous role, Coda says he spent more than 300 hours job hunting, submitting dozens of applications, hearing back about 15 potential roles and going through multiple rounds of interviews to no avail. By June, Coda says he was done with the grueling effort of looking for work.\n\n\"The market wore me down,\" the 40-year-old from Durham, North Carolina, tells CNBC Make It. \"I was hitting wall after wall after wall and not getting anywhere.\"\n\nThis year, the number of announced layoffs in January reached a level not seen since 2009, during the Great Recession, according to data from global outplacement firm Challenger, Gray & Christmas. \"The candidate pool is absolutely flooded,\" Coda says, citing mass layoffs pushing thousands of affected wo",
+      "tickers": []
+    },
+    {
+      "title": "How a Top Law Firm Went From Standing Up to Trump to Bending the Knee",
+      "url": "https://www.nytimes.com/2026/08/02/us/politics/paul-weiss-trump.html",
+      "source": "NYTimes Business",
+      "published_at": "2026-08-02T14:03:24+00:00",
+      "in_window": false,
+      "summary": "Paul Weiss was a progressive stalwart for decades and led the legal resistance against President Trump in his first term. Then it surrendered without a fight. This is the inside story of its transformation.",
+      "body_excerpt": "Paul Weiss was a progressive stalwart for decades and led the legal resistance against President Trump in his first term. Then it surrendered without a fight. This is the inside story of its transformation.",
+      "tickers": []
+    },
+    {
+      "title": "S&P 500 profit growth is getting even wilder as Amazon makes its mark",
+      "url": "https://www.marketwatch.com/story/s-p-500-profit-growth-is-getting-even-wilder-as-amazon-makes-its-mark-5ddf2082",
+      "source": "MarketWatch Top Stories",
+      "published_at": "2026-08-02T14:00:00+00:00",
+      "in_window": false,
+      "summary": "Amazon is the latest Big Tech company to report abnormally large earnings growth, thanks to paper gains on Anthropic investments.",
+      "body_excerpt": "Amazon is the latest Big Tech company to report abnormally large earnings growth, thanks to paper gains on Anthropic investments.",
+      "tickers": [
+        "AMZN"
+      ]
+    },
+    {
+      "title": "Goldman traders are on pace for a record year. A close-up look at how they're doing it",
+      "url": "https://www.cnbc.com/2026/08/01/goldman-traders-are-on-pace-for-a-record-year-a-close-up-look-at-how-theyre-doing-it.html",
+      "source": "CNBC Top News",
+      "published_at": "2026-08-02T13:52:33+00:00",
+      "in_window": false,
+      "summary": "In a new interview with CNBC, a Goldman exec breaks down what's driving stocks, where markets are headed, and how the bank’s equities desk fuels its growth.",
+      "body_excerpt": "In a new interview with CNBC, a Goldman exec breaks down what's driving stocks, where markets are headed, and how the bank’s equities desk fuels its growth.",
+      "tickers": []
+    },
+    {
+      "title": "States expand student loan options as new federal borrowing caps take effect — but they come with trade-offs",
+      "url": "https://www.cnbc.com/2026/08/02/state-student-loans.html",
+      "source": "CNBC Top News",
+      "published_at": "2026-08-02T13:30:01+00:00",
+      "in_window": false,
+      "summary": "Some states — including Connecticut, Minnesota and Rhode Island — have expanded their own student loan programs amid new limits on federal borrowing.",
+      "body_excerpt": "Many states have moved to expand their own student loan programs in response to new limits on federal borrowing from President Donald Trump's \"big beautiful bill.\"\n\n\"While state loans can be an important option for some borrowers, students should understand the trade-offs and risks before assuming they're equivalent to federal loans,\" said Tiara Moultrie, a fellow at The Century Foundation, a left-leaning think tank.\n\nThe interest rates on state student loans can exceed 10%, and the debt is excluded from federal protections and relief options, consumer advocates said.\n\nAs borrowers come up against new federal limits on student debt, they may encounter financing options from an unexpected source: their state.\n\nBut don't assume these government-backed loans are a close substitute for federal student loans . Consumer advocates say state student loans are more akin to private student loans , and should be approached with caution.\n\n\"While state loans can be an important option for some borrowers, students should understand the trade-offs and risks before assuming they're equivalent to federal loans,\" said Tiara Moultrie, a fellow at The Century Foundation, a left-leaning think tank. \"The government label can obscure the fact that state loans function much more like private credit products.\"\n\nSome high earners will soon owe taxes on years of deferred capital gains\n\nDoes the 4% retirement withdrawal rule still work? How to best maximize income\n\nFed leaves rates unchanged in July. He",
+      "tickers": []
+    },
+    {
+      "title": "If Social Security’s funding crisis is the elephant in the room, this is the mouse everyone has overlooked. You have been warned.",
+      "url": "https://www.marketwatch.com/story/if-social-securitys-funding-crisis-is-the-elephant-in-the-room-this-is-the-mouse-everyone-has-overlooked-you-have-been-warned-b95c450d",
+      "source": "MarketWatch Top Stories",
+      "published_at": "2026-08-02T13:30:00+00:00",
+      "in_window": false,
+      "summary": "“Delaying Social Security until 70 results in an increased monthly payment — and that comes with proportionally higher cost-of-living adjustments.”",
+      "body_excerpt": "“Delaying Social Security until 70 results in an increased monthly payment — and that comes with proportionally higher cost-of-living adjustments.”",
+      "tickers": []
+    },
+    {
+      "title": "Investors scored on Iran war's oil market boom. Staying long the trade will get trickier",
+      "url": "https://www.cnbc.com/2026/08/02/oil-prices-iran-war-energy-market.html",
+      "source": "CNBC Top News",
+      "published_at": "2026-08-02T13:00:01+00:00",
+      "in_window": false,
+      "summary": "Oil price volatility caused by U.S.-Iran war created big market winners, but for buy-and-hold investors, there are better long-term energy themes to monitor.",
+      "body_excerpt": "Blowout earnings from Exxon Mobil, Chevron and Valero Energy this past week showed how the U.S.-Iran war created massive short-term profits in oil.\n\nETFs targeting oil refiners and crude oil price volatility were among big winners over the past six months.\n\nBut investing experts caution that geopolitics is a risky trade to bank on and for long-term investors there are other energy themes to consider.\n\nThe past week's earnings from the energy sector demonstrated just how much the U.S.-Iran war has contributed to the short-term performance of major players in the oil market — and to the portfolio gains of investors who targeted stock opportunities in the sector. The sums are massive, but sitting on those gains for too long could be a mistake, according to investing experts.\n\nExxonMobil and Chevron reported quarterly profits on Friday that surged due to the war's impact on oil prices, with Exxon's profits doubling year-over-year to $14.5 billion and Chevron's net income increasing close to 400%.\n\n\"We're kind of firing on all cylinders, which is good, because the world needs it,\" CEO Mike Wirth told CNBC's Becky Quick on Friday.\n\nFrom April through June, U.S. crude oil futures averaged over $92, a quarterly increase of 27%.\n\nThe action in refiners has been even stronger. Valero Energy 's earnings were up over 400% for the quarter compared to last year in world that Valero estimates is still five million barrels short per day of global refining capacity and over 100 million barrel",
+      "tickers": []
+    },
+    {
+      "title": "How Apple’s cheap MacBook Neo sparked a war in budget laptops",
+      "url": "https://www.marketwatch.com/story/how-apples-cheap-macbook-neo-sparked-a-war-in-budget-laptops-8fbaf839",
+      "source": "MarketWatch Top Stories",
+      "published_at": "2026-08-02T13:00:00+00:00",
+      "in_window": false,
+      "summary": "Apple’s gamble on the budget MacBook Neo is paying off and forcing rivals to rethink their offerings.",
+      "body_excerpt": "Apple’s gamble on the budget MacBook Neo is paying off and forcing rivals to rethink their offerings.",
+      "tickers": [
+        "AAPL"
+      ]
+    },
+    {
+      "title": "Top Wall Street analysts are bullish on these 3 dividend stocks for passive income",
+      "url": "https://www.cnbc.com/2026/08/02/top-analysts-are-bullish-on-these-dividend-stocks-for-passive-income-.html",
+      "source": "CNBC Top News",
+      "published_at": "2026-08-02T12:01:00+00:00",
+      "in_window": false,
+      "summary": "Tracking top analysts can help investors shortlist attractive dividend stocks, as these experts provide useful insights.",
+      "body_excerpt": "The uncertainty in the Middle East and concerns about the durability of the artificial intelligence boom and high spending continue to weigh on investor sentiment. Investors can consider strengthening their portfolios by adding dividend stocks.\n\nTracking top Wall Street analysts can help investors shortlist attractive dividend stocks, as these experts provide useful insights after thorough analysis of a company's financials and growth prospects.\n\nHere are three dividend-paying stocks that are highlighted by Wall Street's top pros, as tracked by TipRanks, a platform that ranks analysts based on their past performance.\n\nThis week's first dividend pick is natural gas producer Expand Energy , which recently announced the $1.25 billion acquisition of Twin Eagle Holdings, a private asset-backed natural gas marketing and optimization business. The deal is expected to accelerate EXE 's marketing and commercial goals.\n\nMeanwhile, Expand Energy impressed investors with solid second-quarter results. It repurchased shares worth $530 million in Q2 2026 and announced an additional $1 billion of buyback authorization. Expand declared a dividend of nearly 58 cents per share, payable on Sept. 3. At an annualized dividend per share of $2.30, EXE stock offers a dividend yield of 2.5%.\n\nFollowing the Q2 print, Wolfe Research analyst Doug Leggate reiterated a buy rating on EXE stock and raised his price target to $114 from $110. The five-star analyst noted that Expand delivered market-beating adj",
+      "tickers": [
+        "INTC"
+      ]
+    },
+    {
+      "title": "Walter insurers paid millions of dollars to credit rating provider Egan-Jones",
+      "url": "https://www.ft.com/content/18ccb15a-f8ed-41ba-a948-7c62cd757274?syn-25a6b1a6=1",
+      "source": "Financial Times Markets",
+      "published_at": "2026-08-02T12:00:05+00:00",
+      "in_window": false,
+      "summary": "Billionaire investor faces wide-ranging probe into the private credit holdings of insurers he controls",
+      "body_excerpt": "Billionaire investor faces wide-ranging probe into the private credit holdings of insurers he controls",
+      "tickers": []
+    },
+    {
+      "title": "Investors are rotating into financial stocks. The Fed’s next move could determine how far the rally runs.",
+      "url": "https://www.marketwatch.com/story/investors-are-rotating-into-financial-stocks-the-feds-next-move-could-determine-how-far-the-rally-runs-662c63df",
+      "source": "MarketWatch Top Stories",
+      "published_at": "2026-08-02T12:00:00+00:00",
+      "in_window": false,
+      "summary": "Financial stocks have been among the market’s best performers this month. The Fed’s next move, however, may determine how much further the rotation can run.",
+      "body_excerpt": "Financial stocks have been among the market’s best performers this month. The Fed’s next move, however, may determine how much further the rotation can run.",
+      "tickers": []
+    },
+    {
+      "title": "Financial stocks are crushing it. These charts show why the ‘breakout’ rally may have just begun.",
+      "url": "https://www.marketwatch.com/story/financial-stocks-are-crushing-it-these-charts-show-why-the-breakout-rally-may-have-just-begun-6db3cc12",
+      "source": "MarketWatch Top Stories",
+      "published_at": "2026-08-02T12:00:00+00:00",
+      "in_window": false,
+      "summary": "The breakout to record highs by bank stocks, plus their strong earnings and favorable valuations, suggest more good times ahead for the financial sector.",
+      "body_excerpt": "The breakout to record highs by bank stocks, plus their strong earnings and favorable valuations, suggest more good times ahead for the financial sector.",
+      "tickers": []
+    },
+    {
+      "title": "Nanit and Other Baby-Tracking Start-Ups Eye Collecting Even More Data",
+      "url": "https://www.nytimes.com/2026/08/02/business/smart-baby-monitors-nanit-owlet.html",
+      "source": "NYTimes Business",
+      "published_at": "2026-08-02T11:29:20+00:00",
+      "in_window": false,
+      "summary": "Nanit and other start-ups want to track your children through the night — and soon, for much longer than that.",
+      "body_excerpt": "Nanit and other start-ups want to track your children through the night — and soon, for much longer than that.",
+      "tickers": []
+    },
+    {
+      "title": "Will July’s US employment data prompt a rethink on rates?",
+      "url": "https://www.ft.com/content/b3042c38-c38c-48f9-aa8c-99901ed440a9?syn-25a6b1a6=1",
+      "source": "Financial Times Markets",
+      "published_at": "2026-08-02T11:00:05+00:00",
+      "in_window": false,
+      "summary": "Market Questions is the FT’s guide to the week ahead",
+      "body_excerpt": "Market Questions is the FT’s guide to the week ahead",
+      "tickers": []
+    },
+    {
+      "title": "Morgan Stanley’s IPO after-party: a wealth management bonanza",
+      "url": "https://www.ft.com/content/3f651fa0-3362-4a16-9ac1-992291c5f68a?syn-25a6b1a6=1",
+      "source": "Financial Times Markets",
+      "published_at": "2026-08-02T10:00:05+00:00",
+      "in_window": false,
+      "summary": "Bank’s underwriting of SpaceX and other new issues generates $74bn second-quarter haul in wealth management assets",
+      "body_excerpt": "Bank’s underwriting of SpaceX and other new issues generates $74bn second-quarter haul in wealth management assets",
+      "tickers": []
+    },
+    {
+      "title": "13-Year-Olds Have Problems at Work, Too",
+      "url": "https://www.nytimes.com/2026/08/02/business/pool-problems.html",
+      "source": "NYTimes Business",
+      "published_at": "2026-08-02T09:01:44+00:00",
+      "in_window": false,
+      "summary": "What to do when the boys at the pool aren’t pulling their weight.",
+      "body_excerpt": "What to do when the boys at the pool aren’t pulling their weight.",
+      "tickers": []
+    },
+    {
+      "title": "Trump, Paul Weiss and the Capitulation of Big Law: 5 Takeaways",
+      "url": "https://www.nytimes.com/2026/08/02/us/politics/trump-paul-weiss-takeaways.html",
+      "source": "NYTimes Business",
+      "published_at": "2026-08-02T09:01:05+00:00",
+      "in_window": false,
+      "summary": "The law firm Paul Weiss led the legal resistance against President Trump. Then it led a sudden retreat across the legal industry. A Times investigation examined how it caved to White House pressure.",
+      "body_excerpt": "The law firm Paul Weiss led the legal resistance against President Trump. Then it led a sudden retreat across the legal industry. A Times investigation examined how it caved to White House pressure.",
+      "tickers": []
+    },
+    {
+      "title": "More Young College Graduates Are Living At Home. Is That a Bad Thing?",
+      "url": "https://www.nytimes.com/2026/08/02/business/college-graduates-living-at-home.html",
+      "source": "NYTimes Business",
+      "published_at": "2026-08-02T09:00:54+00:00",
+      "in_window": false,
+      "summary": "More young adults are living with their parents. The development suggests that they face a weak job market, but also that fewer face stigma in returning to the roost.",
+      "body_excerpt": "More young adults are living with their parents. The development suggests that they face a weak job market, but also that fewer face stigma in returning to the roost.",
+      "tickers": []
+    },
+    {
+      "title": "Who needs junior markets like Aim anyway?",
+      "url": "https://www.ft.com/content/fbc26742-c2a8-4509-ad13-8ad61139f41f?syn-25a6b1a6=1",
+      "source": "Financial Times Markets",
+      "published_at": "2026-08-02T04:00:12+00:00",
+      "in_window": false,
+      "summary": "The London Stock Exchange is trying to stem Aim’s decline by streamlining rules to cut costs and make capital-raising easier",
+      "body_excerpt": "The London Stock Exchange is trying to stem Aim’s decline by streamlining rules to cut costs and make capital-raising easier",
+      "tickers": []
+    },
+    {
+      "title": "Australian farmers in trade dispute over pineapple import plan",
+      "url": "https://www.ft.com/content/89450629-32d9-495e-b287-42156e1aa68a?syn-25a6b1a6=1",
+      "source": "Financial Times Markets",
+      "published_at": "2026-08-02T02:25:49+00:00",
+      "in_window": false,
+      "summary": "Growers say allowing Indian and Indonesian fruit in poses a wider biosecurity threat",
+      "body_excerpt": "Growers say allowing Indian and Indonesian fruit in poses a wider biosecurity threat",
+      "tickers": [
+        "AAPL"
+      ]
+    },
+    {
+      "title": "Microsoft’s AI Cybersecurity Push Could Become a Major Growth Driver for MSFT Stock",
+      "url": "https://finance.yahoo.com/technology/ai/articles/microsoft-ai-cybersecurity-push-could-160912618.html",
+      "source": "Yahoo Finance",
+      "published_at": "2026-08-01T16:09:12+00:00",
+      "in_window": false,
+      "summary": "",
+      "body_excerpt": "The world is still not ready for cyberattacks. Cities, hospitals, schools, businesses, and even the U.S. government continue to face mounting cybersecurity risks, with artificial intelligence (AI) making security issues far more complicated. After all, as Palo Alto Networks (PANW) notes, \"AI enables threat actors to move from initial access to exfiltration in minutes, effortlessly bypassing traditional defenses.\"\n\nIn response, Microsoft (MSFT) recently unveiled its first cybersecurity AI model: MAI-Cyber-1-Flash. The company also introduced Project Perception, an AI-powered security platform designed to help organizations detect, analyze, and respond to cyber threats more quickly.\n\nCathie Wood Doubles Down on Tesla and SpaceX as Wall Street Turns Cautious\n\nCathie Wood Doubles Down on Tesla and SpaceX as Wall Street Turns Cautious\n\nWhy BlackRock Is Betting Big on Ondas Stock Now\n\nWhy BlackRock Is Betting Big on Ondas Stock Now\n\nHoping for Lower Prices at the Gas Pump? After Exxon Doubles Profits, CEO Darren Woods Says 'I Wouldn't Hold My Breath.'\n\nHoping for Lower Prices at the Gas Pump? After Exxon Doubles Profits, CEO Darren Woods Says 'I Wouldn't Hold My Breath.'\n\nStop Missing Market Moves: Get the FREE Barchart Brief – your midday dose of stock movers, trending sectors, and actionable trade ideas, delivered right to your inbox. Sign Up Now!\n\nStop Missing Market Moves: Get the FREE Barchart Brief – your midday dose of stock movers, trending sectors, and actionable trade ide",
+      "tickers": [
+        "MSFT",
+        "TSLA",
+        "INTC",
+        "DELL"
+      ]
+    },
+    {
+      "title": "Visa Stock Looks Attractive After Layoffs, Strong Earnings",
+      "url": "https://finance.yahoo.com/markets/stocks/articles/visa-stock-looks-attractive-layoffs-153510757.html",
+      "source": "Yahoo Finance",
+      "published_at": "2026-08-01T15:35:10+00:00",
+      "in_window": false,
+      "summary": "",
+      "body_excerpt": "Visa (V) is reportedly laying off 7% of its workforce and plans to use the resulting savings to invest in business areas that it believes have strong potential. Given the impressive success of the company's \"value-added\" initiatives last quarter, Visa's upcoming investments will likely yield favorable results in the longer term.\n\nImportantly, Visa delivered solid fiscal third-quarter financial results on July 28. The recent layoffs are also likely to boost its profit margins and bottom line to some extent. Finally, the valuation of V stock appears reasonably attractive, given the company's growth.\n\nCathie Wood Doubles Down on Tesla and SpaceX as Wall Street Turns Cautious\n\nCathie Wood Doubles Down on Tesla and SpaceX as Wall Street Turns Cautious\n\nWhy BlackRock Is Betting Big on Ondas Stock Now\n\nWhy BlackRock Is Betting Big on Ondas Stock Now\n\nHoping for Lower Prices at the Gas Pump? After Exxon Doubles Profits, CEO Darren Woods Says 'I Wouldn't Hold My Breath.'\n\nHoping for Lower Prices at the Gas Pump? After Exxon Doubles Profits, CEO Darren Woods Says 'I Wouldn't Hold My Breath.'\n\nGet exclusive insights with the FREE Barchart Brief newsletter. Subscribe now for quick, incisive midday market analysis you won't find anywhere else.\n\nGet exclusive insights with the FREE Barchart Brief newsletter. Subscribe now for quick, incisive midday market analysis you won't find anywhere else.\n\nWith these points in mind, both value investors and conservative investors may want to consider ",
+      "tickers": [
+        "TSLA",
+        "INTC"
+      ]
+    },
+    {
+      "title": "Google Piles On Off-Balance-Sheet Risk to Fuel Its AI Chip Push",
+      "url": "https://finance.yahoo.com/technology/ai/articles/google-piles-off-balance-sheet-153002569.html",
+      "source": "Yahoo Finance",
+      "published_at": "2026-08-01T15:30:02+00:00",
+      "in_window": false,
+      "summary": "",
+      "body_excerpt": "Wall Street has spent the past two years obsessing over the hundreds of billions of dollars Big Tech is pouring into artificial intelligence. But an even bigger story may be unfolding off the balance sheet.\n\nA recent Nikkei investigation found that the four largest hyperscale cloud providers have quietly accumulated roughly $1.65 trillion in off-balance-sheet obligations tied largely to data centers, power infrastructure, and long-term lease commitments. These aren't traditional loans investors see on a balance sheet. Instead, they're contractual guarantees and lease obligations designed to accelerate AI expansion while keeping reported debt lower than it otherwise would be.\n\nCathie Wood Doubles Down on Tesla and SpaceX as Wall Street Turns Cautious\n\nCathie Wood Doubles Down on Tesla and SpaceX as Wall Street Turns Cautious\n\nWhy BlackRock Is Betting Big on Ondas Stock Now\n\nWhy BlackRock Is Betting Big on Ondas Stock Now\n\nHoping for Lower Prices at the Gas Pump? After Exxon Doubles Profits, CEO Darren Woods Says 'I Wouldn't Hold My Breath.'\n\nHoping for Lower Prices at the Gas Pump? After Exxon Doubles Profits, CEO Darren Woods Says 'I Wouldn't Hold My Breath.'\n\nTired of missing midday reversals? The FREE Barchart Brief newsletter keeps you in the know. Sign up now!\n\nTired of missing midday reversals? The FREE Barchart Brief newsletter keeps you in the know. Sign up now!\n\nAlphabet's (GOOG) (GOOGL) Google is now providing one of the clearest examples of how this financing model ",
+      "tickers": [
+        "GOOGL",
+        "NVDA",
+        "TSLA",
+        "INTC"
+      ]
+    },
+    {
+      "title": "US Treasury undertakes historic intervention in yen market",
+      "url": "https://www.ft.com/content/0f9b2fe7-bde4-4f5f-b49e-93ccb5da9ea8?syn-25a6b1a6=1",
+      "source": "Financial Times Markets",
+      "published_at": "2026-08-01T15:26:31+00:00",
+      "in_window": false,
+      "summary": "New York Fed sells euros to buy yen following recent speculation that Tokyo intervened to support Japan’s currency",
+      "body_excerpt": "New York Fed sells euros to buy yen following recent speculation that Tokyo intervened to support Japan’s currency",
+      "tickers": []
+    },
+    {
+      "title": "GE Aerospace, AI Play Lead Five Stocks Near Buy Points",
+      "url": "https://www.investors.com/news/ge-aerospace-ai-play-netapp-lead-5-stocks-near-buy-points/?src=A00220&yptr=yahoo",
+      "source": "Yahoo Finance",
+      "published_at": "2026-08-01T15:22:10+00:00",
+      "in_window": false,
+      "summary": "",
+      "body_excerpt": "GE Aerospace and NetApp, whose enterprise data storage has made it an AI infrastructure play, lead this weekend's list of five stocks near buy points, which are showing relative strength in a tricky market. Joining GE and NTAP is oncology diagnostics firm Guardant Health. Two on-the-water stocks, fast-growing ocean and river cruise line Viking Holdings (VIK) and Greek shipping company Navios Maritime…\n\nCopyright ©2026 Investor's Business Daily, LLC. All rights reserved. 87990cbe856818d5eddac44c7b1cdeb8",
+      "tickers": []
+    },
+    {
+      "title": "Hoping for Lower Prices at the Gas Pump? After Exxon Doubles Profits, CEO Darren Woods Says ‘I Wouldn’t Hold My Breath.’",
+      "url": "https://finance.yahoo.com/energy/articles/hoping-lower-prices-gas-pump-151502283.html",
+      "source": "Yahoo Finance",
+      "published_at": "2026-08-01T15:15:02+00:00",
+      "in_window": false,
+      "summary": "",
+      "body_excerpt": "In their latest quarterly earnings reports, oil majors ExxonMobil (XOM) and Chevron (CVX) both reported staggering profit growth.\n\nDuring Q2 of 2026, profits at Exxon more than doubled, while Chevron's profits more than quadrupled.\n\nStop Missing Market Moves: Get the FREE Barchart Brief – your midday dose of stock movers, trending sectors, and actionable trade ideas, delivered right to your inbox. Sign Up Now!\n\nStop Missing Market Moves: Get the FREE Barchart Brief – your midday dose of stock movers, trending sectors, and actionable trade ideas, delivered right to your inbox. Sign Up Now!\n\nBut while oil companies are raking in profits, ExxonMobil CEO Darren Woods warns that US consumers – who have been feeling the pinch of gas prices hovering around $4 per gallon – shouldn't anticipate relief at the pump anytime soon.\n\n\"I wouldn't hold my breath here in the short term for that,\" said Woods in a post-earnings conversation with CNBC.\n\nEven though crude oil prices have retreated from their peak of $126 per barrel earlier in the spring to around $85-$90 per barrel, gasoline prices across the United States remain stubbornly above $4 per gallon.\n\nDuring the July 31 interview, Woods explained that there is a \"disconnect\" between crude oil prices and what consumers are paying at the gasoline pump, and that this gap is unlikely to close quickly.\n\nThe core of his argument centers on global refinery constraints rather than the cost of raw crude itself being the primary driver of elevate",
+      "tickers": []
+    },
+    {
+      "title": "Why Investors Shouldn’t Sweat the Dip in Qualcomm’s Handset Revenue, According to Experts",
+      "url": "https://finance.yahoo.com/markets/stocks/articles/why-investors-shouldn-t-sweat-150002057.html",
+      "source": "Yahoo Finance",
+      "published_at": "2026-08-01T15:00:02+00:00",
+      "in_window": false,
+      "summary": "",
+      "body_excerpt": "The earnings season is in full swing, with tech giants unveiling their quarterly results one after another. This time, however, the market has been highly selective. Even companies posting blockbuster earnings have struggled to impress investors as concerns over heavy artificial intelligence (AI) spending and sky-high expectations continue to weigh on sentiment. Qualcomm (QCOM) became the latest casualty after reporting its fiscal 2026 third-quarter results on July 29.\n\nWhile the chipmaker posted another solid quarter overall, its earnings report revealed a few cracks that were enough to sour investor sentiment. The biggest weakness came from Qualcomm's core semiconductor business (QCT), where handset revenue tumbled nearly 20% year-over-year (YOY). The decline was driven by ongoing memory supply shortages and a faster-than-expected loss of modem share at Apple (AAPL).\n\nCathie Wood Doubles Down on Tesla and SpaceX as Wall Street Turns Cautious\n\nCathie Wood Doubles Down on Tesla and SpaceX as Wall Street Turns Cautious\n\nWhy BlackRock Is Betting Big on Ondas Stock Now\n\nWhy BlackRock Is Betting Big on Ondas Stock Now\n\nHoping for Lower Prices at the Gas Pump? After Exxon Doubles Profits, CEO Darren Woods Says 'I Wouldn't Hold My Breath.'\n\nHoping for Lower Prices at the Gas Pump? After Exxon Doubles Profits, CEO Darren Woods Says 'I Wouldn't Hold My Breath.'\n\nOur exclusive Barchart Brief newsletter is your FREE midday guide to what's moving stocks, sectors, and investor sentiment ",
+      "tickers": [
+        "AAPL",
+        "TSLA",
+        "INTC",
+        "QCOM"
+      ]
+    },
+    {
+      "title": "Why This High-Yield Stock Fund Should Replace Covered Call ETFs… At Least for a While",
+      "url": "https://finance.yahoo.com/markets/stocks/articles/why-high-yield-stock-fund-150002183.html",
+      "source": "Yahoo Finance",
+      "published_at": "2026-08-01T15:00:02+00:00",
+      "in_window": false,
+      "summary": "",
+      "body_excerpt": "Dividend stocks have been too expensive, too volatile, and lagging in a market that has decided it is artificial intelligence or bust. Some high-yield stocks may even be at risk of price plunges due to reducing their dividend payouts. As a result, I haven't been a fan of dividend stocks for years.\n\nHowever, I now have a real case to make for rotating out of covered call ETFs (JEPI, DIVO, XYLD) and into a low-volatility, pure-dividend vehicle like the Global X SuperDividend U.S. ETF (DIV). The current market seems to finally have put DIV in the spotlight, not the doghouse.\n\nGet exclusive insights with the FREE Barchart Brief newsletter. Subscribe now for quick, incisive midday market analysis you won't find anywhere else.\n\nGet exclusive insights with the FREE Barchart Brief newsletter. Subscribe now for quick, incisive midday market analysis you won't find anywhere else.\n\nThis is a 13-year-old ETF that aims to own the highest-yielding U.S. stocks, but with a low-volatility overlay in the research process. At nearly $800 million in assets, DIV is a mid-sized ETF, and has been passed many times over by covered call funds. In fact, the JPMorgan Equity Premium Income ETF (JEPI) is about 50 times bigger.\n\nDIV's portfolio of about 50 stocks trades at only 12.5x trailing 12-month earnings, and it sports a beta (volatility) level that is at the very low end of the equity ETF universe. And, before I skip the best part, how about that dividend yield? 6.3% at a time when the S&P 500 Inde",
+      "tickers": [
+        "INTC"
+      ]
+    },
+    {
+      "title": "The Bank of England Is Moving Away From Coal",
+      "url": "https://finance.yahoo.com/economy/policy/articles/bank-england-moving-away-coal-150000057.html",
+      "source": "Yahoo Finance",
+      "published_at": "2026-08-01T15:00:00+00:00",
+      "in_window": false,
+      "summary": "",
+      "body_excerpt": "Environmental groups have been campaigning to encourage banks and other financial institutions to divest from fossil fuels for years, with efforts growing stronger since the Covid-19 pandemic and the global push to transition away from oil, gas, and coal to renewable alternatives.\n\nIn June, the Bank of England quietly announced that it would no longer be accepting bonds associated with coal operations for key loan arrangements. The ban will be enforced from October. It is the latest move to encourage a shift away from thermal coal for electricity production. The Bank of England said it would no longer be allowing commercial banks to use bonds linked to thermal coal as \"collateral\" when borrowing money from the financial institution.\n\nWhat are other banks doing about coal?\n\nHow will this affect commercial bank lending?\n\nWhat risks do fossil fuel investments face?\n\nWhy did Bank of England ban coal bonds?\n\nThe move suggests that any bonds linked to thermal coal are now considered too risky to appear on its balance sheet, as consumers and governments worldwide call for a shift away from \" the dirtiest fossil fuel \". The rapid global transition to renewable energy could lead certain types of fossil fuels to depreciate in value over the coming decades, making them more of a financial risk.\n\nThe Bank of England stated that thermal coal companies \"can be exposed to potential financial risks connected to the adjustment of the economy towards net zero,\" in its policy statement. It said",
+      "tickers": []
+    },
+    {
+      "title": "Berkshire Hathaway shares hit eight-month high",
+      "url": "https://www.cnbc.com/2026/08/01/-berkshire-hathaway-shares-hit-eight-month-high.html",
+      "source": "CNBC Top News",
+      "published_at": "2026-08-01T14:41:54+00:00",
+      "in_window": false,
+      "summary": "The conglomerate that Warren Buffett built rallied to an eight-month high this week. There could be more gains ahead if they play catch up with the S&P 500.",
+      "body_excerpt": "(This is the Warren Buffett Watch newsletter, news and analysis on all things Warren Buffett and Berkshire Hathaway. You can sign up here to receive it every Friday evening in your inbox.)\n\nBerkshire Hathaway shares rallied to an eight-month high this week and there could be more gains ahead if they continue to catch up to the S&P 500.\n\nThe B shares closed Tuesday at $512.37, their highest level since November 28, when they finished at $513.81.\n\nThey closed Friday at $511.54, down 5.2% from the all-time closing high of $539.80 on May 2 of last year, the day before Warren Buffett revealed he would step down as CEO at the end 2025.\n\nThe Class A shares ended Tuesday at $768,010, also their highest close since November 28's $770,100.\n\nFriday's close of $766,600 was 5.3% below their all-time closing high of $809,350.\n\nA story in Barron's says Berkshire's rally \"has room to run\" since the stock remains \"well behind\" the benchmark S&P 500 , which is 7.6 percentage points ahead.\n\nBut Berkshire has erased more than half of its 17.5 percentage point deficit just two months ago.\n\nBerkshire is also lagging behind competitors in two key sectors: railroads ...\n\nAnother positive for Berkshire is the big gains for three of its biggest equity portfolio holdings .\n\nNumber one Apple , now worth more than $70 billion, is up 13.6% so far this year.\n\nCoca-Cola , Berkshire's third largest position at $35 billion, has jumped 25% year-to-date. Earnings this week came in ahead of expectations and Coke",
+      "tickers": [
+        "AAPL"
+      ]
+    },
+    {
+      "title": "1 in 5 new car buyers are stuck in a $1,000-a-month nightmare — and it’s ruining their long-term wealth",
+      "url": "https://finance.yahoo.com/markets/stocks/articles/1-5-car-buyers-stuck-142500536.html",
+      "source": "Yahoo Finance",
+      "published_at": "2026-08-01T14:25:00+00:00",
+      "in_window": false,
+      "summary": "",
+      "body_excerpt": "When it comes to building wealth, personal finance guru Dave Ramsey has never been a fan of car loans.\n\n\"If you want to be middle class, stay in car debt,\" Ramsey once said to a caller who was thinking about purchasing a car he couldn't quite afford . \"You will never build wealth because it will suck the bone marrow out of your money.\"\n\nJeff Bezos backs a platform that lets anyone invest in rental homes for as little as $100 — 6 ways to build wealth like a landlord without actually being one\n\nJeff Bezos backs a platform that lets anyone invest in rental homes for as little as $100 — 6 ways to build wealth like a landlord without actually being one\n\nDave Ramsey warns nearly 50% of Americans are making 1 big Social Security mistake. Here's what it is and 3 simple steps to fix it ASAP\n\nDave Ramsey warns nearly 50% of Americans are making 1 big Social Security mistake. Here's what it is and 3 simple steps to fix it ASAP\n\nMillionaires under 43 hold only 25% of their wealth in stocks. Here's where their money is actually going\n\nMillionaires under 43 hold only 25% of their wealth in stocks. Here's where their money is actually going\n\nAnd while his language is a little harsh, Ramsey is not exactly wrong. Debt of any kind can make it harder to save money and build wealth. And with the high cost of new cars today, auto debt, in particular, is hitting many Americans harder than it used to.\n\nAs the Washington Post reports, the average financed new-vehicle purchase is now $44,156 , a new ",
+      "tickers": []
+    },
+    {
+      "title": "A $2 Billion Reason to Buy Arm Holdings Stock Now",
+      "url": "https://finance.yahoo.com/markets/stocks/articles/2-billion-reason-buy-arm-140002670.html",
+      "source": "Yahoo Finance",
+      "published_at": "2026-08-01T14:00:02+00:00",
+      "in_window": false,
+      "summary": "",
+      "body_excerpt": "Arm Holdings (ARM) stock is getting fresh bullish support after the chip designer delivered better-than-expected fiscal first-quarter results, with analysts highlighting its solid revenue growth, earnings beat and accelerating demand for its new AGI CPU\n\nArm reported record Q1 revenue of $1.29 billion, up 22% year-over-year (YOY), while adjusted earnings came in at $0.45 per share versus Wall Street expectations of $0.40.\n\nCathie Wood Doubles Down on Tesla and SpaceX as Wall Street Turns Cautious\n\nCathie Wood Doubles Down on Tesla and SpaceX as Wall Street Turns Cautious\n\nWhy BlackRock Is Betting Big on Ondas Stock Now\n\nWhy BlackRock Is Betting Big on Ondas Stock Now\n\nHoping for Lower Prices at the Gas Pump? After Exxon Doubles Profits, CEO Darren Woods Says 'I Wouldn't Hold My Breath.'\n\nHoping for Lower Prices at the Gas Pump? After Exxon Doubles Profits, CEO Darren Woods Says 'I Wouldn't Hold My Breath.'\n\nGet exclusive insights with the FREE Barchart Brief newsletter. Subscribe now for quick, incisive midday market analysis you won't find anywhere else.\n\nGet exclusive insights with the FREE Barchart Brief newsletter. Subscribe now for quick, incisive midday market analysis you won't find anywhere else.\n\nMore importantly, CEO Rene Haas said customer demand for Arm's AGI CPU now exceeds $2 billion across fiscal 2027 and 2028. That is important because the AGI CPU represents a major expansion for Arm beyond its traditional licensing and royalty model. Analysts particularly pra",
+      "tickers": [
+        "TSLA",
+        "ARM"
+      ]
+    },
+    {
+      "title": "TNR Gold nears first royalty payment from Mariana lithium project - ICYMI",
+      "url": "https://finance.yahoo.com/markets/commodities/articles/tnr-gold-nears-first-royalty-140000113.html",
+      "source": "Yahoo Finance",
+      "published_at": "2026-08-01T14:00:00+00:00",
+      "in_window": false,
+      "summary": "",
+      "body_excerpt": "TNR Gold Corp (TSX-V:TNR, FRA:TNW, OTC:TRRXF) executive chairman Kirill Klip talked with Proactive about the company's latest milestones, highlighting increased institutional backing from Altius Minerals, progress at the Mariana lithium project, developments at Los Azules and the strategy for advancing the Shotgun Gold Project in Alaska.\n\nKlip said Altius Minerals has increased its investment in TNR Gold by purchasing additional shares on the open market, bringing its total holding to 30,935,000 shares.\n\nHe described the move as validation of the company's royalty-focused strategy and its portfolio of energy metals and gold assets.\n\nThe discussion also focused on a major development at the Mariana Lithium project in Argentina, where Ganfeng Lithium has begun production and exported its first lithium chloride.\n\nAccording to Klip, this represents an important step towards TNR Gold receiving its first royalty payment.\n\n\"This is a very significant milestone for us because basically Ganfeng Lithium started production at Mariana Lithium last year... now we expect the first royalty payment and it will transition our company,\" he said.\n\n\"TNR Gold will graduate from project generation royalty company to hopefully royalty generation cash flow company.\"\n\nKlip also discussed the outlook for the Los Azules copper project, noting improving economics as copper prices strengthen, progress towards a final investment decision and construction timeline, as well as reported interest from Rio Tin",
+      "tickers": [
+        "META"
+      ]
+    },
+    {
+      "title": "The Real AI Cost Question That Defines The Next Quarter of Alphabet Vs. Microsoft",
+      "url": "https://finance.yahoo.com/technology/ai/articles/real-ai-cost-defines-next-135120692.html",
+      "source": "Yahoo Finance",
+      "published_at": "2026-08-01T13:51:20+00:00",
+      "in_window": false,
+      "summary": "",
+      "body_excerpt": "MSFT surged 15% post-earnings while GOOGL slipped, after both doubled capex and GOOGL posted its first-ever negative free cash flow quarter.\n\nMSFT surged 15% post-earnings while GOOGL slipped, after both doubled capex and GOOGL posted its first-ever negative free cash flow quarter.\n\nAlphabet's full-stack TPU-to-Gemini approach cuts Nvidia dependency, while Microsoft's OpenAI partnership created a $4.9B GAAP revenue drag from partner losses.\n\nAlphabet's full-stack TPU-to-Gemini approach cuts Nvidia dependency, while Microsoft's OpenAI partnership created a $4.9B GAAP revenue drag from partner losses.\n\nAlphabet's 15 P/E looks compelling if capex peaks, but Microsoft's $678B contracted backlog delivers revenue certainty that justifies its higher multiple.\n\nAlphabet's 15 P/E looks compelling if capex peaks, but Microsoft's $678B contracted backlog delivers revenue certainty that justifies its higher multiple.\n\nAct now: the analyst who called NVIDIA in 2010 just named his top 10 AI stocks — and Microsoft didn't make the cut. Grab the names FREE today .\n\nAct now: the analyst who called NVIDIA in 2010 just named his top 10 AI stocks — and Microsoft didn't make the cut. Grab the names FREE today .\n\nAlphabet ( NASDAQ:GOOGL ) and Microsoft ( NASDAQ:MSFT ) closed out two of the most watched earnings reports of the summer. Both beat handily. Both doubled infrastructure spend. Yet the market treated them very differently, and the reason sits inside one question: when does AI capex stop be",
+      "tickers": [
+        "MSFT",
+        "GOOGL",
+        "NVDA",
+        "DELL"
+      ]
+    },
+    {
+      "title": "ABB’s Rotork Deal Could Put These Flow Control Stocks Back in Focus",
+      "url": "https://finance.yahoo.com/markets/stocks/articles/abb-rotork-deal-could-put-135000743.html",
+      "source": "Yahoo Finance",
+      "published_at": "2026-08-01T13:50:00+00:00",
+      "in_window": false,
+      "summary": "",
+      "body_excerpt": "Interested in Franklin Electric Co., Inc.? Here are five stocks we like better.\n\nInterested in Franklin Electric Co., Inc.? Here are five stocks we like better.\n\nABB's $5.5 billion acquisition of Rotork, its largest deal ever, highlights the value of niche flow control technology and could signal further industry consolidation.\n\nABB's $5.5 billion acquisition of Rotork, its largest deal ever, highlights the value of niche flow control technology and could signal further industry consolidation.\n\nWatts Water Technologies competes directly with Rotork in flow control markets and has drawn recent analyst price target increases, though its valuation near 31x earnings may deter investors.\n\nWatts Water Technologies competes directly with Rotork in flow control markets and has drawn recent analyst price target increases, though its valuation near 31x earnings may deter investors.\n\nFranklin Electric offers a more indirect comparison with steady earnings growth, a long dividend increase history, and raised guidance, but faces cyclical risk tied to agricultural spending.\n\nFranklin Electric offers a more indirect comparison with steady earnings growth, a long dividend increase history, and raised guidance, but faces cyclical risk tied to agricultural spending.\n\nSwiss engineering and automation company ABB Ltd. (OTCMKTS: ABBNY) may not figure prominently in many U.S. investors' plans, but its recent $5.5-billion acquisition of Rotork—the largest in the company's history—could change thing",
+      "tickers": [
+        "AMZN"
+      ]
+    },
+    {
+      "title": "Meet the Dividend Stock That Keeps Raising Its Payout No Matter What the Market Does",
+      "url": "https://finance.yahoo.com/markets/stocks/articles/meet-dividend-stock-keeps-raising-134500396.html",
+      "source": "Yahoo Finance",
+      "published_at": "2026-08-01T13:45:00+00:00",
+      "in_window": false,
+      "summary": "",
+      "body_excerpt": "Investors don't typically expect mature, low-growth, and boring companies to outperform the S&P 500 index. Coca-Cola (NYSE: KO) has something to say about that assumption.\n\nThe leading beverage brand's share price is up 26% in 2026 (as of July 29), well ahead of the benchmark's 9% gain.\n\nMissed Nvidia in 2009? This Rare Signal Is Flashing Again. In 2009, a \"Double Down\" signal flashed for a little-known chipmaker called Nvidia. For the first time in years, that same \"Total Conviction\" signal is flashing for a company 1/100th the size of Nvidia. Continue »\n\nThat capital appreciation might hide the main attraction. Let's take a closer look at this dividend stock that keeps raising its payout no matter what the market is doing.\n\nThe S&P 500 index could be in a raging bull market. Or it could be in a troubling bear market. The economy could be booming. Or it could be in a recessionary period.\n\nWhatever the situation, it doesn't impact Coca-Cola's shareholder returns policy. After implementing a hike in February, the business has now raised its dividend payout in 64 straight years. This makes it a Dividend King .\n\nThe current yield of 2.4% is certainly sizable. It compares favorably to the 1.08% yield of the S&P 500 index.\n\nBecause Coca-Cola is so profitable in both robust and adverse economic times, it has the financial resources to maintain its commitment to investors. It reported free cash flow of $6.9 billion over the last six months.\n\nInvestors shouldn't be worried about the ",
+      "tickers": [
+        "NVDA"
+      ]
+    },
+    {
+      "title": "The High-Stakes Battle for Invisible Real Estate in Space",
+      "url": "https://www.nytimes.com/2026/08/01/business/dealbook/spacex-spectrum-battle.html",
+      "source": "NYTimes Business",
+      "published_at": "2026-08-01T13:43:04+00:00",
+      "in_window": false,
+      "summary": "As radio spectrum becomes more valuable, companies like SpaceX are jostling alongside governments to control more of it.",
+      "body_excerpt": "As radio spectrum becomes more valuable, companies like SpaceX are jostling alongside governments to control more of it.",
+      "tickers": []
+    },
+    {
+      "title": "Why BlackRock Is Betting Big on Ondas Stock Now",
+      "url": "https://finance.yahoo.com/markets/stocks/articles/why-blackrock-betting-big-ondas-133002844.html",
+      "source": "Yahoo Finance",
+      "published_at": "2026-08-01T13:30:02+00:00",
+      "in_window": false,
+      "summary": "",
+      "body_excerpt": "Big institutional investments often shine a spotlight on companies that many investors may have overlooked. That's exactly what happened after BlackRock (BLK) disclosed a new 7.2% passive stake in Ondas (ONDS) through a Schedule 13G filing with the United States Securities and Exchange Commission, revealing ownership of 38.1 million shares.\n\nThe move has put the spotlight back on Ondas, a company developing autonomous systems and advanced technology products for defense and industrial markets – two sectors drawing growing investor interest. The timing is particularly interesting.\n\nCathie Wood Doubles Down on Tesla and SpaceX as Wall Street Turns Cautious\n\nCathie Wood Doubles Down on Tesla and SpaceX as Wall Street Turns Cautious\n\nHoping for Lower Prices at the Gas Pump? After Exxon Doubles Profits, CEO Darren Woods Says 'I Wouldn't Hold My Breath.'\n\nHoping for Lower Prices at the Gas Pump? After Exxon Doubles Profits, CEO Darren Woods Says 'I Wouldn't Hold My Breath.'\n\nHow Server CPUs Could Give AMD Stock a Big Boost After August 4\n\nHow Server CPUs Could Give AMD Stock a Big Boost After August 4\n\nOur exclusive Barchart Brief newsletter is your FREE midday guide to what's moving stocks, sectors, and investor sentiment - delivered right when you need the info most. Subscribe today!\n\nOur exclusive Barchart Brief newsletter is your FREE midday guide to what's moving stocks, sectors, and investor sentiment - delivered right when you need the info most. Subscribe today!\n\nDespite an",
+      "tickers": [
+        "TSLA",
+        "AMD"
+      ]
+    },
+    {
+      "title": "Buying a condo with a mortgage may soon get more complicated. Here's why",
+      "url": "https://www.cnbc.com/2026/08/01/condo-buyers-mortgage-rules-fannie-mae-freddie-mac.html",
+      "source": "CNBC Top News",
+      "published_at": "2026-08-01T13:30:01+00:00",
+      "in_window": false,
+      "summary": "New policies that apply to mortgages for condos take effect Aug. 3, and some experts are sounding the alarm that buyers may see delays or denials.",
+      "body_excerpt": "While lenders already review condo associations for many mortgage applications, they will soon be required to do a much more comprehensive assessment for many transactions.\n\nFannie Mae and Freddie Mac announced the changes in March to better identify condo buildings with financial or structural problems and reduce the risk owners face.\n\nSome experts say they are concerned that there will be delays in mortgage approvals, as well as denials if the lender finds something that doesn't meet Fannie and Freddie underwriting standards.\n\nProspective homebuyers eyeing a condominium may soon discover that mortgage lenders are as interested in the condo building as they are in the buyer.\n\nNew condo-lending policies taking effect on Aug. 3 from Fannie Mae and Freddie Mac — government-sponsored enterprises that purchase qualifying mortgages on the secondary market — mean that some purchases could involve greater scrutiny by lenders. While lenders already review condo associations in many cases, the new policies require a closer look at the association's finances, reserve funding and building maintenance for some transactions.\n\nThe changes are intended to better identify condo buildings with financial or structural problems and reduce the risk that owners face unexpected special assessments or higher association dues, according to a March 18 letter to lenders from Fannie Mae.\n\nSome high earners will soon owe taxes on years of deferred capital gains\n\nDoes the 4% retirement withdrawal rule st",
+      "tickers": []
+    },
+    {
+      "title": "The 2 IRS rules that allow you to continue making IRA contributions when you move abroad",
+      "url": "https://finance.yahoo.com/markets/currencies/articles/2-irs-rules-allow-continue-133000736.html",
+      "source": "Yahoo Finance",
+      "published_at": "2026-08-01T13:30:00+00:00",
+      "in_window": true,
+      "summary": "",
+      "body_excerpt": "Moving abroad comes with a lot of decisions. What type of visa do you need? Should you rent or buy? One other interesting question: What do you do with your individual retirement account?\n\nTake the example of Amanda, who — now in her mid-30s — is moving to the U.K. for her job as a cybersecurity expert. She loves the idea of life in London, but she doesn't know what the future holds. Maybe she'll meet someone and decide to make the move permanent, or she'll move back to the U.S. at some point.\n\nJeff Bezos backs a platform that lets anyone invest in rental homes for as little as $100 — 6 ways to build wealth like a landlord without actually being one\n\nJeff Bezos backs a platform that lets anyone invest in rental homes for as little as $100 — 6 ways to build wealth like a landlord without actually being one\n\nDave Ramsey warns nearly 50% of Americans are making 1 big Social Security mistake. Here's what it is and 3 simple steps to fix it ASAP\n\nDave Ramsey warns nearly 50% of Americans are making 1 big Social Security mistake. Here's what it is and 3 simple steps to fix it ASAP\n\nMillionaires under 43 hold only 25% of their wealth in stocks. Here's where their money is actually going\n\nMillionaires under 43 hold only 25% of their wealth in stocks. Here's where their money is actually going\n\nShe's aware that she still needs to file a tax return with the IRS, since Americans are taxed based on citizenship, rather than country of residence (exclusions and credits can help prevent doub",
+      "tickers": []
+    },
+    {
+      "title": "How Server CPUs Could Give AMD Stock a Big Boost After August 4",
+      "url": "https://finance.yahoo.com/markets/stocks/articles/server-cpus-could-amd-stock-130002075.html",
+      "source": "Yahoo Finance",
+      "published_at": "2026-08-01T13:00:02+00:00",
+      "in_window": true,
+      "summary": "",
+      "body_excerpt": "Few chipmakers have rewarded investors as generously as Advanced Micro Devices (AMD). Over the past five years, the stock has surged 340.8%, leaving the technology-heavy Nasdaq Composite ($NASX) well behind after its 69.34% gain during the same period.\n\nMuch of that climb came during the last year and a half, when investors recognized that Advanced Micro had secured a front-row seat in the artificial intelligence (AI) boom. Rising demand for AI chips across data centers and personal computers has since given the company's growth story fresh momentum.\n\nCathie Wood Doubles Down on Tesla and SpaceX as Wall Street Turns Cautious\n\nCathie Wood Doubles Down on Tesla and SpaceX as Wall Street Turns Cautious\n\nWhy BlackRock Is Betting Big on Ondas Stock Now\n\nWhy BlackRock Is Betting Big on Ondas Stock Now\n\nHoping for Lower Prices at the Gas Pump? After Exxon Doubles Profits, CEO Darren Woods Says 'I Wouldn't Hold My Breath.'\n\nHoping for Lower Prices at the Gas Pump? After Exxon Doubles Profits, CEO Darren Woods Says 'I Wouldn't Hold My Breath.'\n\nOur exclusive Barchart Brief newsletter is your FREE midday guide to what's moving stocks, sectors, and investor sentiment - delivered right when you need the info most. Subscribe today!\n\nOur exclusive Barchart Brief newsletter is your FREE midday guide to what's moving stocks, sectors, and investor sentiment - delivered right when you need the info most. Subscribe today!\n\nWall Street's confidence received another lift on Thursday, July 30, whe",
+      "tickers": [
+        "NVDA",
+        "META",
+        "TSLA",
+        "AMD",
+        "INTC"
+      ]
+    },
+    {
+      "title": "The 5 travel money traps to avoid, according to someone who has visited nearly 100 countries in the last decade",
+      "url": "https://finance.yahoo.com/small-business/articles/5-travel-money-traps-avoid-130000525.html",
+      "source": "Yahoo Finance",
+      "published_at": "2026-08-01T13:00:00+00:00",
+      "in_window": true,
+      "summary": "",
+      "body_excerpt": "I've spent the last decade traveling full time, and if there's one thing I've learned — besides that, if it's not a good time, it's a good story — it's that the costliest travel expenses aren't always the obvious ones.\n\nMore often than not, travelers lose money through convenience fees, poor planning (or, adversely, too much planning) or the same blissful ignorance that has somehow floated me around more than half the world with just a single wrongfully boarded plane mishap, one pirate ship kidnapping and very few robberies. Despite the tales I've collected, that unawareness has cost me more than I care to admit at times (including, at the worst of times, everything on me).\n\nJeff Bezos backs a platform that lets anyone invest in rental homes for as little as $100 — 6 ways to build wealth like a landlord without actually being one\n\nJeff Bezos backs a platform that lets anyone invest in rental homes for as little as $100 — 6 ways to build wealth like a landlord without actually being one\n\nDave Ramsey warns nearly 50% of Americans are making 1 big Social Security mistake. Here's what it is and 3 simple steps to fix it ASAP\n\nDave Ramsey warns nearly 50% of Americans are making 1 big Social Security mistake. Here's what it is and 3 simple steps to fix it ASAP\n\nMillionaires under 43 hold only 25% of their wealth in stocks. Here's where their money is actually going\n\nMillionaires under 43 hold only 25% of their wealth in stocks. Here's where their money is actually going\n\nI've made ",
+      "tickers": [
+        "GOOGL"
+      ]
+    },
+    {
+      "title": "Ray Dalio warns this major asset will have the ‘worst return’ guaranteed — and you probably own a lot of it",
+      "url": "https://finance.yahoo.com/markets/currencies/articles/ray-dalio-warns-major-asset-125500604.html",
+      "source": "Yahoo Finance",
+      "published_at": "2026-08-01T12:55:00+00:00",
+      "in_window": true,
+      "summary": "",
+      "body_excerpt": "Moneywise and Yahoo Finance LLC may earn commission or revenue through links in the content below.\n\nAmericans often turn to one particular asset when they want security, stability and protection from market volatility. But billionaire investor Ray Dalio says that sense of safety may be dangerously misleading.\n\nThe asset is cash — including money held in savings accounts and other short-term, interest-bearing vehicles.\n\nJeff Bezos backs a platform that lets anyone invest in rental homes for as little as $100 — 6 ways to build wealth like a landlord without actually being one\n\nJeff Bezos backs a platform that lets anyone invest in rental homes for as little as $100 — 6 ways to build wealth like a landlord without actually being one\n\nJPMorgan still sees gold hitting $5,000/oz by Q4 — and savvy investors are protecting their wealth with a tax-advantaged Gold IRA. Learn more with a free guide from Priority Gold\n\nJPMorgan still sees gold hitting $5,000/oz by Q4 — and savvy investors are protecting their wealth with a tax-advantaged Gold IRA. Learn more with a free guide from Priority Gold\n\nThe tax breaks in Trump's 'big beautiful bill' expire after 2028 — and experts say most people won't act in time. What to do before the window closes\n\nThe tax breaks in Trump's 'big beautiful bill' expire after 2028 — and experts say most people won't act in time. What to do before the window closes\n\nDuring a recent appearance on The Diary of a CEO podcast (1), Dalio called cash the \"worst\" long-",
+      "tickers": [
+        "META"
+      ]
+    },
+    {
+      "title": "Leaving Property to Your Heirs Can Lead to Headache, not Robust Wealth",
+      "url": "https://www.nytimes.com/2026/08/01/business/inheritance-real-estate-retirement.html",
+      "source": "NYTimes Business",
+      "published_at": "2026-08-01T12:45:02+00:00",
+      "in_window": true,
+      "summary": "Real estate passed down without a clear title of ownership can prevent families from creating generational wealth.",
+      "body_excerpt": "Real estate passed down without a clear title of ownership can prevent families from creating generational wealth.",
+      "tickers": []
+    },
+    {
+      "title": "As Americans go direct with GLP-1 prescriptions, Walmart, Costco, Amazon will be big weight-loss winners",
+      "url": "https://www.cnbc.com/2026/08/01/glp-1-prescriptions-weight-loss-walmart-costco-amazon.html",
+      "source": "CNBC Top News",
+      "published_at": "2026-08-01T12:30:01+00:00",
+      "in_window": true,
+      "summary": "As Americans are encouraged to go direct with weight-loss drug prescriptions, retail pharmacy chains are poised to win big.",
+      "body_excerpt": "To learn more about the CNBC CFO Council, visit cnbccouncils.com/cfo\n\nAs employers drop GLP-1 coverage, more Americans are being encouraged to use direct-to-consumer (DTC) weight-loss drug prescription programs.\n\nMajor retailers and pharmacy chains, from CVS to Walmart and Costco, are racing to fill the void and gain market share, moves that could punish independent pharmacies.\n\nWith some programs starting as low as $25 a month, regular GLP-1 refills mean monthly opportunities to fill shopping carts.\n\nAs more Americans use GLP-1 weight-loss drugs to shrink their waistlines, retail giants are betting on a bottom-line bump tied to a shift in the way the drugs are priced and purchased. Employers are dropping coverage for GLP-1 drugs like Wegovy and Zepbound in greater numbers, nudging more patients to direct-to-consumer prescription programs , and providing Walmart, Costco, CVS and Amazon the opportunity to gain a greater share of the market.\n\nFor the retail pharmacy chains, a GLP-1 prescription is evolving into more than a simple sale — it's creating a beachhead to developing customer relationships that can run for years and pull shoppers toward everything else on the shelf. If a customer is going to get their GLP-1s from Walmart, they might as well get all their other prescriptions and load up on deodorant, paper towels, and condiments.\n\n\"Retailers are betting that if they can become the front door for obesity care, they'll earn a relationship that extends far beyond a single ",
+      "tickers": [
+        "AMZN"
+      ]
+    },
+    {
+      "title": "Massive US tungsten discovery could run into Nasa roadblock",
+      "url": "https://www.ft.com/content/6abf82dc-6b66-4fc7-8bf7-aa196dbd8e97?syn-25a6b1a6=1",
+      "source": "Financial Times Markets",
+      "published_at": "2026-08-01T12:00:05+00:00",
+      "in_window": true,
+      "summary": "Miner may have found America’s largest deposit of crucial defence metal but space agency hinders development",
+      "body_excerpt": "Miner may have found America’s largest deposit of crucial defence metal but space agency hinders development",
+      "tickers": [
+        "META"
+      ]
+    },
+    {
+      "title": "OpenAI's Hugging Face hack confirmed months of AI cyber warnings: 'Pandora's box is open'",
+      "url": "https://www.cnbc.com/2026/08/01/open-ai-hugging-face-hack-cyber-warnings.html",
+      "source": "CNBC Top News",
+      "published_at": "2026-08-01T12:00:01+00:00",
+      "in_window": true,
+      "summary": "The wake-up call to the cyber industry comes as industry experts descend on Black Hat, a major cybersecurity conference.",
+      "body_excerpt": "OpenAI's Hugging Face hack has shown that months of warnings from the cybersecurity sector are now a reality.\n\nAI agents can evolve and adapt to accomplish their goals, and do it in unpredictable ways.\n\nSailpoint's tech chief said instances with AI acquiring permissions are actually more common than people realize, and it's happening daily.\n\nFor months, cybersecurity leaders warned that artificial intelligence would reshape the threat landscape, compressing weeks- and dayslong cyberattacks into a matter of minutes.\n\nUntil last week, those threats still felt like a distant risk.\n\nThe OpenAI agent hack on Hugging Face illustrates that this era has not only arrived but also created a new challenge: AI agents will go to extremes to accomplish their goals, and do it in unpredictable ways.\n\n\"The reality is Pandora's box is open,\" said Sam Curry, chief information security officer at Zscaler . \"We need to act as if AI is just a fact of life going forward. The most those things will do is slow it. They won't stop it.\"\n\nThe rollout of Anthropic 's powerful Mythos model nearly four months ago raised concerns that hackers could potentially use these models to exploit vulnerabilities. Major technology companies formed coalitions to start testing this advanced AI in order to prepare.\n\nAt the time, Palo Alto Networks ' product and technology chief Lee Klarich warned that AI-driven exploits would soon become the new norm and businesses had a three-to-five-month window to outpace their foes.",
+      "tickers": [
+        "AAPL",
+        "AMZN",
+        "INTC"
+      ]
+    },
+    {
+      "title": "Best CD rates today, Saturday, August 1, 2026: Best CD account earns 4.10% APY",
+      "url": "https://finance.yahoo.com/personal-finance/banking/article/best-cd-rates-today-saturday-august-1-2026-best-cd-account-earns-410-apy-100000014.html",
+      "source": "Yahoo Finance",
+      "published_at": "2026-08-01T10:00:00+00:00",
+      "in_window": true,
+      "summary": "",
+      "body_excerpt": "Some offers on this page are from advertisers who pay us, which may affect which products we write about, but not our recommendations. See our Advertiser Disclosure .\n\nFind out how much you could earn by locking in a high CD rate today. The Federal Reserve cut its federal funds rate three times in 2025. So far in 2026, the Fed has left interest rates alone, and so now could be your last chance to lock in a competitive CD rate before rates move further. CD rates vary widely across financial institutions, so it's important to ensure you're getting the best rate possible when shopping around for a CD.\n\nThe following is a breakdown of CD rates today and where to find the best offers.\n\nGenerally, the best CD rates today are offered on shorter terms of around one year or less. Online banks and credit unions, in particular, offer the top CD rates.\n\nToday, Saturday, August 1, 2026 , the highest CD rate is 4.10% . This rate is offered by Marcus by Goldman Sachs on its 9-month CD.\n\nHere is a look at some of the best CD rates available today:\n\nThe amount of interest you can earn from a CD depends on the annual percentage rate (APY). This is a measure of your total earnings after one year, taking into account the base interest rate and how often interest compounds (CD interest typically compounds daily or monthly).\n\nSay you invest $1,000 in a one-year CD with 1.52% APY, and interest compounds monthly. At the end of that year, your balance would grow to $1,015.20 — your initial $1,000 dep",
+      "tickers": []
+    },
+    {
+      "title": "The Fight Over the World’s Oldest Bank",
+      "url": "https://www.nytimes.com/2026/08/01/business/dealbook/italy-oldest-bank-takeover-battle.html",
+      "source": "NYTimes Business",
+      "published_at": "2026-08-01T09:43:01+00:00",
+      "in_window": true,
+      "summary": "Founded in 1472, Banca Monte dei Paschi di Siena has survived wars, pandemics and scandals. But a hostile takeover bid has Tuscans on edge.",
+      "body_excerpt": "Founded in 1472, Banca Monte dei Paschi di Siena has survived wars, pandemics and scandals. But a hostile takeover bid has Tuscans on edge.",
+      "tickers": []
+    },
+    {
+      "title": "Warsh spooks long bonds",
+      "url": "https://www.ft.com/content/42257873-e801-49b8-967f-a15ea1129541?syn-25a6b1a6=1",
+      "source": "Financial Times Markets",
+      "published_at": "2026-08-01T09:30:04+00:00",
+      "in_window": true,
+      "summary": "The yield curve steepening is unusual for a Fed hold",
+      "body_excerpt": "The yield curve steepening is unusual for a Fed hold",
+      "tickers": []
+    },
+    {
+      "title": "Is A.I. ‘Scheming’ Against Us?",
+      "url": "https://www.nytimes.com/2026/08/01/business/ai-scheming.html",
+      "source": "NYTimes Business",
+      "published_at": "2026-08-01T09:01:46+00:00",
+      "in_window": true,
+      "summary": "Researchers are sounding the alarm on sneaky artificial intelligence models that stray from humans’ directions to do their own thing.",
+      "body_excerpt": "Researchers are sounding the alarm on sneaky artificial intelligence models that stray from humans’ directions to do their own thing.",
+      "tickers": [
+        "INTC"
+      ]
+    },
+    {
+      "title": "Carmakers Go Back to the ’80s With Turbo Engines",
+      "url": "https://www.nytimes.com/2026/08/01/business/turbo-engines-cars-trucks.html",
+      "source": "NYTimes Business",
+      "published_at": "2026-08-01T09:00:16+00:00",
+      "in_window": true,
+      "summary": "A hyped technology from four decades ago, turbocharging is now standard in almost half of all cars sold in the United States, largely to help meet efficiency standards.",
+      "body_excerpt": "A hyped technology from four decades ago, turbocharging is now standard in almost half of all cars sold in the United States, largely to help meet efficiency standards.",
+      "tickers": []
+    },
+    {
+      "title": "Surging UK stocks prompt flurry of trades on investment platforms",
+      "url": "https://www.ft.com/content/92c4d77e-7a32-48e9-af5a-88243945b2a5?syn-25a6b1a6=1",
+      "source": "Financial Times Markets",
+      "published_at": "2026-08-01T04:00:32+00:00",
+      "in_window": true,
+      "summary": "Daily trades jump in July as FTSE 100 hits record high",
+      "body_excerpt": "Daily trades jump in July as FTSE 100 hits record high",
+      "tickers": []
+    },
+    {
+      "title": "Is Lloyds Bank’s techie boss a secret AI contrarian?",
+      "url": "https://www.ft.com/content/44d14a83-45b2-4d2e-94f0-8eb86dceab86?syn-25a6b1a6=1",
+      "source": "Financial Times Markets",
+      "published_at": "2026-08-01T04:00:24+00:00",
+      "in_window": true,
+      "summary": "The possibility of consumers delegating financial tasks to agentic AI poses a new risk for lenders",
+      "body_excerpt": "The possibility of consumers delegating financial tasks to agentic AI poses a new risk for lenders",
+      "tickers": []
+    },
+    {
+      "title": "Humbling times for markets",
+      "url": "https://www.ft.com/content/e41dadef-c473-48ff-9fa5-30b56d40af34?syn-25a6b1a6=1",
+      "source": "Financial Times Markets",
+      "published_at": "2026-08-01T04:00:24+00:00",
+      "in_window": true,
+      "summary": "Investors finally show signs of growing weary of the painfully obvious nonsense",
+      "body_excerpt": "Investors finally show signs of growing weary of the painfully obvious nonsense",
+      "tickers": []
+    },
+    {
+      "title": "The age of ‘The Magnificent 7’ is over",
+      "url": "https://www.ft.com/content/2ac61eb8-8d28-42f8-8a60-6159f3b3913e?syn-25a6b1a6=1",
+      "source": "Financial Times Markets",
+      "published_at": "2026-08-01T04:00:16+00:00",
+      "in_window": true,
+      "summary": "A cynic would say such monikers are made up by professionals looking to hype markets — I think ‘The Mag 7’ is much more dangerous than that",
+      "body_excerpt": "A cynic would say such monikers are made up by professionals looking to hype markets — I think ‘The Mag 7’ is much more dangerous than that",
+      "tickers": []
+    },
+    {
+      "title": "Next Met Gala Show Will Honor John Galliano, Celebrated Designer Infamous for Antisemitic Rant",
+      "url": "https://www.nytimes.com/2026/07/31/style/met-gala-costume-institute-john-galliano.html",
+      "source": "NYTimes Business",
+      "published_at": "2026-08-01T02:26:35+00:00",
+      "in_window": true,
+      "summary": "As famous for his antisemitic rant in 2011 as he is for his fashion, Galliano would be one of only three living designers ever to receive the honor.",
+      "body_excerpt": "As famous for his antisemitic rant in 2011 as he is for his fashion, Galliano would be one of only three living designers ever to receive the honor.",
+      "tickers": []
+    },
+    {
+      "title": "Why South Korea’s won was one of world’s best performers in July",
+      "url": "https://www.ft.com/content/1b8a5bf5-d043-4a28-a606-801a00bb8082?syn-25a6b1a6=1",
+      "source": "Financial Times Markets",
+      "published_at": "2026-08-01T02:10:27+00:00",
+      "in_window": true,
+      "summary": "Currency strengthened nearly 8% against dollar despite tech stock sell-off",
+      "body_excerpt": "Currency strengthened nearly 8% against dollar despite tech stock sell-off",
+      "tickers": []
+    },
+    {
+      "title": "Warsh Considers Reducing Frequency of Fed Policy Meetings",
+      "url": "https://www.nytimes.com/2026/07/31/business/federal-reserve-warsh-meetings.html",
+      "source": "NYTimes Business",
+      "published_at": "2026-08-01T00:26:49+00:00",
+      "in_window": true,
+      "summary": "The Federal Reserve has met at least eight times a year for decades. Reducing the number of meetings would represent the biggest change by Kevin M. Warsh since he became chairman.",
+      "body_excerpt": "The Federal Reserve has met at least eight times a year for decades. Reducing the number of meetings would represent the biggest change by Kevin M. Warsh since he became chairman.",
+      "tickers": []
+    },
+    {
+      "title": "Leopold Aschenbrenner Built a Hot A.I. Hedge Fund. Then it Melted Down.",
+      "url": "https://www.nytimes.com/2026/07/31/business/situational-awareness-leopold-aschenbrenner.html",
+      "source": "NYTimes Business",
+      "published_at": "2026-07-31T22:18:59+00:00",
+      "in_window": true,
+      "summary": "Situational Awareness, led by a 24-year-old, exploded onto the artificial intelligence scene — and then nose-dived.",
+      "body_excerpt": "Situational Awareness, led by a 24-year-old, exploded onto the artificial intelligence scene — and then nose-dived.",
+      "tickers": [
+        "INTC"
+      ]
+    },
+    {
+      "title": "Trump appeals order that slammed his IRS lawsuit and referred his lawyer to bar",
+      "url": "https://www.cnbc.com/2026/07/31/trump-appeals-irs-lawsuit-blanche-fund.html",
+      "source": "CNBC Top News",
+      "published_at": "2026-07-31T22:04:03+00:00",
+      "in_window": true,
+      "summary": "Trump had sued the IRS for $10 billion over the leak of his tax information by an agency contractor.",
+      "body_excerpt": "President Donald Trump appealed a federal judge's blistering order finding he filed a bad-faith $10 billion lawsuit in order to reach an advantageous settlement.\n\nTrump earlier vented frustration that the $1.776 billion \"lawfare\" fund created as part of that settlement has been scrapped.\n\nTrump's nominee for U.S. attorney general, Todd Blanche, faces opposition as GOP Senate holdouts seek written confirmation that the fund is actually dead.\n\nPresident Donald Trump on Friday appealed a federal judge's blistering order finding he filed a bad-faith $10 billion lawsuit in order to reach an advantageous settlement .\n\nThe notice of appeal in U.S. District Court in Miami was made public hours after Trump vented frustration that the $1.776 billion \"lawfare\" fund created as part of that settlement had been scrapped.\n\n\"They've agreed to not have a fund. But there are a lot of people that are very upset about it,\" Trump said at a Cabinet meeting at Camp David Friday afternoon.\n\nThe president also lamented that his nominee for U.S. attorney general, Todd Blanche , is in limbo in the Senate as a handful of Republican holdouts seek written confirmation that the controversial fund is indeed defunct. The senators say they have yet to receive that assurance, raising concern that the fund could be resurrected if Blanche is confirmed.\n\n\"The fund is dead, but, you know, I wish it weren't,\" Trump said at the Cabinet meeting before launching into complaints about supporters he said have been mistr",
+      "tickers": []
+    },
+    {
+      "title": "Citadel’s swoop on Situational Awareness helped stem a $3tn AI rout",
+      "url": "https://www.ft.com/content/4f00bd97-c3da-41af-9b92-410ebaa6ad2d?syn-25a6b1a6=1",
+      "source": "Financial Times Markets",
+      "published_at": "2026-07-31T21:46:17+00:00",
+      "in_window": true,
+      "summary": "Investors say the hedge fund deal reassured jittery traders in tech stocks",
+      "body_excerpt": "Investors say the hedge fund deal reassured jittery traders in tech stocks",
+      "tickers": []
+    },
+    {
+      "title": "Companies Rush to Close Daring Deals Under Trump",
+      "url": "https://www.nytimes.com/2026/07/31/business/corporate-mergers-deals-trump.html",
+      "source": "NYTimes Business",
+      "published_at": "2026-07-31T20:54:48+00:00",
+      "in_window": true,
+      "summary": "Companies are seizing on what many say is perhaps the most favorable regulatory environment for businesses in years.",
+      "body_excerpt": "Companies are seizing on what many say is perhaps the most favorable regulatory environment for businesses in years.",
+      "tickers": []
+    },
+    {
+      "title": "KKR nears $4bn deal to buy medical device maker Integer Holdings",
+      "url": "https://www.ft.com/content/664f7b45-d92a-44c4-9824-9008001e887e?syn-25a6b1a6=1",
+      "source": "Financial Times Markets",
+      "published_at": "2026-07-31T20:43:14+00:00",
+      "in_window": true,
+      "summary": "Healthcare company has been targeted by activist hedge fund established by an Elliott Management alumnus",
+      "body_excerpt": "Healthcare company has been targeted by activist hedge fund established by an Elliott Management alumnus",
+      "tickers": []
+    },
+    {
+      "title": "How Leopold Aschenbrenner built a $45 billion AI hedge fund — and lost most of it in days",
+      "url": "https://www.cnbc.com/2026/07/31/leopold-aschenbrenner-situational-awareness-fund-fire-sale.html",
+      "source": "CNBC Top News",
+      "published_at": "2026-07-31T20:19:03+00:00",
+      "in_window": true,
+      "summary": "Leopold Aschenbrenner, a former OpenAI researcher-turned-hedge fund manager, saw a dramatic decline this week in his AI-focused fund, Situational Awareness.",
+      "body_excerpt": "Former OpenAI researcher Leopold Aschenbrenner’s AI hedge fund, Situational Awareness, collapsed from $45 billion to around $10 billion in assets on falling semiconductor stocks and mounting margin calls.\n\nDriven by reported leverage of up to 400%, the 20-something manager was forced to sell off all his leveraged public stock bets — including hard-hit names like SK Hynix and CoreWeave — to Ken Griffin's Citadel at a discount.\n\nThe crash marks a dramatic turn for Aschenbrenner, who launched the fund after gaining Silicon Valley fame with his 2024 AI manifesto, drawing scrutiny from critics over his lack of money management experience and his past ties to FTX.\n\nTwo years ago, Leopold Aschenbrenner argued he was one of few people in the world who saw the future clearly.\n\nIn a sprawling, 165-page essay that became required reading in Silicon Valley, the former OpenAI researcher positioned himself as a kind of prophet for the coming age of artificial super intelligence.\n\nBut this week, the limits of Aschenbrenner's vision were on display when the AI-themed hedge fund he runs — named Situational Awareness, also the title of his viral June 2024 manifesto — ran into the harsh reality of tumbling semiconductor stocks and Wall Street margin calls.\n\nAt its peak earlier this month, his fund sat atop $45 billion in assets. By Thursday, however, after being forced to offload all of his leveraged stock bets — including hard-hit names like SK Hynix and CoreWeave — to Ken Griffin's Citadel at",
+      "tickers": [
+        "INTC",
+        "CRWV",
+        "000660.KS"
+      ]
+    },
+    {
+      "title": "Adam O’Neal Resigns as Washington Post Opinion Editor",
+      "url": "https://www.nytimes.com/2026/07/31/business/media/washington-post-opinion-editor-resigns-after-1-year.html",
+      "source": "NYTimes Business",
+      "published_at": "2026-07-31T19:14:23+00:00",
+      "in_window": true,
+      "summary": "Adam O’Neal inherited a mandate from the paper’s owner, Jeff Bezos, to shift toward “personal liberties and free markets.”",
+      "body_excerpt": "Adam O’Neal inherited a mandate from the paper’s owner, Jeff Bezos, to shift toward “personal liberties and free markets.”",
+      "tickers": []
+    },
+    {
+      "title": "Investors may want to focus on front end of yield curve — as Street anticipates next Fed meetings",
+      "url": "https://www.cnbc.com/2026/07/31/top-investment-ideas-as-interest-rate-uncertainty-grips-market-.html",
+      "source": "CNBC Top News",
+      "published_at": "2026-07-31T18:46:45+00:00",
+      "in_window": true,
+      "summary": "Bond market investors may want to focus on the front of the yield curve, according to Allspring Global Investments’ Noah Wise.",
+      "body_excerpt": "Bond market investors may want to shift their focus toward the front of the yield curve, according to Allspring Global Investments' Noah Wise.\n\nThe bottom line: Focus exposure on short-term Treasurys over long duration .\n\nWise, the firm's head of global macro strategy and a senior portfolio manager, sees the strategy as part of a diversified portfolio to deliver profits due to the monetary policy backdrop.\n\n\"You see a market that's pricing in a couple of hikes for the Fed here over the next couple of years,\" he told CNBC's \" ETF Edge \" this week ahead of Wednesday's Fed decision on interest rates. \"That type of yield north of 4% with relatively low risk is, in our view, pretty attractive.\"\n\nAllspring primarily focuses on fixed income, money markets and stocks. According to the firm's website, clients range from consultants and financial advisors to corporations and financial institutions.\n\nWise also sees opportunity in the U.S. credit market, citing strong macro fundamentals.\n\n\"We like [U.S.] credit, whether that's investment grade or high yield, more than we like European credit at this time,\" he said.\n\nBut credit is not the only avenue to diversification. Wise is also seeing opportunities in emerging markets , and he's heading south.\n\n\"Particularly in Latin America, you can find yields that are at [double digits] so there's a lot of opportunities,\" he said. \"I think even with the challenges and risks that we see geopolitically, you can still generate pretty attractive yield",
+      "tickers": []
+    },
+    {
+      "title": "‘Adults’ Is Getting a New First Episode",
+      "url": "https://www.nytimes.com/2026/07/31/business/media/adults-fx-prequel-season-2.html",
+      "source": "NYTimes Business",
+      "published_at": "2026-07-31T18:11:15+00:00",
+      "in_window": true,
+      "summary": "Many viewers turned away from “Adults” after an over-the-top scene in the show’s first episode, so FX made a new one.",
+      "body_excerpt": "Many viewers turned away from “Adults” after an over-the-top scene in the show’s first episode, so FX made a new one.",
+      "tickers": []
+    },
+    {
+      "title": "South Korean stock market soars 18% as investors pile back into AI",
+      "url": "https://www.ft.com/content/23eb1fd4-8301-4c0e-89b3-2647389e6226?syn-25a6b1a6=1",
+      "source": "Financial Times Markets",
+      "published_at": "2026-07-31T16:18:36+00:00",
+      "in_window": true,
+      "summary": "Chipmakers rebound at end of bruising month for the sector, helped by Wall Street rally",
+      "body_excerpt": "Chipmakers rebound at end of bruising month for the sector, helped by Wall Street rally",
+      "tickers": []
+    },
+    {
+      "title": "Inflation Worries Prompted Fed Officials to Dissent on Holding Rates Steady",
+      "url": "https://www.nytimes.com/2026/07/31/business/economy/inflation-fed-dissent-interest-rates.html",
+      "source": "NYTimes Business",
+      "published_at": "2026-07-31T16:16:55+00:00",
+      "in_window": true,
+      "summary": "Internal divisions over whether to raise interest rates intensified at Kevin Warsh’s second meeting as chairman of the Federal Reserve.",
+      "body_excerpt": "Internal divisions over whether to raise interest rates intensified at Kevin Warsh’s second meeting as chairman of the Federal Reserve.",
+      "tickers": []
+    },
+    {
+      "title": "Iran War Drives Oil Profits to Highest Levels in Years",
+      "url": "https://www.nytimes.com/2026/07/31/business/energy-environment/exxon-chevron-earnings-iran-war.html",
+      "source": "NYTimes Business",
+      "published_at": "2026-07-31T16:09:02+00:00",
+      "in_window": true,
+      "summary": "The world’s biggest oil companies are benefiting from the high commodity prices that have been a drag on the rest of the economy.",
+      "body_excerpt": "The world’s biggest oil companies are benefiting from the high commodity prices that have been a drag on the rest of the economy.",
+      "tickers": []
+    },
+    {
+      "title": "Abu Dhabi overhauls bid to build global oil benchmark",
+      "url": "https://www.ft.com/content/d81b5086-df43-4c91-ac23-fa9076ef0304?syn-25a6b1a6=1",
+      "source": "Financial Times Markets",
+      "published_at": "2026-07-31T16:03:43+00:00",
+      "in_window": true,
+      "summary": "Adnoc returns to pricing its crude against the Dubai benchmark after Iran war exposes problems with Murban futures",
+      "body_excerpt": "Adnoc returns to pricing its crude against the Dubai benchmark after Iran war exposes problems with Murban futures",
+      "tickers": []
+    },
+    {
+      "title": "I helped bring in US bank stress tests. Now it is time to drop them",
+      "url": "https://www.ft.com/content/a1c7a1ed-3687-492c-9170-48ae07d7ead3",
+      "source": "Financial Times Markets",
+      "published_at": "2026-07-31T16:00:07+00:00",
+      "in_window": true,
+      "summary": "The time-consuming ritual risks misleading the public about the true health of the financial system",
+      "body_excerpt": "The time-consuming ritual risks misleading the public about the true health of the financial system",
+      "tickers": []
+    },
+    {
+      "title": "450,000 defrauded student loan borrowers are eligible for debt forgiveness — here's who qualifies",
+      "url": "https://www.cnbc.com/2026/07/31/sweet-v-mcmahon-student-loans-borrower-defense.html",
+      "source": "CNBC Top News",
+      "published_at": "2026-07-31T15:45:15+00:00",
+      "in_window": true,
+      "summary": "Hundreds of thousands of student loan borrowers are eligible for debt cancellation under a $23 billion class-action settlement against the federal government.",
+      "body_excerpt": "A recent court decision means that 450,000 federal student loan borrowers have become eligible for debt cancellation after attending a school that misled or defrauded them.\n\nThe legal challenge played out over three presidential terms, its name changing from Sweet v. DeVos to Sweet v. Cardona to Sweet v. McMahon.\n\nOne borrower's student debt swelled to roughly $400,000 from $250,000 while she waited for the Education Department to decide on her Borrower Defense claim.\n\nHundreds of thousands of student loan borrowers have gotten their debts forgiven, or soon will, due to a $23 billion class-action settlement with the U.S. Department of Education.\n\nThe student loan borrower plaintiffs said that their schools significantly misled them and that the Trump administration delayed delivering the relief to which they were entitled under a protection known as Borrower Defense . That program allows defrauded federal student borrowers to get their debt excused.\n\nIn late July, a federal appeals court denied Trump officials' latest request to postpone making a decision on a large swath of the applications, paving the way for another nearly 200,000 borrowers to get their student loans wiped. That brings the total number of borrowers to get their debts forgiven under the settlement to about 450,000.\n\nSome high earners will soon owe taxes on years of deferred capital gains\n\nDoes the 4% retirement withdrawal rule still work? How to best maximize income\n\nFed leaves rates unchanged in July. Here",
+      "tickers": []
+    },
+    {
+      "title": "The Bank of England gets with the programme on QT",
+      "url": "https://www.ft.com/content/0d40281a-9525-4326-95d5-1920c6742688",
+      "source": "Financial Times Markets",
+      "published_at": "2026-07-31T14:35:43+00:00",
+      "in_window": true,
+      "summary": "Four years on, Threadneedle Street finally agrees with the market",
+      "body_excerpt": "Four years on, Threadneedle Street finally agrees with the market",
+      "tickers": []
+    },
+    {
+      "title": "US nuclear reactor company Westinghouse files for IPO",
+      "url": "https://www.ft.com/content/0f47fc94-d039-4561-936e-55b5fc34541d?syn-25a6b1a6=1",
+      "source": "Financial Times Markets",
+      "published_at": "2026-07-31T13:34:31+00:00",
+      "in_window": true,
+      "summary": "Brookfield-owned company plots listing nine years after cost overruns forced it into bankruptcy protection",
+      "body_excerpt": "Brookfield-owned company plots listing nine years after cost overruns forced it into bankruptcy protection",
+      "tickers": []
+    },
+    {
+      "title": "Markets are getting AI right",
+      "url": "https://www.ft.com/content/c167fb1b-69c3-4df0-9126-1e0af678f924?syn-25a6b1a6=1",
+      "source": "Financial Times Markets",
+      "published_at": "2026-07-31T13:00:07+00:00",
+      "in_window": true,
+      "summary": "Recent volatility reflects economic reality",
+      "body_excerpt": "Recent volatility reflects economic reality",
+      "tickers": []
+    },
+    {
+      "title": "EV prices aren't following the 'law of used cars,' analyst says — what it means for buyers and sellers",
+      "url": "https://www.cnbc.com/2026/07/31/used-ev-prices.html",
+      "source": "CNBC Top News",
+      "published_at": "2026-07-31T12:15:01+00:00",
+      "in_window": true,
+      "summary": "The prices for used electric vehicles have risen this year, which is unusual, experts said. Affordability and high gas prices help explain why, they said.",
+      "body_excerpt": "Used electric vehicle prices have been increasing in 2026, an unusual dynamic, according to auto experts.\n\nThe price growth is happening even amid record supply and after Republicans cut a federal tax credit for EV buyers.\n\nConsumer demand for used EVs has been strong amid high gasoline prices due to the Iran war and broader affordability concerns, experts said.\n\nPrices for used electric vehicles are doing something unusual — and the dynamic poses both good and bad news for consumers, according to automotive experts.\n\nGenerally, used car prices depreciate over time. Indeed, as the popular saying goes, any car — new or used — starts losing its value as soon as it leaves the lot.\n\n\"That's just the law of used cars,\" said Andrew Garberson, the head of growth and research at Recurrent, which helps value used EVs.\n\nIn the auto ecosystem, used EVs are notorious for their especially rapid depreciation, experts said. They've historically had \"horrendous\" resale values, said Ivan Drury, director of insights at Edmunds, a car research site.\n\nThis year, prices for used EV have so far moved in the opposite direction, according to industry data.\n\nSome high earners will soon owe taxes on years of deferred capital gains\n\nDoes the 4% retirement withdrawal rule still work? How to best maximize income\n\nFed leaves rates unchanged in July. Here's how it could affect your wallet\n\nEVs aren't following the 'law of used cars.' What it means for buyers, sellers\n\nCNBC's Financial Advisor 100: Best fin",
+      "tickers": []
+    },
+    {
+      "title": "BP Puts Its North Sea Drilling Business Up for Sale",
+      "url": "https://www.nytimes.com/2026/07/31/business/bp-north-sea.html",
+      "source": "NYTimes Business",
+      "published_at": "2026-07-31T12:08:36+00:00",
+      "in_window": true,
+      "summary": "The plans are part of the energy giant’s efforts to streamline operations, but BP has deep roots in the region.",
+      "body_excerpt": "The plans are part of the energy giant’s efforts to streamline operations, but BP has deep roots in the region.",
+      "tickers": []
+    },
+    {
+      "title": "What a Hedge Fund’s Implosion Says About the A.I. Trade",
+      "url": "https://www.nytimes.com/2026/07/31/business/dealbook/situational-awareness-ai-hedge-fund.html",
+      "source": "NYTimes Business",
+      "published_at": "2026-07-31T11:40:28+00:00",
+      "in_window": true,
+      "summary": "Situational Awareness caught the attention of Wall Street with its highly leveraged trades. It nearly collapsed amid a wave of market volatility.",
+      "body_excerpt": "Situational Awareness caught the attention of Wall Street with its highly leveraged trades. It nearly collapsed amid a wave of market volatility.",
+      "tickers": []
+    },
+    {
+      "title": "Chevron and Exxon earnings soar as Trump threatens price interventions",
+      "url": "https://www.ft.com/content/a417eb44-bffe-4584-b14e-570e76d3fb23?syn-25a6b1a6=1",
+      "source": "Financial Times Markets",
+      "published_at": "2026-07-31T10:30:59+00:00",
+      "in_window": true,
+      "summary": "Rise in profits comes amid increasing political scrutiny ahead of US midterm elections",
+      "body_excerpt": "Rise in profits comes amid increasing political scrutiny ahead of US midterm elections",
+      "tickers": []
+    },
+    {
+      "title": "Ares secures biggest flagship credit fund commitments in three years",
+      "url": "https://www.ft.com/content/4b90b384-47d7-40ff-8b0d-7a33420ea29f?syn-25a6b1a6=1",
+      "source": "Financial Times Markets",
+      "published_at": "2026-07-31T10:03:44+00:00",
+      "in_window": true,
+      "summary": "Equity commitments from investors to private credit group up more than 40% from a year ago",
+      "body_excerpt": "Equity commitments from investors to private credit group up more than 40% from a year ago",
+      "tickers": []
+    },
+    {
+      "title": "Coal back in favour as US plant bidding war highlights rising demand to power AI",
+      "url": "https://www.ft.com/content/babf4c89-1a6f-447f-a17e-7e3e48f359b8?syn-25a6b1a6=1",
+      "source": "Financial Times Markets",
+      "published_at": "2026-07-31T10:00:10+00:00",
+      "in_window": true,
+      "summary": "Top utility fought ‘aggressively’ to outbid data centre developer for control of West Virginia facility",
+      "body_excerpt": "Top utility fought ‘aggressively’ to outbid data centre developer for control of West Virginia facility",
+      "tickers": []
+    },
+    {
+      "title": "Logistics giants are racing to keep up with healthcare boom as GLP-1s highlight need for cold storage",
+      "url": "https://www.cnbc.com/2026/07/25/ups-fedex-dhl-healthare-logistics-glp.html",
+      "source": "CNBC Top News",
+      "published_at": "2026-07-25T12:00:02+00:00",
+      "in_window": false,
+      "summary": "Shipping and logistics companies are tapping into the growing market of healthcare as cold chain and temperature-controlled facilities become more crucial.",
+      "body_excerpt": "Shipping and logistics companies are tapping into the growing healthcare market as cold chain and temperature-controlled facilities become more crucial.\n\nThose companies are investing millions of dollars and strengthening dozens of facilities to meet the evolving needs of shipping pharmaceuticals.\n\nThe explosive growth of medications like GLP-1 weight loss drugs has positioned healthcare as one of the fastest-growing segments for logistics companies.\n\nAs demand rises for specialized medications like GLP-1s, logistics companies including UPS and FedEx are adapting their strategies to be able to better ship and store those pharmaceuticals.\n\nMost injectable GLP-1 medications, including Novo Nordisk 's Ozempic and Wegovy and Eli Lilly 's Mounjaro and Zepbound, require refrigerated storage for shipment.\n\nThe Covid pandemic put healthcare logistics at center stage in 2020, as the shipping of temperature-controlled vaccines quickly became a crucial part of keeping the virus at bay. And as more money has been poured into new pharmaceutical innovations, the transportation of those products have come under the spotlight.\n\nLogistics companies are now investing millions of dollars and strengthening dozens of temperature-controlled facilities to tap into the market.\n\nIn June, UPS announced a new $48 million investment in temperature-controlled facilities as it sees a growing demand for critical treatments. According to Growth Market Reports , the demand for temperature-sensitive biologics",
+      "tickers": []
+    },
+    {
+      "title": "10 best high-yield savings accounts for August 2026: Earn up to 4.10% APY",
+      "url": "https://finance.yahoo.com/personal-finance/banking/article/10-best-high-yield-savings-accounts-for-august-2026-earn-up-to-410-apy-171334072.html",
+      "source": "Yahoo Finance",
+      "published_at": "2025-07-01T17:13:34+00:00",
+      "in_window": false,
+      "summary": "",
+      "body_excerpt": "Some offers on this page are from advertisers who pay us, which may affect which products we write about, but not our recommendations. See our Advertiser Disclosure .\n\nIf you're earning a low interest rate on your savings balance, consider putting it in a high-yield savings account (HYSA). Our team compared today's high-yield savings accounts offered by federally insured financial institutions and identified the 10 best based on interest rate, fees, account features, customer service, and more ( see our methodology here ). Find out which banks have the best high-yield savings accounts today.\n\nSynchrony Bank Online High-Yield Savings Account\n\nAmerican Express High-Yield Savings Account\n\nCIT Bank Platinum Savings Account\n\nMarcus by Goldman Sachs Online Savings Account\n\nCapital One 360 Performance Savings\n\nInterest rates, fees, and requirements are accurate as of the publish date. Please verify account details directly with the financial institution.\n\nSoFi's online bank account — a combination checking and high-yield savings account — made our list for its competitive APY, lack of fees, and bundled approach to saving and spending.\n\nIt currently offers up to 3.1% APY on savings balances and 0.5% APY on checking account balances. However, for a limited time, new customers can earn a boost on their savings rate (up to 3.8% APY) by meeting certain requirements. Plus, account holders also have the opportunity to earn a welcome bonus of up to $400 when they enroll in direct deposit.\n\n",
+      "tickers": []
+    },
+    {
+      "title": "10 best money market accounts and rates for August 2026: Rates up to 3.9% APY",
+      "url": "https://finance.yahoo.com/personal-finance/banking/article/best-money-market-accounts-rates-160154089.html",
+      "source": "Yahoo Finance",
+      "published_at": "2025-04-15T16:01:54+00:00",
+      "in_window": false,
+      "summary": "",
+      "body_excerpt": "Some offers on this page are from advertisers who pay us, which may affect which products we write about, but not our recommendations. See our Advertiser Disclosure .\n\nLooking for the security and interest-earning power of a savings account with the perks of a checking account? A money market account (MMA) may be the right choice for you.\n\nIn many cases, MMAs come with a debit card and/or checks, making it easy to access your funds when needed. Plus, your balance earns interest. In fact, the best money market accounts today pay as much as 10 times the national average rate.\n\nIf you're looking to open a money market account, it's important to choose the right one for your needs — so consider more than just the interest rate.\n\nOur team evaluated today's money market accounts offered by federally insured banks and credit unions and narrowed down the top 10 best options available. We evaluated these accounts based on APY, minimum balance requirements, fees, and more. ( See our full methodology here .)\n\nEverBank's Performance Money Market Account is free to open with no monthly fees and 3.7% APY. Interest compounds daily. This account also comes with a debit card and checks and offers ATM fee reimbursement.\n\nRead our full review of EverBank\n\nSallie Mae is often recognized as a major student loan provider, but it also offers consumer banking products. Its online money market account currently offers 3.5% APY on all balances with no minimum balance requirement or monthly fees. Inter",
+      "tickers": []
+    },
+    {
+      "title": "Stocks Sink in Broad AI Rout Sparked by China's DeepSeek",
+      "url": "https://www.wsj.com/articles/nikkei-may-rise-as-weak-yen-raises-earnings-hopes-776a8056",
+      "source": "WSJ Markets",
+      "published_at": "2025-01-27T19:26:00+00:00",
+      "in_window": false,
+      "summary": "U.S. stocks were mostly lower, with the Nasdaq leading declines as makers of AI infrastructure suffered steep falls, many in the double digits. Nvidia was down 16%.",
+      "body_excerpt": "U.S. stocks were mostly lower, with the Nasdaq leading declines as makers of AI infrastructure suffered steep falls, many in the double digits. Nvidia was down 16%.",
+      "tickers": [
+        "NVDA"
+      ]
+    },
+    {
+      "title": "Comex Gold, Silver Settle Lower",
+      "url": "https://www.wsj.com/articles/gold-edges-lower-feds-rate-decision-in-focus-09dbfceb",
+      "source": "WSJ Markets",
+      "published_at": "2025-01-27T19:01:00+00:00",
+      "in_window": false,
+      "summary": "Gold settled 1.4% lower, down two of the past three sessions, and silver fell 2.5%, down three of the past four sessions.",
+      "body_excerpt": "Gold settled 1.4% lower, down two of the past three sessions, and silver fell 2.5%, down three of the past four sessions.",
+      "tickers": []
+    },
+    {
+      "title": "DeepSeek Won't Sink U.S. AI Titans",
+      "url": "https://www.wsj.com/articles/deepseek-us-ai-stocks-nvidia-broadcom-6cdfae81",
+      "source": "WSJ Markets",
+      "published_at": "2025-01-27T18:12:00+00:00",
+      "in_window": false,
+      "summary": "Panic fueling the selloff of Nvidia, Broadcom and other tech giants is overblown.",
+      "body_excerpt": "Panic fueling the selloff of Nvidia, Broadcom and other tech giants is overblown.",
+      "tickers": [
+        "NVDA",
+        "AVGO"
+      ]
+    },
+    {
+      "title": "Financial Services Roundup: Market Talk",
+      "url": "https://www.wsj.com/articles/financial-services-roundup-market-talk-94f52cba",
+      "source": "WSJ Markets",
+      "published_at": "2025-01-27T17:27:00+00:00",
+      "in_window": false,
+      "summary": "Gain insight on Experian, SoFi Technologies and more in the latest Market Talks covering Financial Services.",
+      "body_excerpt": "Gain insight on Experian, SoFi Technologies and more in the latest Market Talks covering Financial Services.",
+      "tickers": []
+    },
+    {
+      "title": "Arabica Coffee Prices Hit Record on U.S., Colombia Tariff Spat",
+      "url": "https://www.wsj.com/articles/arabica-coffee-prices-hit-new-high-on-u-s-colombia-tariff-spat-582446fe",
+      "source": "WSJ Markets",
+      "published_at": "2025-01-27T17:20:00+00:00",
+      "in_window": false,
+      "summary": "Arabica coffee prices hit a record level, as traders digested the withdrawal of President Trump’s threats to impose tariffs and economic sanctions on Colombia.",
+      "body_excerpt": "Arabica coffee prices hit a record level, as traders digested the withdrawal of President Trump’s threats to impose tariffs and economic sanctions on Colombia.",
+      "tickers": []
+    },
+    {
+      "title": "Swiss franc, Japanese yen Rise as DeepSeek News Boosts Safe Havens",
+      "url": "https://www.wsj.com/articles/safe-haven-currencies-strengthen-amid-fears-over-global-tariffs-9964e17a",
+      "source": "WSJ Markets",
+      "published_at": "2025-01-27T14:55:00+00:00",
+      "in_window": false,
+      "summary": "The Yen and Swiss Franc were stronger against the dollar as investors sought safe havens after Chinese start-up DeepSeek’s new AI model hit U.S. tech stocks.",
+      "body_excerpt": "The Yen and Swiss Franc were stronger against the dollar as investors sought safe havens after Chinese start-up DeepSeek’s new AI model hit U.S. tech stocks.",
+      "tickers": []
+    },
+    {
+      "title": "Natural Gas Falls on Shifting Weather Forecasts",
+      "url": "https://www.wsj.com/articles/u-s-natural-gas-futures-fall-on-shifting-weather-forecasts-1ef3e457",
+      "source": "WSJ Markets",
+      "published_at": "2025-01-27T14:05:00+00:00",
+      "in_window": false,
+      "summary": "U.S. natural gas futures fell after weekend updates took some of the chill out of early February weather forecasts.",
+      "body_excerpt": "U.S. natural gas futures fell after weekend updates took some of the chill out of early February weather forecasts.",
+      "tickers": []
+    },
+    {
+      "title": "Building-Products Distributor QXO Launches Hostile Bid for Beacon",
+      "url": "https://www.wsj.com/articles/building-products-distributor-qxo-launching-hostile-bid-for-beacon-de024410",
+      "source": "WSJ Markets",
+      "published_at": "2025-01-27T13:28:00+00:00",
+      "in_window": false,
+      "summary": "QXO is taking its offer directly to shareholders after being rebuffed on several occasions.",
+      "body_excerpt": "QXO is taking its offer directly to shareholders after being rebuffed on several occasions.",
+      "tickers": []
+    },
+    {
+      "title": "Natural-Gas Firm Diversified Energy Strikes Deal for Permian Basin Player",
+      "url": "https://www.wsj.com/articles/natural-gas-firm-diversified-energy-nears-deal-for-permian-basin-player-4c1c5ff5",
+      "source": "WSJ Markets",
+      "published_at": "2025-01-27T11:57:00+00:00",
+      "in_window": false,
+      "summary": "Maverick Natural Resources has operations in Texas and Oklahoma.",
+      "body_excerpt": "Maverick Natural Resources has operations in Texas and Oklahoma.",
+      "tickers": []
+    },
+    {
+      "title": "What's New This Tax Season That Can Save You Money",
+      "url": "https://www.wsj.com/articles/tax-season-2024-irs-filing-dates-explained-628a8b37",
+      "source": "WSJ Markets",
+      "published_at": "2025-01-27T10:30:00+00:00",
+      "in_window": false,
+      "summary": "There are some new wrinkles, especially for those who sell things online or bought an EV.",
+      "body_excerpt": "There are some new wrinkles, especially for those who sell things online or bought an EV.",
+      "tickers": []
+    },
+    {
+      "title": "Chinese Investors With Few Options Turn to Dividends",
+      "url": "https://www.wsj.com/articles/chinese-investors-with-few-options-turn-to-dividends-ad31dcc4",
+      "source": "WSJ Markets",
+      "published_at": "2025-01-27T10:30:00+00:00",
+      "in_window": false,
+      "summary": "Companies with good payouts are now the hottest bet in China markets.",
+      "body_excerpt": "Companies with good payouts are now the hottest bet in China markets.",
+      "tickers": []
+    },
+    {
+      "title": "U.S. Treasury Yields Fall But Direction for Long-End Yields Still Seen Upward",
+      "url": "https://www.wsj.com/articles/jgbs-consolidate-supported-by-u-s-treasurys-gains-7edccc7d",
+      "source": "WSJ Markets",
+      "published_at": "2025-01-27T10:02:00+00:00",
+      "in_window": false,
+      "summary": "The 10-year U.S. Treasury yield fell and ING said the the long end of the Treasury curve will continue trading at higher yields even as Trump hasn’t delivered anything to shock markets so far.",
+      "body_excerpt": "The 10-year U.S. Treasury yield fell and ING said the the long end of the Treasury curve will continue trading at higher yields even as Trump hasn’t delivered anything to shock markets so far.",
+      "tickers": []
+    },
+    {
+      "title": "Russia's Crude Exports Fairly Stable Despite U.S. Sanctions, Goldman Says",
+      "url": "https://www.wsj.com/articles/oil-futures-fall-after-trump-calls-for-tariffs-on-colombia-5b2a178c",
+      "source": "WSJ Markets",
+      "published_at": "2025-01-27T09:46:00+00:00",
+      "in_window": false,
+      "summary": "Oil edged lower in early trade as Goldman Sachs said the latest round of U.S. sanctions against Russia haven’t had a significant impact on the country’s oil exports.",
+      "body_excerpt": "Oil edged lower in early trade as Goldman Sachs said the latest round of U.S. sanctions against Russia haven’t had a significant impact on the country’s oil exports.",
+      "tickers": []
+    },
+    {
+      "title": "The Extra Reward for Owning Stocks Over Bonds Has Disappeared",
+      "url": "https://www.wsj.com/articles/the-extra-reward-for-owning-stocks-over-bonds-has-disappeared-c3f9c223",
+      "source": "WSJ Markets",
+      "published_at": "2025-01-27T06:05:00+00:00",
+      "in_window": false,
+      "summary": "There is little sign of crimped demand for equities among individual investors, who remain bullish after two years of blockbuster gains.",
+      "body_excerpt": "There is little sign of crimped demand for equities among individual investors, who remain bullish after two years of blockbuster gains.",
+      "tickers": []
+    },
+    {
+      "title": "Heard on the Street's Stock-Picking Series",
+      "url": "https://www.wsj.com/articles/heard-on-the-streets-stock-picking-series-98f04640",
+      "source": "WSJ Markets",
+      "published_at": "2025-01-27T03:33:00+00:00",
+      "in_window": false,
+      "summary": "Check out the stocks Heard on the Street writers favor in their eighth annual stock-picking contest.",
+      "body_excerpt": "Check out the stocks Heard on the Street writers favor in their eighth annual stock-picking contest.",
+      "tickers": []
+    },
+    {
+      "title": "What Will It Take for Home Buyers to Start Asking for a Disaster Discount?",
+      "url": "https://www.wsj.com/articles/what-will-it-take-for-home-buyers-to-start-asking-for-a-disaster-discount-c662cb96",
+      "source": "WSJ Markets",
+      "published_at": "2025-01-26T11:00:00+00:00",
+      "in_window": false,
+      "summary": "The real costs of owning a house in neighborhoods that are vulnerable to flooding and wildfires are becoming clearer.",
+      "body_excerpt": "The real costs of owning a house in neighborhoods that are vulnerable to flooding and wildfires are becoming clearer.",
+      "tickers": []
+    },
+    {
+      "title": "Now Wanted in Silicon Valley: Ho-Hum Businesses With Thin Profit Margins",
+      "url": "https://www.wsj.com/articles/now-wanted-in-silicon-valley-ho-hum-businesses-with-thin-profit-margins-ab07de5f",
+      "source": "WSJ Markets",
+      "published_at": "2025-01-26T10:30:00+00:00",
+      "in_window": false,
+      "summary": "Venture-capital firms are bringing AI and dealmaking to accounting, property management and other unglamorous fields.",
+      "body_excerpt": "Venture-capital firms are bringing AI and dealmaking to accounting, property management and other unglamorous fields.",
+      "tickers": []
+    },
+    {
+      "title": "In China, a Cat-and-Mouse Game to Rein In Crypto",
+      "url": "https://www.wsj.com/articles/china-cryptocurrency-market-trading-restrictions-3e050cd9",
+      "source": "WSJ Markets",
+      "published_at": "2025-01-26T05:01:00+00:00",
+      "in_window": false,
+      "summary": "Recent court cases reveal how middlemen are facilitating a booming trade, eluding a crackdown.",
+      "body_excerpt": "Recent court cases reveal how middlemen are facilitating a booming trade, eluding a crackdown.",
+      "tickers": []
+    },
+    {
+      "title": "One House, Three Owners: The Ballooning Cost of the American Dream",
+      "url": "https://www.wsj.com/articles/rising-house-mortgage-costs-north-carolina-home-468a46e5",
+      "source": "WSJ Markets",
+      "published_at": "2025-01-26T02:00:00+00:00",
+      "in_window": false,
+      "summary": "The story of home affordability in the U.S. told from a single front porch.",
+      "body_excerpt": "The story of home affordability in the U.S. told from a single front porch.",
+      "tickers": []
+    },
+    {
+      "title": "Trump Adds Fuel to Claims That Big Banks Discriminate Against Conservatives",
+      "url": "https://www.wsj.com/articles/trump-big-bank-conservative-bias-accusations-168abb27",
+      "source": "WSJ Markets",
+      "published_at": "2025-01-25T10:30:00+00:00",
+      "in_window": false,
+      "summary": "The president has told Bank of America and JPMorgan Chase to stop cutting conservatives off from doing business.",
+      "body_excerpt": "The president has told Bank of America and JPMorgan Chase to stop cutting conservatives off from doing business.",
+      "tickers": []
+    }
+  ]
+}

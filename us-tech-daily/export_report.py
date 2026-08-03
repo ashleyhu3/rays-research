@@ -1,35 +1,32 @@
-"""Export the rendered report to Markdown and/or PDF.
+"""Export the rendered report to Markdown and/or PDF (US or Asia — see kinds.py).
 
 Both exports come off the same two inputs the HTML uses (agg + narrative), so the three
 formats can never disagree about a number.
 
   Markdown  built from the data directly — pipe tables, `==highlight==` marks, real
             links. Diffable, and the natural format to hand-edit a narrative in.
-  PDF       printed from the rendered HTML through Playwright, so it is the page as
-            designed rather than a second re-implementation of the layout.
+  PDF       printed from the rendered HTML through Playwright (in-memory — no temp file;
+            the report is fully self-contained so `page.set_content` is sufficient), so
+            it is the page as designed rather than a second re-implementation of the
+            layout. Print-only CSS lives in render_report.CSS's @media print block.
 
 Usage:
     python export_report.py --date 2026-07-30            # both
     python export_report.py --date 2026-07-30 --md       # markdown only
     python export_report.py --date 2026-07-30 --pdf      # pdf only
+    python export_report.py --date 2026-07-30 --kind asia
 """
 
 from __future__ import annotations
 
 import argparse
 import html as html_mod
-import json
 import re
 from datetime import date
-from pathlib import Path
 
+import kinds
 import render_report as R
-
-ROOT = Path(__file__).resolve().parent
-DATA_DIR = ROOT / "data"
-NARRATIVE_DIR = ROOT / "narrative"
-REPORT_DIR = ROOT / "reports"
-
+import store
 
 # ---------------------------------------------------------------- inline markup
 
@@ -68,13 +65,15 @@ def table(headers: list[str], rows: list[list[str]], right: set[int] = frozenset
 
 # ---------------------------------------------------------------- markdown build
 
-def build_markdown(agg: dict, nar: dict) -> str:
+def build_markdown(agg: dict, nar: dict, uni=None) -> str:
+    uni = uni or kinds.get("us").universe
     u = agg["universe"]
     out: list[str] = []
     w = out.append
 
     w(f'# {nar["title"]}\n')
-    w(f'> {agg["session"]} ET · {u["locked_n"]} 票 + {len(agg["indices"])} 指数 · '
+    w(f'> {agg.get("session_label", agg["session"])} ET · {u["locked_n"]} 票 + '
+      f'{len(agg["indices"])} 指数 · '
       f'{u["sectors_total"]} 子赛道 · {nar["subtitle_extra"]}\n')
     w(f'> **⚡ 关键信号** — {md(nar["key_signal"])}\n')
 
@@ -102,8 +101,9 @@ def build_markdown(agg: dict, nar: dict) -> str:
              f'{s["up"]}/{s["down"]}', str(s["highlight_n"]), str(s["extreme_n"]), s["direction"]]
             for s in agg["sectors"]]
     kk = agg["korea"]
-    rows.append(["**韩国锚（非 92 票）**", str(len(kk["rows"])), pct(kk["mean_pct"], True),
-                 f'{kk["up"]}/{kk["down"]}', str(kk["highlight_n"]), str(kk["extreme_n"]), "↓"])
+    rows.append([f'**{uni.ANCHOR_HEADER_LABEL}**', str(len(kk["rows"])), pct(kk["mean_pct"], True),
+                 f'{kk["up"]}/{kk["down"]}', str(kk["highlight_n"]), str(kk["extreme_n"]),
+                 R.korea_direction(kk)])
     w(table(["板块", "n", "等权均 pct", "上涨/下跌", "高亮", "极端", "方向"], rows,
             right={1, 2, 3, 4, 5}))
     w(f'{md(nar["s2_note"])}\n')
@@ -113,7 +113,8 @@ def build_markdown(agg: dict, nar: dict) -> str:
     by_name = {s["name"]: s for s in agg["sectors"]}
     for i, name in enumerate(agg["sectors_ordered"], 1):
         s = by_name[name]
-        suffix = "（拆 9 子链）" if name == "半导体硬件扩展" else ""
+        n_chains = len(nar.get("s3_chains", {}).get(name) or [])
+        suffix = f"（拆 {n_chains} 子链）" if n_chains else ""
         w(f"### 3.{i} {name}{suffix}\n")
         rows = [[r["ticker"], f'{r["close"]:,.2f}',
                  pct(r["pct"], j in (0, len(s["rows"]) - 1)),
@@ -140,7 +141,7 @@ def build_markdown(agg: dict, nar: dict) -> str:
         q = quotes.get(e["ticker"], {})
         close = f'{q["close"]:,.2f}' if q.get("close") is not None else "—"
         vol = q.get("dollar_volume_b")
-        meta = (f"收 {close}" if e.get("tag") == "韩国锚"
+        meta = (f"收 {close}" if e.get("tag") == uni.ANCHOR_LABEL
                 else f'收 {close} · 成交 {vol:,.2f}B$' if vol is not None else f"收 {close}")
         tag = f'｜{e["tag"]}' if e.get("tag") else ""
         srcs = " · ".join(f'[{s["label"]}]({s["url"]})' for s in e["sources"])
@@ -178,7 +179,7 @@ def build_markdown(agg: dict, nar: dict) -> str:
         w(f"- {md(note)}")
     w("")
 
-    stamp = date.fromisoformat(agg["session"]).strftime("%y%m%d")
+    stamp = date.fromisoformat(agg.get("session_end", agg["session"])).strftime("%y%m%d")
     w("---\n")
     w(f'*{stamp}-市场-美股科技板块复盘 · {nar["framework"]}*  ')
     w(f'*yfinance EOD + RSS 新闻抓取 + WebSearch · {nar["vault"]}*')
@@ -188,78 +189,67 @@ def build_markdown(agg: dict, nar: dict) -> str:
 
 # ---------------------------------------------------------------- pdf
 
-# Print-only overrides: the screen layout is a single tall column on a tinted page,
-# which wastes a third of every sheet and splits tables across page breaks.
-PRINT_CSS = """
-@page{size:A4;margin:14mm 12mm}
-body{background:#fff;font-size:10.5pt}
-.wrap{max-width:none}
-.banner{padding:22px 24px;border-radius:0}
-.banner h1{font-size:22pt}.banner .pill{margin-bottom:12px;font-size:9pt}
-.banner .sub{font-size:9.5pt}
-.body{padding:16px 4px 0}
-h1.page{display:none}
-.sec{box-shadow:none;border:1px solid #e3e8f0;margin-bottom:16px;break-inside:auto}
-.sec>.hd{padding:12px 16px;break-after:avoid}
-.sec>.hd .num{width:38px;height:38px;font-size:12pt}
-.sec>.hd h2{font-size:15pt}
-.sec>.bd{padding:16px}
-h3,h4{break-after:avoid}
-h3{font-size:12.5pt;margin-top:20px}h4{font-size:11pt}
-table{font-size:9pt;break-inside:auto}
-thead{display:table-header-group}
-tr{break-inside:avoid}
-th,td{padding:6px 8px}
-.mv{break-inside:avoid}
-.callout{break-inside:avoid;margin-bottom:20px}
-.foot{border-radius:0;padding:16px}
-a{text-decoration:none}
-"""
-
-
-def export_pdf(html_path: Path, out: Path) -> None:
+def export_pdf(html: str) -> bytes:
+    """Print the already-rendered HTML string to PDF bytes. No temp file: the report is
+    fully self-contained (one inline <style>, no images/scripts/webfonts), so Playwright
+    can load it straight from memory via set_content."""
     from playwright.sync_api import sync_playwright
 
     with sync_playwright() as p:
         browser = p.chromium.launch()
         page = browser.new_page()
-        page.goto(html_path.resolve().as_uri())
-        page.add_style_tag(content=PRINT_CSS)
+        page.set_content(html)
         page.emulate_media(media="print")
         page.wait_for_timeout(400)
-        page.pdf(path=str(out), format="A4", print_background=True,
-                 margin={"top": "14mm", "bottom": "14mm", "left": "12mm", "right": "12mm"})
+        pdf_bytes = page.pdf(format="A4", print_background=True,
+                              margin={"top": "14mm", "bottom": "14mm", "left": "12mm", "right": "12mm"})
         browser.close()
+        return pdf_bytes
 
 
 # ---------------------------------------------------------------- cli
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--date", required=True)
+    parser.add_argument("--date", required=True, help="the report's own publish date")
+    parser.add_argument("--session-date", help="the session whose tape this report covers; "
+                                                 "defaults to --date (differs only for a dead-slot report)")
+    parser.add_argument("--kind", default="us", choices=sorted(kinds.KINDS), help="us | asia")
     parser.add_argument("--md", action="store_true", help="markdown only")
     parser.add_argument("--pdf", action="store_true", help="pdf only")
     args = parser.parse_args()
+    session_date = args.session_date or args.date
 
     want_md = args.md or not args.pdf
     want_pdf = args.pdf or not args.md
 
-    agg = json.loads((DATA_DIR / f"agg_{args.date}.json").read_text(encoding="utf-8"))
-    nar = json.loads((NARRATIVE_DIR / f"{args.date}.json").read_text(encoding="utf-8"))
-    REPORT_DIR.mkdir(parents=True, exist_ok=True)
+    uni = kinds.get(args.kind).universe
+    agg = store.read_json("agg", args.kind, session_date)
+    nar = store.read_json("narrative", args.kind, args.date)
+    if agg is None:
+        raise SystemExit(f"no agg doc for kind={args.kind} date={session_date} — run aggregate.py first")
+    if nar is None:
+        raise SystemExit(f"no narrative doc for kind={args.kind} date={args.date}")
+
+    meta = None if session_date == args.date else {"is_fresh": False, "reused_from": session_date}
+    paths = store.report_file_paths(args.kind, args.date)
+    paths["html"].parent.mkdir(parents=True, exist_ok=True)
 
     if want_md:
-        out = REPORT_DIR / f"{args.date}_us_tech_daily.md"
-        out.write_text(build_markdown(agg, nar), encoding="utf-8")
+        out = paths["md"]
+        out.write_text(build_markdown(agg, nar, uni), encoding="utf-8")
         print(f"wrote {out} ({out.stat().st_size / 1024:.0f} KB)")
 
     if want_pdf:
-        html_path = REPORT_DIR / f"{args.date}_us_tech_daily.html"
-        if not html_path.exists():
-            html_path.write_text(R.render(agg, nar), encoding="utf-8")
+        html_path = paths["html"]
+        if html_path.exists():
+            html = html_path.read_text(encoding="utf-8")
+        else:
+            html = R.render(agg, nar, uni, meta)
+            html_path.write_text(html, encoding="utf-8")
             print(f"wrote {html_path} (regenerated for PDF)")
-        out = REPORT_DIR / f"{args.date}_us_tech_daily.pdf"
-        export_pdf(html_path, out)
+        out = paths["pdf"]
+        out.write_bytes(export_pdf(html))
         print(f"wrote {out} ({out.stat().st_size / 1024:.0f} KB)")
 
     return 0

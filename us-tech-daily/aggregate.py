@@ -3,21 +3,19 @@
 Conventions the report commits to in section 7, enforced here so the prose can never
 drift from the tables:
   - sector means are equal-weight, never cap-weight
-  - 前沿科技/流动性敏感 and 中概 AI mega roll up on their own
-  - Korea anchors never enter the 92-name average
+  - standalone sub-sectors (see universe.STANDALONE_SECTORS) roll up on their own
+  - anchor names (universe.KOREA_ANCHORS) never enter the locked-universe average
   - 高亮 = |pct| > 2.5%, 极端 = |pct| > 5%
+
+Same logic for every kind (see kinds.py) — only the universe module differs.
 """
 
 from __future__ import annotations
 
 import argparse
-import json
-from pathlib import Path
 
-import universe
-
-ROOT = Path(__file__).resolve().parent
-DATA_DIR = ROOT / "data"
+import kinds
+import store
 
 
 # A sector reads as two-way only when the minority side is substantial. A lone decliner
@@ -38,7 +36,8 @@ def _direction(up: int, down: int) -> str:
     return "↑" if up >= down else "↓"
 
 
-def build(eod: dict) -> dict:
+def build(eod: dict, uni=None) -> dict:
+    uni = uni or kinds.get("us").universe
     quotes = eod["quotes"]
 
     def row(symbol: str) -> dict:
@@ -50,12 +49,12 @@ def build(eod: dict) -> dict:
             "pct": pct,
             "dollar_volume_b": q.get("dollar_volume_b"),
             "dist_52w_high_pct": q.get("dist_52w_high_pct"),
-            "highlight": pct is not None and abs(pct) > universe.HIGHLIGHT_ABS_PCT,
-            "extreme": pct is not None and abs(pct) > universe.EXTREME_ABS_PCT,
+            "highlight": pct is not None and abs(pct) > uni.HIGHLIGHT_ABS_PCT,
+            "extreme": pct is not None and abs(pct) > uni.EXTREME_ABS_PCT,
         }
 
     sectors = []
-    for name, members in universe.SECTORS.items():
+    for name, members in uni.SECTORS.items():
         rows = sorted((row(t) for t in members), key=lambda r: (r["pct"] is None, -(r["pct"] or 0)))
         pcts = [r["pct"] for r in rows if r["pct"] is not None]
         up = sum(1 for p in pcts if p > 0)
@@ -69,19 +68,19 @@ def build(eod: dict) -> dict:
             "highlight_n": sum(1 for r in rows if r["highlight"]),
             "extreme_n": sum(1 for r in rows if r["extreme"]),
             "direction": _direction(up, down),
-            "standalone": name in universe.STANDALONE_SECTORS,
+            "standalone": name in uni.STANDALONE_SECTORS,
             "rows": rows,
         })
 
-    locked = universe.locked_universe()
+    locked = uni.locked_universe()
     locked_pcts = [quotes[t]["pct"] for t in locked if quotes.get(t, {}).get("pct") is not None]
 
-    korea_rows = [dict(row(sym), label=label) for sym, label in universe.KOREA_ANCHORS]
+    korea_rows = [dict(row(sym), label=label) for sym, label in uni.KOREA_ANCHORS]
     korea_pcts = [r["pct"] for r in korea_rows if r["pct"] is not None]
-    trigger = quotes.get(universe.KOREA_TRIGGER_TICKER, {}).get("pct")
+    trigger = quotes.get(uni.KOREA_TRIGGER_TICKER, {}).get("pct")
 
     indices = []
-    for sym, label in universe.INDICES:
+    for sym, label in uni.INDICES:
         q = quotes.get(sym, {})
         indices.append({"symbol": sym, "label": label, "close": q.get("close"), "pct": q.get("pct")})
 
@@ -92,6 +91,7 @@ def build(eod: dict) -> dict:
 
     return {
         "session": eod["session"],
+        "kind": eod.get("kind", "us"),
         "source": eod["source"],
         "indices": indices,
         "sectors": sorted(sectors, key=lambda s: (s["mean_pct"] is None, -(s["mean_pct"] or 0))),
@@ -102,8 +102,8 @@ def build(eod: dict) -> dict:
             "mean_pct": _mean(locked_pcts),
             "up": sum(1 for p in locked_pcts if p > 0),
             "down": sum(1 for p in locked_pcts if p <= 0),
-            "highlight_n": sum(1 for p in locked_pcts if abs(p) > universe.HIGHLIGHT_ABS_PCT),
-            "extreme_n": sum(1 for p in locked_pcts if abs(p) > universe.EXTREME_ABS_PCT),
+            "highlight_n": sum(1 for p in locked_pcts if abs(p) > uni.HIGHLIGHT_ABS_PCT),
+            "extreme_n": sum(1 for p in locked_pcts if abs(p) > uni.EXTREME_ABS_PCT),
             "sectors_green": sum(1 for s in sectors if (s["mean_pct"] or 0) > 0),
             "sectors_total": len(sectors),
         },
@@ -114,15 +114,17 @@ def build(eod: dict) -> dict:
             "down": sum(1 for p in korea_pcts if p <= 0),
             "highlight_n": sum(1 for r in korea_rows if r["highlight"]),
             "extreme_n": sum(1 for r in korea_rows if r["extreme"]),
-            "trigger_ticker": universe.KOREA_TRIGGER_TICKER,
+            "direction": _direction(sum(1 for p in korea_pcts if p > 0),
+                                    sum(1 for p in korea_pcts if p <= 0)),
+            "trigger_ticker": uni.KOREA_TRIGGER_TICKER,
             "trigger_pct": trigger,
-            "triggered": trigger is not None and abs(trigger) > universe.KOREA_TRIGGER_ABS_PCT,
+            "triggered": trigger is not None and abs(trigger) > uni.KOREA_TRIGGER_ABS_PCT,
         },
         "movers": movers,
         "thresholds": {
-            "highlight_abs_pct": universe.HIGHLIGHT_ABS_PCT,
-            "extreme_abs_pct": universe.EXTREME_ABS_PCT,
-            "korea_trigger_abs_pct": universe.KOREA_TRIGGER_ABS_PCT,
+            "highlight_abs_pct": uni.HIGHLIGHT_ABS_PCT,
+            "extreme_abs_pct": uni.EXTREME_ABS_PCT,
+            "korea_trigger_abs_pct": uni.KOREA_TRIGGER_ABS_PCT,
         },
     }
 
@@ -130,27 +132,30 @@ def build(eod: dict) -> dict:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--date", required=True)
+    parser.add_argument("--kind", default="us", choices=sorted(kinds.KINDS), help="us | asia")
     args = parser.parse_args()
 
-    eod = json.loads((DATA_DIR / f"eod_{args.date}.json").read_text(encoding="utf-8"))
-    agg = build(eod)
+    uni = kinds.get(args.kind).universe
+    eod = store.read_json("eod", args.kind, args.date)
+    if eod is None:
+        raise SystemExit(f"no eod doc for kind={args.kind} date={args.date} — run pull_global_eod.py first")
 
-    out = DATA_DIR / f"agg_{args.date}.json"
-    out.write_text(json.dumps(agg, indent=2, ensure_ascii=False), encoding="utf-8")
+    agg = build(eod, uni)
+    store.write_json("agg", args.kind, args.date, agg)
 
     u = agg["universe"]
-    print(f"session {agg['session']}: {u['scored_n']} names, equal-weight {u['mean_pct']:+.2f}%, "
+    print(f"[{args.kind}] session {agg['session']}: {u['scored_n']} names, equal-weight {u['mean_pct']:+.2f}%, "
           f"{u['up']}/{u['down']} up/down, {u['sectors_green']}/{u['sectors_total']} sub-sectors green")
-    print(f"  highlight |pct|>{universe.HIGHLIGHT_ABS_PCT}%: {u['highlight_n']}   "
-          f"extreme |pct|>{universe.EXTREME_ABS_PCT}%: {u['extreme_n']}")
+    print(f"  highlight |pct|>{uni.HIGHLIGHT_ABS_PCT}%: {u['highlight_n']}   "
+          f"extreme |pct|>{uni.EXTREME_ABS_PCT}%: {u['extreme_n']}")
     for s in agg["sectors"]:
         print(f"  {s['name']:<22} n={s['n']:<3} {s['mean_pct']:+7.2f}%  {s['up']}/{s['down']}  "
               f"hl={s['highlight_n']:<3} ex={s['extreme_n']:<3} {s['direction']}")
     k = agg["korea"]
-    print(f"  韩国锚(非92)            n={len(k['rows'])}   {k['mean_pct']:+7.2f}%  {k['up']}/{k['down']}  "
+    print(f"  {uni.ANCHOR_HEADER_LABEL:<22} n={len(k['rows'])}   {k['mean_pct']:+7.2f}%  {k['up']}/{k['down']}  "
           f"hl={k['highlight_n']} ex={k['extreme_n']}   trigger={k['trigger_pct']:+.2f}% "
           f"({'FIRED' if k['triggered'] else 'quiet'})")
-    print(f"wrote {out}")
+    print(f"wrote agg doc ({store.mode()} mode, kind={args.kind}, session={agg['session']})")
     return 0
 
 
