@@ -53,7 +53,7 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: "/us-tech-daily us-close"
-          claude_args: "--max-turns 60"
+          claude_args: "--max-turns 60 --permission-mode bypassPermissions"
           show_full_output: true
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
