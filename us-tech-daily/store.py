@@ -48,8 +48,13 @@ def _collection_handle():
 
     uri = os.environ["MONGODB_URI"]
     _client = MongoClient(uri, serverSelectionTimeoutMS=10000)
+    # Mirror server/storage.js's client.db(process.env.MONGODB_DB || undefined):
+    # with no MONGODB_DB and no db segment in the URI, the Node driver's db()
+    # falls back to "test" — pymongo's get_default_database() instead raises,
+    # so match Node's default explicitly rather than pointing at a different
+    # database than the one the site actually reads from.
     db_name = os.getenv("MONGODB_DB")
-    db = _client[db_name] if db_name else _client.get_default_database()
+    db = _client[db_name] if db_name else _client.get_default_database(default="test")
     _collection = db["blobs"]
     return _collection
 
