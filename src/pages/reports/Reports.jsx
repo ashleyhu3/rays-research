@@ -17,7 +17,7 @@ function formatEntryDate(entry) {
 // markup directly would let the report's CSS leak into the rest of the dashboard. The
 // iframe also scopes window.print() to just the report when there's no stored PDF yet.
 export default function Reports() {
-  const { data: index } = useResource('/api/reports/index');
+  const { data: index } = useResource('/api/reports/index', { revalidate: true });
   const [kind, setKind] = useState('us');
   const [selected, setSelected] = useState(null); // { date, slot }
   const iframeRef = useRef(null);
