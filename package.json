@@ -49,6 +49,7 @@
     "backfill:transcripts:alpha": "node --env-file=.env server/scripts/backfillAlphaVantageTranscripts.js",
     "backfill:transcripts": "node --env-file=.env server/scripts/backfillAlertsTranscripts.js",
     "earnings-review:prep": "node --env-file=.env server/scripts/prepareEarningsInputs.js",
+    "earnings-review:import": "node --env-file=.env server/scripts/importTranscript.js",
     "earnings-review:publish": "node --env-file=.env server/scripts/publishEarningsReview.js",
     "backfill:all": "npm run backfill:sec && npm run backfill:mcp && npm run backfill:github-stars",
     "db:ping": "node --env-file=.env server/scripts/dbPing.js",

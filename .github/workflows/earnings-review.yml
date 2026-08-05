@@ -10,9 +10,11 @@ name: Earnings review
 # than a pay-per-token API key. Same arrangement as the us-tech-daily workflows.
 #
 # Three steps, in order:
-#   1. prepareEarningsInputs.js  stages the transcript under research/{TICKER}/ER+Conf/
-#      from Mongo (a previously collected or pasted transcript) or Alpha Vantage. Fails
-#      the run before any skill turns are spent if no transcript can be had.
+#   1. prepareEarningsInputs.js  stages the transcript under research/{TICKER}/ER+Conf/ if
+#      it has already been collected (Mongo). A miss is fine and expected — the skill then
+#      sources the transcript from the company's IR site or a free public transcript
+#      provider with its own web tools, and imports it so the next run is served from
+#      Mongo. No transcript API is involved.
 #   2. the skill reads that transcript plus the release/valuation/options data it sources
 #      itself, and writes research/{TICKER}/Earnings_Review/{TICKER}_FY{year}Q{q}_EarningReview.md.
 #   3. publishEarningsReview.js renders it to HTML + PDF and writes the Mongo blobs.
@@ -22,10 +24,11 @@ name: Earnings review
 # Required repository secrets:
 #   CLAUDE_CODE_OAUTH_TOKEN — from `claude setup-token` (1-year lived; re-run yearly)
 #   MONGODB_URI
-#   ALPHA_VANTAGE_API_KEY   — transcript source
 # Recommended (the skill degrades those chapters to N/A without them):
 #   FMP_API_KEY             — trailing-quarter financials backfill
 #   MASSIVE_API_KEY         — options positioning snapshot
+#   ALPHA_VANTAGE_API_KEY   — only used to serve an already-collected transcript; the
+#                             skill sources uncollected calls from the web instead
 # Optional: MONGODB_DB
 
 on:
@@ -74,7 +77,7 @@ jobs:
           pip install playwright
           python -m playwright install --with-deps chromium
 
-      - name: Stage transcript
+      - name: Stage transcript (best effort — the skill sources it from the web on a miss)
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           MONGODB_DB: ${{ secrets.MONGODB_DB }}

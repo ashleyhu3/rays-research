@@ -33,20 +33,79 @@ Never move, rename, or delete original source materials.
 | `research/{Ticker}/SEC/8-K/` | Recent 8-K (contains release as Exhibit 99.1) | newest by date |
 | `research/{Ticker}/SEC/10-Q/` or `10-K/` | Quarterly/annual financials | newest by date |
 
-**The transcript is usually already staged for you.** When this skill is invoked from the
+**Check whether the transcript is already staged.** When this skill is invoked from the
 dashboard (the `earnings-review.yml` workflow, or `npm run earnings-review:prep` locally),
-`server/scripts/prepareEarningsInputs.js` has already written the verbatim transcript to
-`research/{Ticker}/ER+Conf/{TICKER}_{year}Q{q}_earnings_call_transcript.md` — sourced from
-Alpha Vantage's `EARNINGS_CALL_TRANSCRIPT` endpoint, or from a transcript the user pasted
-into the site. Read that file; do not re-fetch or web-search for a transcript when it
-exists. An `ER_File/` that exists but is empty means only the transcript was staged and
-the release is still yours to source.
+`server/scripts/prepareEarningsInputs.js` runs first. If the call was already collected it
+writes the verbatim transcript to
+`research/{Ticker}/ER+Conf/{TICKER}_{year}Q{q}_earnings_call_transcript.md` and prints
+`[prepare] transcript → …`. Read that file and do not re-fetch.
+
+If instead it prints `ACTION FOR THE SKILL: source the full verbatim transcript from the
+web`, the call has not been collected yet and finding it is your job — see the next
+section. An `ER_File/` that exists but is empty always means the release is yours to
+source.
 
 If nothing local exists, search the web for the company's official investor-relations
 earnings release, presentation, and call transcript for the requested fiscal period.
 Prefer the company's own IR site and SEC filings (8-K/10-Q/10-K) over third-party
 recaps. Save what you fetch into `research/{Ticker}/ER_File/` and
 `research/{Ticker}/ER+Conf/` as markdown/text so re-runs don't refetch.
+
+## Sourcing the transcript from the web
+
+Full earnings-call transcripts are freely available; there is no API and no paid provider
+in this path. Use your own web tools, then import what you find so it is fetched once
+and reused forever.
+
+**A verbatim transcript is the requirement, not a nice-to-have.** Chapters 五 and 六 are a
+speaker-by-speaker and question-by-question record, and the coverage gate in
+`references/transcript-coverage-gate.md` walks every `PR-*` and `QA-*` unit. A journalist's
+recap, an AI summary, or a "key takeaways" article cannot support either, and produces a
+review that looks complete while silently dropping most of the call. There is a worked
+example of this failure in this repo: `research/MSFT/ER+Conf/` holds a secondary-source
+recap, and MSFT's chapter 六 has 6 Q&A entries against GOOG's 9 verbatim-sourced ones.
+**If you can only find a recap, say so at the top of the review and in the run output —
+do not present it as a transcript-based review.**
+
+Search order, best first:
+
+1. **The company's own investor-relations site** — many post a transcript PDF or the
+   webcast replay page alongside the release. Authoritative when it exists.
+2. **Motley Fool** (`fool.com/earnings/call-transcripts/…`) — free, full, verbatim, with
+   `Name -- Title` speaker labels and explicit "Prepared Remarks" / "Questions and
+   Answers" headings. Parses cleanly with no reshaping.
+3. **Insider Monkey**, **StockTitan**, **AlphaStreet**, **Investing.com** — usually full
+   and verbatim; check the end of the page for truncation before trusting it.
+4. **Seeking Alpha** — has essentially everything, but is behind a login wall. If the
+   fetch returns a stub or a paywall interstitial, treat it as a miss and move on rather
+   than saving the fragment.
+
+A good search string is `"{Company} Q{n} {year} earnings call transcript"`, plus the
+quarter-end date when a ticker's fiscal and calendar quarters differ.
+
+**Before saving, verify it is the right call and it is complete:** the fiscal quarter and
+year match what you were asked for (mind off-calendar fiscal years — NVDA's "Q2 FY2027" is
+the quarter ending July 2026); the prepared remarks and Q&A are both present; the Q&A runs
+to the operator's closing remark rather than stopping mid-exchange; and the numbers in the
+opening CFO remarks agree with the earnings release.
+
+**Save it** to `research/{Ticker}/ER+Conf/{TICKER}_{year}Q{q}_earnings_call_transcript.md`,
+keeping the `Name -- Title` speaker headings and the section headings — those are what the
+parser splits on.
+
+**Then import it**, so the next run for this quarter is served from Mongo instead of being
+searched for again:
+
+```
+node --env-file-if-exists=.env server/scripts/importTranscript.js \
+  --ticker {TICKER} --quarter Q{q} --year {year} \
+  --file "research/{Ticker}/ER+Conf/{TICKER}_{year}Q{q}_earnings_call_transcript.md" \
+  --source-url "{where you got it}"
+```
+
+The import rejects anything that does not look like a full transcript (too few speaker
+blocks, too few words, no Q&A detected). Treat a rejection as a signal to find a better
+source, not as something to work around.
 
 ### File classification
 
