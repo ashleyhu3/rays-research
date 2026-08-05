@@ -67,6 +67,15 @@ const KOFIA_MARGIN_TABLE = {
   cols: { margin: 'TMPV2', collateral: 'TMPV9' },
 };
 
+// Requesting raw won (divisor "01") used to be safe, but as of Aug 2026 the
+// credit balance is large enough that KOFIA's own report-grid formatter
+// overflows its fixed display width and substitutes literal '#' characters
+// for the overflowing digits (e.g. "2744385#######") — invalid JSON that
+// breaks res.json(). Asking the backend to pre-divide by a real divisor
+// keeps the numbers short enough to stay clean; per the trap noted above the
+// backend divides by the literal code value, so "1000000" → 백만원 units.
+const KOFIA_UNIT_DIVISOR = 1000000;
+
 async function kofiaCredit(from, to) {
   const spec = KOFIA_MARGIN_TABLE;
   const res = await fetch(KOFIA_URL, {
@@ -82,8 +91,8 @@ async function kofiaCredit(from, to) {
         tmpV1: 'D',          // 자료주기: daily
         tmpV45: from,        // yyyyMMdd
         tmpV46: to,
-        tmpV40: '01',        // unit divisor — "01" → divide by 1 → raw won
-        tmpV41: '01',
+        tmpV40: String(KOFIA_UNIT_DIVISOR),
+        tmpV41: String(KOFIA_UNIT_DIVISOR),
       },
     }),
     signal: AbortSignal.timeout(60000),
@@ -97,7 +106,7 @@ async function kofiaCredit(from, to) {
     const day = `${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6)}`;
     for (const [key, col] of Object.entries(spec.cols)) {
       const won = row[col];
-      if (Number.isFinite(won)) out[key][day] = won / TRILLION;
+      if (Number.isFinite(won)) out[key][day] = (won * KOFIA_UNIT_DIVISOR) / TRILLION;
     }
   }
   if (!Object.keys(out.margin).length) throw new Error('KOFIA credit returned no rows');
@@ -409,8 +418,14 @@ async function getKoreaLeverage(days = 30) {
   const from = iso(start);
 
   const [credit, domesticUniverse, hkexAum, usdKrw, skddAumUsd] = await Promise.all([
-    kofiaCredit(compact(from), compact(iso(today))),
-    leverageUniverse(),
+    kofiaCredit(compact(from), compact(iso(today))).catch(e => {
+      console.warn(`[koreaLeverage] KOFIA credit unavailable (${e.message}) — margin/collateral will carry forward`);
+      return { margin: {}, collateral: {} };
+    }),
+    leverageUniverse().catch(e => {
+      console.warn(`[koreaLeverage] Daum ETF universe unavailable (${e.message}) — ETF layer will carry forward`);
+      return { funds: [], reverseFunds: [] };
+    }),
     hkexFundHistory(from).catch(e => {
       console.warn(`[koreaLeverage] HKEXnews unavailable (${e.message}) — HK legs will carry forward`);
       return {};

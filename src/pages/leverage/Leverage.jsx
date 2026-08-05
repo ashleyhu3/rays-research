@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
-import { Bar, Line } from 'react-chartjs-2';
+import { Bar, Chart, Line } from 'react-chartjs-2';
 import ChartCard from '../../components/chart/ChartCard';
 import BuybackPanel from '../../components/chart/BuybackPanel';
 
@@ -10,6 +10,14 @@ const REVERSE = '#c65d57';
 // Day-over-day change bars: green for increases (above 0), red for decreases (below 0).
 const UP = '#3f9d6d';
 const DOWN = '#c65d57';
+// Weekly-candle colors for the Korea margin OHLC panel: terracotta body/wick
+// when the week closes above its open, teal when it closes below.
+const CANDLE_UP = '#ad622d';
+const CANDLE_DOWN = '#1f7a6c';
+const MA_SHORT_COLOR = '#a83232';
+const MA_LONG_COLOR = '#c9a227';
+const MA_SHORT_PERIOD = 5;
+const MA_LONG_PERIOD = 20;
 
 function alpha(hex, a) {
   const n = parseInt(hex.slice(1), 16);
@@ -312,6 +320,71 @@ function monthLabel(iso) {
 function markedDate(iso) {
   const [year, month, day] = iso.split('-');
   return `${year.slice(-2)}/${month}/${day}`;
+}
+
+function isoWeekMonday(dateStr) {
+  const d = new Date(`${dateStr}T00:00:00Z`);
+  const diffToMonday = (d.getUTCDay() + 6) % 7; // Mon=0 .. Sun=6
+  d.setUTCDate(d.getUTCDate() - diffToMonday);
+  return d.toISOString().slice(0, 10);
+}
+
+function rollingMean(values, period) {
+  const out = new Array(values.length).fill(null);
+  for (let i = period - 1; i < values.length; i += 1) {
+    let sum = 0;
+    let ok = true;
+    for (let j = i - period + 1; j <= i; j += 1) {
+      const v = values[j];
+      if (!Number.isFinite(v)) { ok = false; break; }
+      sum += v;
+    }
+    out[i] = ok ? sum / period : null;
+  }
+  return out;
+}
+
+/**
+ * Daily (date, value) pairs → weekly OHLC candles (Mon-Sun buckets, so a
+ * normal KRX week is Mon-Fri close). MA5/MA20 are computed on the daily
+ * series first, then sampled at each week's last trading day, so the lines
+ * reflect the standard daily crossover rather than a coarser weekly-bar MA.
+ * The final week is flagged partial when it hasn't reached Friday yet.
+ */
+function weeklyOhlc(dates, values) {
+  const maShort = rollingMean(values, MA_SHORT_PERIOD);
+  const maLong = rollingMean(values, MA_LONG_PERIOD);
+
+  const weeks = [];
+  let current = null;
+  for (let i = 0; i < dates.length; i += 1) {
+    const v = values[i];
+    if (!Number.isFinite(v)) continue;
+    const weekKey = isoWeekMonday(dates[i]);
+    if (!current || current.weekKey !== weekKey) {
+      current = { weekKey, dates: [], values: [] };
+      weeks.push(current);
+    }
+    current.dates.push(dates[i]);
+    current.values.push(v);
+    current.lastIndex = i;
+  }
+
+  return weeks.map((w, wi) => {
+    const endDate = w.dates[w.dates.length - 1];
+    const endWeekday = new Date(`${endDate}T00:00:00Z`).getUTCDay(); // 5 = Friday
+    return {
+      startDate: w.dates[0],
+      endDate,
+      open: w.values[0],
+      high: Math.max(...w.values),
+      low: Math.min(...w.values),
+      close: w.values[w.values.length - 1],
+      maShort: maShort[w.lastIndex],
+      maLong: maLong[w.lastIndex],
+      partial: wi === weeks.length - 1 && endWeekday !== 5,
+    };
+  });
 }
 
 function sessionIndex(dates, target) {
@@ -629,14 +702,24 @@ export default function Leverage({ marketId = 'korea' }) {
 
       {win.shown.map(layer => (
         <Fragment key={layer.key}>
-          <LayerPanel
-            market={market}
-            marketId={marketId}
-            layer={layer}
-            win={win}
-            data={data}
-            formatValue={formatValue}
-          />
+          {marketId === 'korea' && layer.key === 'margin' ? (
+            <MarginOhlcPanel
+              market={market}
+              data={data}
+              startDate={startDate}
+              endDate={endDate}
+              formatValue={formatValue}
+            />
+          ) : (
+            <LayerPanel
+              market={market}
+              marketId={marketId}
+              layer={layer}
+              win={win}
+              data={data}
+              formatValue={formatValue}
+            />
+          )}
           {layer.key === 'margin' && <MarginDodPanel market={market} win={win} />}
         </Fragment>
       ))}
@@ -688,6 +771,161 @@ function LayerPanel({ market, marketId, layer, win, data, formatValue }) {
           </div>
         </div>
       ) : chart}
+    </ChartCard>
+  );
+}
+
+/**
+ * Korea margin loans as weekly OHLC candles (from the daily credit-financing
+ * balance) with 5-day and 20-day moving averages overlaid. Built from the
+ * full daily series rather than the windowed one so the MAs have proper
+ * lookback at the start of whatever range is selected; weeks are then
+ * filtered to the selected [startDate, endDate].
+ *
+ * Candles are two overlapping floating-bar datasets (thin wick, wide body) —
+ * chartjs-chart-financial isn't in the stack, but Chart.js's built-in
+ * [low, high] floating-bar support plus `grouped: false` (so both bars share
+ * the same category slot instead of sitting side-by-side) gets the same look
+ * without a new dependency.
+ */
+function MarginOhlcPanel({ market, data, startDate, endDate, formatValue }) {
+  const allWeeks = useMemo(
+    () => weeklyOhlc(data.dates ?? [], data.margin ?? []),
+    [data],
+  );
+  const weeks = useMemo(
+    () => allWeeks.filter(w => w.endDate >= startDate && w.startDate <= endDate),
+    [allWeeks, startDate, endDate],
+  );
+
+  const layer = market.layers.find(l => l.key === 'margin');
+  if (!weeks.length) return null;
+
+  const long = weeks.length > 120;
+  const labels = weeks.map(w => (long ? monthLabel(w.endDate) : dayLabel(w.endDate)));
+  const upColor = weeks.map(w => (w.close >= w.open ? CANDLE_UP : CANDLE_DOWN));
+
+  const chartData = {
+    labels,
+    datasets: [
+      {
+        type: 'bar',
+        label: 'Wick',
+        data: weeks.map(w => [w.low, w.high]),
+        backgroundColor: upColor,
+        borderWidth: 0,
+        barThickness: 1.5,
+        grouped: false,
+      },
+      {
+        type: 'bar',
+        label: 'Body',
+        data: weeks.map(w => [Math.min(w.open, w.close), Math.max(w.open, w.close)]),
+        backgroundColor: upColor,
+        borderWidth: 0,
+        barPercentage: 0.62,
+        categoryPercentage: 1,
+        grouped: false,
+      },
+      {
+        type: 'line',
+        label: `MA${MA_SHORT_PERIOD}`,
+        data: weeks.map(w => w.maShort),
+        borderColor: MA_SHORT_COLOR,
+        borderWidth: 1.75,
+        pointRadius: 0,
+        tension: 0.15,
+        spanGaps: true,
+      },
+      {
+        type: 'line',
+        label: `MA${MA_LONG_PERIOD}`,
+        data: weeks.map(w => w.maLong),
+        borderColor: MA_LONG_COLOR,
+        borderWidth: 1.75,
+        pointRadius: 0,
+        tension: 0.15,
+        spanGaps: true,
+      },
+    ],
+  };
+
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: { duration: 300 },
+    interaction: { mode: 'index', intersect: false },
+    layout: { padding: { top: 16, right: 8, bottom: 6 } },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#1a1f2a',
+        borderColor: 'rgba(255,255,255,.12)',
+        borderWidth: 1,
+        padding: 10,
+        titleFont: { family: "'Inter',sans-serif", size: 11 },
+        bodyFont: { family: "'Inter',sans-serif", size: 11 },
+        filter: item => item.datasetIndex !== 0, // drop the wick from the tooltip
+        callbacks: {
+          title: items => (items.length ? weeks[items[0].dataIndex].endDate : ''),
+          label: context => {
+            const w = weeks[context.dataIndex];
+            if (context.datasetIndex === 1) {
+              return ` O ${formatValue(w.open)}  H ${formatValue(w.high)}  L ${formatValue(w.low)}  C ${formatValue(w.close)}`;
+            }
+            return ` ${context.dataset.label}: ${formatValue(context.raw)}`;
+          },
+        },
+      },
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: {
+          color: MUTED,
+          maxTicksLimit: 12,
+          autoSkip: true,
+          maxRotation: 0,
+          padding: 3,
+          font: { size: 10 },
+        },
+      },
+      y: {
+        grace: '8%',
+        grid: { color: 'rgba(255,255,255,.07)' },
+        ticks: {
+          color: MUTED,
+          callback: value => `${Number(value).toLocaleString()}${market.unit}`,
+          font: { size: 10 },
+        },
+      },
+    },
+  };
+
+  const latest = weeks.at(-1);
+  const subtitle = `Cutoff ${latest.endDate}${latest.partial ? ' | partial week' : ''}  `
+    + `Close ${formatValue(latest.close)}  `
+    + `MA${MA_SHORT_PERIOD} ${formatValue(latest.maShort)}  `
+    + `MA${MA_LONG_PERIOD} ${formatValue(latest.maLong)}`;
+
+  return (
+    <ChartCard
+      chartId={`${market.id}-leverage-margin-ohlc`}
+      title={`${market.label} · Margin loans — weekly OHLC`}
+      src={<SourceLinks layers={[layer]} />}
+      freq="Weekly"
+      lag={layer.lag}
+      span2
+      height={340}
+      legend={[
+        ['Balance increase', CANDLE_UP],
+        ['Balance decrease', CANDLE_DOWN],
+        [`MA${MA_SHORT_PERIOD}`, MA_SHORT_COLOR],
+        [`MA${MA_LONG_PERIOD}`, MA_LONG_COLOR],
+      ]}
+      preface={<div style={{ color: MUTED, fontSize: 12, marginBottom: 8 }}>{subtitle}</div>}
+    >
+      <Chart type="bar" data={chartData} options={options} />
     </ChartCard>
   );
 }
