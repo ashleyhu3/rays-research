@@ -891,6 +891,7 @@ function MarginOhlcPanel({ market, data, startDate, endDate, formatValue }) {
         },
       },
       y: {
+        beginAtZero: false, // the 'bar' base chart type defaults this true; candles should hug their own range, not zero
         grace: '8%',
         grid: { color: 'rgba(255,255,255,.07)' },
         ticks: {
