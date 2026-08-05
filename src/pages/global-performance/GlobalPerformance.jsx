@@ -234,6 +234,17 @@ export default function GlobalPerformance({ section = null }) {
       const bounds = visibleBounds(series.dates, startDate, endDate);
       if (!bounds) return null;
       const labels = sliceBounds(series.dates, bounds).map(fmtDate);
+      // Older cached payloads (before this metric existed) omit these fields
+      // entirely — fall back to an all-null series of the right length
+      // rather than letting sliceBounds() throw on undefined.
+      const nullSeries = () => new Array(series.dates.length).fill(null);
+      const pctOutperform20 = series.pctOutperform20 ?? nullSeries();
+      const pctOutperform200 = series.pctOutperform200 ?? nullSeries();
+      const pctAt52wHigh = series.pctAt52wHigh ?? nullSeries();
+      const pctAt52wLow = series.pctAt52wLow ?? nullSeries();
+      // Rolling average is computed against the full series (not the visible
+      // slice) so the window has access to data before the visible start date.
+      const pctUpRolling20 = sliceBounds(rollingAverage(series.pctUp, 20), bounds);
       return {
         key,
         title: meta.label,
@@ -258,6 +269,58 @@ export default function GlobalPerformance({ section = null }) {
             tension: 0.15,
             spanGaps: true,
           }],
+        },
+        pctUpRolling20Data: {
+          labels,
+          datasets: [{
+            label: '% of Stocks Up (20D Rolling Avg)',
+            data: pctUpRolling20,
+            borderColor: meta.color,
+            backgroundColor: 'transparent',
+            borderWidth: 2,
+            pointRadius: 0,
+            pointHoverRadius: 3,
+            pointHitRadius: 6,
+            tension: 0.15,
+            spanGaps: true,
+          }],
+        },
+        outperform20Data: {
+          labels,
+          datasets: [{
+            label: '% Outperforming Index (20D)',
+            data: sliceBounds(pctOutperform20, bounds),
+            borderColor: meta.color,
+            backgroundColor: 'transparent',
+            borderWidth: 2,
+            pointRadius: 0,
+            pointHoverRadius: 3,
+            pointHitRadius: 6,
+            tension: 0.15,
+            spanGaps: true,
+          }],
+        },
+        outperform200Data: {
+          labels,
+          datasets: [{
+            label: '% Outperforming Index (200D)',
+            data: sliceBounds(pctOutperform200, bounds),
+            borderColor: meta.color,
+            backgroundColor: 'transparent',
+            borderWidth: 2,
+            pointRadius: 0,
+            pointHoverRadius: 3,
+            pointHitRadius: 6,
+            tension: 0.15,
+            spanGaps: true,
+          }],
+        },
+        highLowData: {
+          labels,
+          datasets: [
+            { label: '% at 52-Week High', data: sliceBounds(pctAt52wHigh, bounds), borderColor: '#4ade80', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, pointHoverRadius: 3, pointHitRadius: 6, tension: 0.15, spanGaps: true },
+            { label: '% at 52-Week Low', data: sliceBounds(pctAt52wLow, bounds), borderColor: '#f87171', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, pointHoverRadius: 3, pointHitRadius: 6, tension: 0.15, spanGaps: true },
+          ],
         },
       };
     }).filter(Boolean);
@@ -370,13 +433,25 @@ export default function GlobalPerformance({ section = null }) {
                 <ChartCard title={`${chart.title} — % of Stocks Up`} src="Yahoo Finance" srcUrl="https://finance.yahoo.com" freq="Daily" height={275}>
                   <Line data={chart.pctUpData} options={pctUpChartOptions()} />
                 </ChartCard>
+                <ChartCard title={`${chart.title} — % of Stocks Up (20D Rolling)`} src="Yahoo Finance" srcUrl="https://finance.yahoo.com" freq="Daily" height={275}>
+                  <Line data={chart.pctUpRolling20Data} options={pctUpChartOptions()} />
+                </ChartCard>
+                <ChartCard title={`${chart.title} — % Outperforming Index (20D)`} src="Yahoo Finance" srcUrl="https://finance.yahoo.com" freq="Daily" height={275}>
+                  <Line data={chart.outperform20Data} options={pctUpChartOptions()} />
+                </ChartCard>
+                <ChartCard title={`${chart.title} — % Outperforming Index (200D)`} src="Yahoo Finance" srcUrl="https://finance.yahoo.com" freq="Daily" height={275}>
+                  <Line data={chart.outperform200Data} options={pctUpChartOptions()} />
+                </ChartCard>
+                <ChartCard title={`${chart.title} — % at 52-Week High/Low`} src="Yahoo Finance" srcUrl="https://finance.yahoo.com" freq="Daily" height={275}>
+                  <Line data={chart.highLowData} options={breadthChartOptions()} />
+                </ChartCard>
               </div>
             ))}
           </div>
           {breadthError && <div className="empty">Could not load breadth data: {breadthError}</div>}
           {!breadthPayload && !breadthError && <div className="empty">Loading breadth data…</div>}
           <div className="src-note" style={{ marginTop: 12 }}>
-            Breadth is computed from each index's own constituents: S&amp;P 500, Nasdaq 100, SOX, Hang Seng, CSI 300, Nikkei 225, ChiNext (100 members), TAIEX (all TWSE-listed stocks), KOSPI 200, and TOPIX (JPX New Index Series). Constituent lists come from each market's official source; daily prices from Yahoo Finance.
+            Breadth is computed from each index's own constituents: S&amp;P 500, Nasdaq 100, SOX, Hang Seng, CSI 300, Nikkei 225, ChiNext (100 members), TAIEX (all TWSE-listed stocks), KOSPI 200, and TOPIX (JPX New Index Series). Constituent lists come from each market's official source; daily prices from Yahoo Finance. "% Outperforming Index" compares each constituent's trailing 20-day or 200-day price return to the index's own return over the same window; "% at 52-Week High/Low" is the share of constituents whose close sits at its own trailing 252-session high or low.
           </div>
         </>
       )}

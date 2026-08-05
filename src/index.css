@@ -1348,11 +1348,12 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
 }
 .global-breadth-row {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
 }
 @media (max-width: 1180px) {
   .usp-etf-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .global-breadth-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 760px) {
   .usp-etf-grid { grid-template-columns: 1fr; }

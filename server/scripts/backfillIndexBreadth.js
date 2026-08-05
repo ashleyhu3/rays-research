@@ -71,10 +71,11 @@ async function main() {
       const blob = blobByName.get(RAW_BLOB[key]);
       await storage.load(blob.name, blob.file);
     }
-    if (incompleteKeys.some(key => key === 'sox' || key === 'nikkei225')) {
-      const turnoverBlob = blobByName.get('globalIndicesHistory');
-      await storage.load(turnoverBlob.name, turnoverBlob.file);
-    }
+    // Every index now compares its constituents' returns against the index's
+    // own level (outperformance metrics), not just the SOX/Nikkei225
+    // turnover byproduct, so this is unconditional.
+    const globalIndicesBlob = blobByName.get('globalIndicesHistory');
+    await storage.load(globalIndicesBlob.name, globalIndicesBlob.file);
 
     console.log(`[index-breadth-backfill] bootstrapping/rebuilding series: ${incompleteKeys.join(', ')}`);
     const failures = [];

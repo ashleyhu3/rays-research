@@ -1,10 +1,13 @@
 /**
  * Rotation → Global → Breadth: for each Phase-1 index, the % of constituents
- * trading above BOTH their 50-day and 200-day SMA (vs. below both), and the
- * % up on the day. No free pre-computed source exists for this (MacroMicro
- * tracks it but gates the numbers behind a paid plan; StockCharts renders it
- * as an anonymous-view image, not data — both confirmed directly) so this
- * computes it from each index's own constituents.
+ * trading above BOTH their 50-day and 200-day SMA (vs. below both), the % up
+ * on the day, the % of constituents outperforming the index's own return
+ * over trailing 20-day and 200-day windows, and the % of constituents sitting
+ * at a 52-week (252-session) high or low. No free pre-computed source exists
+ * for any of this (MacroMicro tracks similar breadth numbers but gates them
+ * behind a paid plan; StockCharts renders equivalents as anonymous-view
+ * images, not data — both confirmed directly) so this computes it all from
+ * each index's own constituents.
  *
  * Storage design (deliberately NOT "keep every ticker's full history
  * forever"): each index gets its own small rolling raw-price cache — just
@@ -37,6 +40,7 @@ const XLSX = require('@e965/xlsx');
 const path = require('path');
 const storage = require('../storage');
 const { isoDaysAgo } = require('./persistedSeries');
+const { readGlobalIndices, mergeTurnover } = require('./globalIndices');
 
 const BROWSER_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
@@ -358,21 +362,90 @@ function rollingAverage(values, windowSize) {
   });
 }
 
-function computeAggregates(dates, closesByTicker) {
+// Trailing N-valid-observation % return — same "N valid values, gaps don't
+// reset the window" semantics as rollingAverage, via a fixed-size circular
+// buffer so this stays cheap at window=200 across ~1,600-constituent indices.
+function rollingReturn(values, window) {
+  const bufSize = window + 1;
+  const buf = new Array(bufSize).fill(null);
+  let pos = 0;
+  let filled = 0;
+  return values.map(v => {
+    if (v == null || !Number.isFinite(v)) return null;
+    buf[pos] = v;
+    pos = (pos + 1) % bufSize;
+    filled += 1;
+    if (filled < bufSize) return null;
+    const oldest = buf[pos];
+    return oldest ? v / oldest - 1 : null;
+  });
+}
+
+// Trailing N-valid-observation max/min via a monotonic deque — same window
+// semantics as rollingAverage/rollingReturn (nulls are skipped, not counted).
+function rollingExtreme(values, window, mode) {
+  const isMax = mode === 'max';
+  const dequeValues = [];
+  const dequeIdx = [];
+  const out = new Array(values.length).fill(null);
+  let validIndex = -1;
+  for (let i = 0; i < values.length; i += 1) {
+    const v = values[i];
+    if (v == null || !Number.isFinite(v)) continue;
+    validIndex += 1;
+    while (dequeValues.length && (isMax
+      ? dequeValues[dequeValues.length - 1] <= v
+      : dequeValues[dequeValues.length - 1] >= v)) {
+      dequeValues.pop();
+      dequeIdx.pop();
+    }
+    dequeValues.push(v);
+    dequeIdx.push(validIndex);
+    while (dequeIdx[0] <= validIndex - window) {
+      dequeValues.shift();
+      dequeIdx.shift();
+    }
+    if (validIndex >= window - 1) out[i] = dequeValues[0];
+  }
+  return out;
+}
+
+// Rolling windows for "% of constituents outperforming the index" (their own
+// trailing return vs. the index's own trailing return over the same window).
+const OUTPERFORM_WINDOWS = [20, 200];
+// Standard 52-week lookback in trading sessions.
+const HIGH_LOW_WINDOW = 252;
+
+function computeAggregates(dates, closesByTicker, indexCloses = []) {
   const tickers = Object.keys(closesByTicker);
   const sma50ByTicker = {};
   const sma200ByTicker = {};
+  const returnsByTicker = {};
+  const maxByTicker = {};
+  const minByTicker = {};
   for (const t of tickers) {
     sma50ByTicker[t] = rollingAverage(closesByTicker[t], SMA_SHORT);
     sma200ByTicker[t] = rollingAverage(closesByTicker[t], SMA_LONG);
+    returnsByTicker[t] = Object.fromEntries(
+      OUTPERFORM_WINDOWS.map(w => [w, rollingReturn(closesByTicker[t], w)]),
+    );
+    maxByTicker[t] = rollingExtreme(closesByTicker[t], HIGH_LOW_WINDOW, 'max');
+    minByTicker[t] = rollingExtreme(closesByTicker[t], HIGH_LOW_WINDOW, 'min');
   }
+  const indexReturns = Object.fromEntries(
+    OUTPERFORM_WINDOWS.map(w => [w, rollingReturn(indexCloses, w)]),
+  );
 
   const pctAboveBoth = [];
   const pctBelowBoth = [];
   const pctUp = [];
+  const pctOutperform = Object.fromEntries(OUTPERFORM_WINDOWS.map(w => [w, []]));
+  const pctAt52wHigh = [];
+  const pctAt52wLow = [];
   for (let i = 0; i < dates.length; i += 1) {
     let above = 0, below = 0, maTotal = 0;
     let upCount = 0, upTotal = 0;
+    let highCount = 0, lowCount = 0, extremeTotal = 0;
     for (const t of tickers) {
       const close = closesByTicker[t][i];
       const sma50 = sma50ByTicker[t][i];
@@ -387,12 +460,51 @@ function computeAggregates(dates, closesByTicker) {
         upTotal += 1;
         if (close > prevClose) upCount += 1;
       }
+      const max252 = maxByTicker[t][i];
+      const min252 = minByTicker[t][i];
+      if (close != null && max252 != null && min252 != null) {
+        extremeTotal += 1;
+        if (close >= max252) highCount += 1;
+        if (close <= min252) lowCount += 1;
+      }
+    }
+    for (const w of OUTPERFORM_WINDOWS) {
+      const indexReturn = indexReturns[w][i];
+      let outCount = 0, total = 0;
+      if (indexReturn != null) {
+        for (const t of tickers) {
+          const stockReturn = returnsByTicker[t][w][i];
+          if (stockReturn != null) {
+            total += 1;
+            if (stockReturn > indexReturn) outCount += 1;
+          }
+        }
+      }
+      pctOutperform[w].push(total ? round2((outCount / total) * 100) : null);
     }
     pctAboveBoth.push(maTotal ? round2((above / maTotal) * 100) : null);
     pctBelowBoth.push(maTotal ? round2((below / maTotal) * 100) : null);
     pctUp.push(upTotal ? round2((upCount / upTotal) * 100) : null);
+    pctAt52wHigh.push(extremeTotal ? round2((highCount / extremeTotal) * 100) : null);
+    pctAt52wLow.push(extremeTotal ? round2((lowCount / extremeTotal) * 100) : null);
   }
-  return { dates, pctAboveBoth, pctBelowBoth, pctUp };
+  return {
+    dates, pctAboveBoth, pctBelowBoth, pctUp,
+    pctOutperform20: pctOutperform[20],
+    pctOutperform200: pctOutperform[200],
+    pctAt52wHigh, pctAt52wLow,
+  };
+}
+
+// The index's own close series (globalIndicesHistory), aligned onto this
+// index's breadth date grid by date string — the two calendars are usually
+// identical (same market) but are not guaranteed positionally aligned.
+function getIndexCloses(indexKey, dates) {
+  const payload = readGlobalIndices();
+  const series = payload?.series?.find(s => s.ticker === indexKey);
+  if (!series) return dates.map(() => null);
+  const closeByDate = new Map(payload.dates.map((d, i) => [d, series.closes?.[i] ?? null]));
+  return dates.map(d => closeByDate.get(d) ?? null);
 }
 
 /* ── Small forever-growing aggregate blob (all indices share it) ───────── */
@@ -415,6 +527,10 @@ function mergeBreadthDaily(history, key, computed) {
       pctAboveBoth: computed.pctAboveBoth[i] ?? previous.pctAboveBoth ?? null,
       pctBelowBoth: computed.pctBelowBoth[i] ?? previous.pctBelowBoth ?? null,
       pctUp: computed.pctUp[i] ?? previous.pctUp ?? null,
+      pctOutperform20: computed.pctOutperform20[i] ?? previous.pctOutperform20 ?? null,
+      pctOutperform200: computed.pctOutperform200[i] ?? previous.pctOutperform200 ?? null,
+      pctAt52wHigh: computed.pctAt52wHigh[i] ?? previous.pctAt52wHigh ?? null,
+      pctAt52wLow: computed.pctAt52wLow[i] ?? previous.pctAt52wLow ?? null,
     };
   }
 }
@@ -427,10 +543,17 @@ function assembleBreadth(history, key) {
     pctAboveBoth: dates.map(d => byDate[d]?.pctAboveBoth ?? null),
     pctBelowBoth: dates.map(d => byDate[d]?.pctBelowBoth ?? null),
     pctUp: dates.map(d => byDate[d]?.pctUp ?? null),
+    pctOutperform20: dates.map(d => byDate[d]?.pctOutperform20 ?? null),
+    pctOutperform200: dates.map(d => byDate[d]?.pctOutperform200 ?? null),
+    pctAt52wHigh: dates.map(d => byDate[d]?.pctAt52wHigh ?? null),
+    pctAt52wLow: dates.map(d => byDate[d]?.pctAt52wLow ?? null),
   };
 }
 
-const BREADTH_METRICS = ['pctAboveBoth', 'pctBelowBoth', 'pctUp'];
+const BREADTH_METRICS = [
+  'pctAboveBoth', 'pctBelowBoth', 'pctUp',
+  'pctOutperform20', 'pctOutperform200', 'pctAt52wHigh', 'pctAt52wLow',
+];
 
 function breadthSeriesNeedsRepair(series, minValidObservations = SMA_LONG) {
   if (!series?.dates?.length) return true;
@@ -502,7 +625,8 @@ async function updateIndexBreadth(indexKey, { forceBootstrap = false } = {}) {
     .sort();
   const closesByTicker = {};
   for (const t of tickers) closesByTicker[t] = dates.map(d => rawHistory[d]?.[t]?.close ?? null);
-  const aggregated = computeAggregates(dates, closesByTicker);
+  const indexCloses = getIndexCloses(indexKey, dates);
+  const aggregated = computeAggregates(dates, closesByTicker, indexCloses);
 
   mergeBreadthDaily(breadthHistory, indexKey, aggregated);
   saveBreadthHistory(breadthHistory);
@@ -518,7 +642,6 @@ async function updateIndexBreadth(indexKey, { forceBootstrap = false } = {}) {
       }
       return any ? sum : null;
     });
-    const { mergeTurnover } = require('./globalIndices');
     mergeTurnover(indexKey, config.label, config.label, dates, turnover);
   }
 
@@ -555,7 +678,8 @@ module.exports = {
   incompleteBreadthKeys,
   INDEX_CONFIGS,
   _test: {
-    computeAggregates, rollingAverage, mergeRawPoints, pruneRaw,
+    computeAggregates, rollingAverage, rollingReturn, rollingExtreme, getIndexCloses,
+    mergeRawPoints, pruneRaw,
     needsBootstrap,
     fetchGithubCsvConstituents, fetchSoxConstituents, fetchNikkei225Constituents,
     parseChinextFallbackHtml, fetchChinextConstituents, fetchTaiexConstituents,

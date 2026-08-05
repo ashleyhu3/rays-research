@@ -870,12 +870,13 @@ app.post(
         const blob = STORAGE_BLOB_BY_NAME.get(BREADTH_RAW_BLOB[key]);
         return storage.load(blob.name, blob.file);
       });
-      if (incompleteKeys.some(key => key === 'sox' || key === 'nikkei225')) {
-        blobsToLoad.push(storage.load(
-          STORAGE_BLOB_BY_NAME.get('globalIndicesHistory').name,
-          STORAGE_BLOB_BY_NAME.get('globalIndicesHistory').file,
-        ));
-      }
+      // Every index now compares its constituents' returns against the
+      // index's own level (outperformance metrics), not just the SOX/
+      // Nikkei225 turnover byproduct, so this is unconditional.
+      blobsToLoad.push(storage.load(
+        STORAGE_BLOB_BY_NAME.get('globalIndicesHistory').name,
+        STORAGE_BLOB_BY_NAME.get('globalIndicesHistory').file,
+      ));
       await Promise.all(blobsToLoad);
 
       for (const key of incompleteKeys) {
@@ -1247,7 +1248,7 @@ app.get('/api/fundamentals/growth', (req, res) => {
 // The report/PDF docs use dynamic per-(kind,date) ids rather than the fixed blob names
 // requireStorageBlobs expects, so they're read directly through storage.readCompressed /
 // storage.readRaw — only the history index is a normal named blob.
-const REPORT_KINDS = new Set(['us', 'asia']);
+const REPORT_KINDS = new Set(['us', 'asia', 'chain']);
 const REPORT_DATE_RE = /^\d{4}-\d{2}-\d{2}(?:_\d{4}-\d{2}-\d{2})?$/;
 
 function validReportParams(kind, date) {
