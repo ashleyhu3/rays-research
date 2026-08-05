@@ -1,9 +1,15 @@
 name: Supply Chain Daily — Asia Close report
 
-# Runs at 18:17 Asia/Hong_Kong every day, ten minutes after us-tech-daily-asia-close so the
-# two never contend for Yahoo (this kind alone pulls 217 symbols). Hong Kong is UTC+8
-# year-round, so 18:17 HKT is 10:17 UTC the same day — stable without daylight-saving
+# Requested for 16:40 Asia/Hong_Kong every day, ten minutes after us-tech-daily-asia-close
+# so the two never contend for Yahoo (this kind alone pulls 217 symbols). Hong Kong is
+# UTC+8 year-round, so 16:40 HKT is 08:40 UTC the same day — stable without daylight-saving
 # adjustments. GitHub Actions cron is always UTC.
+#
+# The slot used to be 18:17 HKT, which never actually fired: GitHub's shared cron queue
+# runs this repo 1-3h late and skipped the first scheduled day entirely. Asking earlier
+# absorbs that delay — see the same note in us-tech-daily-asia-close.yml. The ten-minute
+# stagger only holds when both runs are equally late, so the skill must tolerate the other
+# kind running concurrently.
 #
 # Drives the .claude/skills/supply-chain-daily/SKILL.md skill via Claude Code (through
 # anthropics/claude-code-action), authenticated with an OAuth token tied to the account's
@@ -27,7 +33,7 @@ name: Supply Chain Daily — Asia Close report
 
 on:
   schedule:
-    - cron: '17 10 * * *'
+    - cron: '40 8 * * *'
   workflow_dispatch:
 
 concurrency:

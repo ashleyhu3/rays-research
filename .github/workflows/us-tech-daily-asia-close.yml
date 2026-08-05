@@ -1,8 +1,18 @@
 name: US Tech Daily — Asia Close report
 
-# Runs at 18:07 Asia/Hong_Kong every day (Korea/Taiwan/Japan/HK/China A-shares, just
-# shut). Hong Kong is UTC+8 year-round, so 18:07 HKT is 10:07 UTC the same day — stable
-# without daylight-saving adjustments. GitHub Actions cron is always UTC.
+# Requested for 16:30 Asia/Hong_Kong every day. Hong Kong is UTC+8 year-round, so 16:30
+# HKT is 08:30 UTC the same day — stable without daylight-saving adjustments. GitHub
+# Actions cron is always UTC.
+#
+# Every venue in the asia universe has settled by then: Taiwan 13:30 HKT, Japan 14:00 HKT,
+# Korea 14:30 HKT, China A-shares 15:00 HKT, Hong Kong 16:00 plus a closing auction that
+# ends 16:10.
+#
+# The slot used to be 18:07 HKT. GitHub's shared cron queue does not honour the requested
+# minute — this repo's scheduled runs land 1-3h late (2026-08-04 fired +2h00, 2026-08-03
+# +3h08, us-close +1h08), and 2026-08-05 was skipped outright. Asking earlier absorbs that
+# queue delay: a punctual run publishes right after the HK close, a typical late one still
+# lands around the old 18:00-19:30 HKT window instead of drifting past it.
 #
 # Drives the .claude/skills/us-tech-daily/SKILL.md skill via Claude Code (through
 # anthropics/claude-code-action), authenticated with an OAuth token tied to the account's
@@ -21,7 +31,7 @@ name: US Tech Daily — Asia Close report
 
 on:
   schedule:
-    - cron: '7 10 * * *'
+    - cron: '30 8 * * *'
   workflow_dispatch:
 
 concurrency:
