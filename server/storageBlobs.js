@@ -11,8 +11,7 @@ module.exports = [
   blob('metricsHistory'), blob('gpuHistory'), blob('dramHistory'),
   blob('nandHistory'), blob('tftLcdHistory'), blob('awsHistory'),
   blob('cpuHistory'), blob('tpuHistory'), blob('cloudGpuHistory'),
-  blob('optionsOI'), blob('shortInterestHistory'),
-  blob('sentimentData', 'sentiment.json'),
+  blob('shortInterestHistory'),
   blob('koreaLeverageHistory'), blob('koreaInvestorFlowHistory'),
   blob('taiwanLeverageHistory'),
   blob('chinaLeverageHistory'), blob('chinaNationalTeamFlowHistory'),
@@ -34,5 +33,5 @@ module.exports = [
   blob('dailyOptionsReport'), blob('optionsPriorYearVolume'),
   blob('earningsDates'), blob('techEarningsCalendar'), blob('latestSnapshots'),
   blob('priceReturnAfterEarnings'), blob('fundamentalsGrowth'),
-  blob('usTechReportIndex'),
+  blob('usTechReportIndex'), blob('earningsReviewIndex'),
 ];

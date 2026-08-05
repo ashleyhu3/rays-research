@@ -99,14 +99,6 @@ export const NAV_SECTIONS = [
     ],
   },
   {
-    label: 'Markets',
-    mode: 'tool',
-    items: [
-      { id: 'sentiment', label: 'Sentiment & options' },
-      { id: 'options',   label: 'Options flow' },
-    ],
-  },
-  {
     label: 'Rotation',
     sectorId: 'market-performance',
     mode: 'us-performance',
@@ -183,10 +175,10 @@ export const NAV_SECTIONS = [
     ],
   },
   {
-    label: 'Transcripts',
+    label: 'Earnings',
     mode: 'tool',
     items: [
-      { id: 'transcripts', label: 'Earnings transcript agent' },
+      { id: 'transcripts', label: 'Earnings review' },
     ],
   },
   {
@@ -271,12 +263,10 @@ export const VIEW_META = {
   'github-commits':   { title: 'GITHUB COMMIT VELOCITY' },
   docker:             { title: 'DOCKER HUB DEPLOYS' },
   community:          { title: 'HN PULSE' },
-  options:            { title: 'OPTIONS FLOW' },
   alerts:             { title: 'DAILY OPTIONS REPORT' },
   'price-return':     { title: 'PRICE RETURN AFTER EARNINGS' },
   fundamentals:       { title: 'FUNDAMENTALS — GROWTH & FREE CASH FLOW' },
   reports:            { title: 'US TECH DAILY REPORT' },
-  sentiment:          { title: 'MARKETS — SENTIMENT & OPTIONS' },
   'us-performance':   { title: 'ROTATION — US' },
   'hk-china-performance': { title: 'ROTATION — CHINA' },
   'hk-performance':       { title: 'ROTATION — HK' },
@@ -307,7 +297,7 @@ export const VIEW_META = {
   'liquidity-breadth': { title: 'LIQUIDITY — BREADTH' },
   'liquidity-technical': { title: 'LIQUIDITY — TECHNICAL' },
   'liquidity-turnover': { title: 'LIQUIDITY — TURNOVER' },
-  transcripts:        { title: 'EARNINGS TRANSCRIPT AGENT' },
+  transcripts:        { title: 'EARNINGS REVIEW' },
 };
 
 /** Map sector overview view id → sectorId */

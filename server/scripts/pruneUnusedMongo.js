@@ -11,10 +11,15 @@ const { MongoClient } = require('mongodb');
 
 const APPLY = process.argv.includes('--apply');
 const SAMPLE_DATABASE = 'sample_mflix';
-const ORPHAN_BLOB_IDS = [null, 'optionsAlerts'];
+const ORPHAN_BLOB_IDS = [null, 'optionsAlerts', 'optionsOI', 'sentimentData'];
+// normalized_transcripts is deliberately NOT here: it is the transcript source
+// prepareEarningsInputs.js stages for the earnings-review skill, so dropping it would
+// force a re-fetch of every call and lose every hand-pasted transcript outright.
 const UNUSED_COLLECTIONS = [
-  'transcripts',            // Legacy API collection; no frontend consumer.
-  'normalized_transcripts', // Feeds a sidebar list, but no chart or table.
+  'transcripts',             // Legacy LSEG collection; its API routes are gone.
+  'transcript_enrichments',  // Old FinBERT/LLM analysis pipeline, replaced by the
+  'transcript_chunks',       // earnings-review skill — nothing reads these now.
+  'transcript_facts',
 ];
 
 async function bsonBytes(collection, filter = {}) {

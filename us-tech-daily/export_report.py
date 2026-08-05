@@ -116,7 +116,12 @@ def build_markdown(agg: dict, nar: dict, uni=None) -> str:
         n_chains = len(nar.get("s3_chains", {}).get(name) or [])
         suffix = f"（拆 {n_chains} 子链）" if n_chains else ""
         w(f"### 3.{i} {name}{suffix}\n")
-        rows = [[r["ticker"], f'{r["close"]:,.2f}',
+        names = getattr(uni, "NAMES", {})
+        rows = [[f'{names[r["ticker"]]} {r["ticker"]}' if r["ticker"] in names else r["ticker"],
+                 # A symbol the EOD pull could not resolve still has a §3 row — the pull's
+                 # 95% fill floor exists precisely to let a few through — so every cell
+                 # here has to tolerate None, the way pct() and the volume cell already do.
+                 f'{r["close"]:,.2f}' if r["close"] is not None else "—",
                  pct(r["pct"], j in (0, len(s["rows"]) - 1)),
                  f'{r["dollar_volume_b"]:,.2f}' if r["dollar_volume_b"] is not None else "—",
                  pct(r["dist_52w_high_pct"]),

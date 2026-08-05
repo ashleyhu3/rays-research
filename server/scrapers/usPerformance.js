@@ -164,7 +164,34 @@ async function fetchCboeIndexHistory(symbol, ticker) {
 }
 
 const VIXEQ_TICKER = '^VIXEQ';
+const MOVE_TICKER = '^MOVE';
 const VOLUME_HISTORY_DAYS = 1825;
+
+// ^MOVE's Yahoo chart() history is unusable for the trailing ~3 weeks: that
+// whole window comes back with close=null (verified directly against the
+// endpoint), except for the single most-recent bar, which is a live,
+// still-updating snapshot rather than a settled close — ICE publishes the
+// real MOVE close once daily, later than Yahoo's other realtime indices, so
+// whatever chart() shows as "today" is often still just yesterday's level.
+// Trusting that bar under today's date is what produced the one-day-stale
+// values users spotted (e.g. Jul 31 showing Jul 30's real close). The quote
+// endpoint's regularMarketPreviousClose is Yahoo's own authoritative settled
+// figure for the prior session, so pull that each cycle and merge it under
+// the correct prior trading date instead — never the live bar under "today".
+async function fetchMovePreviousClose(yf, knownDates) {
+  const quote = await withRetry(() => yf.quote(MOVE_TICKER));
+  const previousClose = quote?.regularMarketPreviousClose;
+  const asOf = isoDate(quote?.regularMarketTime);
+  if (!Number.isFinite(previousClose) || !asOf) return null;
+
+  const priorDate = [...knownDates].reverse().find(d => d < asOf);
+  if (!priorDate) return null;
+
+  return {
+    dates: [priorDate],
+    series: [{ ticker: MOVE_TICKER, closes: [previousClose], adjCloses: [previousClose] }],
+  };
+}
 
 function inclusiveEndDate(endDate) {
   const end = new Date(endDate);
@@ -179,8 +206,10 @@ async function getUsPerformance(startDate, endDate = new Date()) {
 
   // ^VIXEQ has no Yahoo chart history (see fetchCboeIndexHistory above) —
   // skip the pointless Yahoo call; updateUsPerformance merges its CBOE CSV
-  // history separately.
-  const yahooTickers = TICKERS.filter(meta => meta.ticker !== VIXEQ_TICKER);
+  // history separately. ^MOVE's chart history is unreliable for recent days
+  // (see fetchMovePreviousClose above) — updateUsPerformance merges it from
+  // the quote endpoint separately instead.
+  const yahooTickers = TICKERS.filter(meta => meta.ticker !== VIXEQ_TICKER && meta.ticker !== MOVE_TICKER);
   const results = await mapLimit(yahooTickers, 4, async meta => {
     try {
       const points = await fetchSeries(yf, meta.ticker, start, end);
@@ -227,20 +256,28 @@ function hasRealVolume(ticker) {
 // The routine 45-day merge (see updateUsPerformance) only ever fills a
 // rolling recent window, so any ticker added (or any ticker whose volume
 // field predates 'volumes' being tracked) is permanently missing bars beyond
-// that window unless it's deep-backfilled once. This checks every ETF ticker
-// for pre-existing historical volume and backfills whichever are missing it,
-// so it self-heals on each scheduled run instead of needing a one-off script
-// per ticker (as the old RSP-only version did).
-async function backfillHistoricalVolumeIfNeeded(endDate) {
+// that window unless it's deep-backfilled once. This checks every ticker for
+// pre-existing historical closes (and, where applicable, volume) and
+// backfills whichever are missing it, so it self-heals on each scheduled run
+// instead of needing a one-off script per ticker (as the old RSP-only,
+// volume-only version did — that version never checked `closes`, so a
+// newly-added price-only ticker like VIX/VXN/GLD stayed capped at the
+// rolling 45-day window forever with nothing to grow it).
+async function backfillHistoricalDataIfNeeded(endDate) {
   const stored = HISTORY.assemble();
   const historicalCutoff = isoDaysAgo(60);
-  const needsBackfill = TICKERS.filter(meta => {
-    if (!hasRealVolume(meta.ticker)) return false;
+  const hasHistoricalField = (meta, field) => {
     const series = stored.series.find(s => s.ticker === meta.ticker);
-    return !series?.volumes?.some(
-      (volume, index) => volume != null && stored.dates[index] < historicalCutoff
+    return series?.[field]?.some(
+      (value, index) => value != null && stored.dates[index] < historicalCutoff
     );
-  });
+  };
+  // ^VIXEQ's deep history comes from the CBOE CSV merge below (always the
+  // full series, every cycle), not from Yahoo chart() — never queue it here.
+  const needsBackfill = TICKERS.filter(meta => (
+    meta.ticker !== VIXEQ_TICKER
+    && (!hasHistoricalField(meta, 'closes') || (hasRealVolume(meta.ticker) && !hasHistoricalField(meta, 'volumes')))
+  ));
   if (!needsBackfill.length) return;
 
   const yf = getYF();
@@ -250,7 +287,7 @@ async function backfillHistoricalVolumeIfNeeded(endDate) {
     try {
       return { ticker: meta.ticker, points: await fetchSeries(yf, meta.ticker, start, end) };
     } catch (e) {
-      console.warn(`[usPerformance] volume backfill ${meta.ticker}: ${e.message}`);
+      console.warn(`[usPerformance] historical backfill ${meta.ticker}: ${e.message}`);
       return { ticker: meta.ticker, points: [] };
     }
   });
@@ -261,27 +298,41 @@ async function backfillHistoricalVolumeIfNeeded(endDate) {
   if (!dates.length) return;
 
   const series = results.map(r => {
+    const byClose = new Map(r.points.map(p => [p.date, p.close]));
+    const byAdjClose = new Map(r.points.map(p => [p.date, p.adjClose]));
     const byVolume = new Map(r.points.map(p => [p.date, p.volume]));
-    return { ticker: r.ticker, volumes: dates.map(d => byVolume.get(d) ?? null) };
+    return {
+      ticker: r.ticker,
+      closes: dates.map(d => byClose.get(d) ?? null),
+      adjCloses: dates.map(d => byAdjClose.get(d) ?? null),
+      volumes: dates.map(d => byVolume.get(d) ?? null),
+    };
   });
   HISTORY.merge({ dates, series });
 }
 
 async function updateUsPerformance(days = 45) {
   const end = new Date().toISOString().slice(0, 10);
-  HISTORY.merge(await getUsPerformance(isoDaysAgo(days), end));
+  const payload = await getUsPerformance(isoDaysAgo(days), end);
+  HISTORY.merge(payload);
   try {
     // Existing stores predate volume persistence (or gained a ticker after
     // the fact) — fill five years of history once per ticker so every date
     // preset gets bars immediately after refresh.
-    await backfillHistoricalVolumeIfNeeded(end);
+    await backfillHistoricalDataIfNeeded(end);
   } catch (e) {
-    console.warn(`[usPerformance] historical volume backfill: ${e.message}`);
+    console.warn(`[usPerformance] historical backfill: ${e.message}`);
   }
   try {
     HISTORY.merge(await fetchCboeIndexHistory('VIXEQ', VIXEQ_TICKER));
   } catch (e) {
     console.warn(`[usPerformance] CBOE VIXEQ: ${e.message}`);
+  }
+  try {
+    const movePatch = await fetchMovePreviousClose(getYF(), payload.dates);
+    if (movePatch) HISTORY.merge(movePatch);
+  } catch (e) {
+    console.warn(`[usPerformance] MOVE previous close: ${e.message}`);
   }
   return HISTORY.assemble();
 }

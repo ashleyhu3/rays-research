@@ -8,6 +8,12 @@ Per symbol it resolves, for the requested session date:
   close, prev_close, pct, volume, dollar volume (close x volume), 52-week high,
   distance to that high.
 
+Dollar volume is USD-normalised when the universe module exposes an `fx_pair(symbol)`
+resolver (universe_chain does; universe/universe_asia do not, and are unaffected). Without
+it a KRW or JPY line reports its turnover in won or yen under a header that says B$ —
+which is not a rounding error but three orders of magnitude, and it silently reorders
+every "biggest mover by turnover" judgement the narrative makes.
+
 Every bar is range-checked (low <= close <= high). Yahoo does serve daily bars whose
 close falls outside the session range — QBTS on 2026-07-30 closed 17.98 but Yahoo
 reported 16.21, below its own 16.71 low, which alone moved the 92-name equal-weight
@@ -115,24 +121,27 @@ def fetch_symbol(symbol: str, session: date) -> dict:
     frame = frame[~frame.index.duplicated(keep="last")]
     dates = [d.date() for d in frame.index]
 
-    # Last bar at or before the session date. Non-US venues can settle a day apart, so
-    # anchoring on "<= session" keeps Korea aligned instead of dropping it.
-    idx = None
-    for i, d in enumerate(dates):
-        if d <= session:
-            idx = i
-    if idx is None or idx == 0:
-        return {"symbol": symbol, "ok": False, "error": f"no bar on/before {session}"}
-
     closes = [_finite(v) for v in frame["Close"].tolist()]
     highs = [_finite(v) for v in frame["High"].tolist()]
     lows = [_finite(v) for v in frame["Low"].tolist()]
     volumes = [_finite(v) for v in frame["Volume"].tolist()]
 
+    # Last *settled* bar at or before the session date. Two things force the "settled"
+    # qualifier rather than just taking the last row:
+    #   - Non-US venues settle a day apart, so anchoring on "<= session" keeps them
+    #     aligned instead of dropping them (this is the original rule).
+    #   - Yahoo also emits a row for a session that has not printed a close yet, with a
+    #     NaN close. Taking it shadows the last real close and reports the symbol as
+    #     unresolvable. That is invisible for a single-venue universe — its own session
+    #     is by definition settled — but for a universe spanning both trading windows it
+    #     silently drops every name on whichever side of the world is mid-session.
+    settled = [i for i, d in enumerate(dates) if d <= session and closes[i] is not None]
+    if len(settled) < 2:
+        return {"symbol": symbol, "ok": False, "error": f"no settled bar with a prior close on/before {session}"}
+    idx, prev_idx = settled[-1], settled[-2]
+
     close = closes[idx]
-    prev_close = closes[idx - 1]
-    if close is None or prev_close is None:
-        return {"symbol": symbol, "ok": False, "error": "missing close"}
+    prev_close = closes[prev_idx]
 
     window_start = dates[idx] - timedelta(days=365)
     window_highs = [h for d, h in zip(dates[: idx + 1], highs[: idx + 1]) if h is not None and d >= window_start]
@@ -142,6 +151,7 @@ def fetch_symbol(symbol: str, session: date) -> dict:
         "symbol": symbol,
         "ok": True,
         "bar_date": dates[idx].isoformat(),
+        "prev_bar_date": dates[prev_idx].isoformat(),
         "stale": dates[idx] != session,
         "close": close,
         "prev_close": prev_close,
@@ -182,16 +192,79 @@ def repair_symbol(row: dict, session: date) -> dict:
     return row
 
 
-def derive(row: dict) -> dict:
-    """Attach the derived fields the report renders, once the bar is final."""
+def fetch_fx_rates(pairs: list[str], session: date, workers: int = 4) -> dict[str, float]:
+    """{pair: units of USD per 1 unit of the listing currency} on/near the session.
+
+    Reuses fetch_symbol so an FX pair is resolved by exactly the same "last bar at or
+    before the session" rule as an equity — FX prints on days some cash markets are shut,
+    and anchoring on "<= session" is what keeps the two aligned.
+    """
+    if not pairs:
+        return {}
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        rows = list(pool.map(lambda p: fetch_symbol(p, session), pairs))
+    out = {}
+    for row in rows:
+        if row.get("ok") and row.get("close"):
+            out[row["symbol"]] = row["close"]
+        else:
+            print(f"[eod] WARNING no FX rate for {row['symbol']} — leaving that venue's "
+                  f"dollar volume in its listing currency")
+    return out
+
+
+def derive(row: dict, fx: dict[str, float] | None = None, fx_pair=None) -> dict:
+    """Attach the derived fields the report renders, once the bar is final.
+
+    `fx_pair` is the universe module's optional symbol -> FX-pair resolver. A universe
+    that quotes in one currency (us, asia) does not define it, and dollar volume is then
+    exactly what it always was: close x volume in the listing currency.
+    """
     if not row.get("ok"):
         return row
     close, volume = row["close"], row.get("volume")
     dollar_volume = close * volume if volume is not None else None
+
+    pair = fx_pair(row["symbol"]) if fx_pair else None
+    rate = (fx or {}).get(pair) if pair else None
+    if pair:
+        # Record the attempt either way: a None rate on a non-USD line is why a dollar
+        # volume looks 1000x wrong, and that has to be visible in the tape, not inferred.
+        row["fx_pair"] = pair
+        row["fx_to_usd"] = rate
+    if rate and dollar_volume is not None:
+        dollar_volume *= rate
+
     row["pct"] = _pct(close, row["prev_close"])
     row["dollar_volume_b"] = dollar_volume / 1e9 if dollar_volume is not None else None
     row["dist_52w_high_pct"] = _pct(close, row["high_52w"]) if row.get("high_52w") else None
     return row
+
+
+def mark_skipped_sessions(rows: list[dict]) -> None:
+    """Flag any row whose pct silently spans more than one session.
+
+    pct is close/prev_close-1, which is a *one-day* move only if prev_bar_date really is
+    the bar before bar_date. When the vendor is missing a print, it isn't — and the row
+    reports a multi-day move under a one-day header with nothing to show for it. Yahoo
+    did exactly this on 2026-08-03: every index symbol (^KS11, ^TWII, ^N225, ^HSI,
+    000300.SS) skipped that session while every single stock on the same venues had it,
+    so KOSPI rendered -3.59% for a day Yonhap reported closing +1.62%.
+
+    Detected from the tape rather than from a market calendar, in keeping with
+    session.py's "ask the tape, don't model the calendar": the union of every bar date
+    the pull saw IS the set of days these venues traded, so a known trading date strictly
+    inside a row's own (prev_bar_date, bar_date) interval is a session that row skipped.
+    """
+    known = sorted({d for r in rows if r.get("ok")
+                    for d in (r.get("bar_date"), r.get("prev_bar_date")) if d})
+    for row in rows:
+        if not row.get("ok"):
+            continue
+        lo, hi = row.get("prev_bar_date"), row.get("bar_date")
+        if not lo or not hi:
+            continue
+        row["skipped_sessions"] = [d for d in known if lo < d < hi]
 
 
 def pull(session: date, kind: str = "us", workers: int = 8) -> dict:
@@ -199,6 +272,9 @@ def pull(session: date, kind: str = "us", workers: int = 8) -> dict:
     symbols = uni.all_quote_symbols()
     with ThreadPoolExecutor(max_workers=workers) as pool:
         rows = list(pool.map(lambda s: fetch_symbol(s, session), symbols))
+
+    fx_pair = getattr(uni, "fx_pair", None)
+    fx = fetch_fx_rates(sorted({p for s in symbols if (p := fx_pair(s))}), session) if fx_pair else {}
 
     # Repair serially: Alpha Vantage's free tier will not tolerate parallel bursts.
     incoherent = [r for r in rows if r.get("ok") and not r.get("coherent")][:ALPHA_VANTAGE_MAX_REPAIRS]
@@ -209,11 +285,13 @@ def pull(session: date, kind: str = "us", workers: int = 8) -> dict:
         if i < len(incoherent) - 1:
             time.sleep(1.0)
 
-    rows = [derive(r) for r in rows]
+    rows = [derive(r, fx, fx_pair) for r in rows]
+    mark_skipped_sessions(rows)
 
     quotes = {row["symbol"]: row for row in rows}
     failed = [row["symbol"] for row in rows if not row["ok"]]
     stale = [row["symbol"] for row in rows if row.get("stale")]
+    gapped = [row["symbol"] for row in rows if row.get("skipped_sessions")]
     repaired = [row["symbol"] for row in rows if row.get("repair") and row.get("coherent")]
     unrepaired = [row["symbol"] for row in rows if row.get("ok") and not row.get("coherent")]
     fill_rate = 1.0 - len(failed) / len(rows)
@@ -229,8 +307,10 @@ def pull(session: date, kind: str = "us", workers: int = 8) -> dict:
             "locked_universe": len(uni.locked_universe()),
         },
         "fill_rate": round(fill_rate, 4),
+        "fx_to_usd": fx,
         "failed": failed,
         "stale_bars": stale,
+        "gapped_bars": gapped,
         "repaired_bars": repaired,
         "unrepaired_bad_bars": unrepaired,
         "quotes": quotes,
@@ -251,10 +331,15 @@ def main() -> int:
     counts = payload["counts"]
     print(f"[{args.kind}] session {payload['session']}: resolved {counts['resolved']}/{counts['requested']} "
           f"(fill {payload['fill_rate']:.1%})")
+    if payload["fx_to_usd"]:
+        print("  fx to USD: " + ", ".join(f"{p}={r:.6g}" for p, r in sorted(payload["fx_to_usd"].items())))
     if payload["failed"]:
         print(f"  failed: {', '.join(payload['failed'])}")
     if payload["stale_bars"]:
         print(f"  stale bars (last trade before session): {', '.join(payload['stale_bars'])}")
+    if payload["gapped_bars"]:
+        print(f"  WARNING pct spans a skipped session (vendor missing a print): "
+              f"{', '.join(payload['gapped_bars'])}")
     if payload["repaired_bars"]:
         print(f"  repaired from Alpha Vantage: {', '.join(payload['repaired_bars'])}")
     if payload["unrepaired_bad_bars"]:

@@ -105,7 +105,6 @@ const BACKEND_SOURCES = [
   ['cpu',             'cpu'],
   ['tpu',             'tpu'],
   ['epochRevenue',    'epoch-revenue'],
-  ['sentiment',       'sentiment'],
   ['mcp',             'mcp'],
   ['sec',             'sec'],
   ['hfServer',        'huggingface'],

@@ -25,7 +25,6 @@ const scrapers = {
   cpu:              () => require('./scrapers/cpu').getCpuData(),
   tpu:              () => require('./scrapers/tpu').getTpuData(),
   epochRevenue:     () => require('./scrapers/epochRevenue').getEpochRevenueData(),
-  sentiment:        () => require('./scrapers/sentiment').getSentimentData(),
   webTraffic:       () => require('./scrapers/webTraffic').getWebTrafficData(),
   customsDrones:    () => require('./scrapers/customsTrade').getDroneExports(),
   koreaLeverage:    () => require('./scrapers/koreaLeverage').getKoreaLeverage(),
@@ -90,7 +89,6 @@ const TTL = {
   cpu:            6 * 3600000,  // 6-hourly — same AWS Spot Advisor feed as aws; CPU savings shift through day
   tpu:           24 * 3600000,  // daily   — GCP TPU preemptible rates; reference rates change rarely
   epochRevenue:  24 * 3600000,  // daily   — Epoch AI CSV is updated as new disclosures appear
-  sentiment:     24 * 3600000,  // daily   — StockTwits posting/sentiment vs price; recomputed once per day
   webTraffic:    24 * 3600000,  // daily   — SimilarWeb monthly visit estimates via Apify; one snapshot per day
   customsDrones: 24 * 3600000,  // daily   — Taiwan customs UAV exports publish monthly; daily poll picks up new months
   koreaLeverage:  6 * 3600000,  // 6-hourly — ETF net assets move with the KRX session; KOFIA publishes once, 1–3 days late
@@ -177,34 +175,6 @@ async function refreshRotation() {
   for (const key of ROTATION_KEYS) await refreshAll([key]);
 }
 
-// Options chains are otherwise fetched only on-demand by the Markets tab and
-// cached under `options:<ticker>:nearest`. The RAG's buildOptions() reads those
-// keys, so on a cold server it has zero options data until a user happens to
-// open that tab. Proactively warm a default AI-relevant basket so the Ask tab
-// can always answer options-flow questions. Include the sentiment universe so
-// the Markets tab's combined options+sentiment view has data on first load.
-const AI_MEGACAPS = ['NVDA', 'AMD', 'TSM', 'AVGO', 'MSFT', 'AAPL', 'AMZN', 'META'];
-const SENTIMENT_TICKERS = (() => {
-  try { return Object.values(require('./scrapers/sentiment').CATEGORIES).flat(); }
-  catch { return []; }
-})();
-const OPTIONS_BASKET = [...new Set([...AI_MEGACAPS, ...SENTIMENT_TICKERS])];
-const OPTIONS_TTL    = 6 * 3600000;
-
-async function warmOptions(tickers = OPTIONS_BASKET) {
-  const { getOptionsData } = require('./scrapers/options');
-  let ok = 0;
-  for (const ticker of tickers) {
-    try {
-      const data = await getOptionsData(ticker);
-      if (data) { cache.set(`options:${ticker}:nearest`, data, OPTIONS_TTL); ok++; }
-    } catch (e) {
-      console.warn(`[warmOptions] ${ticker} failed:`, e.message);
-    }
-  }
-  console.log(`[warmOptions] warmed ${ok}/${tickers.length} tickers`);
-}
-
 function setup() {
   // Hourly: model listings and discussion flow change continuously
   cron.schedule('0 * * * *', () => refreshAll(['openrouter', 'hn']));
@@ -218,7 +188,7 @@ function setup() {
   });
 
   // Daily at 03:00 UTC: aggregate stats whose sources only publish once per day
-  cron.schedule('0 3 * * *', () => refreshAll(['gpu', 'tftLcd', 'tpu', 'epochRevenue', 'sentiment', 'pypi', 'github', 'eia', 'mops', 'githubCommits', 'npm', 'huggingface', 'mcp', 'sec', 'webTraffic', 'customsDrones', 'japanLeverage', 'macro', 'commodities', 'chinaLiquidity', 'usLiquidity', 'carryTrade', 'fedWatch', 'buybacks']));
+  cron.schedule('0 3 * * *', () => refreshAll(['gpu', 'tftLcd', 'tpu', 'epochRevenue', 'pypi', 'github', 'eia', 'mops', 'githubCommits', 'npm', 'huggingface', 'mcp', 'sec', 'webTraffic', 'customsDrones', 'japanLeverage', 'macro', 'commodities', 'chinaLiquidity', 'usLiquidity', 'carryTrade', 'fedWatch', 'buybacks']));
 
   // 08:00 UTC (16:00 China) is the run that lands after the A-share close, so the
   // session's turnover is the settled full-day print. The 03:00 run above falls
@@ -226,10 +196,6 @@ function setup() {
   // partial day; chinaLiquidity.js drops the unfinished session, and this run is
   // what fills it in the same day.
   cron.schedule('0 8 * * *', () => refreshAll(['chinaLiquidity']));
-
-  // Options: warm every 6h, plus once shortly after boot so the RAG has data fast
-  cron.schedule('30 */6 * * *', () => warmOptions());
-  setTimeout(() => warmOptions().catch(e => console.warn('[warmOptions] startup warm failed:', e.message)), 20000);
 
   // Tech-sector earnings calendar (Alerts page Calendar view): FMP re-seeds the
   // display window for free on the first run after it rolls over, then a small Alpha
@@ -288,4 +254,4 @@ function setup() {
   }, { timezone: 'Asia/Hong_Kong' });
 }
 
-module.exports = { setup, refreshAll, refreshRotation, ROTATION_KEYS, PERSISTED_ONLY, scrapers, TTL, warmOptions };
+module.exports = { setup, refreshAll, refreshRotation, ROTATION_KEYS, PERSISTED_ONLY, scrapers, TTL };

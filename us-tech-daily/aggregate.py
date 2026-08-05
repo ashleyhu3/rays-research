@@ -82,7 +82,15 @@ def build(eod: dict, uni=None) -> dict:
     indices = []
     for sym, label in uni.INDICES:
         q = quotes.get(sym, {})
-        indices.append({"symbol": sym, "label": label, "close": q.get("close"), "pct": q.get("pct")})
+        # An index whose vendor print is missing for a day it actually traded reports a
+        # multi-day move in a one-day column (see pull_global_eod.mark_skipped_sessions).
+        # Say so in the label — §1 renders the label verbatim, so this cannot be quoted
+        # as a session move without the caveat travelling with it.
+        skipped = q.get("skipped_sessions") or []
+        if skipped:
+            label = f"{label} · 跨 {len(skipped) + 1} 日"
+        indices.append({"symbol": sym, "label": label, "close": q.get("close"),
+                        "pct": q.get("pct"), "skipped_sessions": skipped})
 
     movers = sorted(
         (row(t) for t in locked),

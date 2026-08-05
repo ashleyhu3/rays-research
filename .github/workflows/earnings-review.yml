@@ -1,0 +1,111 @@
+name: Earnings review
+
+# Produces one buy-side earnings review for a ticker/fiscal quarter and publishes it to
+# the same MongoDB the site reads. Triggered from the dashboard's "Write the review"
+# button via the GitHub API (workflow_dispatch), or manually from the Actions tab.
+#
+# The review itself is written by .claude/skills/earnings-review/SKILL.md, driven through
+# Claude Code (anthropics/claude-code-action) with an OAuth token tied to the account's
+# Claude Pro/Max subscription (see "claude setup-token" — code.claude.com/docs) rather
+# than a pay-per-token API key. Same arrangement as the us-tech-daily workflows.
+#
+# Three steps, in order:
+#   1. prepareEarningsInputs.js  stages the transcript under research/{TICKER}/ER+Conf/
+#      from Mongo (a previously collected or pasted transcript) or Alpha Vantage. Fails
+#      the run before any skill turns are spent if no transcript can be had.
+#   2. the skill reads that transcript plus the release/valuation/options data it sources
+#      itself, and writes research/{TICKER}/Earnings_Review/{TICKER}_FY{year}Q{q}_EarningReview.md.
+#   3. publishEarningsReview.js renders it to HTML + PDF and writes the Mongo blobs.
+# research/ on the runner is scratch — inputs are re-fetchable and the output lives in
+# Mongo, so nothing is committed back.
+#
+# Required repository secrets:
+#   CLAUDE_CODE_OAUTH_TOKEN — from `claude setup-token` (1-year lived; re-run yearly)
+#   MONGODB_URI
+#   ALPHA_VANTAGE_API_KEY   — transcript source
+# Recommended (the skill degrades those chapters to N/A without them):
+#   FMP_API_KEY             — trailing-quarter financials backfill
+#   MASSIVE_API_KEY         — options positioning snapshot
+# Optional: MONGODB_DB
+
+on:
+  workflow_dispatch:
+    inputs:
+      ticker:
+        description: 'Ticker (e.g. GOOGL)'
+        required: true
+      quarter:
+        description: 'Fiscal quarter (Q1–Q4)'
+        required: true
+      year:
+        description: 'Fiscal year (e.g. 2026)'
+        required: true
+
+concurrency:
+  group: earnings-review-${{ github.event.inputs.ticker }}-${{ github.event.inputs.year }}${{ github.event.inputs.quarter }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Node dependencies
+        run: npm ci --omit=dev
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # Only needed for the PDF render in step 3. If this step is ever removed the review
+      # still publishes — the page falls back to printing the iframe.
+      - name: Install Playwright Chromium
+        run: |
+          pip install playwright
+          python -m playwright install --with-deps chromium
+
+      - name: Stage transcript
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          MONGODB_DB: ${{ secrets.MONGODB_DB }}
+          ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
+        run: |
+          node server/scripts/prepareEarningsInputs.js \
+            --ticker "${{ github.event.inputs.ticker }}" \
+            --quarter "${{ github.event.inputs.quarter }}" \
+            --year "${{ github.event.inputs.year }}"
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: "/earnings-review ${{ github.event.inputs.ticker }} FY${{ github.event.inputs.year }}${{ github.event.inputs.quarter }}"
+          claude_args: "--max-turns 200 --permission-mode bypassPermissions"
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          MONGODB_DB: ${{ secrets.MONGODB_DB }}
+          ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
+          FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+          MASSIVE_API_KEY: ${{ secrets.MASSIVE_API_KEY }}
+
+      # The skill publishes itself as its last step; this runs it again so a skill that
+      # stopped short of publishing still gets its review onto the site. Publishing is
+      # an idempotent upsert, so the repeat is harmless.
+      - name: Publish review
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          MONGODB_DB: ${{ secrets.MONGODB_DB }}
+        run: |
+          node server/scripts/publishEarningsReview.js \
+            --ticker "${{ github.event.inputs.ticker }}" \
+            --quarter "${{ github.event.inputs.quarter }}" \
+            --year "${{ github.event.inputs.year }}"

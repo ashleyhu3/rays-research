@@ -68,6 +68,106 @@ ALIASES: dict[str, list[str]] = {
     "300308.SZ": ["Zhongji Innolight", "Innolight"], "601138.SS": ["Foxconn Industrial Internet", "FII"],
 }
 
+# Supply-chain universe (universe_chain.py). Numeric tickers never match a headline on
+# their own — _matchers only builds a bare-word pattern for alphabetic symbols — so every
+# non-US name here needs the English name the wires actually print. Same rule as above:
+# only aliases whose mention is unambiguous. Dual listings (SG Micro, Luxshare, Woer,
+# GigaDevice, Montage, Shengyi, Dtech, Delton, Victory Giant, OmniVision, Huaqin, Three-
+# Circle) deliberately share one alias set across both lines — a headline about the
+# company is evidence for both, and the report shows them as separate rows anyway.
+ALIASES.update({
+    # 模拟与功率
+    "3661.HK": ["SG Micro"], "300661.SZ": ["SG Micro"],
+    "0580.HK": ["Sun.King", "Sun King Technology"], "2577.HK": ["InnoScience"],
+    "2726.HK": ["Epiworld"], "000811.SZ": ["Moon Environment"],
+    "002851.SZ": ["Megmeet"], "300870.SZ": ["Honor Electronic"],
+    "002837.SZ": ["Envicool"], "6963.T": ["ROHM", "Rohm Co"],
+    "6723.T": ["Renesas"], "RNECY": ["Renesas"],
+    "POWI": ["Power Integrations"], "AVT": ["Avnet"], "ARW": ["Arrow Electronics"],
+    "NVTS": ["Navitas"], "TXN": ["Texas Instruments"], "NXPI": ["NXP Semiconductors", "NXP"],
+    "MCHP": ["Microchip Technology"], "STM": ["STMicroelectronics"],
+    "IFNNY": ["Infineon"], "DIOD": ["Diodes Incorporated"],
+    "AOSL": ["Alpha and Omega Semiconductor"],
+    # 线缆与连接
+    "2475.HK": ["Luxshare"], "002475.SZ": ["Luxshare"],
+    "9981.HK": ["Woer Heat-Shrinkable", "Woer"], "002130.SZ": ["Woer Heat-Shrinkable", "Woer"],
+    "1729.HK": ["Time Interconnect"], "6088.HK": ["FIT Hon Teng"],
+    "TEL": ["TE Connectivity"],
+    # 下游与组件
+    "6613.HK": ["Lens Technology"], "2382.HK": ["Sunny Optical"],
+    "1415.HK": ["Cowell e Holdings", "Cowell"], "3296.HK": ["Huaqin"], "603296.SS": ["Huaqin"],
+    "0285.HK": ["BYD Electronic"], "0992.HK": ["Lenovo"],
+    "688036.SS": ["Transsion"], "FLEX": ["Flex Ltd", "Flextronics"], "HPQ": ["HP Inc"],
+    "CLS": ["Celestica"], "SANM": ["Sanmina"], "JBL": ["Jabil"],
+    # 半导体设备
+    "0522.HK": ["ASMPT", "ASM Pacific"], "688082.SS": ["ACM Research"],
+    "688808.SS": ["Semight"], "6590.T": ["Shibaura Mechatronics"],
+    "6857.T": ["Advantest"], "ATEYY": ["Advantest"],
+    "BESIY": ["BE Semiconductor", "Besi"], "VECO": ["Veeco"],
+    "UCTT": ["Ultra Clean Holdings"], "MKSI": ["MKS Instruments", "MKS Inc"],
+    "AEIS": ["Advanced Energy Industries"], "AEHR": ["Aehr Test"],
+    "NVMI": ["Nova Ltd"], "CAMT": ["Camtek"],
+    # IC 设计
+    "0501.HK": ["OmniVision"], "603501.SS": ["OmniVision", "Will Semiconductor"],
+    "6082.HK": ["Biren"], "300782.SZ": ["Maxscend"],
+    "688795.SS": ["Moore Threads"], "688802.SS": ["MetaX"],
+    "688041.SS": ["Hygon"], "688256.SS": ["Cambricon"],
+    "CBRS": ["Cerebras"], "LSCC": ["Lattice Semiconductor"], "MXL": ["MaxLinear"],
+    "SWKS": ["Skyworks"], "QRVO": ["Qorvo"],
+    # 存储
+    "6809.HK": ["Montage Technology"], "688008.SS": ["Montage Technology"],
+    "3986.HK": ["GigaDevice"], "603986.SS": ["GigaDevice"],
+    "001309.SZ": ["Techwinsemi"], "688825.SS": ["CXMT", "ChangXin Memory"],
+    "688766.SS": ["Puya Semiconductor"], "688525.SS": ["Biwin", "BIWIN Storage"],
+    "301666.SZ": ["DapuStor"], "301308.SZ": ["Longsys"],
+    "285A.T": ["Kioxia"], "KXIAY": ["Kioxia"], "SKHY": ["SK Hynix", "SK hynix"],
+    # DRAM is bare-match suppressed (see NO_BARE_MATCH), so the fund name is its only hook.
+    "DRAM": ["Roundhill Memory"],
+    "SIMO": ["Silicon Motion"], "SNDK": ["Sandisk", "SanDisk"],
+    "009150.KS": ["Samsung Electro-Mechanics"],
+    # MLCC 与被动元件
+    "6951.HK": ["Three-Circle", "CCTC"], "300408.SZ": ["Three-Circle", "CCTC"],
+    "0117.HK": ["Tianli Holdings"], "002975.SZ": ["Bojay"],
+    "300975.SZ": ["Sunlord"], "002138.SZ": ["Sunlord"],
+    "002859.SZ": ["Jiemei"], "605376.SS": ["Boqian New Materials"],
+    "002484.SZ": ["Jianghai Capacitor"], "000636.SZ": ["Fenghua Advanced"],
+    "6245.T": ["Hirano Tecseed"], "6762.T": ["TDK"], "6981.T": ["Murata"],
+    "6976.T": ["Taiyo Yuden"],
+    # 封测与测试
+    "688820.SS": ["SJ Semiconductor"], "688362.SS": ["Forehope"],
+    "002185.SZ": ["Huatian Technology"], "688661.SS": ["UIGreen"],
+    "002156.SZ": ["Tongfu Microelectronics"], "600584.SS": ["JCET"],
+    "FORM": ["FormFactor"], "AMKR": ["Amkor"],
+    # PCB 产业链
+    "1377.HK": ["Dtech"], "301377.SZ": ["Dtech"],
+    "2476.HK": ["Victory Giant"], "300476.SZ": ["Victory Giant"],
+    "1989.HK": ["Delton Technology"], "001389.SZ": ["Delton Technology"],
+    "600183.SS": ["Shengyi Technology"], "688183.SS": ["Shengyi Electronics"],
+    "3200.HK": ["Han's CNC"], "002008.SZ": ["Han's Laser"],
+    "1888.HK": ["Kingboard Laminates"], "301526.SZ": ["Polycomp"],
+    "002080.SZ": ["Sinoma Science"], "600176.SS": ["China Jushi"],
+    "301511.SZ": ["Defu Technology"], "603256.SS": ["Grace Fabric"],
+    "688603.SS": ["Skychem"], "000657.SZ": ["China Tungsten"],
+    "300395.SZ": ["Feilihua"], "002436.SZ": ["Fastprint"],
+    "688020.SS": ["Fangbang"], "002938.SZ": ["Avary Holding", "Avary"],
+    "688630.SS": ["Circuit Fabology"], "301217.SZ": ["Tongguan Copper Foil"],
+    "002203.SZ": ["Hailiang"], "002384.SZ": ["Dongshan Precision"],
+    "002916.SZ": ["Shennan Circuits"], "603228.SS": ["Kinwong"],
+    "002463.SZ": ["Wus Printed Circuit", "WUS"],
+    "6752.T": ["Panasonic"], "4182.T": ["Mitsubishi Gas Chemical"],
+    "4004.T": ["Resonac"], "2802.T": ["Ajinomoto"], "3110.T": ["Nitto Boseki"],
+    "6278.T": ["Union Tool"], "5801.T": ["Furukawa Electric"],
+    "5706.T": ["Mitsui Kinzoku", "Mitsui Mining & Smelting"],
+    # M7 与 AI 权重 additions
+    "GOOG": ["Alphabet", "Google"], "SPCX": ["SpaceX", "Space Exploration Technologies"],
+})
+
+# Symbols whose bare-ticker pattern would match ordinary industry prose rather than the
+# instrument. DRAM is the whole point: as a ticker it is one memory ETF, but as a word it
+# appears in every memory headline the report pulls, which would attach the sector's news
+# to a single fund and starve the names that actually made it. These match on alias only.
+NO_BARE_MATCH = {"DRAM"}
+
 # Korea sub-layer names carry their own headline evidence.
 KOREA_ALIASES = {
     "005930.KS": ["Samsung Electronics", "Samsung"],
@@ -78,11 +178,15 @@ KOREA_ALIASES = {
 
 def _matchers(symbol: str, aliases: list[str]) -> list[re.Pattern]:
     out = []
-    if symbol.isalpha() and len(symbol) >= 2:
+    if symbol.isalpha() and len(symbol) >= 2 and symbol not in NO_BARE_MATCH:
         # Ticker form: bare word, or the "(TICK)" / "$TICK" conventions.
         out.append(re.compile(rf"(?<![A-Za-z]){re.escape(symbol)}(?![A-Za-z])"))
     for alias in aliases:
-        out.append(re.compile(re.escape(alias.strip()), re.I))
+        # Anchored on word boundaries, not a bare substring: "Avary" otherwise matches
+        # inside "Savary", "Besi" inside "besides", and "Meta" inside "MetaX" — each of
+        # which attaches a real headline to the wrong company, which is exactly the
+        # invented catalyst the report's evidence rule exists to prevent.
+        out.append(re.compile(rf"(?<!\w){re.escape(alias.strip())}(?!\w)", re.I))
     return out
 
 
@@ -102,6 +206,10 @@ def pull(session: date, kind: str, max_articles: int, per_source_limit: int, loo
                                sources=k.news_sources)
 
     targets = {t: ALIASES.get(t, []) for t in k.universe.locked_universe()}
+    # The anchor layer sits outside the locked universe but still gets a §4 write-up, so
+    # it needs its own evidence — whichever layer this kind's universe happens to anchor
+    # on (Korea for us, US mega-caps for asia, Taiwan for chain).
+    targets.update({sym: ALIASES.get(sym, []) for sym, _ in k.universe.KOREA_ANCHORS})
     targets.update(KOREA_ALIASES)
     patterns = {sym: _matchers(sym, aliases) for sym, aliases in targets.items()}
 

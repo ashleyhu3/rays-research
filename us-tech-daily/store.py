@@ -147,7 +147,8 @@ def list_sessions(doc_type: str) -> dict[str, dict]:
 
 # ---------------------------------------------------------------- report + pdf + index
 
-_REPORT_STEM = {"us": "us_tech_daily", "asia": "asia_tech_daily"}
+_REPORT_STEM = {"us": "us_tech_daily", "asia": "asia_tech_daily",
+                "chain": "supply_chain_daily"}
 
 
 def report_stem(kind: str) -> str:
@@ -216,16 +217,19 @@ def prune_report_pdfs(days: int = 30) -> list[str]:
 
 
 def read_report_index() -> dict:
-    """{"us": [entry...], "asia": [entry...]}, newest-first. Plain blob shape ({_id, data})
-    so server/storage.js's requireStorageBlobs + storage.read() work unchanged."""
+    """{kind: [entry...]} per kind in kinds.KINDS, newest-first. Plain blob shape
+    ({_id, data}) so server/storage.js's requireStorageBlobs + storage.read() work
+    unchanged. An index written before a kind existed simply has no key for it, and
+    publish.py's _update_index creates it on that kind's first publish."""
+    empty = {k: [] for k in _REPORT_STEM}
     if mode() == "file":
         path = DATA_DIR / "reportIndex.json"
         if not path.exists():
-            return {"us": [], "asia": []}
+            return empty
         return json.loads(path.read_text(encoding="utf-8"))
 
     doc = _collection_handle().find_one({"_id": "usTechReportIndex"})
-    return doc["data"] if doc and doc.get("data") else {"us": [], "asia": []}
+    return doc["data"] if doc and doc.get("data") else empty
 
 
 def write_report_index(data: dict) -> None:

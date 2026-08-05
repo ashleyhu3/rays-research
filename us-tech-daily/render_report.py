@@ -229,7 +229,15 @@ def render_s2(agg: dict, nar: dict, uni) -> str:
     return table(headers, rows, klass="tot") + f'<p>{nar["s2_note"]}</p>'
 
 
-def render_s3(agg: dict, nar: dict) -> str:
+def ticker_label(uni, ticker: str) -> str:
+    """"300661.SZ" alone is unreadable in a mostly numeric-ticker universe. A universe
+    that defines NAMES gets "圣邦股份 300661.SZ"; one that does not (us, asia) renders
+    exactly the bare ticker it always did."""
+    name = getattr(uni, "NAMES", {}).get(ticker)
+    return f'{name} <span class="px">{ticker}</span>' if name else ticker
+
+
+def render_s3(agg: dict, nar: dict, uni) -> str:
     by_name = {s["name"]: s for s in agg["sectors"]}
     headers = [("Ticker", "l"), ("收盘", "r"), ("pct", "r"), ("成交额(B$)", "r"),
                ("距 52w 高", "r"), ("高亮", "c"), ("极端", "c")]
@@ -243,7 +251,7 @@ def render_s3(agg: dict, nar: dict) -> str:
         rows = []
         for j, r in enumerate(s["rows"]):
             rows.append([
-                f'<td class="l">{r["ticker"]}</td>',
+                f'<td class="l">{ticker_label(uni, r["ticker"])}</td>',
                 f'<td>{num(r["close"])}</td>',
                 f'<td>{pct(r["pct"], bold=(j == 0 or j == len(s["rows"]) - 1))}</td>',
                 f'<td>{num(r["dollar_volume_b"])}</td>',
@@ -349,7 +357,7 @@ def render(agg: dict, nar: dict, uni=None, meta: dict | None = None) -> str:
         f'<h1 class="page">{title}</h1>',
         section(1, "当日大势", render_s1(agg, nar)),
         section(2, "板块速览（涨方 ↑ / 跌方 ↓ 双向）", render_s2(agg, nar, uni)),
-        section(3, f'个股表 × {u["sectors_total"]} 子赛道', render_s3(agg, nar)),
+        section(3, f'个股表 × {u["sectors_total"]} 子赛道', render_s3(agg, nar, uni)),
         section(4, "高亮归因（聚焦 Top ~30 · 极端票 + 反向代表）", render_s4(agg, nar, uni)),
         section(5, "主题强度双向 TOP3", render_s5(nar)),
         section(6, "A 股映射（按主题 · 共振强度评级）", render_s6(nar)),

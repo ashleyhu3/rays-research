@@ -6,8 +6,6 @@ import Navbar from './components/layout/Navbar';
 import { UIProvider } from './context/UIContext';
 import { DashboardProvider } from './context/DashboardContext';
 import { LayoutProvider } from './context/LayoutContext';
-import { SentimentSearchProvider } from './context/SentimentSearchContext';
-import SentimentSearchBar from './pages/sentiment/SentimentSearchBar';
 
 // ── Page components (static imports for reliability) ─────────────────
 // Overview
@@ -39,9 +37,7 @@ import DcTimelines, {
   DcCoAWS, DcCoGoogle, DcCoMicrosoft, DcCoOracle, DcCoOpenAI, DcCoNebius, DcCoMeta,
 } from './pages/supply-chain/DcBuildouts';
 // Tools
-import Options from './pages/options/Options';
 import { PricingMemory, PricingGPU, PricingCPU, PricingTPU, PricingAWS } from './pages/pricing/Pricing';
-import Sentiment from './pages/sentiment/Sentiment';
 import Alerts, { OptionsReportTitle, OptionsReportControls } from './pages/alerts/Alerts';
 import PriceReturn from './pages/price-return/PriceReturn';
 import Fundamentals from './pages/fundamentals/Fundamentals';
@@ -131,7 +127,6 @@ const VIEW_COMPONENTS = {
   'github-commits':   GitHubActivity,
   'docker':           Docker,
   'community':        Community,
-  'options':          Options,
   'alerts':           Alerts,
   'price-return':     PriceReturn,
   'fundamentals':     Fundamentals,
@@ -139,7 +134,6 @@ const VIEW_COMPONENTS = {
   'us-performance':   UsPerformance,
   'hk-china-performance': HkChinaPerformance,
   'hk-performance':   HkPerformance,
-  'sentiment':        Sentiment,
   'leverage-korea':   LeverageKorea,
   'korea-investor-flow': KoreaInvestorFlow,
   'leverage-taiwan':  LeverageTaiwan,
@@ -232,13 +226,12 @@ export default function App() {
   const ViewComponent = sectorId ? null : VIEW_COMPONENTS[currentView];
   const isAlerts = currentView === 'alerts';
   const isSelfChromed = SELF_CHROMED_VIEWS.has(currentView);
-  const showSidebar = currentView !== 'options' && currentView !== 'sentiment' && currentView !== 'transcripts' && currentView !== 'alerts' && !isSelfChromed;
+  const showSidebar = currentView !== 'transcripts' && currentView !== 'alerts' && !isSelfChromed;
 
   return (
     <DashboardProvider>
       <UIProvider>
         <LayoutProvider>
-        <SentimentSearchProvider>
         <OptionsReportProvider>
         <Navbar onNavigate={handleNavigate} currentView={currentView} />
         <div className="app-body">
@@ -255,11 +248,7 @@ export default function App() {
             {!isSelfChromed && (
               <Topbar
                 title={meta.title}
-                titleContent={
-                  isAlerts ? <OptionsReportTitle />
-                  : currentView === 'sentiment' ? <SentimentSearchBar />
-                  : undefined
-                }
+                titleContent={isAlerts ? <OptionsReportTitle /> : undefined}
                 rightContent={isAlerts ? <OptionsReportControls /> : undefined}
                 weeks={!isAlerts && !isSelfChromed && (mode === 'demand' || mode === 'pricing') ? weeks : undefined}
                 onWeeksChange={!isAlerts && !isSelfChromed && (mode === 'demand' || mode === 'pricing') ? setWeeks : undefined}
@@ -286,7 +275,6 @@ export default function App() {
           </main>
         </div>
         </OptionsReportProvider>
-        </SentimentSearchProvider>
         </LayoutProvider>
       </UIProvider>
     </DashboardProvider>

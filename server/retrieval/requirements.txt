@@ -1,3 +1,0 @@
-chromadb>=1.1,<2
-torch>=2.2
-transformers>=4.40

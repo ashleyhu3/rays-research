@@ -4,6 +4,9 @@ import { useResource } from '../../services/resourceCache';
 const TABS = [
   { key: 'us', label: 'US Close' },
   { key: 'asia', label: 'Asia Close' },
+  // The supply-chain kind publishes in both slots, so its tab carries reports from each —
+  // the per-entry SLOT_LABEL below is what tells them apart.
+  { key: 'chain', label: 'Supply Chain' },
 ];
 
 const SLOT_LABEL = { 'us-close': 'US Close', 'asia-close': 'Asia Close' };

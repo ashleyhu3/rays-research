@@ -3,7 +3,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { normalizePeriod, parseTranscriptDocument } = require('./parser');
-const { parseJsonContent, responseText } = require('./octagon');
 
 test('normalizes fiscal period inputs', () => {
   assert.deepEqual(normalizePeriod('Q3', 2026), {
@@ -53,7 +52,7 @@ We are seeing strong adoption across Gemini products.
   assert.equal(document.speaker_blocks.every(block => block.company === 'GOOGL'), true);
 });
 
-test('accepts already structured Octagon sections without an LLM pass', () => {
+test('accepts already structured prepared/qa sections without re-parsing', () => {
   const document = parseTranscriptDocument({
     ticker: 'MSFT',
     quarter: 'Q2',
@@ -66,13 +65,4 @@ test('accepts already structured Octagon sections without an LLM pass', () => {
   assert.equal(document.stats.totalBlocks, 2);
   assert.equal(document.prepared[0].role, 'Management');
   assert.equal(document.qa[0].role, 'Analyst');
-});
-
-test('extracts text from the Octagon Responses API envelope', () => {
-  const content = '{"ticker":"MSFT","quarter":"Q2","year":2026,"prepared":[]}';
-  const payload = {
-    output: [{ content: [{ type: 'output_text', text: content }] }],
-  };
-  assert.equal(responseText(payload), content);
-  assert.equal(parseJsonContent(responseText(payload)).ticker, 'MSFT');
 });

@@ -14,7 +14,7 @@ const COUNTRY_SHORT = { 'United States': 'US', China: 'CN', Japan: 'JP', 'United
 const PAGE_CHARTS = {
   'macro-yield': [
     ['United States', ['us2yYield', 'us10yYield', 'us30yYield'], ['2Y', '10Y', '30Y'], 'line', 2],
-    ['10Y breakeven inflation & real yield', ['us10yBreakeven', 'us10yRealYield'], ['10Y breakeven inflation', '10Y real yield'], 'line', 2],
+    ['10Y breakeven inflation & real yield', ['us10yBreakeven', 'us10yRealYield'], ['10Y breakeven', '10Y real yield'], 'line', 2],
     ['10Y–2Y yield spread', ['us2y10ySpread'], ['10Y–2Y spread'], 'bar', 2],
     ['China', ['cn10yYield', 'cn30yYield'], ['10Y', '30Y'], 'line', 2],
     ['Japan', ['jp10yYield', 'jp30yYield'], ['10Y', '30Y'], 'line', 2],
@@ -93,6 +93,30 @@ function fmtDate(iso) {
 function latestPoint(series) {
   return (series?.data ?? []).reduce((best, point) =>
     Number.isFinite(point.value) && (!best || point.date > best.date) ? point : best, null);
+}
+
+// Change vs. the most recent point at least `days` old — same "compare to a
+// point old enough" approach as the Pricing page's pctChangeOverDays, but
+// expressed as a raw difference (yields are already in percent/pp, not a
+// price to take a % of). null when no point is old enough yet.
+function changeOverDays(series, days) {
+  const points = (series?.data ?? [])
+    .filter(point => Number.isFinite(point.value))
+    .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+  if (!points.length) return null;
+  const last = points[points.length - 1];
+  const targetMs = new Date(last.date + 'T00:00:00Z').getTime() - days * 86400000;
+  let ref = null;
+  for (let i = points.length - 2; i >= 0; i--) {
+    if (new Date(points[i].date + 'T00:00:00Z').getTime() <= targetMs) { ref = points[i]; break; }
+  }
+  return ref ? last.value - ref.value : null;
+}
+
+function diffClass(value) { return value == null ? 'nt' : value > 0 ? 'up' : value < 0 ? 'dn' : 'nt'; }
+function diffText(value, decimals, percentUnit) {
+  if (value == null) return '—';
+  return `${value > 0 ? '+' : ''}${value.toFixed(decimals ?? 2)}${percentUnit ? 'pp' : ''}`;
 }
 
 // Trailing N-period sum, keyed to the last date in each window. Windows that
@@ -299,6 +323,9 @@ function SummaryTiles({ charts, macro }) {
           label: short ? `${short} ${labels[seriesIndex]}` : labels[seriesIndex],
           color: COLORS[seriesIndex % COLORS.length],
           text: fmtSeriesValue(point.value, decimals, percentUnit),
+          chg10d: changeOverDays(series, 10),
+          decimals,
+          percentUnit,
         }];
       });
     });
@@ -312,6 +339,9 @@ function SummaryTiles({ charts, macro }) {
           <div className="lev-tile" key={tile.key}>
             <div className="lev-tile-label"><span className="lev-dot" style={{ background: tile.color }} />{tile.label}</div>
             <div className="lev-tile-value">{tile.text}</div>
+            <div className="pm-deltas">
+              <span className="pm-d-grp"><span className="pm-d-lbl">10d</span><span className={diffClass(tile.chg10d)}>{diffText(tile.chg10d, tile.decimals, tile.percentUnit)}</span></span>
+            </div>
           </div>
         ))}
       </div>

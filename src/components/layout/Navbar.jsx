@@ -43,12 +43,10 @@ export default function Navbar({ onNavigate, currentView }) {
   const { loading, lastUpdated, error, forceRefresh } = useData();
 
   const mode        = getModeForView(currentView);
-  const isOptions   = currentView === 'options';
   const isAlerts    = currentView === 'alerts';
   const isPriceReturn = currentView === 'price-return';
   const isFundamentals = currentView === 'fundamentals';
   const isReports    = currentView === 'reports';
-  const isSentiment = currentView === 'sentiment';
   const isTranscripts = currentView === 'transcripts';
   const isSupply    = mode === 'supply';
   const isInfra     = mode === 'aisupplychain';
@@ -132,12 +130,6 @@ export default function Navbar({ onNavigate, currentView }) {
           Macro
         </button>
         <button
-          className={`nlink${isSentiment || isOptions ? ' active' : ''}`}
-          onClick={() => onNavigate('sentiment')}
-        >
-          Markets
-        </button>
-        <button
           className={`nlink${isPricing ? ' active' : ''}`}
           onClick={() => onNavigate('pricing-memory')}
         >
@@ -153,7 +145,7 @@ export default function Navbar({ onNavigate, currentView }) {
           className={`nlink${isTranscripts ? ' active' : ''}`}
           onClick={() => onNavigate('transcripts')}
         >
-          Transcripts
+          Earnings
         </button>
       </div>
       <div className="navbar-r">

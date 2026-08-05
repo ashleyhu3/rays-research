@@ -11,6 +11,9 @@ server/data/*
 !server/data/spxPutCallRatioHistory.json
 stocktwits/Stocktwits-Scraper-main/data/
 server/.venv-transcripts/
+# Earnings-review working tree: inputs are re-fetchable and the reviews themselves are
+# published to Mongo, so nothing here needs to be committed.
+research/
 Rays_Intern/
 graphify-out/
 Rays_Intern-graphify-out/

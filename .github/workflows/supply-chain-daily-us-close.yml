@@ -1,0 +1,67 @@
+name: Supply Chain Daily — US Close report
+
+# Runs at 07:13 Asia/Hong_Kong every day, ten minutes after us-tech-daily-us-close so the
+# two never contend for Yahoo (this kind alone pulls 217 symbols). Hong Kong is UTC+8
+# year-round, so 07:13 HKT is 23:13 UTC the previous day — stable without daylight-saving
+# adjustments. GitHub Actions cron is always UTC.
+#
+# Drives the .claude/skills/supply-chain-daily/SKILL.md skill via Claude Code (through
+# anthropics/claude-code-action), authenticated with an OAuth token tied to the account's
+# Claude Pro/Max subscription (see "claude setup-token" — code.claude.com/docs) rather than
+# a separate pay-per-token API key. The skill pulls prices/news, authors the narrative,
+# lints every figure against the tape, renders the report, and publishes straight to
+# MongoDB — MONGODB_URI puts the pipeline in Mongo mode (see us-tech-daily/store.py), so
+# this run writes nothing to the repo.
+#
+# This is the `chain` kind: 202 names across US/HK/A-share/Japan/Korea cut by supply-chain
+# segment rather than by venue. At this slot the US half of the universe is the fresh tape
+# and the Asian half carries its previous close — expected, and the skill's step 2 says how
+# to write around it. session.py picks the freshness probe per slot (^NDX here, ^HSI at the
+# 18:17 run) via universe_chain.SLOT_PROBE.
+#
+# Required repository secrets (already configured for the us-tech-daily workflows):
+#   CLAUDE_CODE_OAUTH_TOKEN — from `claude setup-token` (1-year lived; re-run yearly)
+#   MONGODB_URI
+# Optional:
+#   MONGODB_DB
+#   ALPHA_VANTAGE_API_KEY — bad-bar repair path in pull_global_eod.py; safe to omit
+
+on:
+  schedule:
+    - cron: '13 23 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: supply-chain-daily-us-close
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python dependencies
+        run: pip install -r us-tech-daily/requirements.txt
+
+      - name: Install Playwright Chromium
+        run: python -m playwright install --with-deps chromium
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: "/supply-chain-daily us-close"
+          claude_args: "--max-turns 200 --permission-mode bypassPermissions"
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          MONGODB_DB: ${{ secrets.MONGODB_DB }}
+          ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}

@@ -309,7 +309,7 @@ function writeField(name, file, field, value) {
 }
 
 async function readCompressed(id, { refresh = false } = {}) {
-  if (!/^[A-Za-z0-9:_-]+$/.test(id)) throw new Error(`Invalid compressed document id: ${id}`);
+  if (!/^[A-Za-z0-9:_.-]+$/.test(id)) throw new Error(`Invalid compressed document id: ${id}`);
   if (refresh) compressedCache.delete(id);
   if (compressedCache.has(id)) return compressedCache.get(id);
   if (compressedLoading.has(id)) return compressedLoading.get(id);
@@ -338,7 +338,7 @@ async function readCompressed(id, { refresh = false } = {}) {
 }
 
 function writeCompressed(id, value) {
-  if (!/^[A-Za-z0-9:_-]+$/.test(id)) throw new Error(`Invalid compressed document id: ${id}`);
+  if (!/^[A-Za-z0-9:_.-]+$/.test(id)) throw new Error(`Invalid compressed document id: ${id}`);
   if (mode !== 'mongo' || !collection) return false;
   compressedCache.set(id, value);
   const compressed = zlib.gzipSync(Buffer.from(JSON.stringify(value)), { level: 6 });
@@ -365,6 +365,22 @@ async function readRaw(id) {
     console.warn(`[storage] raw read "${id}" failed:`, error.message);
     return null;
   }
+}
+
+// Counterpart to readRaw: upsert a document whose fields live directly on the doc rather
+// than under {data} or {compressed}. `fields` is merged in as-is, so the caller owns the
+// shape. Used for the earnings-review PDFs, which mirror the us-tech-daily PDF docs.
+function writeRaw(id, fields) {
+  if (!/^[A-Za-z0-9:_.-]+$/.test(id)) throw new Error(`Invalid raw document id: ${id}`);
+  if (mode !== 'mongo' || !collection) return false;
+  const p = collection.updateOne(
+    { _id: id },
+    { $set: { ...fields, updatedAt: new Date() } },
+    { upsert: true, maxTimeMS: 15000 },
+  ).catch(error => console.warn(`[storage] raw write "${id}" failed:`, error.message))
+    .finally(() => pending.delete(p));
+  pending.add(p);
+  return true;
 }
 
 // Wait for all queued Mongo writes to land (no-op in file mode).
@@ -401,6 +417,6 @@ function status() {
 
 module.exports = {
   init, load, loadMany, read, write, mergeDatedRows, reload, readField, writeField,
-  readCompressed, writeCompressed, readRaw,
+  readCompressed, writeCompressed, readRaw, writeRaw,
   flush, seedFromFiles, close, status,
 };

@@ -66,10 +66,17 @@ class Resolution:
     label: str
 
 
-def _probe_symbol(kind: str) -> str:
-    """The kind's first index — the single highest-liquidity anchor used to ask
-    "is there a new bar yet"."""
-    return kinds.get(kind).universe.INDICES[0][0]
+def _probe_symbol(kind: str, slot: str) -> str:
+    """The single highest-liquidity index used to ask "is there a new bar yet".
+
+    A single-venue universe (us, asia) has one answer, its first index. A universe that
+    spans both trading windows does not: at 07:00 HKT the tape that just printed is the
+    US one and at 18:00 HKT it is Asia's, so asking the wrong index would call every
+    us-close run stale. Such a universe declares SLOT_PROBE; everything else keeps the
+    INDICES[0] behaviour unchanged.
+    """
+    uni = kinds.get(kind).universe
+    return getattr(uni, "SLOT_PROBE", {}).get(slot) or uni.INDICES[0][0]
 
 
 def _latest_bar_date(symbol: str):
@@ -100,7 +107,7 @@ def resolve(kind: str, slot: str, now: datetime | None = None) -> Resolution:
 
     k = kinds.get(kind)
     now = now or datetime.now(ZoneInfo("UTC"))
-    symbol = _probe_symbol(kind)
+    symbol = _probe_symbol(kind, slot)
     latest = _latest_bar_date(symbol)
     if latest is None:
         raise RuntimeError(f"could not resolve a bar for probe symbol {symbol} (kind={kind})")

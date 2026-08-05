@@ -8,7 +8,6 @@ const snapshotStore = require('./snapshotStore');
 const scheduler    = require('./scheduler');
 const STORAGE_BLOBS = require('./storageBlobs');
 const htmlTemplate = require('./htmlTemplate');
-const { getOptionsData }             = require('./scrapers/options');
 const { getStockHistory }            = require('./scrapers/stocks');
 const { readUsPerformance }          = require('./scrapers/usPerformance');
 const { readHkChinaPerformance }     = require('./scrapers/hkChinaPerformance');
@@ -33,7 +32,6 @@ const { readShipping }               = require('./scrapers/shipping');
 const { readBuybacks }               = require('./scrapers/buybacks');
 const { readKoreaLeverage }          = require('./scrapers/koreaLeverage');
 const { readKoreaInvestorFlow }      = require('./scrapers/koreaInvestorFlow');
-const { keywordRolling }             = require('./stocktwitsStore');
 
 const app   = express();
 const PORT  = process.env.PORT || 3001;
@@ -96,7 +94,6 @@ function requireStorageBlobs(...names) {
 // Routes whose handlers use synchronous in-memory stores load only their own
 // backing documents. Most dashboard routes use projected latestSnapshots reads
 // in cachedRoute() and need no full blob at all.
-app.use('/api/sentiment/keyword', requireStorageBlobs('sentimentData'));
 app.use('/api/metrics-history', requireStorageBlobs('metricsHistory'));
 app.use('/api/china-liquidity', requireStorageBlobs('chinaLiquidityHistory'));
 app.use('/api/us-liquidity', requireStorageBlobs('usLiquidityHistory'));
@@ -115,7 +112,6 @@ app.use('/api/index-breadth', requireStorageBlobs('indexBreadthHistory'));
 // maintains, not the breadth aggregate. Its route loads just the requested
 // index's blob, so there is no blanket middleware here.
 app.use('/api/spx-put-call-ratio', requireStorageBlobs('spxPutCallRatioHistory'));
-app.use('/api/options', requireStorageBlobs('optionsOI'));
 app.use('/api/alerts/earnings-calendar', requireStorageBlobs('techEarningsCalendar'));
 app.use('/api/alerts/price-return', requireStorageBlobs('priceReturnAfterEarnings'));
 app.use('/api/fundamentals/growth', requireStorageBlobs('fundamentalsGrowth'));
@@ -216,7 +212,6 @@ app.get('/api/aws',               cachedRoute('aws',              s.aws));
 app.get('/api/cpu',               cachedRoute('cpu',              s.cpu));
 app.get('/api/tpu',               cachedRoute('tpu',              s.tpu));
 app.get('/api/epoch-revenue',     cachedRoute('epochRevenue',     s.epochRevenue));
-app.get('/api/sentiment',         cachedRoute('sentiment',        s.sentiment));
 app.get('/api/web-traffic',       cachedRoute('webTraffic',       s.webTraffic));
 app.get('/api/customs-drones',    cachedRoute('customsDrones',    s.customsDrones));
 // Korea has a canonical five-year history blob. Read it directly so a stale or
@@ -304,27 +299,6 @@ app.get('/api/aaii-sentiment',    cachedRoute('aaiiSentiment',    s.aaiiSentimen
 // one-point payload from before Barchart history was backfilled.
 app.get('/api/spx-put-call-ratio', (_req, res) => res.json(readSpxPutCallRatio()));
 
-// Keyword frequency search — whole-word matches across the StockTwits messages
-// in Mongo (committed-CSV fallback for keyless dev), as trailing-30-day counts
-// at monthly anchors. Results cached 1 hour per (lowercased) keyword.
-app.get('/api/sentiment/keyword', async (req, res) => {
-  const q = (req.query.q ?? '').trim();
-  if (!q)        return res.status(400).json({ error: 'q is required' });
-  if (q.length > 60) return res.status(400).json({ error: 'keyword too long (max 60 chars)' });
-
-  const cacheKey = `keyword:${q.toLowerCase()}`;
-  const cached   = cache.get(cacheKey);
-  if (cached !== null) return res.json(cached);
-
-  try {
-    const data = await keywordRolling(q);
-    cache.set(cacheKey, data, 60 * 60 * 1000);
-    res.json(data);
-  } catch (e) {
-    console.error('[keyword]', e.message);
-    res.status(500).json({ error: e.message });
-  }
-});
 app.get('/api/npm',               cachedRoute('npm',              s.npm));
 app.get('/api/huggingface',       cachedRoute('huggingface',      s.huggingface));
 app.get('/api/mcp',               cachedRoute('mcp',              s.mcp));
@@ -333,18 +307,14 @@ app.get('/api/sec',               cachedRoute('sec',              s.sec));
 // Accumulated daily snapshots of point-in-time metrics (for trend charts)
 app.get('/api/metrics-history', (_req, res) => res.json(history.all()));
 
-// Earnings transcript pipeline.
-// Collect full transcripts from Alpha Vantage, normalize into deterministic
-// prepared/Q&A speaker blocks, then topic-tag, tone-score, and run cross-quarter
-// analysis.
-const { collectFromAlphaVantage } = require('./transcripts/alphavantage');
-const { semanticChunkDocument } = require('./transcripts/chunker');
-const { listLocalEnrichments, readEnrichment, saveEnrichment } = require('./transcripts/enrichmentStore');
+// Earnings reviews.
+// Transcripts are collected from Alpha Vantage (or pasted by hand) and normalized into
+// deterministic prepared/Q&A speaker blocks; the review itself is written by the
+// .claude/skills/earnings-review skill on a GitHub runner and published to Mongo by
+// server/scripts/publishEarningsReview.js. This server only collects the input and
+// serves the finished document.
 const { parseTranscriptDocument } = require('./transcripts/parser');
-const { runFullPipeline } = require('./transcripts/pipeline');
-const { readCachedAnalysis, refreshAnalysisCacheForTicker } = require('./transcripts/analysisCache');
 const { listTranscripts, saveTranscript } = require('./transcripts/store');
-const { runTranscriptAgent, parseTranscript, fetchTranscript, analyzeSeries } = require('./transcriptAgent');
 
 app.get('/api/transcripts/library', async (_req, res) => {
   try {
@@ -355,129 +325,12 @@ app.get('/api/transcripts/library', async (_req, res) => {
   }
 });
 
-app.post('/api/transcripts/collect', requireAdminSecret, async (req, res) => {
-  const body = req.body ?? {};
-  try {
-    const ticker = String(body.ticker || '').toUpperCase().replace(/[^A-Z0-9.-]/g, '');
-    const fiscalPeriod = `${String(body.year || '').replace(/\D/g, '')}${String(body.quarter || '').toUpperCase()}`;
-    const completed = await readEnrichment(ticker, fiscalPeriod);
-    if (completed?.analysisCompletedAt) {
-      return res.json({ transcript: completed, enrichment: completed, cached: true });
-    }
-    const transcript = await collectFromAlphaVantage({
-      ticker: body.ticker,
-      quarter: body.quarter,
-      year: body.year,
-    });
-    const saved = await saveTranscript(transcript);
-    const enrichment = semanticChunkDocument(transcript);
-    const enrichedStorage = await saveEnrichment(enrichment);
-    res.json({ transcript, enrichment, storage: { transcript: saved, enrichment: enrichedStorage } });
-  } catch (e) {
-    const status = e.status === 401 || e.status === 403
-      ? 401
-      : e.status === 429
-      ? 429
-      : /required|must be|recognizable|fiscal period/i.test(e.message)
-      ? 400
-      : 502;
-    console.error('[transcripts:collect]', e.message);
-    res.status(status).json({ error: e.message });
-  }
-});
-
-// Streaming full-pipeline endpoint (collect → FinBERT → LLM tone → facts →
-// figures → publish). Needs the FinBERT Python stack + a long-lived process, so
-// it only works where that exists (local dev). On the deployed/serverless side
-// use POST /api/transcripts/dispatch-analysis, which fires a GitHub Action that
-// runs this same pipeline on a runner. Shared logic: transcripts/pipeline.js.
-app.post('/api/transcripts/analyze', requireAdminSecret, async (req, res) => {
-  const body = req.body ?? {};
-  // NDJSON stream so the browser (which sends the admin Bearer header via fetch)
-  // can render live per-stage progress. EventSource can't set auth headers.
-  res.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8');
-  res.setHeader('Cache-Control', 'no-cache, no-transform');
-  res.setHeader('X-Accel-Buffering', 'no');
-  res.flushHeaders?.();
-  const send = payload => { try { res.write(`${JSON.stringify(payload)}\n`); } catch { /* client gone */ } };
-
-  try {
-    await runFullPipeline({
-      ticker: body.ticker,
-      quarter: body.quarter,
-      year: body.year,
-      source: body.source,
-    }, send);
-  } catch (e) {
-    console.error('[transcripts:analyze]', e.message);
-    send({ stage: 'error', status: 'error', message: e.message });
-  } finally {
-    res.end();
-  }
-});
-
-// Fire the GitHub Actions workflow that runs the FinBERT pipeline on a runner,
-// then publishes to Mongo. This is the deployed/serverless path: quick to return
-// (workflow_dispatch is async), and works on Vercel where FinBERT itself cannot.
-// Requires a token with actions:write in GH_ANALYZE_DISPATCH_TOKEN (or GITHUB_TOKEN).
-const ANALYZE_REPO = process.env.GITHUB_REPO || 'ashleyhu3/rays-research';
-const ANALYZE_WORKFLOW = process.env.ANALYZE_WORKFLOW_FILE || 'analyze-transcript.yml';
-const ANALYZE_REF = process.env.ANALYZE_WORKFLOW_REF || 'main';
-
-app.post('/api/transcripts/dispatch-analysis', async (req, res) => {
-  const body = req.body ?? {};
-  const ticker = String(body.ticker || '').toUpperCase().replace(/[^A-Z0-9.-]/g, '');
-  const quarter = String(body.quarter || '').toUpperCase().replace(/[^0-9Q]/g, '');
-  const year = String(body.year || '').replace(/[^0-9]/g, '');
-  if (!ticker || !/^Q[1-4]$/.test(quarter) || !/^\d{4}$/.test(year)) {
-    return res.status(400).json({ error: 'ticker, quarter (Q1–Q4) and a four-digit year are required.' });
-  }
-  const period = `${year}${quarter}`;
-  const completed = await readEnrichment(ticker, period);
-  if (completed?.analysisCompletedAt) {
-    if (!completed.transcriptAnalysis) await refreshAnalysisCacheForTicker(ticker);
-    return res.json({ ok: true, cached: true, ticker, period });
-  }
-  const token = process.env.GH_ANALYZE_DISPATCH_TOKEN || process.env.GITHUB_TOKEN;
-  if (!token) {
-    return res.status(500).json({ error: 'GH_ANALYZE_DISPATCH_TOKEN is not set — add a token with actions:write.' });
-  }
-  try {
-    const url = `https://api.github.com/repos/${ANALYZE_REPO}/actions/workflows/${ANALYZE_WORKFLOW}/dispatches`;
-    const ghResp = await fetch(url, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/vnd.github+json',
-        'X-GitHub-Api-Version': '2022-11-28',
-        'User-Agent': 'rays-research-dashboard',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ ref: ANALYZE_REF, inputs: { ticker, quarter, year } }),
-    });
-    if (ghResp.status === 204) {
-      const runsUrl = `https://github.com/${ANALYZE_REPO}/actions/workflows/${ANALYZE_WORKFLOW}`;
-      return res.json({ ok: true, ticker, period, runsUrl });
-    }
-    const detail = (await ghResp.text()).slice(0, 300);
-    console.error('[transcripts:dispatch]', ghResp.status, detail);
-    const status = ghResp.status === 401 || ghResp.status === 403 ? 502 : ghResp.status === 404 ? 502 : 502;
-    return res.status(status).json({ error: `GitHub dispatch failed (${ghResp.status}): ${detail}` });
-  } catch (e) {
-    console.error('[transcripts:dispatch]', e.message);
-    return res.status(502).json({ error: e.message });
-  }
-});
-
+// Normalize a pasted/uploaded transcript and store it, so a later run of
+// prepareEarningsInputs.js finds it instead of going out to Alpha Vantage. This is the
+// only path for calls Alpha Vantage doesn't carry.
 app.post('/api/transcripts/parse', async (req, res) => {
   const body = req.body ?? {};
   try {
-    const ticker = String(body.ticker || '').toUpperCase().replace(/[^A-Z0-9.-]/g, '');
-    const fiscalPeriod = `${String(body.year || '').replace(/\D/g, '')}${String(body.quarter || '').toUpperCase()}`;
-    const completed = await readEnrichment(ticker, fiscalPeriod);
-    if (completed?.analysisCompletedAt) {
-      return res.json({ transcript: completed, enrichment: completed, cached: true });
-    }
     const transcript = parseTranscriptDocument({
       ticker: body.ticker,
       quarter: body.quarter,
@@ -490,104 +343,140 @@ app.post('/api/transcripts/parse', async (req, res) => {
       },
     });
     const saved = await saveTranscript(transcript);
-    const enrichment = semanticChunkDocument(transcript);
-    const enrichedStorage = await saveEnrichment(enrichment);
-    res.json({ transcript, enrichment, storage: { transcript: saved, enrichment: enrichedStorage } });
+    res.json({ transcript, storage: { transcript: saved } });
   } catch (e) {
     console.error('[transcripts:parse]', e.message);
     res.status(400).json({ error: e.message });
   }
 });
 
-app.get('/api/transcripts/enrichment/:ticker/:period', async (req, res) => {
-  const ticker = String(req.params.ticker || '').toUpperCase().replace(/[^A-Z0-9.-]/g, '');
-  const period = String(req.params.period || '').toUpperCase().replace(/[^0-9Q]/g, '');
-  const enrichment = await readEnrichment(ticker, period);
-  if (!enrichment) return res.status(404).json({ error: `No enrichment found for ${ticker} ${period}.` });
-  res.json(enrichment);
+/* ── Earnings reviews (Earnings review page) ─────────────────────────── */
+// Written by server/scripts/publishEarningsReview.js after the earnings-review skill
+// finishes. Like the daily reports, the review docs use dynamic per-(ticker,period) ids
+// rather than fixed blob names, so they're read through storage.readCompressed /
+// storage.readRaw — only the history index is a normal named blob.
+const REVIEW_TICKER_RE = /^[A-Z0-9.-]{1,10}$/;
+const REVIEW_PERIOD_RE = /^\d{4}Q[1-4]$/;
+
+// Returns [ticker, period] when both are well-formed, else null.
+function reviewParams(req) {
+  const ticker = String(req.params.ticker || '').toUpperCase();
+  const period = String(req.params.period || '').toUpperCase();
+  return REVIEW_TICKER_RE.test(ticker) && REVIEW_PERIOD_RE.test(period) ? [ticker, period] : null;
+}
+
+app.get('/api/earnings-review/index', requireStorageBlobs('earningsReviewIndex'), (_req, res) => {
+  const blob = STORAGE_BLOB_BY_NAME.get('earningsReviewIndex');
+  const stored = storage.read(blob.name, blob.file);
+  res.json({ entries: Array.isArray(stored?.entries) ? stored.entries : [] });
 });
 
-app.get('/api/transcripts/topics', async (_req, res) => {
-  const enrichments = await listLocalEnrichments();
-  const counts = new Map();
-  for (const enrichment of enrichments) {
-    for (const item of enrichment.topicSummary || []) {
-      counts.set(item.topic, (counts.get(item.topic) || 0) + item.count);
-    }
-  }
+// Metadata only — this is what the page polls while a run is in flight, so it must stay
+// cheap and must not drag the whole review body over the wire every 20 seconds.
+app.get('/api/earnings-review/:ticker/:period', async (req, res) => {
+  const params = reviewParams(req);
+  if (!params) return res.status(400).json({ error: 'invalid ticker/period' });
+  const [ticker, period] = params;
+  const review = await storage.readCompressed(`earningsReview:${ticker}:${period}`);
+  if (!review) return res.status(404).json({ error: `No earnings review for ${ticker} ${period}.` });
+  const { md, html, ...meta } = review;
+  res.json({ ...meta, chars: md?.length ?? 0 });
+});
+
+app.get('/api/earnings-review/:ticker/:period/html', async (req, res) => {
+  const params = reviewParams(req);
+  if (!params) return res.status(400).json({ error: 'invalid ticker/period' });
+  const [ticker, period] = params;
+  const review = await storage.readCompressed(`earningsReview:${ticker}:${period}`);
+  if (!review?.html) return res.status(404).send('Earnings review not found');
+  res.set('Content-Type', 'text/html; charset=utf-8').send(review.html);
+});
+
+app.get('/api/earnings-review/:ticker/:period/md', async (req, res) => {
+  const params = reviewParams(req);
+  if (!params) return res.status(400).json({ error: 'invalid ticker/period' });
+  const [ticker, period] = params;
+  const review = await storage.readCompressed(`earningsReview:${ticker}:${period}`);
+  if (!review?.md) return res.status(404).json({ error: `No earnings review for ${ticker} ${period}.` });
+  res.set('Content-Type', 'text/markdown; charset=utf-8').send(review.md);
+});
+
+app.get('/api/earnings-review/:ticker/:period/pdf-meta', async (req, res) => {
+  const params = reviewParams(req);
+  if (!params) return res.status(400).json({ error: 'invalid ticker/period' });
+  const [ticker, period] = params;
+  const pdf = await storage.readRaw(`earningsReviewPdf:${ticker}:${period}`);
   res.json({
-    transcripts: enrichments.length,
-    chunks: enrichments.reduce((sum, item) => sum + (item.stats?.chunks || 0), 0),
-    topics: [...counts.entries()]
-      .map(([topic, count]) => ({ topic, count }))
-      .sort((a, b) => b.count - a.count || a.topic.localeCompare(b.topic)),
+    available: Boolean(pdf?.base64),
+    size: pdf?.size ?? null,
+    filename: pdf?.filename ?? null,
   });
 });
 
-app.get('/api/transcripts/facts', async (req, res) => {
-  const ticker = String(req.query.ticker || '').toUpperCase();
-  const period = String(req.query.period || '').toUpperCase();
-  const topic = String(req.query.topic || '');
-  const limit = Math.min(500, Math.max(1, Number(req.query.limit) || 100));
-  const facts = (await listLocalEnrichments())
-    .flatMap(enrichment => enrichment.facts || [])
-    .filter(fact => !ticker || fact.ticker === ticker)
-    .filter(fact => !period || fact.fiscal_period === period)
-    .filter(fact => !topic || fact.topics.includes(topic))
-    .slice(0, limit);
-  res.json({ count: facts.length, facts });
+app.get('/api/earnings-review/:ticker/:period/pdf', async (req, res) => {
+  const params = reviewParams(req);
+  if (!params) return res.status(400).json({ error: 'invalid ticker/period' });
+  const [ticker, period] = params;
+  const pdf = await storage.readRaw(`earningsReviewPdf:${ticker}:${period}`);
+  if (!pdf?.base64) return res.status(404).json({ error: `No PDF for ${ticker} ${period}.` });
+  res.set({
+    'Content-Type': pdf.contentType || 'application/pdf',
+    'Content-Disposition': `attachment; filename="${pdf.filename || `${ticker}_${period}_EarningReview.pdf`}"`,
+  }).send(Buffer.from(pdf.base64, 'base64'));
 });
 
-app.get('/api/transcripts/analysis/:ticker', async (req, res) => {
-  const ticker = String(req.params.ticker || '').toUpperCase().replace(/[^A-Z0-9.-]/g, '');
-  if (!ticker) return res.status(400).json({ error: 'ticker required' });
-  try {
-    const cached = await readCachedAnalysis(ticker);
-    if (!cached) {
-      return res.status(404).json({ error: `No analyzed transcripts found for ${ticker}.` });
-    }
-    if (cached.pendingCache) {
-      return res.status(409).json({
-        error: `Stored analysis for ${ticker} predates the Mongo cache. Run the cache backfill once.`,
-      });
-    }
-    res.json(cached);
-  } catch (e) {
-    console.error('[transcripts:analysis]', e.message);
-    res.status(500).json({ error: e.message });
-  }
-});
+// Fire the GitHub Actions workflow that stages the transcript, runs the earnings-review
+// skill through Claude Code, and publishes the result to Mongo. workflow_dispatch is
+// async, so this returns as soon as GitHub accepts it and the page polls for the review.
+// Requires a token with actions:write in GH_ANALYZE_DISPATCH_TOKEN (or GITHUB_TOKEN).
+const REVIEW_REPO = process.env.GITHUB_REPO || 'ashleyhu3/rays-research';
+const REVIEW_WORKFLOW = process.env.EARNINGS_REVIEW_WORKFLOW_FILE || 'earnings-review.yml';
+const REVIEW_REF = process.env.EARNINGS_REVIEW_WORKFLOW_REF || 'main';
 
-// Four-quarter cross-analysis (SNDK): AV newest quarter + EDGAR for the older three.
-app.post('/api/transcript/series', requireAdminSecret, async (req, res) => {
-  try {
-    res.json(await analyzeSeries(req.body?.symbol ?? 'SNDK'));
-  } catch (e) {
-    console.error('[transcript:series]', e.message);
-    res.status(502).json({ error: e.message });
-  }
-});
-app.post('/api/transcript/analyze', async (req, res) => {
+app.post('/api/earnings-review/dispatch', async (req, res) => {
   const body = req.body ?? {};
-  const threshold = Number.isFinite(body.anomalyThreshold) ? body.anomalyThreshold : 0.4;
+  const ticker = String(body.ticker || '').toUpperCase().replace(/[^A-Z0-9.-]/g, '');
+  const quarter = String(body.quarter || '').toUpperCase().replace(/[^0-9Q]/g, '');
+  const year = String(body.year || '').replace(/[^0-9]/g, '');
+  if (!ticker || !/^Q[1-4]$/.test(quarter) || !/^\d{4}$/.test(year)) {
+    return res.status(400).json({ error: 'ticker, quarter (Q1–Q4) and a four-digit year are required.' });
+  }
+  const period = `${year}${quarter}`;
+
+  // A review is expensive to produce, so an existing one is returned as-is unless the
+  // caller explicitly asks for a rewrite.
+  if (!body.force) {
+    const existing = await storage.readCompressed(`earningsReview:${ticker}:${period}`, { refresh: true });
+    if (existing) return res.json({ ok: true, cached: true, ticker, period });
+  }
+
+  const token = process.env.GH_ANALYZE_DISPATCH_TOKEN || process.env.GITHUB_TOKEN;
+  if (!token) {
+    return res.status(500).json({ error: 'GH_ANALYZE_DISPATCH_TOKEN is not set — add a token with actions:write.' });
+  }
   try {
-    let blocks = Array.isArray(body.transcript) ? body.transcript : null;
-    let source = null;
-    if (!blocks && body.symbol && body.quarter) {
-      const t = await fetchTranscript(body.symbol, body.quarter);
-      blocks = t.blocks;
-      source = { provider: 'Alpha Vantage', symbol: t.symbol, quarter: t.quarter, usingKey: t.usingKey };
+    const url = `https://api.github.com/repos/${REVIEW_REPO}/actions/workflows/${REVIEW_WORKFLOW}/dispatches`;
+    const ghResp = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+        'User-Agent': 'rays-research-dashboard',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ ref: REVIEW_REF, inputs: { ticker, quarter, year } }),
+    });
+    if (ghResp.status === 204) {
+      const runsUrl = `https://github.com/${REVIEW_REPO}/actions/workflows/${REVIEW_WORKFLOW}`;
+      return res.json({ ok: true, ticker, period, runsUrl });
     }
-    if (!blocks && typeof body.text === 'string') blocks = parseTranscript(body.text);
-    if (!blocks || blocks.length === 0) {
-      return res.status(400).json({ error: 'Provide `transcript`, `text`, or `{symbol, quarter}`.' });
-    }
-    const result = await runTranscriptAgent(blocks, { anomalyThreshold: threshold });
-    if (source) result.source = source;
-    res.json(result);
+    const detail = (await ghResp.text()).slice(0, 300);
+    console.error('[earnings-review:dispatch]', ghResp.status, detail);
+    return res.status(502).json({ error: `GitHub dispatch failed (${ghResp.status}): ${detail}` });
   } catch (e) {
-    console.error('[transcript]', e.message);
-    res.status(502).json({ error: e.message });
+    console.error('[earnings-review:dispatch]', e.message);
+    return res.status(502).json({ error: e.message });
   }
 });
 
@@ -626,51 +515,6 @@ app.get('/api/dc-buildouts', async (req, res) => {
   }
 });
 
-// ── LSEG stored transcripts (MongoDB → frontend) ────────────────────────────
-// Returns a list of all transcripts in the `transcripts` collection, or the
-// full document(s) for a specific ticker. Analysis is NOT re-run here; the
-// backfill script populates the collection offline.
-app.get('/api/transcripts/stored', async (req, res) => {
-  const { MongoClient } = require('mongodb');
-  if (!process.env.MONGODB_URI) return res.json([]);
-  let client;
-  try {
-    client = new MongoClient(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 8000 });
-    await client.connect();
-    const col = client.db(process.env.MONGODB_DB || undefined).collection('transcripts');
-    const docs = await col
-      .find({}, { projection: { rawText: 0, blocks: 0 } })
-      .sort({ date: -1 })
-      .toArray();
-    res.json(docs);
-  } catch (e) {
-    console.error('[transcripts/stored]', e.message);
-    res.status(500).json({ error: e.message });
-  } finally {
-    client?.close().catch(() => {});
-  }
-});
-
-app.get('/api/transcripts/stored/:ticker', async (req, res) => {
-  const ticker = (req.params.ticker ?? '').toUpperCase();
-  if (!ticker) return res.status(400).json({ error: 'ticker required' });
-  const { MongoClient } = require('mongodb');
-  if (!process.env.MONGODB_URI) return res.json([]);
-  let client;
-  try {
-    client = new MongoClient(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 8000 });
-    await client.connect();
-    const col = client.db(process.env.MONGODB_DB || undefined).collection('transcripts');
-    const docs = await col.find({ ticker }).sort({ date: -1 }).toArray();
-    res.json(docs);
-  } catch (e) {
-    console.error('[transcripts/stored/:ticker]', e.message);
-    res.status(500).json({ error: e.message });
-  } finally {
-    client?.close().catch(() => {});
-  }
-});
-
 app.post('/api/refresh', requireAdminSecret, async (req, res) => {
   const keys = req.body?.keys ?? Object.keys(scheduler.scrapers);
   try {
@@ -684,7 +528,7 @@ app.post('/api/refresh', requireAdminSecret, async (req, res) => {
 });
 
 
-/* ── Options flow (per-ticker, 5-min cache) ──────────────────────── */
+/* ── Stock price history + short interest (per-ticker, 1h cache) ──── */
 app.get('/api/stocks/:ticker', async (req, res) => {
   const ticker = (req.params.ticker ?? '').trim().toUpperCase();
   if (!ticker || !/^[A-Z0-9.^=-]{1,10}$/i.test(ticker))
@@ -1019,25 +863,6 @@ app.get('/api/hk-performance', (req, res) => {
   } catch (e) {
     console.error('[hk-performance]', start, end, e.message);
     res.status(500).json({ error: `Could not load HK performance data: ${e.message}` });
-  }
-});
-
-app.get('/api/options/:ticker', async (req, res) => {
-  const ticker = (req.params.ticker ?? '').trim().toUpperCase();
-  const date   = req.query.date ?? null;
-  if (!ticker) return res.status(400).json({ error: 'ticker required' });
-
-  const cacheKey = `options:${ticker}:${date ?? 'nearest'}`;
-  const cached   = cache.get(cacheKey);
-  if (cached !== null) return res.json(cached);
-
-  try {
-    const data = await getOptionsData(ticker, date);
-    cache.set(cacheKey, data, 5 * 60 * 1000);
-    res.json(data);
-  } catch (e) {
-    console.error('[options]', ticker, e.message);
-    res.status(500).json({ error: `Could not load options for ${ticker}: ${e.message}` });
   }
 });
 

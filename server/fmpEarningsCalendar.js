@@ -1,10 +1,20 @@
 'use strict';
 
-const { CATEGORIES } = require('./scrapers/sentiment');
 const { DEFAULT_TICKERS } = require('./scripts/generateDailyOptionsReport');
 
-// Large-cap tech/software/semis not already covered by sentiment.js's supply-chain
-// groups. Every symbol here was checked against FMP's own /stable/profile `sector`
+// Semiconductor / optics supply-chain names not already covered by the other
+// two lists below (formerly sourced from the now-removed sentiment.js's
+// CATEGORIES — kept here since this earnings-calendar feature is independent
+// of that Markets-tab analysis).
+const SUPPLY_CHAIN_TICKERS = [
+  'SNDK', 'MU', 'WDC', 'STX',
+  'AAOI', 'CIEN', 'LITE', 'COHR', 'GLW', 'APH',
+  'TER', 'TSEM', 'VIAV', 'KEYS', 'AEHR',
+  'LRCX', 'AMAT', 'KLAC',
+];
+
+// Large-cap tech/software/semis not already covered by the supply-chain
+// group. Every symbol here was checked against FMP's own /stable/profile `sector`
 // field and confirmed "Technology" — GOOGL/GOOG and META come back "Communication
 // Services" and AMZN/TSLA come back "Consumer Cyclical" under FMP's taxonomy, so
 // they're deliberately left out here (GOOG is added back separately in
@@ -22,7 +32,7 @@ const NOT_TECH_SECTOR = new Set(['GOOG', 'SOXX']);
 const OPTIONS_REPORT_TECH_TICKERS = DEFAULT_TICKERS.filter(t => !NOT_TECH_SECTOR.has(t));
 
 const TECH_SECTOR_TICKERS = [...new Set([
-  ...Object.values(CATEGORIES).flat(),
+  ...SUPPLY_CHAIN_TICKERS,
   ...MEGA_CAP_TECH_TICKERS,
   ...OPTIONS_REPORT_TECH_TICKERS,
 ])];
