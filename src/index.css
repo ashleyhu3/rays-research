@@ -873,6 +873,10 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
 .or-nav-item:hover  { background: rgba(255,255,255,.04); color: var(--text); }
 .or-nav-item.active { background: var(--adim); color: var(--accent); }
 .or-nav-item--divider { margin-bottom: 4px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.or-nav-section {
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+  color: var(--ter); padding: 10px 10px 4px;
+}
 .or-nav-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .or-nav-dots { display: inline-flex; align-items: center; justify-content: flex-end; gap: 4px; min-width: 35px; margin-left: auto; }
 .or-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; display: inline-block; }
@@ -915,7 +919,9 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
 .cal-event {
   font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  border: none; font-family: inherit; text-align: left; cursor: pointer;
 }
+.cal-event:hover { filter: brightness(1.2); }
 .cal-event.call { background: rgba(52,211,153,.14); color: #34d399; }
 .cal-event.put  { background: rgba(248,113,113,.14); color: #f87171; }
 .cal-event.flat { background: rgba(100,116,139,.14); color: #64748b; }
@@ -947,6 +953,16 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
 }
 .or-ticker-price .up   { color: #3fb950; }
 .or-ticker-price .down { color: #f87171; }
+.or-view-toggle {
+  display: inline-flex; margin-left: auto; border: 1px solid var(--border);
+  border-radius: 7px; padding: 2px; gap: 2px;
+}
+.or-view-toggle button {
+  border: 0; background: transparent; color: var(--sec); font-family: var(--font-b);
+  font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 5px; cursor: pointer;
+}
+.or-view-toggle button:hover { color: var(--text); }
+.or-view-toggle button.active { background: var(--adim); color: var(--accent); }
 
 .or-expiry { margin-top: 20px; }
 .or-expiry-label {

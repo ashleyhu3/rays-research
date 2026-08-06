@@ -44,7 +44,7 @@ function addMonths(date, offset) {
 
 // The earnings-call events scheduled during the display window, shown as
 // month grids — one entry per tracked ticker on the day of its next call.
-export default function EarningsCalendar() {
+export default function EarningsCalendar({ onSelectTicker }) {
   // Loads once on first visit, then served from the shared cache on every
   // subsequent mount (stays loaded across navigation and refresh).
   const { data, error, loading } = useResource('/api/alerts/earnings-calendar');
@@ -96,13 +96,15 @@ export default function EarningsCalendar() {
                       <span className="cal-daynum">{cell.day}</span>
                       <div className="cal-events">
                         {(eventsByDate[cell.iso] ?? []).map(ev => (
-                          <span
+                          <button
+                            type="button"
                             className={`cal-event ${dotSideByTicker.get(ev.ticker) ?? 'flat'}`}
                             key={`${ev.date}-${ev.ticker}`}
                             title={eventTitle(ev)}
+                            onClick={() => onSelectTicker?.(ev.ticker)}
                           >
                             {ev.ticker}
-                          </span>
+                          </button>
                         ))}
                       </div>
                     </>

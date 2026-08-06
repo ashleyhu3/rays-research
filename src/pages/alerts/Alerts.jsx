@@ -278,8 +278,15 @@ export function OptionsReportControls() {
 }
 
 // One ticker's full report body: price header plus a call/put block per tracked
-// expiration. Shown one ticker at a time, selected from the sidebar.
-function TickerReport({ t }) {
+// expiration. Shown one ticker at a time, selected from the sidebar. A toggle beside
+// the ticker name switches the body between the options report and the published
+// earnings-call transcript analysis (when one exists for this ticker).
+function TickerReport({ t, reviewPeriod }) {
+  const [view, setView] = useState('options');
+  // Land back on the options view whenever the selected ticker changes, so a
+  // transcript left open doesn't silently carry over to the next ticker.
+  useEffect(() => { setView('options'); }, [t.ticker]);
+
   return (
     <section className="or-ticker" key={t.ticker}>
       <header className="or-ticker-head">
@@ -288,22 +295,47 @@ function TickerReport({ t }) {
           <span>{t.priceText}</span>
           {t.change && <span className={t.priceChange >= 0 ? 'up' : 'down'}>{t.change}</span>}
         </div>
+        <div className="or-view-toggle" role="tablist" aria-label="Report view">
+          <button
+            type="button" role="tab" aria-selected={view === 'options'}
+            className={view === 'options' ? 'active' : ''}
+            onClick={() => setView('options')}
+          >Options</button>
+          <button
+            type="button" role="tab" aria-selected={view === 'transcript'}
+            className={view === 'transcript' ? 'active' : ''}
+            onClick={() => setView('transcript')}
+          >Transcript</button>
+        </div>
       </header>
-      {t.expirations?.map(exp => (
-        <div className="or-expiry" key={exp.selectedDate}>
-          <div className="or-expiry-label">{exp.expiryLabel}</div>
-          <div className="or-cols">
-            <div className="or-col">
-              <div className="or-chart" dangerouslySetInnerHTML={{ __html: exp.callChartSvg }} />
-              <ContractTable rows={exp.tableCalls} />
-            </div>
-            <div className="or-col">
-              <div className="or-chart" dangerouslySetInnerHTML={{ __html: exp.putChartSvg }} />
-              <ContractTable rows={exp.tablePuts} />
+      {view === 'transcript' ? (
+        reviewPeriod ? (
+          <iframe
+            key={`${t.ticker}-${reviewPeriod}`}
+            className="report-frame"
+            src={`/api/earnings-review/${t.ticker}/${reviewPeriod}/html`}
+            title={`${t.ticker} ${reviewPeriod} earnings review`}
+          />
+        ) : (
+          <div className="or-status">No transcript analysis published yet for {t.ticker}.</div>
+        )
+      ) : (
+        t.expirations?.map(exp => (
+          <div className="or-expiry" key={exp.selectedDate}>
+            <div className="or-expiry-label">{exp.expiryLabel}</div>
+            <div className="or-cols">
+              <div className="or-col">
+                <div className="or-chart" dangerouslySetInnerHTML={{ __html: exp.callChartSvg }} />
+                <ContractTable rows={exp.tableCalls} />
+              </div>
+              <div className="or-col">
+                <div className="or-chart" dangerouslySetInnerHTML={{ __html: exp.putChartSvg }} />
+                <ContractTable rows={exp.tablePuts} />
+              </div>
             </div>
           </div>
-        </div>
-      ))}
+        ))
+      )}
     </section>
   );
 }
@@ -354,35 +386,51 @@ export default function Alerts() {
   const [search, setSearch] = useState('');
   const { data: calendarData } = useResource('/api/alerts/earnings-calendar');
   const calEvents = calendarData?.events ?? [];
+  const { data: reviewIndexData } = useResource('/api/earnings-review/index');
+  const reviewEntries = reviewIndexData?.entries ?? [];
+  // Newest published transcript-analysis period per ticker, for the toggle in
+  // TickerReport — undefined when no review has been published yet.
+  const reviewPeriodByTicker = (() => {
+    const map = new Map();
+    for (const entry of reviewEntries) {
+      if (!entry.ticker || !entry.period) continue;
+      const current = map.get(entry.ticker);
+      if (!current || entry.period > current) map.set(entry.ticker, entry.period);
+    }
+    return map;
+  })();
 
   useEffect(() => { load(); }, [load]);
 
-  // Sidebar order: SOXX pinned first, then every other ticker by how soon its
-  // next earnings call is (today counts as the closest). Tickers whose call
-  // already passed or isn't dated yet fall to the end, ranked by today's
-  // total option volume — the previous default ordering — as a fallback.
-  const tickers = (() => {
+  // Sidebar order: SOXX pinned first (no earnings call to rank by), then every
+  // other tracked ticker split into two sections — this quarter's call still
+  // ahead (soonest first) on top, already reported below (ranked by today's
+  // total option volume, the previous default ordering).
+  const { pinned, notReported, reported } = (() => {
     const all = report?.tickers ?? [];
     const dateByTicker = new Map(calEvents.map(ev => [ev.ticker, ev.date]));
     const today = new Date().toISOString().slice(0, 10);
     const totalVolume = t => (t.flow?.callToday ?? 0) + (t.flow?.putToday ?? 0);
 
-    const pinned = all.filter(t => t.ticker === PINNED_TICKER);
+    const pinnedList = all.filter(t => t.ticker === PINNED_TICKER);
     const rest = all.filter(t => t.ticker !== PINNED_TICKER);
-    rest.sort((a, b) => {
+    const notReportedList = rest.filter(t => (dateByTicker.get(t.ticker) ?? '') >= today);
+    const reportedList = rest.filter(t => (dateByTicker.get(t.ticker) ?? '') < today);
+    notReportedList.sort((a, b) => {
       const dateA = dateByTicker.get(a.ticker);
       const dateB = dateByTicker.get(b.ticker);
-      const upcomingA = dateA >= today;
-      const upcomingB = dateB >= today;
-      if (upcomingA && upcomingB) return dateA < dateB ? -1 : dateA > dateB ? 1 : totalVolume(b) - totalVolume(a);
-      if (upcomingA) return -1;
-      if (upcomingB) return 1;
-      return totalVolume(b) - totalVolume(a);
+      return dateA < dateB ? -1 : dateA > dateB ? 1 : totalVolume(b) - totalVolume(a);
     });
-    return [...pinned, ...rest];
+    reportedList.sort((a, b) => totalVolume(b) - totalVolume(a));
+    return { pinned: pinnedList, notReported: notReportedList, reported: reportedList };
   })();
+  const tickers = [...pinned, ...notReported, ...reported];
   const query = search.trim().toUpperCase();
-  const filteredTickers = query ? tickers.filter(t => t.ticker.includes(query)) : tickers;
+  const matches = t => !query || t.ticker.includes(query);
+  const filteredPinned = pinned.filter(matches);
+  const filteredNotReported = notReported.filter(matches);
+  const filteredReported = reported.filter(matches);
+  const filteredTickers = [...filteredPinned, ...filteredNotReported, ...filteredReported];
   const showCalendar = selected === CALENDAR_ID;
   const active = showCalendar ? null : (tickers.find(t => t.ticker === selected) ?? tickers[0] ?? null);
 
@@ -414,20 +462,43 @@ export default function Alerts() {
           >
             <span className="or-nav-name">Calendar</span>
           </button>
-          {filteredTickers.length ? filteredTickers.map(t => (
+          {filteredPinned.map(t => (
             <TickerNavItem
               key={t.ticker}
               t={t}
               active={!showCalendar && t.ticker === active?.ticker}
               onSelect={setSelected}
             />
-          )) : (
+          ))}
+          {filteredNotReported.length > 0 && (
+            <div className="or-nav-section">Not yet reported</div>
+          )}
+          {filteredNotReported.map(t => (
+            <TickerNavItem
+              key={t.ticker}
+              t={t}
+              active={!showCalendar && t.ticker === active?.ticker}
+              onSelect={setSelected}
+            />
+          ))}
+          {filteredReported.length > 0 && (
+            <div className="or-nav-section">Already reported</div>
+          )}
+          {filteredReported.map(t => (
+            <TickerNavItem
+              key={t.ticker}
+              t={t}
+              active={!showCalendar && t.ticker === active?.ticker}
+              onSelect={setSelected}
+            />
+          ))}
+          {!filteredTickers.length && (
             <div className="or-nav-empty">No match for "{search.trim()}"</div>
           )}
         </nav>
         <div className="or-report">
           {showCalendar ? (
-            <EarningsCalendar />
+            <EarningsCalendar onSelectTicker={setSelected} />
           ) : loading && !report ? (
             <div className="or-status">Loading the latest report…</div>
           ) : !active ? (
@@ -435,7 +506,7 @@ export default function Alerts() {
               No report has been generated yet. It builds automatically at 6:00 AM Hong Kong time — or click “Refresh now”.
             </div>
           ) : (
-            <TickerReport t={active} />
+            <TickerReport t={active} reviewPeriod={reviewPeriodByTicker.get(active.ticker)} />
           )}
         </div>
       </div>
