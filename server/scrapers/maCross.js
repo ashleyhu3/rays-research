@@ -160,7 +160,16 @@ function computeMaCross(history) {
   const crosses = [];
 
   for (const ticker of tickers) {
-    const closes = dates.map(date => history[date]?.[ticker]?.close ?? null);
+    // volume 0 means no trade that session — most often an extended halt (e.g.
+    // 302132.SZ, suspended for a year+) whose close otherwise stays frozen at
+    // the pre-halt price. Treating that frozen price as a real observation
+    // would let it sit in the 20-day window for weeks after trading resumes,
+    // producing crossings driven by the halt artifact rather than an actual
+    // move, so skip it like any other gap.
+    const closes = dates.map(date => {
+      const row = history[date]?.[ticker];
+      return row && row.volume !== 0 ? row.close ?? null : null;
+    });
     const sma5 = rollingAverage(closes, SMA_SHORT);
     const sma20 = rollingAverage(closes, SMA_LONG);
     const cross = detectCross(sma5, sma20, dates);

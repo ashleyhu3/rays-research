@@ -100,6 +100,26 @@ test('computeMaCross ignores a cross that landed before the reported session', (
   assert.deepEqual(result.crosses, []);
 });
 
+test('computeMaCross ignores volume-0 sessions when computing the averages', () => {
+  // 302132.SZ: frozen at 72.18 with volume 0 for a year-long halt, then a real
+  // print the day trading resumes. If the halt days counted as observations,
+  // the frozen price would still anchor the 20-day window for weeks and throw
+  // a cross driven by the halt, not the move. They must be skipped like gaps,
+  // so with only one real session the ticker has no defined window yet.
+  const dayCount = 30;
+  const closes = Array.from({ length: dayCount }, () => 72.18);
+  closes[dayCount - 1] = 57.97;
+  const dates = closes.map((_, i) => new Date(Date.UTC(2026, 0, 5 + i)).toISOString().slice(0, 10));
+  const history = {};
+  dates.forEach((date, i) => {
+    history[date] = { HALTED: { close: closes[i], volume: i === dayCount - 1 ? 5000 : 0 } };
+  });
+
+  const result = _test.computeMaCross(history);
+  assert.equal(result.tickerCount, 1, 'ticker is present in the latest row');
+  assert.deepEqual(result.crosses, [], 'a single real print after a halt must not read as a crossing');
+});
+
 test('computeMaCross returns an empty result for an empty cache', () => {
   assert.deepEqual(_test.computeMaCross({}), { asOf: null, tickerCount: 0, crosses: [] });
 });
