@@ -1,4 +1,6 @@
 import { useResource } from '../../services/resourceCache';
+import { useOptionsReport } from '../../context/OptionsReportContext';
+import { mostRecentDotSide } from './Alerts';
 
 const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -47,6 +49,8 @@ export default function EarningsCalendar() {
   // subsequent mount (stays loaded across navigation and refresh).
   const { data, error, loading } = useResource('/api/alerts/earnings-calendar');
   const events = data?.events ?? [];
+  const { report } = useOptionsReport();
+  const dotSideByTicker = new Map((report?.tickers ?? []).map(t => [t.ticker, mostRecentDotSide(t)]));
 
   const now = new Date();
   const today = isoDate(now);
@@ -93,7 +97,7 @@ export default function EarningsCalendar() {
                       <div className="cal-events">
                         {(eventsByDate[cell.iso] ?? []).map(ev => (
                           <span
-                            className={`cal-event ${ev.status === 'confirmed' ? 'confirmed' : 'expected'}`}
+                            className={`cal-event ${dotSideByTicker.get(ev.ticker) ?? 'flat'}`}
                             key={`${ev.date}-${ev.ticker}`}
                             title={eventTitle(ev)}
                           >

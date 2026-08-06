@@ -72,7 +72,7 @@ function flowDiff(day) {
 // Dot color reflects day-over-day change in the call-put spread, not the
 // spread's sign: green if the spread widened toward calls since the prior
 // day, red if it narrowed / flipped toward puts.
-function flowDotSide(day) {
+export function flowDotSide(day) {
   if (!day || day.empty) return 'flat';
   const diff = flowDiff(day);
   const prevDiff = flowDiff(day.prevDay);
@@ -128,7 +128,7 @@ function svgFlowDays(t) {
   }));
 }
 
-function navFlowDays(t) {
+export function navFlowDays(t) {
   // We show FLOW_DOT_COUNT sessions, but each dot is coloured by its day-over-day
   // change, so the earliest shown session needs the session before it as a buffer
   // — i.e. FLOW_DOT_COUNT + 1 days of source. Reports generated before that was
@@ -155,6 +155,14 @@ function navFlowDays(t) {
     ...Array.from({ length: Math.max(0, FLOW_DOT_COUNT - days.length) }, () => ({ empty: true })),
     ...withPrev,
   ];
+}
+
+// The color of a ticker's most recent sidebar dot — used to color-code the
+// same ticker elsewhere (e.g. the earnings calendar) consistently.
+export function mostRecentDotSide(t) {
+  const days = navFlowDays(t).filter(day => !day.empty);
+  const latest = days[days.length - 1];
+  return latest ? flowDotSide(latest) : 'flat';
 }
 
 function formatFlowDate(iso) {

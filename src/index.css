@@ -916,8 +916,9 @@ a.ch-src:hover { color: var(--sec); text-decoration: underline; }
   font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.cal-event.expected  { background: var(--adim); color: var(--accent); }
-.cal-event.confirmed { background: rgba(52,211,153,.14); color: #34d399; }
+.cal-event.call { background: rgba(52,211,153,.14); color: #34d399; }
+.cal-event.put  { background: rgba(248,113,113,.14); color: #f87171; }
+.cal-event.flat { background: rgba(100,116,139,.14); color: #64748b; }
 @media (min-width: 1180px) {
   .cal-months { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .cal-cell { min-height: 76px; }
