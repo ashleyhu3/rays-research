@@ -141,7 +141,7 @@ export const NAV_SECTIONS = [
       { id: 'korea-investor-flow', label: 'Korea investor flow' },
       { id: 'leverage-taiwan',   label: 'Taiwan' },
       { id: 'taiwan-individual', label: 'Taiwan individual' },
-      { id: 'leverage-china',    label: 'A shares' },
+      { id: 'leverage-china',    label: 'China A-share' },
       { id: 'leverage-japan',    label: 'Japan' },
       { id: 'leverage-us',       label: 'US' },
     ],

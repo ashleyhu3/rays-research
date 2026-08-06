@@ -55,8 +55,8 @@ const PAGE_CHARTS = {
     ['PPI MoM', ['cnPpiMom'], ['PPI MoM']],
   ],
   'macro-cn-pmi': [
-    ['NBS PMI', ['cnNbsMfg', 'cnNbsNonMfg'], ['Manufacturing', 'Non-manufacturing']],
-    ['RatingDog PMI', ['cnRatingDogMfg', 'cnRatingDogServices'], ['Manufacturing', 'Services']],
+    ['NBS PMI', ['cnNbsMfg', 'cnNbsNonMfg'], ['Manufacturing', 'Non-manufacturing'], 'line', 1],
+    ['RatingDog PMI', ['cnRatingDogMfg', 'cnRatingDogServices'], ['Manufacturing', 'Services'], 'line', 1],
   ],
   'macro-cn-trade': [
     ['Exports & imports — YoY', ['cnExportsYoy', 'cnImportsYoy'], ['Exports', 'Imports']],

@@ -450,10 +450,14 @@ export default function HkChinaPerformance({ section = null }) {
   }, [payload, startDate, endDate]);
   const extraIndexRatioCharts = useMemo(() => {
     if (!payload) return [];
+    const titleOverrides = {
+      '399006.SZ': 'ChiNext',
+      '000688.SS': 'STAR50',
+    };
     return HK_CHINA_EXTRA_INDEX_PAIRS
       .map(([numerator, denominator]) => ({
         id: `${numerator.ticker}-${denominator.ticker}`,
-        title: `${numerator.label}/${denominator.label}`,
+        title: `${numerator.label}/${titleOverrides[denominator.ticker] ?? denominator.label}`,
         data: buildPairChartData(payload, numerator, denominator, startDate, endDate),
         src: indexSource(numerator, denominator),
       }))

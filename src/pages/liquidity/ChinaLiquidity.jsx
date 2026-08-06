@@ -67,13 +67,11 @@ const SERIES = {
 };
 
 /** Chart layout per page section. Each entry is one card; a card listing several
- * kinds plots them on shared axes (M1 and M2 growth belong on one chart). The
- * money-supply pair is stacked full-width so the spread reads directly under the
- * two growth lines it is derived from, on the same x positions. */
+ * kinds plots them on shared axes (M1 and M2 growth belong on one chart). */
 const CARDS = {
   'money-supply': [
-    { title: 'Money Supply Growth — M1 vs M2', kinds: ['m1Yoy', 'm2Yoy'], span2: true },
-    { title: 'M1–M2 Spread (剪刀差)', kinds: ['m1M2Spread'], span2: true },
+    { title: 'Money Supply Growth — M1 vs M2', kinds: ['m1Yoy', 'm2Yoy'] },
+    { title: 'M1–M2 Spread (剪刀差)', kinds: ['m1M2Spread'] },
   ],
   turnover: [{ kinds: ['turnover'] }, { kinds: ['turnoverRate'] }],
 };
