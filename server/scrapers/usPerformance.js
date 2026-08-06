@@ -109,6 +109,7 @@ const TICKERS = [
   { ticker: '^VIXEQ', label: 'VIXEQ', name: 'CBOE S&P 500 Constituent Volatility' },
   { ticker: '^VXN',   label: 'VXN',   name: 'CBOE Nasdaq-100 Volatility Index' },
   { ticker: '^MOVE',  label: 'MOVE',  name: 'ICE BofA MOVE Index' },
+  { ticker: '^GVZ',   label: 'GVZ',   name: 'CBOE Gold ETF Volatility Index' },
   { ticker: 'GLD',    label: 'GLD',   name: 'SPDR Gold Shares' },
 ];
 

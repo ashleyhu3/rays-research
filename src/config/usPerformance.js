@@ -52,14 +52,15 @@ export const EXTRA_TICKERS = {
   VIXEQ: { ticker: '^VIXEQ', label: 'VIXEQ', name: 'CBOE S&P 500 Constituent Volatility', color: '#f2b134' },
   VXN:   { ticker: '^VXN',   label: 'VXN',   name: 'CBOE Nasdaq-100 Volatility Index', color: '#3c8cdd' },
   MOVE:  { ticker: '^MOVE',  label: 'MOVE',  name: 'ICE BofA MOVE Index', color: '#dc386e' },
+  GVZ:   { ticker: '^GVZ',   label: 'GVZ',   name: 'CBOE Gold ETF Volatility Index', color: '#9c7c1c' },
   GLD:   { ticker: 'GLD',    label: 'GLD',   name: 'SPDR Gold Shares', color: '#eab308' },
 };
 
 // Chart 1 of the Sentiment section: raw index levels (not rebased — VIX,
-// VIXEQ and VXN are already directly comparable). MOVE (bond-market vol) is
+// VIXEQ, VXN and GVZ are already directly comparable). MOVE (bond-market vol) is
 // on a much higher scale (~80-150 vs VIX's ~10-40), so it's plotted on a
 // secondary y-axis — see VOL_INDEX_SECONDARY_AXIS below.
-export const VOL_INDEX_TICKERS = ['VIX', 'VIXEQ', 'VXN', 'MOVE'];
+export const VOL_INDEX_TICKERS = ['VIX', 'VIXEQ', 'VXN', 'GVZ', 'MOVE'];
 export const VOL_INDEX_SECONDARY_AXIS = ['MOVE'];
 
 // Relative-volatility charts in the Sentiment section. These use the same
