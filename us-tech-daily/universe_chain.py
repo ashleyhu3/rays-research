@@ -25,14 +25,20 @@ Ticker suffix mapping from the source sector CSVs to Yahoo symbols:
   .US -> bare      .HK -> 4-digit zero-padded .HK    .SH -> .SS    .SZ -> .SZ
   .JP -> .T        .KR -> .KS
 Every symbol below was probed against Yahoo on 2026-08-04 and resolved to the intended
-company. Names appear in more than one sector on purpose (VRT, KLAC, TER, NVDA, AAPL,
-AVGO, MU, 002475.SZ...) — locked_universe() de-duplicates, so the headline count is names,
-while each sector's equal-weight mean still sees every one of its own members.
+company ("光模块与光器件" on 2026-08-05, when it was added). Names appear in more than one
+sector on purpose (VRT, KLAC, TER, NVDA, AAPL, AVGO, MU, 002475.SZ...) — locked_universe()
+de-duplicates, so the headline count is names, while each sector's equal-weight mean still
+sees every one of its own members.
+
+Dual listings are carried as both legs where the source list has both — 中际旭创 is
+3308.HK + 300308.SZ, 剑桥科技 is 6166.HK + 603083.SS, 长飞光纤光缆 is 6869.HK + 601869.SS.
+They are separate quotes with separate tapes (the H line can gap while the A line is
+limit-up), so the segment mean is meant to see both, same as 豪威集团 and 兆易创新 already do.
 """
 
 from __future__ import annotations
 
-# Ordered: section 3.1 ... 3.10. Order of the dict is the order of the 3.x subsections.
+# Ordered: section 3.1 ... 3.11. Order of the dict is the order of the 3.x subsections.
 SECTORS: dict[str, list[str]] = {
     "M7 与 AI 权重": [
         "MU", "SPCX", "TSM", "TSLA", "AMZN", "MSFT", "AAPL", "META", "GOOG", "NVDA", "AVGO",
@@ -75,6 +81,16 @@ SECTORS: dict[str, list[str]] = {
         "6951.HK", "0117.HK", "009150.KS", "002975.SZ", "300975.SZ", "002859.SZ",
         "605376.SS", "002138.SZ", "002484.SZ", "000636.SZ", "300408.SZ", "6245.T",
         "6762.T", "6981.T", "6976.T",
+    ],
+    "光模块与光器件": [
+        "3308.HK", "1300.HK", "0679.HK", "1879.HK", "6869.HK", "6166.HK", "300548.SZ",
+        "300308.SZ", "002491.SZ", "600869.SS", "600105.SS", "688808.SS", "603618.SS",
+        "600498.SS", "600522.SS", "600487.SS", "000988.SZ", "688143.SS", "301205.SZ",
+        "688205.SS", "002281.SZ", "002222.SZ", "688048.SS", "300570.SZ", "688167.SS",
+        "688195.SS", "300620.SZ", "601869.SS", "688313.SS", "300757.SZ", "002384.SZ",
+        "688498.SS", "603083.SS", "300394.SZ", "300502.SZ", "5801.T", "5802.T", "5803.T",
+        "GLW", "SIVEF", "TSEM", "SLOIF", "POET", "KEYS", "VIAV", "CIEN", "SMTC", "NOK",
+        "AAOI", "AXTI", "SITM", "MTSI", "HIMX", "FN", "LITE", "COHR",
     ],
     "线缆与连接": [
         "2475.HK", "9981.HK", "1729.HK", "6088.HK", "002130.SZ", "002475.SZ", "SMTC",
@@ -245,6 +261,23 @@ NAMES: dict[str, str] = {
     "605376.SS": "博迁新材", "002138.SZ": "顺络电子", "002484.SZ": "江海股份",
     "000636.SZ": "风华高科", "300408.SZ": "三环集团", "6245.T": "Hirano Tecseed",
     "6762.T": "TDK", "6981.T": "村田制作所", "6976.T": "太阳诱电",
+    # 光模块与光器件
+    "3308.HK": "中际旭创", "1300.HK": "俊知集团", "0679.HK": "亚洲联网科技",
+    "1879.HK": "曦智科技-P", "6869.HK": "长飞光纤光缆", "6166.HK": "剑桥科技",
+    "300548.SZ": "长芯博创", "300308.SZ": "中际旭创", "002491.SZ": "通鼎互联",
+    "600869.SS": "远东股份", "600105.SS": "永鼎股份", "603618.SS": "杭电股份",
+    "600498.SS": "烽火通信", "600522.SS": "中天科技", "600487.SS": "亨通光电",
+    "000988.SZ": "华工科技", "688143.SS": "长盈通", "301205.SZ": "联特科技",
+    "688205.SS": "德科立", "002281.SZ": "光迅科技", "002222.SZ": "福晶科技",
+    "688048.SS": "长光华芯", "300570.SZ": "太辰光", "688167.SS": "炬光科技",
+    "688195.SS": "腾景科技", "300620.SZ": "光库科技", "601869.SS": "长飞光纤",
+    "688313.SS": "仕佳光子", "300757.SZ": "罗博特科", "688498.SS": "源杰科技",
+    "603083.SS": "剑桥科技", "300394.SZ": "天孚通信", "300502.SZ": "新易盛",
+    "5802.T": "住友电气工业", "5803.T": "藤仓", "GLW": "康宁",
+    "SIVEF": "Sivers Semiconductors", "TSEM": "Tower半导体", "SLOIF": "Soitec",
+    "POET": "POET Technologies", "CIEN": "Ciena", "NOK": "诺基亚",
+    "AAOI": "Applied Optoelectronics", "AXTI": "AXT", "SITM": "SiTime",
+    "MTSI": "MACOM", "HIMX": "奇景光电", "LITE": "Lumentum", "COHR": "Coherent",
     # 线缆与连接
     "2475.HK": "立讯精密", "9981.HK": "沃尔核材", "1729.HK": "汇聚科技",
     "6088.HK": "鸿腾精密", "002130.SZ": "沃尔核材", "002475.SZ": "立讯精密",

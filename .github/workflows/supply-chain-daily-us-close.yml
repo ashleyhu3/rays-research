@@ -1,7 +1,7 @@
 name: Supply Chain Daily — US Close report
 
 # Runs at 07:13 Asia/Hong_Kong every day, ten minutes after us-tech-daily-us-close so the
-# two never contend for Yahoo (this kind alone pulls 217 symbols). Hong Kong is UTC+8
+# two never contend for Yahoo (this kind alone pulls 266 symbols). Hong Kong is UTC+8
 # year-round, so 07:13 HKT is 23:13 UTC the previous day — stable without daylight-saving
 # adjustments. GitHub Actions cron is always UTC.
 #
@@ -13,7 +13,7 @@ name: Supply Chain Daily — US Close report
 # MongoDB — MONGODB_URI puts the pipeline in Mongo mode (see us-tech-daily/store.py), so
 # this run writes nothing to the repo.
 #
-# This is the `chain` kind: 202 names across US/HK/A-share/Japan/Korea cut by supply-chain
+# This is the `chain` kind: 251 names across US/HK/A-share/Japan/Korea cut by supply-chain
 # segment rather than by venue. At this slot the US half of the universe is the fresh tape
 # and the Asian half carries its previous close — expected, and the skill's step 2 says how
 # to write around it. session.py picks the freshness probe per slot (^NDX here, ^HSI at the

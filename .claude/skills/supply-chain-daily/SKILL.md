@@ -1,6 +1,6 @@
 ---
 name: supply-chain-daily
-description: "Generate and publish one Global AI Hardware Supply Chain report (US Close or Asia Close) to the site. Runs the us-tech-daily/ pipeline end to end against the `chain` kind — 202 names across US/HK/A-share/Japan/Korea cut by supply-chain segment, twelve cross-market indices, a Taiwan anchor layer — pulls prices and news, authors the narrative half, lints every figure against the tape, renders HTML/Markdown/PDF, and publishes to Mongo. Trigger: /supply-chain-daily us-close or /supply-chain-daily asia-close."
+description: "Generate and publish one Global AI Hardware Supply Chain report (US Close or Asia Close) to the site. Runs the us-tech-daily/ pipeline end to end against the `chain` kind — 251 names across US/HK/A-share/Japan/Korea cut by supply-chain segment, twelve cross-market indices, a Taiwan anchor layer — pulls prices and news, authors the narrative half, lints every figure against the tape, renders HTML/Markdown/PDF, and publishes to Mongo. Trigger: /supply-chain-daily us-close or /supply-chain-daily asia-close."
 ---
 
 # /supply-chain-daily
@@ -89,7 +89,7 @@ $PY pull_global_eod.py --date <session_date> --kind chain
 $PY aggregate.py --date <session_date> --kind chain
 ```
 
-Expect roughly **216/217 resolved (~99.5%)**. Read the three diagnostic lines it prints:
+Expect roughly **265/266 resolved (~99.5%)**. Read the three diagnostic lines it prints:
 
 - `fx to USD` — five pairs (CNY, HKD, JPY, KRW, TWD). If one is missing, that venue's
   turnover stayed in its listing currency and every `成交额` figure for it is wrong by
@@ -163,14 +163,14 @@ plus what this kind changes:
   `lint_narrative.py` checks in step 6).
 - A mover with no in-window news evidence gets labelled `beta`. Never invent a catalyst.
 - `s4` covers the largest movers with independent catalysts plus the reverse
-  representatives — roughly 25-30 entries, in render order. With 202 names and both
+  representatives — roughly 25-30 entries, in render order. With 251 names and both
   hemispheres in scope, bias selection toward **movers on the fresh side** of the tape;
   a stale US name is last session's story and usually belongs in §1, not §4.
 - `s4[].ticker` must exist in `universe_chain`'s locked universe or `TAIWAN_ANCHORS` —
   price, pct and dollar volume are looked up automatically; never type them in by hand.
-- `s3_notes` keys must match `universe_chain.SECTORS` **exactly** — all ten of:
+- `s3_notes` keys must match `universe_chain.SECTORS` **exactly** — all eleven of:
   `M7 与 AI 权重`, `IC 设计`, `存储`, `半导体设备`, `封测与测试`, `模拟与功率`,
-  `PCB 产业链`, `MLCC 与被动元件`, `线缆与连接`, `下游与组件`.
+  `PCB 产业链`, `MLCC 与被动元件`, `光模块与光器件`, `线缆与连接`, `下游与组件`.
   (These differ from both other kinds. Check the module, don't copy from a `us` narrative.)
 - The anchor tag (`s4[].tag`) for the Taiwan layer is `universe_chain.ANCHOR_LABEL` —
   `"台股锚"`. Get this right or the report shows a dollar-volume figure for a name that
