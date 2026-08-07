@@ -24,6 +24,12 @@ export function setCached(key, data) {
   } catch {}
 }
 
+export function removeCachedPrefix(prefix) {
+  Object.keys(localStorage)
+    .filter(k => k.startsWith(PREFIX + prefix))
+    .forEach(k => localStorage.removeItem(k));
+}
+
 export function clearCache() {
   Object.keys(localStorage)
     .filter(k => k.startsWith(PREFIX))

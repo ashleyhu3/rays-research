@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getCached, setCached } from './cache';
+import { getCached, setCached, removeCachedPrefix } from './cache';
 
 // Shared per-endpoint cache so a dataset loads once, on the first visit to the
 // page that needs it, then stays loaded:
@@ -45,6 +45,17 @@ async function requestJson(url) {
     throw new Error(message);
   }
   return res.json();
+}
+
+// Drop every cached entry (memory + localStorage) whose URL starts with
+// `prefix`, so the next mount of a `useResource(url)` consumer does a fresh
+// network fetch instead of serving stale data. Used by page-scoped refresh
+// buttons ahead of remounting the view.
+export function invalidateResource(prefix) {
+  for (const key of memory.keys()) {
+    if (key.startsWith(prefix)) memory.delete(key);
+  }
+  removeCachedPrefix(prefix);
 }
 
 // Fetch `url` once and cache it; concurrent callers share the same request.

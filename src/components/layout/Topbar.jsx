@@ -4,6 +4,8 @@ import { useLayout } from '../../context/LayoutContext';
 import { useUI } from '../../context/UIContext';
 import { useData } from '../../context/DataContext';
 import { chartsForSector } from '../../config/charts';
+import { invalidateResource } from '../../services/resourceCache';
+import { adminHeaders, clearAdminSecret } from '../../utils/adminAuth';
 
 function RefreshIcon({ spin }) {
   return (
@@ -27,10 +29,60 @@ function DemandRefreshButton() {
       className={`rbtn${loading ? ' loading' : ''}`}
       onClick={forceRefresh}
       disabled={loading}
-      title="Pull today's live data for every AI Demand source"
+      title="Pull today's live data for every source on this page"
     >
       <RefreshIcon spin={loading} />
       {loading ? 'Refreshing…' : 'Refresh Data'}
+    </button>
+  );
+}
+
+// Refresh for pages that fetch their own dedicated resource(s) (resourceCache/
+// useResource, or a plain fetch) rather than the shared DataContext/liveData
+// pool. Re-scrapes just this page's scraper keys, invalidates the cached
+// resource(s), then asks the parent to remount the view so it re-fetches.
+function ResourceRefreshButton({ keys, prefixes, onRefreshed }) {
+  const [busy, setBusy] = useState(false);
+  const [errMsg, setErrMsg] = useState(null);
+
+  const handleClick = async () => {
+    setBusy(true);
+    setErrMsg(null);
+    try {
+      const ac = new AbortController();
+      const tid = setTimeout(() => ac.abort(new Error('refresh timed out after 90s')), 90000);
+      const res = await fetch('/api/refresh', {
+        method: 'POST',
+        headers: adminHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ keys }),
+        signal: ac.signal,
+      }).finally(() => clearTimeout(tid));
+      if (!res.ok) {
+        if (res.status === 401) {
+          clearAdminSecret();
+          throw new Error('Admin secret rejected — check the value and try again.');
+        }
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? `Server error ${res.status}`);
+      }
+      prefixes.forEach(invalidateResource);
+      onRefreshed?.();
+    } catch (e) {
+      setErrMsg(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <button
+      className={`rbtn${busy ? ' loading' : ''}`}
+      onClick={handleClick}
+      disabled={busy}
+      title={errMsg ?? "Pull today's live data for every source on this page"}
+    >
+      <RefreshIcon spin={busy} />
+      {busy ? 'Refreshing…' : errMsg ? 'Refresh failed' : 'Refresh Data'}
     </button>
   );
 }
@@ -113,7 +165,7 @@ function CustomizeDropdown({ sectorId }) {
   );
 }
 
-export default function Topbar({ title, titleContent, rightContent, showRefresh, weeks, onWeeksChange, months, onMonthsChange, sectorId, viewId, layoutEditable }) {
+export default function Topbar({ title, titleContent, rightContent, showRefresh, refreshConfig, onRefreshed, weeks, onWeeksChange, months, onMonthsChange, sectorId, viewId, layoutEditable }) {
   const { editMode, setEditMode } = useUI();
   const { resetLayout } = useLayout();
 
@@ -123,6 +175,13 @@ export default function Topbar({ title, titleContent, rightContent, showRefresh,
       <div className="topbar-r">
         {rightContent ?? <>
         {showRefresh && <DemandRefreshButton />}
+        {refreshConfig && (
+          <ResourceRefreshButton
+            keys={refreshConfig.keys}
+            prefixes={refreshConfig.prefixes}
+            onRefreshed={onRefreshed}
+          />
+        )}
         {onWeeksChange && WEEK_OPTIONS.map(opt => (
           <button
             key={opt.value}

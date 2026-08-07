@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { VIEW_META, SECTOR_OVERVIEW_IDS, getModeForView } from './config/navigation';
+import { VIEW_REFRESH } from './config/refreshConfig';
 import Sidebar from './components/layout/Sidebar';
 import Topbar from './components/layout/Topbar';
 import Navbar from './components/layout/Navbar';
