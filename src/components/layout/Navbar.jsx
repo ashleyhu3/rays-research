@@ -2,21 +2,6 @@ import { useUI } from '../../context/UIContext';
 import { useData } from '../../context/DataContext';
 import { getModeForView } from '../../config/navigation';
 
-function RefreshIcon({ spin }) {
-  return (
-    <svg
-      width="12" height="12" viewBox="0 0 24 24"
-      fill="none" stroke="currentColor" strokeWidth="2.2"
-      strokeLinecap="round" strokeLinejoin="round"
-      style={spin ? { animation: 'spin .85s linear infinite' } : {}}
-      aria-hidden="true"
-    >
-      <polyline points="23 4 23 10 17 10" />
-      <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
-    </svg>
-  );
-}
-
 function BarChartIcon() {
   return (
     <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true">
@@ -40,7 +25,7 @@ function TableIcon() {
 
 export default function Navbar({ onNavigate, currentView }) {
   const { tableMode, setTableMode } = useUI();
-  const { loading, lastUpdated, error, forceRefresh } = useData();
+  const { loading, lastUpdated, error } = useData();
 
   const mode        = getModeForView(currentView);
   const isAlerts    = currentView === 'alerts';
@@ -152,15 +137,6 @@ export default function Navbar({ onNavigate, currentView }) {
         <span className={`fetch-status${error ? ' error' : ''}`} title={title}>
           {loading ? 'Updating…' : lastUpdated ? lastUpdated.toLocaleTimeString() : '—'}
         </span>
-        <button
-          className={`fetch-btn${loading ? ' loading' : ''}`}
-          onClick={forceRefresh}
-          disabled={loading}
-          title="Re-scrape all live sources and refresh charts"
-        >
-          <RefreshIcon spin={loading} />
-          {loading ? 'Updating…' : 'Refresh Data'}
-        </button>
         <div className="view-toggle">
           <button
             className={`vt-btn${!tableMode ? ' active' : ''}`}

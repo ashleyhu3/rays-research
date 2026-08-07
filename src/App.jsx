@@ -250,6 +250,7 @@ export default function App() {
                 title={meta.title}
                 titleContent={isAlerts ? <OptionsReportTitle /> : undefined}
                 rightContent={isAlerts ? <OptionsReportControls /> : undefined}
+                showRefresh={!isAlerts && !isSelfChromed && mode === 'demand'}
                 weeks={!isAlerts && !isSelfChromed && (mode === 'demand' || mode === 'pricing') ? weeks : undefined}
                 onWeeksChange={!isAlerts && !isSelfChromed && (mode === 'demand' || mode === 'pricing') ? setWeeks : undefined}
                 months={mode === 'supply' ? months : undefined}

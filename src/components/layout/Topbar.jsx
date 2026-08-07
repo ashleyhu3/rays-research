@@ -2,7 +2,38 @@ import { useState, useRef, useEffect } from 'react';
 import { useDashboard } from '../../context/DashboardContext';
 import { useLayout } from '../../context/LayoutContext';
 import { useUI } from '../../context/UIContext';
+import { useData } from '../../context/DataContext';
 import { chartsForSector } from '../../config/charts';
+
+function RefreshIcon({ spin }) {
+  return (
+    <svg
+      width="11" height="11" viewBox="0 0 24 24"
+      fill="none" stroke="currentColor" strokeWidth="2.4"
+      strokeLinecap="round" strokeLinejoin="round"
+      style={{ marginRight: 5, verticalAlign: 'middle', ...(spin ? { animation: 'spin .85s linear infinite' } : {}) }}
+      aria-hidden="true"
+    >
+      <polyline points="23 4 23 10 17 10" />
+      <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+    </svg>
+  );
+}
+
+function DemandRefreshButton() {
+  const { loading, forceRefresh } = useData();
+  return (
+    <button
+      className={`rbtn${loading ? ' loading' : ''}`}
+      onClick={forceRefresh}
+      disabled={loading}
+      title="Pull today's live data for every AI Demand source"
+    >
+      <RefreshIcon spin={loading} />
+      {loading ? 'Refreshing…' : 'Refresh Data'}
+    </button>
+  );
+}
 
 const WEEK_OPTIONS = [
   { value: 13,  label: '3M' },
@@ -82,7 +113,7 @@ function CustomizeDropdown({ sectorId }) {
   );
 }
 
-export default function Topbar({ title, titleContent, rightContent, weeks, onWeeksChange, months, onMonthsChange, sectorId, viewId, layoutEditable }) {
+export default function Topbar({ title, titleContent, rightContent, showRefresh, weeks, onWeeksChange, months, onMonthsChange, sectorId, viewId, layoutEditable }) {
   const { editMode, setEditMode } = useUI();
   const { resetLayout } = useLayout();
 
@@ -91,6 +122,7 @@ export default function Topbar({ title, titleContent, rightContent, weeks, onWee
       {titleContent ?? <h1>{title}</h1>}
       <div className="topbar-r">
         {rightContent ?? <>
+        {showRefresh && <DemandRefreshButton />}
         {onWeeksChange && WEEK_OPTIONS.map(opt => (
           <button
             key={opt.value}

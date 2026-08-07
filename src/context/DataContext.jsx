@@ -8,6 +8,15 @@ export const DataContext = createContext(null);
 
 const KEY = 'live';
 
+// Scraper keys backing the AI Demand page's sources (npm/pypi/hf are fetched
+// client-side and need no server key). Scoped so the demand page's refresh
+// button only re-pulls its own data, not supply chain / macro / leverage / etc.
+const DEMAND_REFRESH_KEYS = [
+  'pypi', 'gpu', 'github', 'openrouter', 'eia', 'mops', 'githubCommits', 'docker', 'hn',
+  'openrouterRanks', 'dram', 'nand', 'tftLcd', 'aws', 'cpu', 'tpu', 'epochRevenue', 'mcp', 'sec',
+  'huggingface', 'webTraffic', 'customsDrones', 'macro', 'commodities', 'fedWatch', 'shipping',
+];
+
 export function DataProvider({ children }) {
   const [liveData,    setLiveData]    = useState(null);
   const [loading,     setLoading]     = useState(false);
@@ -58,7 +67,7 @@ export function DataProvider({ children }) {
   }, [applyLive]);
 
   // Force-refreshes both layers: tells server to bypass its TTL cache and
-  // re-scrape all sources, then re-fetches the fresh results.
+  // re-scrape the AI Demand sources only, then re-fetches the fresh results.
   const forceRefresh = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -69,7 +78,7 @@ export function DataProvider({ children }) {
       const res = await fetch('/api/refresh', {
         method: 'POST',
         headers: adminHeaders({ 'Content-Type': 'application/json' }),
-        body: '{}',
+        body: JSON.stringify({ keys: DEMAND_REFRESH_KEYS }),
         signal: ac.signal,
       }).finally(() => clearTimeout(tid));
       if (!res.ok) {
